@@ -7,7 +7,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gookit/cliui v0.2.3
 	github.com/gookit/config/v2 v2.2.7
-	github.com/gookit/goutil v0.7.5-0.20260501141109-e40f11079592
+	github.com/gookit/goutil v0.7.5
 	github.com/klauspost/compress v1.17.11
 	github.com/ulikunitz/xz v0.5.12
 	golang.org/x/sys v0.38.0
