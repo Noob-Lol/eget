@@ -13,7 +13,7 @@ type QueryOptions struct {
 
 func newQueryCmd(handler CommandHandler) (*capp.Cmd, func()) {
 	opts := &QueryOptions{Action: "latest", Limit: 10}
-	cmd := capp.NewCmd("query", "Query GitHub repository release metadata", func(cmd *capp.Cmd) error {
+	cmd := capp.NewCmd("query", "Query GitHub repository metadata", func(cmd *capp.Cmd) error {
 		opts.Target = cmd.Arg("target").String()
 		if err := validateNoTrailingFlags(cmd); err != nil {
 			return err
