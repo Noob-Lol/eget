@@ -11,6 +11,7 @@ type InstallOptions struct {
 	Name             string
 	Source           bool
 	All              bool
+	InstallAll       bool
 	GUI              bool
 	Quiet            bool
 	Add              bool
@@ -38,11 +39,12 @@ func newInstallCmd(handler CommandHandler) (*capp.Cmd, func()) {
 	cmd.StringVar(&opts.Name, "name", "", "Managed package name when used with --add")
 	cmd.BoolVar(&opts.Source, "source", false, "Download source archive")
 	cmd.BoolVar(&opts.All, "extract-all", false, "Extract all files;;ea")
+	cmd.BoolVar(&opts.InstallAll, "all", false, "Install all managed packages from config")
 	cmd.BoolVar(&opts.GUI, "gui", false, "Install as GUI application")
 	cmd.BoolVar(&opts.Quiet, "quiet", false, "Quiet output")
 	cmd.BoolVar(&opts.Add, "add", false, "Add installed repo target to managed packages")
 	cmd.IntVar(&opts.FallbackVersions, "fallback-versions", 0, "Search older SourceForge version folders when asset is missing")
-	cmd.AddArg("target", "Installation target", true, nil)
+	cmd.AddArg("target", "Installation target", false, nil)
 	return cmd, func() {
 		*opts = InstallOptions{}
 	}

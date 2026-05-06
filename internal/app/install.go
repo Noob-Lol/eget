@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -36,6 +37,12 @@ type InstallExtras struct {
 	PackageOpts install.Options
 }
 
+type InstallAllResult struct {
+	Name   string
+	Target string
+	Result RunResult
+}
+
 type ReleaseInfoFunc func(repo, url string) (string, time.Time, error)
 
 type Service struct {
@@ -53,54 +60,9 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 		return RunResult{}, err
 	}
 	opts = normalizeExtractionOptions(opts)
-	result, err := s.Runner.Run(runTarget, opts)
+	result, err := s.installResolvedTarget(runTarget, opts)
 	if err != nil {
 		return RunResult{}, err
-	}
-
-	installMode := result.InstallMode
-	if installMode == "" && opts.IsGUI && len(result.ExtractedFiles) > 0 {
-		installMode = install.InstallModePortable
-	}
-	shouldRecord := len(result.ExtractedFiles) > 0 || installMode == install.InstallModeInstaller
-	if s.Store != nil && shouldRecord {
-		repo := storepkg.NormalizeRepoName(runTarget)
-		tag, releaseDate := tagFromReleaseURL(result.URL), time.Time{}
-		isSourceForge := sourcesf.IsTarget(repo)
-		isForge := forge.IsTarget(repo)
-		if tag == "" && isSourceForge {
-			tag = sourcesf.VersionFromText(result.URL)
-		}
-		if tag == "" && isForge && opts.Tag != "" {
-			tag = opts.Tag
-		}
-		if s.ReleaseInfo != nil {
-			if gotTag, gotDate, err := s.ReleaseInfo(repo, result.URL); err == nil {
-				if tag == "" {
-					tag = gotTag
-				}
-				releaseDate = gotDate
-			}
-		}
-
-		entry := storepkg.Entry{
-			Repo:           repo,
-			Target:         runTarget,
-			InstalledAt:    s.now(),
-			URL:            result.URL,
-			Asset:          chooseAsset(result),
-			Tool:           result.Tool,
-			ExtractedFiles: append([]string(nil), result.ExtractedFiles...),
-			Options:        extractOptionsMap(opts),
-			Tag:            tag,
-			Version:        sourceVersion(tag, isSourceForge || isForge),
-			ReleaseDate:    releaseDate,
-			IsGUI:          result.IsGUI || opts.IsGUI,
-			InstallMode:    installMode,
-		}
-		if err := s.Store.Record(runTarget, entry); err != nil {
-			return RunResult{}, err
-		}
 	}
 
 	if len(extras) > 0 && extras[0].AddToConfig {
@@ -125,6 +87,46 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 	return result, nil
 }
 
+func (s Service) InstallAllPackages(cli install.Options) ([]InstallAllResult, error) {
+	cfg, err := s.loadConfig()
+	if err != nil {
+		return nil, err
+	}
+	if len(cfg.Packages) == 0 {
+		return nil, fmt.Errorf("no managed packages configured")
+	}
+
+	names := make([]string, 0, len(cfg.Packages))
+	for name := range cfg.Packages {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	results := make([]InstallAllResult, 0, len(names))
+	for _, name := range names {
+		pkg := cfg.Packages[name]
+		repo := util.DerefString(pkg.Repo)
+		if repo == "" {
+			return nil, fmt.Errorf("package %q has no repo", name)
+		}
+		runTarget, opts, err := s.resolveInstallRequestWithConfig(cfg, name, cli, false)
+		if err != nil {
+			return nil, err
+		}
+		opts = normalizeExtractionOptions(opts)
+		result, err := s.installResolvedTarget(runTarget, opts)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, InstallAllResult{
+			Name:   name,
+			Target: runTarget,
+			Result: result,
+		})
+	}
+	return results, nil
+}
+
 func isManagedConfigTarget(target string) bool {
 	switch install.DetectTargetKind(target) {
 	case install.TargetRepo, install.TargetGitHubURL, install.TargetSourceForge, install.TargetForge:
@@ -146,7 +148,10 @@ func (s Service) resolveInstallRequest(target string, cli install.Options, prefe
 	if err != nil {
 		return "", install.Options{}, err
 	}
+	return s.resolveInstallRequestWithConfig(cfg, target, cli, preferCacheDir)
+}
 
+func (s Service) resolveInstallRequestWithConfig(cfg *cfgpkg.File, target string, cli install.Options, preferCacheDir bool) (string, install.Options, error) {
 	if pkg, ok := cfg.Packages[target]; ok {
 		repo := util.DerefString(pkg.Repo)
 		if repo == "" {
@@ -164,6 +169,61 @@ func (s Service) resolveInstallRequest(target string, cli install.Options, prefe
 		return "", install.Options{}, err
 	}
 	return target, opts, nil
+}
+
+func (s Service) installResolvedTarget(runTarget string, opts install.Options) (RunResult, error) {
+	result, err := s.Runner.Run(runTarget, opts)
+	if err != nil {
+		return RunResult{}, err
+	}
+
+	installMode := result.InstallMode
+	if installMode == "" && opts.IsGUI && len(result.ExtractedFiles) > 0 {
+		installMode = install.InstallModePortable
+	}
+	shouldRecord := len(result.ExtractedFiles) > 0 || installMode == install.InstallModeInstaller
+	if s.Store == nil || !shouldRecord {
+		return result, nil
+	}
+
+	repo := storepkg.NormalizeRepoName(runTarget)
+	tag, releaseDate := tagFromReleaseURL(result.URL), time.Time{}
+	isSourceForge := sourcesf.IsTarget(repo)
+	isForge := forge.IsTarget(repo)
+	if tag == "" && isSourceForge {
+		tag = sourcesf.VersionFromText(result.URL)
+	}
+	if tag == "" && isForge && opts.Tag != "" {
+		tag = opts.Tag
+	}
+	if s.ReleaseInfo != nil {
+		if gotTag, gotDate, err := s.ReleaseInfo(repo, result.URL); err == nil {
+			if tag == "" {
+				tag = gotTag
+			}
+			releaseDate = gotDate
+		}
+	}
+
+	entry := storepkg.Entry{
+		Repo:           repo,
+		Target:         runTarget,
+		InstalledAt:    s.now(),
+		URL:            result.URL,
+		Asset:          chooseAsset(result),
+		Tool:           result.Tool,
+		ExtractedFiles: append([]string(nil), result.ExtractedFiles...),
+		Options:        extractOptionsMap(opts),
+		Tag:            tag,
+		Version:        sourceVersion(tag, isSourceForge || isForge),
+		ReleaseDate:    releaseDate,
+		IsGUI:          result.IsGUI || opts.IsGUI,
+		InstallMode:    installMode,
+	}
+	if err := s.Store.Record(runTarget, entry); err != nil {
+		return RunResult{}, err
+	}
+	return result, nil
 }
 
 func (s Service) DownloadTarget(target string, opts install.Options) (RunResult, error) {

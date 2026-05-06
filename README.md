@@ -82,6 +82,8 @@ eget install --add junegunn/fzf
 eget install --add --name rg BurntSushi/ripgrep
 # Add a SourceForge project as a managed package
 eget add --name winmerge --system windows/amd64 --asset x64,PerUser,setup sourceforge:winmerge
+# Install every package configured under [packages]
+eget install --all
 ```
 
 **Install GUI apps**:
@@ -174,6 +176,7 @@ The target argument accepted by `install` and `download` can be:
 - `--name` can be used to override the installed executable name; without `--to`, it also acts as the rename hint for single-file assets.
 - `--gui` marks the target as a GUI application. Portable GUI apps use `global.gui_target` by default, while GUI installers such as `.msi` or `setup.exe` are launched and do not record a final install directory. Without `--gui`, installer-like assets prompt before launch; with `--add`, a confirmed installer is persisted with `is_gui = true`.
 - With `--add`, a successful install also writes the repo target to `[packages.<name>]`; use `--name` to override the package name.
+- Use `--all` without a target to install every package configured under `[packages]`. Package-level options are merged the same way as single package installs.
 
 `download` (alias: `dl`)
 
@@ -232,6 +235,7 @@ The target argument accepted by `install` and `download` can be:
 `install` additionally supports:
 
 - `--add`: After a successful install, append the repo target to `[packages.<name>]` managed config.
+- `--all`: Install every package configured under `[packages]`; cannot be combined with a target or `--add`.
 - `--gui`: Install as a GUI application; with `--add`, persist `is_gui = true`. Installer-like assets selected without `--gui` prompt before launch and also persist `is_gui = true` when confirmed with `--add`.
 - `--name`: Override the managed package name; for single executable assets, it also acts as the default output-name hint.
 

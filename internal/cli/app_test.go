@@ -208,12 +208,39 @@ func TestMain_DownloadRejectsGUIFlag(t *testing.T) {
 	}
 }
 
-func TestMain_InstallDownloadAndAddRejectRemovedAllFlag(t *testing.T) {
+func TestMain_InstallAllFlagBindsWithoutTarget(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"install", "--all"})
+	if err != nil {
+		t.Fatalf("expected install --all to parse, got %v", err)
+	}
+	if len(calls) != 1 || calls[0].name != "install" {
+		t.Fatalf("unexpected routed call: %#v", calls)
+	}
+	opts, ok := calls[0].options.(*InstallOptions)
+	if !ok {
+		t.Fatalf("expected InstallOptions, got %T", calls[0].options)
+	}
+	if !opts.InstallAll {
+		t.Fatalf("expected install all flag to be true")
+	}
+	if opts.Target != "" {
+		t.Fatalf("expected install --all to omit target, got %q", opts.Target)
+	}
+}
+
+func TestMain_DownloadAndAddRejectRemovedAllFlag(t *testing.T) {
 	tests := []struct {
 		name string
 		args []string
 	}{
-		{"install", []string{"install", "--all", "inhere/markview"}},
 		{"download", []string{"download", "--all", "inhere/markview"}},
 		{"add", []string{"add", "--all", "inhere/markview"}},
 	}

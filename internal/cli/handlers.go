@@ -20,6 +20,19 @@ func (s *cliService) handle(name string, options any) error {
 	case "install":
 		opts := options.(*InstallOptions)
 		cliInstallOpts := installOptionsFromInstall(opts)
+		if opts.InstallAll {
+			if opts.Target != "" {
+				return fmt.Errorf("install --all cannot be used with target")
+			}
+			if opts.Add {
+				return fmt.Errorf("install --all cannot be used with --add")
+			}
+			_, err := s.appService.InstallAllPackages(cliInstallOpts)
+			return err
+		}
+		if opts.Target == "" {
+			return fmt.Errorf("install target is required")
+		}
 		_, err := s.appService.InstallTarget(opts.Target, cliInstallOpts, app.InstallExtras{
 			AddToConfig: opts.Add,
 			PackageName: opts.Name,

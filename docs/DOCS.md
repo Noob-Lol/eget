@@ -45,6 +45,8 @@ eget <command> --options... arguments...
 7. 选择 extractor 并提取
 8. 写入 installed store
 
+`install --all` 会读取配置文件中的 `[packages]`，按包名排序后逐个复用单包 install 流程；每个包仍按 `CLI > package > repo > global` 的优先级合并安装选项。该模式不接收 target，也不能和 `--add` 同时使用。
+
 目标类型支持：
 
 - repo 标识符
@@ -212,6 +214,7 @@ CLI > package > repo > global > default
 - `--file`
 - `--asset`
 - `--source`
+- `--all`（仅 `install`，安装 `[packages]` 中的全部托管包）
 - `--extract-all` / `--ea`
 - `--fallback-versions`（仅 `install` / `download`，SourceForge 目标在最新版本目录缺少匹配资产时扫描旧版本目录）
 - `--gui`

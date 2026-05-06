@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gookit/cliui"
+	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
 	cfgpkg "github.com/inherelab/eget/internal/config"
@@ -221,6 +222,61 @@ func TestHandleInstallAcceptsManagedPackageName(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("handle install: %v", err)
+	}
+}
+
+func TestHandleInstallAllInstallsManagedPackages(t *testing.T) {
+	runner := &fakeRunnerForCLI{
+		result: app.RunResult{
+			URL:            "https://github.com/example/repo/releases/download/v1.0.0/tool.tar.gz",
+			Tool:           "tool",
+			ExtractedFiles: []string{"./tool"},
+		},
+	}
+	svc := &cliService{
+		appService: app.Service{
+			Runner: runner,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+				cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+				return cfg, nil
+			},
+		},
+	}
+
+	err := svc.handle("install", &InstallOptions{InstallAll: true, Quiet: true})
+	if err != nil {
+		t.Fatalf("handle install --all: %v", err)
+	}
+
+	assert.Eq(t, []string{"junegunn/fzf", "BurntSushi/ripgrep"}, runner.targets)
+	if !runner.optsByTarget["junegunn/fzf"].Quiet || !runner.optsByTarget["BurntSushi/ripgrep"].Quiet {
+		t.Fatalf("expected cli install options to propagate, got %#v", runner.optsByTarget)
+	}
+}
+
+func TestHandleInstallRejectsMissingTargetWithoutAll(t *testing.T) {
+	svc := &cliService{}
+
+	err := svc.handle("install", &InstallOptions{})
+	if err == nil {
+		t.Fatal("expected missing install target to fail")
+	}
+	if !strings.Contains(err.Error(), "install target is required") {
+		t.Fatalf("expected missing target error, got %v", err)
+	}
+}
+
+func TestHandleInstallAllRejectsTarget(t *testing.T) {
+	svc := &cliService{}
+
+	err := svc.handle("install", &InstallOptions{InstallAll: true, Target: "junegunn/fzf"})
+	if err == nil {
+		t.Fatal("expected install --all with target to fail")
+	}
+	if !strings.Contains(err.Error(), "install --all cannot be used with target") {
+		t.Fatalf("expected all with target error, got %v", err)
 	}
 }
 
@@ -964,10 +1020,17 @@ func TestHandleSearchPassesOptionsToSearchService(t *testing.T) {
 }
 
 type fakeRunnerForCLI struct {
-	result app.RunResult
+	result       app.RunResult
+	targets      []string
+	optsByTarget map[string]install.Options
 }
 
 func (f *fakeRunnerForCLI) Run(target string, opts install.Options) (app.RunResult, error) {
+	f.targets = append(f.targets, target)
+	if f.optsByTarget == nil {
+		f.optsByTarget = map[string]install.Options{}
+	}
+	f.optsByTarget[target] = opts
 	return f.result, nil
 }
 

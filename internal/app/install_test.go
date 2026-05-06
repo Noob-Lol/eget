@@ -845,3 +845,85 @@ func TestInstallTargetWithAddUsesExplicitPackageName(t *testing.T) {
 		t.Fatalf("expected explicit package name chlog, got %q", config.name)
 	}
 }
+
+func TestInstallAllPackagesInstallsConfiguredPackagesByName(t *testing.T) {
+	runner := &fakeBatchRunner{
+		results: map[string]RunResult{
+			"junegunn/fzf": {
+				URL:            "https://github.com/junegunn/fzf/releases/download/v0.50.0/fzf.tar.gz",
+				Tool:           "fzf",
+				ExtractedFiles: []string{"./fzf"},
+			},
+			"BurntSushi/ripgrep": {
+				URL:            "https://github.com/BurntSushi/ripgrep/releases/download/v14.0.0/rg.tar.gz",
+				Tool:           "rg",
+				ExtractedFiles: []string{"./rg"},
+			},
+		},
+	}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["fzf"] = cfgpkg.Section{
+				Repo:         util.StringPtr("junegunn/fzf"),
+				AssetFilters: []string{"linux"},
+			}
+			cfg.Packages["rg"] = cfgpkg.Section{
+				Repo: util.StringPtr("BurntSushi/ripgrep"),
+				File: util.StringPtr("rg"),
+			}
+			return cfg, nil
+		},
+	}
+
+	results, err := svc.InstallAllPackages(install.Options{Quiet: true})
+	if err != nil {
+		t.Fatalf("install all packages: %v", err)
+	}
+
+	assert.Eq(t, []string{"junegunn/fzf", "BurntSushi/ripgrep"}, runner.targets)
+	assert.Eq(t, 2, len(results))
+	assert.Eq(t, "fzf", results[0].Name)
+	assert.Eq(t, "junegunn/fzf", results[0].Target)
+	assert.Eq(t, "rg", results[1].Name)
+	assert.Eq(t, "BurntSushi/ripgrep", results[1].Target)
+	assert.True(t, runner.opts["junegunn/fzf"].Quiet)
+	assert.Eq(t, []string{"linux"}, runner.opts["junegunn/fzf"].Asset)
+	assert.Eq(t, "rg", runner.opts["BurntSushi/ripgrep"].ExtractFile)
+}
+
+func TestInstallAllPackagesRejectsEmptyConfig(t *testing.T) {
+	svc := Service{
+		Runner: &fakeBatchRunner{},
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	_, err := svc.InstallAllPackages(install.Options{})
+	if err == nil {
+		t.Fatal("expected empty managed package config to fail")
+	}
+	if !strings.Contains(err.Error(), "no managed packages") {
+		t.Fatalf("expected no managed packages error, got %v", err)
+	}
+}
+
+type fakeBatchRunner struct {
+	targets []string
+	opts    map[string]install.Options
+	results map[string]RunResult
+}
+
+func (f *fakeBatchRunner) Run(target string, opts install.Options) (RunResult, error) {
+	f.targets = append(f.targets, target)
+	if f.opts == nil {
+		f.opts = map[string]install.Options{}
+	}
+	f.opts[target] = opts
+	if result, ok := f.results[target]; ok {
+		return result, nil
+	}
+	return RunResult{}, nil
+}
