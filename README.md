@@ -187,7 +187,7 @@ The target argument accepted by `install` and `download` can be:
 
 - Writes a managed package definition to `[packages.<name>]` in the config file.
 
-`uninstall` (aliases: `uni`, `remove`, `rm`)
+`uninstall` (aliases: `uni`, `rm`)
 
 - Removes installed files and clears the installed store entry without deleting `[packages.<name>]`.
 

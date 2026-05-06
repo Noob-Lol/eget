@@ -187,7 +187,7 @@ eget config set global.target ~/.local/bin
 
 - 将一个托管包写入配置文件的 `[packages.<name>]`。
 
-`uninstall`(alias: `uni`, `remove`, `rm`)
+`uninstall`(alias: `uni`, `rm`)
 
 - 删除已安装文件并清理 installed store 记录，不移除 `[packages.<name>]` 配置。
 
