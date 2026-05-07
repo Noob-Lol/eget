@@ -1,5 +1,10 @@
 # TODO
 
+<!--
+简单的直接使用一行 checklist 说明即可。
+需要附带较长说明的，使用标题+说明方式新建。使用emoji 表情状态图标(wait: ⏳|ing: 🔄|done: ✅)
+-->
+
 - [x] 增强 list --outdated 用于显示有更新的工具
 - [ ] 新增命令 clean 用于清理缓存
 - [x] 增强功能：参考自 https://github.com/marwanhawari/stew
@@ -15,7 +20,7 @@
 - [ ] 增强 install/download 支持并发下载，默认并发数为 5
   - 可以通过 --concurrency 选项 或者 global.concurrency 指定并发数
 
-## search 结果展示
+## search 结果展示 ✅
 
 ```txt
 <info>owner/repo</> ⭐{stars} language: {language} update: {update_time}

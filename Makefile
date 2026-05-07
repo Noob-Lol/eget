@@ -8,7 +8,7 @@ BINARY  := $(APP)$(GOEXE)
 # Build metadata
 BUILD_TIME := $(shell date +%Y/%m/%d-%H:%M:%S)
 GIT_HASH  := $(shell git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
-VERSION ?= $(shell echo "$$(git for-each-ref refs/tags/ --count=1 --sort=-version:refname --format='%(refname:short)' | echo 'dev' 2>/dev/null)-$(GIT_HASH)" | sed 's/^v//')
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null | sed 's/^v//' || echo "dev-$(GIT_HASH)")
 
 LDFLAGS := -s -w \
 	-X main.Version=$(VERSION) \
@@ -30,7 +30,7 @@ build:
 
 ## install: install Go binary to $GOPATH/bin
 install:
-	@go install -ldflags "$(LDFLAGS)" $(MAIN_DIR)
+	go install -ldflags "$(LDFLAGS)" $(MAIN_DIR)
 	upx -6 --no-progress $(GOPATH)/bin/$(BINARY)
 	@echo "✅ Installed to GOPATH/bin"
 
