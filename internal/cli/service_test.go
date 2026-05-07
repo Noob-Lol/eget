@@ -280,6 +280,129 @@ func TestHandleInstallAllRejectsTarget(t *testing.T) {
 	}
 }
 
+func TestHandleInstallWarnsWhenSudoUserConfigExistsButCurrentConfigMissing(t *testing.T) {
+	var stderr bytes.Buffer
+	runner := &fakeRunnerForCLI{}
+	svc := &cliService{
+		stderr: &stderr,
+		appService: app.Service{
+			Runner: runner,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				return cfgpkg.NewFile(), nil
+			},
+		},
+		configPathResolver: func() (string, error) {
+			return "", os.ErrNotExist
+		},
+		lookupEnv: func(key string) (string, bool) {
+			switch key {
+			case "SUDO_USER":
+				return "alice", true
+			default:
+				return "", false
+			}
+		},
+		lookupUserHome: func(name string) (string, error) {
+			if name != "alice" {
+				t.Fatalf("unexpected user lookup %q", name)
+			}
+			return "/home/alice", nil
+		},
+		fileExists: func(path string) bool {
+			return filepath.ToSlash(path) == "/home/alice/.config/eget/eget.toml"
+		},
+	}
+
+	err := svc.handle("install", &InstallOptions{Target: "babarot/gomi"})
+	if err != nil {
+		t.Fatalf("handle install: %v", err)
+	}
+
+	got := stderr.String()
+	if !strings.Contains(got, "sudo may be using a different HOME") {
+		t.Fatalf("expected sudo config warning, got %q", got)
+	}
+	if !strings.Contains(got, `sudo EGET_CONFIG="/home/alice/.config/eget/eget.toml" eget install`) {
+		t.Fatalf("expected workaround in warning, got %q", got)
+	}
+}
+
+func TestHandleInstallDoesNotWarnWhenQuiet(t *testing.T) {
+	var stderr bytes.Buffer
+	svc := &cliService{
+		stderr: &stderr,
+		appService: app.Service{
+			Runner: &fakeRunnerForCLI{},
+			LoadConfig: func() (*cfgpkg.File, error) {
+				return cfgpkg.NewFile(), nil
+			},
+		},
+		configPathResolver: func() (string, error) {
+			return "", os.ErrNotExist
+		},
+		lookupEnv: func(key string) (string, bool) {
+			if key == "SUDO_USER" {
+				return "alice", true
+			}
+			return "", false
+		},
+		lookupUserHome: func(string) (string, error) {
+			return "/home/alice", nil
+		},
+		fileExists: func(path string) bool {
+			return path == "/home/alice/.config/eget/eget.toml"
+		},
+	}
+
+	err := svc.handle("install", &InstallOptions{Target: "babarot/gomi", Quiet: true})
+	if err != nil {
+		t.Fatalf("handle install: %v", err)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected quiet install to suppress warning, got %q", stderr.String())
+	}
+}
+
+func TestHandleInstallDoesNotWarnWhenEGETConfigIsExplicit(t *testing.T) {
+	var stderr bytes.Buffer
+	svc := &cliService{
+		stderr: &stderr,
+		appService: app.Service{
+			Runner: &fakeRunnerForCLI{},
+			LoadConfig: func() (*cfgpkg.File, error) {
+				return cfgpkg.NewFile(), nil
+			},
+		},
+		configPathResolver: func() (string, error) {
+			return "", os.ErrNotExist
+		},
+		lookupEnv: func(key string) (string, bool) {
+			switch key {
+			case "EGET_CONFIG":
+				return "/home/alice/.config/eget/eget.toml", true
+			case "SUDO_USER":
+				return "alice", true
+			default:
+				return "", false
+			}
+		},
+		lookupUserHome: func(string) (string, error) {
+			return "/home/alice", nil
+		},
+		fileExists: func(path string) bool {
+			return path == "/home/alice/.config/eget/eget.toml"
+		},
+	}
+
+	err := svc.handle("install", &InstallOptions{Target: "babarot/gomi"})
+	if err != nil {
+		t.Fatalf("handle install: %v", err)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected explicit EGET_CONFIG to suppress warning, got %q", stderr.String())
+	}
+}
+
 func TestNewCLIServiceWiresReleaseInfo(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)

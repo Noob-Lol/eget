@@ -48,6 +48,7 @@ func Main(args []string, stdout, stderr io.Writer) error {
 		if service == nil {
 			return ErrNotImplemented
 		}
+		service.stderr = stderr
 		configureVerbose(cliApp.Verbose(), stderr)
 		return service.handle(name, options)
 	}, stdout, stderr)

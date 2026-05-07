@@ -2,8 +2,11 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,6 +15,7 @@ import (
 	"github.com/gookit/goutil/cliutil"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
+	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 )
 
@@ -27,12 +31,14 @@ func (s *cliService) handle(name string, options any) error {
 			if opts.Add {
 				return fmt.Errorf("install --all cannot be used with --add")
 			}
+			s.warnIfSudoUserConfigLooksSkipped(opts.Quiet)
 			_, err := s.appService.InstallAllPackages(cliInstallOpts)
 			return err
 		}
 		if opts.Target == "" {
 			return fmt.Errorf("install target is required")
 		}
+		s.warnIfSudoUserConfigLooksSkipped(opts.Quiet)
 		_, err := s.appService.InstallTarget(opts.Target, cliInstallOpts, app.InstallExtras{
 			AddToConfig: opts.Add,
 			PackageName: opts.Name,
@@ -84,6 +90,74 @@ func (s *cliService) handle(name string, options any) error {
 	default:
 		return ErrNotImplemented
 	}
+}
+
+func (s *cliService) warnIfSudoUserConfigLooksSkipped(quiet bool) {
+	if quiet {
+		return
+	}
+
+	lookupEnv := os.LookupEnv
+	if s.lookupEnv != nil {
+		lookupEnv = s.lookupEnv
+	}
+	if configPath, ok := lookupEnv("EGET_CONFIG"); ok && configPath != "" {
+		return
+	}
+
+	sudoUser, ok := lookupEnv("SUDO_USER")
+	if !ok || sudoUser == "" || sudoUser == "root" {
+		return
+	}
+
+	resolveConfigPath := cfgpkg.ResolveConfigPath
+	if s.configPathResolver != nil {
+		resolveConfigPath = s.configPathResolver
+	}
+	if _, err := resolveConfigPath(); err == nil {
+		return
+	} else if !cfgpkg.IsNotExist(err) && !errors.Is(err, os.ErrNotExist) {
+		return
+	}
+
+	lookupHome := lookupUserHome
+	if s.lookupUserHome != nil {
+		lookupHome = s.lookupUserHome
+	}
+	homeDir, err := lookupHome(sudoUser)
+	if err != nil || homeDir == "" {
+		return
+	}
+
+	candidate := cfgpkg.OSConfigPath(homeDir, "linux", lookupEnv)
+	exists := fileExists
+	if s.fileExists != nil {
+		exists = s.fileExists
+	}
+	if !exists(candidate) {
+		return
+	}
+
+	displayPath := filepath.ToSlash(candidate)
+	ccolor.Fprintf(
+		s.stderrWriter(),
+		"<yellow>Warning</>: sudo may be using a different HOME, so eget did not load %s. Try: sudo EGET_CONFIG=%q eget install ...\n",
+		displayPath,
+		displayPath,
+	)
+}
+
+func lookupUserHome(name string) (string, error) {
+	u, err := user.Lookup(name)
+	if err != nil {
+		return "", err
+	}
+	return u.HomeDir, nil
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(filepath.Clean(path))
+	return err == nil && !info.IsDir()
 }
 
 func (s *cliService) handleUninstall(opts *UninstallOptions) error {

@@ -120,6 +120,7 @@ func newCLIService() (*cliService, error) {
 		searchService:    searchService,
 		uninstallService: uninstallService,
 		updService:       updService,
+		stderr:           os.Stderr,
 	}, nil
 }
 
