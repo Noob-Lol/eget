@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/gookit/goutil/cflag/capp"
+	"github.com/gookit/goutil/x/ccolor"
 )
 
 var (
@@ -80,8 +81,17 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 	inner.HelpWriter = stdout
 	inner.SetOutput(stderr)
 	verbose := false
-	inner.BoolVar(&verbose, "verbose", false, "Show verbose execution details")
-	inner.AddShortcuts("verbose", "v")
+	inner.BoolVar(&verbose, "verbose", false, "Show verbose execution details;;v")
+	var showVersion bool
+	inner.BoolVar(&showVersion, "version", false, "Show version information;;V")
+
+	inner.OnAppFlagParsed = func(_ *capp.App) bool {
+		if showVersion {
+			printVersion()
+			return false
+		}
+		return true
+	}
 
 	app := &App{inner: inner, verbose: &verbose}
 	app.add(newInstallCmd(handler))
@@ -113,6 +123,13 @@ func (a *App) RunWithArgs(args []string) error {
 
 func (a *App) Verbose() bool {
 	return a.verbose != nil && *a.verbose
+}
+
+// printVersion prints version information
+func printVersion() {
+	ccolor.Printf("Version <green>%s</>\n\n", version)
+	ccolor.Printf("Commit ID : <green>%s</>\n", gitHash)
+	ccolor.Printf("Build Date: <green>%s</>\n", buildTime)
 }
 
 func validateNoTrailingFlags(cmd *capp.Cmd) error {
