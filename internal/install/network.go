@@ -10,6 +10,7 @@ import (
 )
 
 type RateLimit = client.RateLimit
+type CacheMeta = client.CacheMeta
 
 var downloadGetWithOptions = GetWithOptions
 var httpDo = func(client *http.Client, req *http.Request) (*http.Response, error) {
@@ -86,6 +87,10 @@ func verbosef(format string, args ...any) {
 
 func CacheFilePath(cacheDir, url string) string {
 	return client.CacheFilePath(cacheDir, url)
+}
+
+func CacheFilePathWithMeta(cacheDir, url string, meta CacheMeta) string {
+	return client.CacheFilePathWithMeta(cacheDir, url, meta)
 }
 
 func APICacheFilePath(cacheDir, rawURL string) string {

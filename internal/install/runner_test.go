@@ -17,12 +17,35 @@ import (
 
 func TestCacheFilePath(t *testing.T) {
 	cacheDir := t.TempDir()
-	got := CacheFilePath(cacheDir, "https://example.com/tool.tar.gz")
+	got := CacheFilePath(cacheDir, "https://github.com/babarot/gomi/releases/download/v1.6.3/gomi_Linux_x86_64.tar.gz")
 	if filepath.Dir(got) != cacheDir {
 		t.Fatalf("expected cache file under %q, got %q", cacheDir, got)
 	}
-	if filepath.Ext(got) != ".gz" {
-		t.Fatalf("expected extension .gz, got %q", filepath.Ext(got))
+	name := filepath.Base(got)
+	if !strings.HasPrefix(name, "gomi_Linux_x86_64-1.6.3-") {
+		t.Fatalf("expected readable cache name, got %q", name)
+	}
+	if !strings.HasSuffix(name, ".tar.gz") {
+		t.Fatalf("expected extension .tar.gz, got %q", name)
+	}
+	if len(strings.TrimSuffix(strings.TrimPrefix(name, "gomi_Linux_x86_64-1.6.3-"), ".tar.gz")) != 8 {
+		t.Fatalf("expected 8-char short hash in %q", name)
+	}
+}
+
+func TestCacheFilePathUsesMetadataForOpaqueURL(t *testing.T) {
+	cacheDir := t.TempDir()
+	got := CacheFilePathWithMeta(cacheDir, "https://example.com/download?id=123", CacheMeta{
+		Name:    "gomi",
+		Version: "v1.6.3",
+	})
+
+	name := filepath.Base(got)
+	if !strings.HasPrefix(name, "gomi-1.6.3-") {
+		t.Fatalf("expected metadata cache name, got %q", name)
+	}
+	if !strings.HasSuffix(name, ".bin") {
+		t.Fatalf("expected .bin fallback extension, got %q", name)
 	}
 }
 
@@ -95,6 +118,41 @@ func TestDownloadBodyWritesCacheAfterDownload(t *testing.T) {
 	}
 	if string(saved) != "network-data" {
 		t.Fatalf("expected cached network data, got %q", string(saved))
+	}
+}
+
+func TestDownloadBodyUsesCacheMetadata(t *testing.T) {
+	cacheDir := t.TempDir()
+	url := "https://example.com/download?id=123"
+	cachePath := CacheFilePathWithMeta(cacheDir, url, CacheMeta{Name: "gomi", Version: "v1.6.3"})
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
+		t.Fatalf("mkdir cache dir: %v", err)
+	}
+	if err := os.WriteFile(cachePath, []byte("cached-data"), 0o644); err != nil {
+		t.Fatalf("write cache file: %v", err)
+	}
+
+	calls := 0
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		calls++
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("network-data")),
+		}, nil
+	}
+
+	runner := &InstallRunner{Stderr: io.Discard}
+	body, err := runner.downloadBody(url, Options{CacheDir: cacheDir, CacheName: "gomi", CacheVersion: "v1.6.3"})
+	if err != nil {
+		t.Fatalf("download body: %v", err)
+	}
+	if string(body) != "cached-data" {
+		t.Fatalf("expected cached data, got %q", string(body))
+	}
+	if calls != 0 {
+		t.Fatalf("expected no network calls, got %d", calls)
 	}
 }
 

@@ -23,6 +23,8 @@ type Options struct {
 	IsGUI             bool
 	InstallMode       string
 	CacheDir          string
+	CacheName         string
+	CacheVersion      string
 	ProxyURL          string
 	APICacheEnabled   bool
 	APICacheDir       string

@@ -72,6 +72,9 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	if err != nil {
 		return RunResult{}, err
 	}
+	if opts.CacheName == "" {
+		opts.CacheName = tool
+	}
 	targetKind := DetectTargetKind(target)
 	ccolor.Fprintf(output, "🚀 Install <info>%s</> from <info>%s</>\n", target, targetKind)
 	// verbosef("target kind: %s", targetKind)
@@ -372,7 +375,7 @@ func installerMaterializePath(opts Options, file ExtractedFile) string {
 }
 
 func (r *InstallRunner) downloadBody(url string, opts Options) ([]byte, error) {
-	cachePath := CacheFilePath(opts.CacheDir, url)
+	cachePath := CacheFilePathWithMeta(opts.CacheDir, url, CacheMeta{Name: opts.CacheName, Version: opts.CacheVersion})
 	output := r.Stderr
 	if output == nil || opts.Quiet {
 		output = io.Discard

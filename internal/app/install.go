@@ -394,6 +394,8 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		GuiTarget:         guiTarget,
 		IsGUI:             merged.IsGUI,
 		CacheDir:          cacheDir,
+		CacheName:         merged.Name,
+		CacheVersion:      merged.Tag,
 		ProxyURL:          merged.ProxyURL,
 		APICacheEnabled:   apiCacheEnabled,
 		APICacheDir:       apiCacheDir,
