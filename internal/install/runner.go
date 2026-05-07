@@ -412,7 +412,7 @@ func newDownloadProgress(out io.Writer, size int64) *progress.Progress {
 	p := progress.CustomBar(40, progress.BarStyles[0], size)
 	p.Out = out
 	p.RedrawFreq = 2048
-	p.Format = "Downloading [{@bar}] {@curSize}/{@maxSize} ({@elapsed}/{@remaining} T:{@estimated})"
+	p.Format = "Downloading [{@bar}]{@percent:4s}% {@curSize}/{@maxSize} ({@elapsed}/{@remaining} T:{@estimated})"
 	p.Start()
 	return p
 }
