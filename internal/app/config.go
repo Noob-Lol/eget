@@ -28,6 +28,24 @@ func (s ConfigService) AddPackage(repo, name string, opts install.Options) error
 		return err
 	}
 
+	repo, name, opts, err = ResolvePackageConfig(repo, name, opts)
+	if err != nil {
+		return err
+	}
+
+	if cfg.Packages == nil {
+		cfg.Packages = make(map[string]cfgpkg.Section)
+	}
+	cfg.Packages[name] = sectionFromInstallOptions(repo, name, opts)
+	return s.save(cfg)
+}
+
+func ResolvePackageName(repo, name string) (string, error) {
+	_, resolvedName, _, err := ResolvePackageConfig(repo, name, install.Options{})
+	return resolvedName, err
+}
+
+func ResolvePackageConfig(repo, name string, opts install.Options) (string, string, install.Options, error) {
 	if sfTarget, sfErr := sourceforge.ParseTarget(repo); sfErr == nil {
 		repo = sfTarget.Normalized
 		if opts.SourcePath == "" {
@@ -48,16 +66,11 @@ func (s ConfigService) AddPackage(repo, name string, opts install.Options) error
 	if name == "" {
 		parts := strings.Split(repo, "/")
 		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return fmt.Errorf("invalid repo %q", repo)
+			return "", "", install.Options{}, fmt.Errorf("invalid repo %q", repo)
 		}
 		name = parts[1]
 	}
-
-	if cfg.Packages == nil {
-		cfg.Packages = make(map[string]cfgpkg.Section)
-	}
-	cfg.Packages[name] = sectionFromInstallOptions(repo, name, opts)
-	return s.save(cfg)
+	return repo, name, opts, nil
 }
 
 func (s ConfigService) ConfigInfo() (ConfigInfoResult, error) {

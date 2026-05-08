@@ -195,6 +195,40 @@ func TestHandleInstallPrintsAddedPackageMessage(t *testing.T) {
 	}
 }
 
+func TestHandleAddPrintsInferredPackageName(t *testing.T) {
+	var saved *cfgpkg.File
+	svc := &cliService{
+		cfgService: app.ConfigService{
+			Load: func() (*cfgpkg.File, error) {
+				return cfgpkg.NewFile(), nil
+			},
+			Save: func(path string, file *cfgpkg.File) error {
+				saved = file
+				return nil
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handle("add", &AddOptions{Target: "sharkdp/fd"})
+	if err != nil {
+		t.Fatalf("handle add: %v", err)
+	}
+
+	if saved == nil {
+		t.Fatal("expected config to be saved")
+	}
+	if _, ok := saved.Packages["fd"]; !ok {
+		t.Fatalf("expected packages.fd to be saved, got %#v", saved.Packages)
+	}
+	if !strings.Contains(out.String(), "Added package config: fd -> sharkdp/fd") {
+		t.Fatalf("expected inferred package name in output, got %q", out.String())
+	}
+}
+
 func TestHandleInstallAcceptsManagedPackageName(t *testing.T) {
 	svc := &cliService{
 		appService: app.Service{

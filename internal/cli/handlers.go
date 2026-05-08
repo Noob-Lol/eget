@@ -66,7 +66,13 @@ func (s *cliService) handle(name string, options any) error {
 		opts := options.(*AddOptions)
 		err := s.cfgService.AddPackage(opts.Target, opts.Name, installOptionsFromAdd(opts))
 		if err == nil {
-			ccolor.Infof("✓ Added package config: %s -> %s\n", opts.Name, opts.Target)
+			pkgName := opts.Name
+			if pkgName == "" {
+				if inferred, inferErr := app.ResolvePackageName(opts.Target, opts.Name); inferErr == nil {
+					pkgName = inferred
+				}
+			}
+			ccolor.Infof("✓ Added package config: %s -> %s\n", pkgName, opts.Target)
 		}
 		return err
 	case "uninstall":
