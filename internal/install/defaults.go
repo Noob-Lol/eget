@@ -442,6 +442,8 @@ func NewExtractor(filename string, tool string, chooser Chooser) Extractor {
 		return NewArchiveExtractor(chooser, NewZipArchive, nil)
 	case strings.HasSuffix(filename, ".7z"):
 		return NewArchiveExtractor(chooser, NewSevenZipArchive, nil)
+	case strings.HasSuffix(filename, ".exe") && isExtractAllChooser(chooser):
+		return NewArchiveExtractor(chooser, NewSevenZipArchive, nil)
 	case strings.HasSuffix(filename, ".gz"):
 		return &SingleFileExtractor{Rename: tool, Name: filename, Decompress: gunzipper}
 	case strings.HasSuffix(filename, ".bz2"):
@@ -453,6 +455,13 @@ func NewExtractor(filename string, tool string, chooser Chooser) Extractor {
 	default:
 		return &SingleFileExtractor{Rename: tool, Name: filename, Decompress: nounzipper}
 	}
+}
+
+func isExtractAllChooser(chooser Chooser) bool {
+	if ch, ok := chooser.(*GlobChooser); ok {
+		return ch.all
+	}
+	return false
 }
 
 func NewArchiveExtractor(file Chooser, ar ArchiveFn, decompress DecompFn) *ArchiveExtractor {

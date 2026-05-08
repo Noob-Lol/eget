@@ -314,6 +314,71 @@ func TestRunPromptsBeforeLaunchingDetectedInstallerWithoutGUIFlag(t *testing.T) 
 	}
 }
 
+func TestRunExtractAllDoesNotPromptForDetectedInstaller(t *testing.T) {
+	assetURL := "https://example.com/PicoClaw-Setup.exe"
+	svc := NewService()
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return fakeInstallExtractor{file: ExtractedFile{
+			Name:        "PicoClaw-Setup.exe",
+			ArchiveName: "PicoClaw-Setup.exe",
+			Extract: func(to string) error {
+				if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
+					return err
+				}
+				return os.WriteFile(to, []byte("installer"), 0o755)
+			},
+		}}
+	}
+	svc.GlobChooserFactory = func(pattern string) (any, error) {
+		return &fakeChooser{name: pattern}, nil
+	}
+	svc.NoVerifierFactory = func() Verifier {
+		return &fakeVerifier{}
+	}
+
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("installer")),
+		}, nil
+	}
+
+	runner := NewRunner(svc)
+	runner.Stderr = io.Discard
+	var prompted bool
+	runner.ConfirmLaunchInstaller = func(file string) (bool, error) {
+		prompted = true
+		return true, nil
+	}
+
+	result, err := runner.Run(assetURL, Options{All: true, Output: t.TempDir()})
+	if err != nil {
+		t.Fatalf("run extract-all installer-looking file: %v", err)
+	}
+	if prompted {
+		t.Fatal("expected extract-all to skip installer launch prompt")
+	}
+	if result.IsGUI || result.InstallMode == InstallModeInstaller {
+		t.Fatalf("expected extracted file result, got %#v", result)
+	}
+	if len(result.ExtractedFiles) != 1 {
+		t.Fatalf("expected extracted file, got %#v", result.ExtractedFiles)
+	}
+}
+
+type fakeInstallExtractor struct {
+	file ExtractedFile
+}
+
+func (f fakeInstallExtractor) Extract([]byte, bool) (ExtractedFile, []ExtractedFile, error) {
+	return f.file, nil, nil
+}
+
 func TestRunQuietSuppressesInstallNotice(t *testing.T) {
 	tmpDir := t.TempDir()
 	source := filepath.Join(tmpDir, "tool.exe")

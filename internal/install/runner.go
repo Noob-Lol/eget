@@ -158,7 +158,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	selectedName := selectedFileName(url, bin)
 	if opts.IsGUI {
 		opts.InstallMode = DetectGUIInstallMode(true, selectedName)
-	} else if DetectInstallerKind(selectedName) != InstallerKindUnknown {
+	} else if !opts.All && DetectInstallerKind(selectedName) != InstallerKindUnknown {
 		confirmed, err := r.confirmLaunchInstaller(selectedName)
 		if err != nil {
 			return RunResult{}, err

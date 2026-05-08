@@ -552,6 +552,20 @@ func TestSelectExtractorTreatsDownloadWithAllAsArchiveExtraction(t *testing.T) {
 	}
 }
 
+func TestSelectExtractorTreatsExeWithExtractAllAsSevenZipArchive(t *testing.T) {
+	svc := NewDefaultService(nil, nil)
+
+	extractor, err := SelectExtractorAs[Extractor](svc, "https://example.com/qbittorrent_5.2.0_x64_setup.exe", "qbittorrent", &Options{
+		All: true,
+	})
+	if err != nil {
+		t.Fatalf("SelectExtractor(exe with extract-all): %v", err)
+	}
+	if _, ok := extractor.(*ArchiveExtractor); !ok {
+		t.Fatalf("expected exe with extract-all to use archive extractor, got %T", extractor)
+	}
+}
+
 func TestSelectExtractorPrefersExplicitFilePatternsOverAll(t *testing.T) {
 	svc := NewService()
 	svc.GlobChooserFactory = func(pattern string) (any, error) {
