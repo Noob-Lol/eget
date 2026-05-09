@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/gookit/goutil/testutil/assert"
+	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
 )
 
 type fakeQueryClient struct {
@@ -43,6 +46,66 @@ func (f *fakeQueryClient) ReleaseAssets(repo, tag string) ([]QueryAsset, error) 
 	f.lastRepo = repo
 	f.lastTag = tag
 	return f.assets, nil
+}
+
+func TestQueryServiceSourceForgeLatest(t *testing.T) {
+	svc := QueryService{
+		SourceForgeLatest: func(project, sourcePath string) (sourcesf.LatestInfo, error) {
+			assert.Eq(t, "project", project)
+			assert.Eq(t, "files", sourcePath)
+			return sourcesf.LatestInfo{Version: "1.2.3", Path: "files/1.2.3"}, nil
+		},
+	}
+
+	result, err := svc.Query(QueryOptions{Repo: "sourceforge:project/files"})
+	if err != nil {
+		t.Fatalf("Query(): %v", err)
+	}
+
+	assert.Eq(t, "latest", result.Action)
+	assert.Eq(t, "sourceforge:project/files", result.Repo)
+	if result.Latest == nil {
+		t.Fatal("expected latest release result")
+	}
+	assert.Eq(t, "1.2.3", result.Latest.Tag)
+	assert.Eq(t, "1.2.3", result.Latest.Name)
+}
+
+func TestQueryServiceSourceForgeAssets(t *testing.T) {
+	svc := QueryService{
+		SourceForgeAssets: func(project, sourcePath, tag string) ([]string, error) {
+			assert.Eq(t, "project", project)
+			assert.Eq(t, "files", sourcePath)
+			assert.Eq(t, "1.2.3", tag)
+			return []string{
+				"https://downloads.sourceforge.net/project/project/files/1.2.3/tool-linux.tar.gz",
+				"https://downloads.sourceforge.net/project/project/files/1.2.3/tool%20windows.zip",
+			}, nil
+		},
+	}
+
+	result, err := svc.Query(QueryOptions{Repo: "sourceforge:project/files", Action: "assets", Tag: "1.2.3"})
+	if err != nil {
+		t.Fatalf("Query(): %v", err)
+	}
+
+	assert.Eq(t, "assets", result.Action)
+	assert.Eq(t, "1.2.3", result.Tag)
+	assert.Eq(t, 2, len(result.Assets))
+	assert.Eq(t, "tool-linux.tar.gz", result.Assets[0].Name)
+	assert.Eq(t, "tool windows.zip", result.Assets[1].Name)
+	assert.Eq(t, "https://downloads.sourceforge.net/project/project/files/1.2.3/tool-linux.tar.gz", result.Assets[0].URL)
+}
+
+func TestQueryServiceSourceForgeRejectsUnsupportedActions(t *testing.T) {
+	svc := QueryService{}
+
+	if _, err := svc.Query(QueryOptions{Repo: "sourceforge:project", Action: "info"}); err == nil {
+		t.Fatal("expected sourceforge info to fail")
+	}
+	if _, err := svc.Query(QueryOptions{Repo: "sourceforge:project", Action: "releases"}); err == nil {
+		t.Fatal("expected sourceforge releases to fail")
+	}
 }
 
 func TestQueryServiceLatestUsesDefaultAction(t *testing.T) {

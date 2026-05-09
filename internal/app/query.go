@@ -3,9 +3,13 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"path"
+	"strings"
 
 	"github.com/inherelab/eget/internal/client"
 	"github.com/inherelab/eget/internal/install"
+	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
 )
 
 type QueryRepoInfo = client.RepoInfo
@@ -39,20 +43,26 @@ type QueryClient interface {
 }
 
 type QueryService struct {
-	Client QueryClient
+	Client            QueryClient
+	SourceForgeLatest func(project, sourcePath string) (sourcesf.LatestInfo, error)
+	SourceForgeAssets func(project, sourcePath, tag string) ([]string, error)
 }
 
 func (s QueryService) Query(opts QueryOptions) (QueryResult, error) {
+	action := opts.Action
+	if action == "" {
+		action = "latest"
+	}
+	if sourcesf.IsTarget(opts.Repo) {
+		return s.querySourceForge(opts, action)
+	}
+
 	if s.Client == nil {
 		return QueryResult{}, fmt.Errorf("query client is required")
 	}
 	repo, err := install.NormalizeRepoTarget(opts.Repo)
 	if err != nil {
 		return QueryResult{}, err
-	}
-	action := opts.Action
-	if action == "" {
-		action = "latest"
 	}
 
 	switch action {
@@ -110,6 +120,80 @@ func (s QueryService) Query(opts QueryOptions) (QueryResult, error) {
 	default:
 		return QueryResult{}, fmt.Errorf("invalid query action %q", action)
 	}
+}
+
+func (s QueryService) querySourceForge(opts QueryOptions, action string) (QueryResult, error) {
+	target, err := sourcesf.ParseTarget(opts.Repo)
+	if err != nil {
+		return QueryResult{}, err
+	}
+	repo := sourceForgeRepoName(target)
+
+	switch action {
+	case "latest":
+		if opts.Tag != "" {
+			return QueryResult{}, fmt.Errorf("query latest does not support --tag")
+		}
+		if opts.Limit > 0 && opts.Limit != 10 {
+			return QueryResult{}, fmt.Errorf("query latest does not support --limit")
+		}
+		if s.SourceForgeLatest == nil {
+			return QueryResult{}, fmt.Errorf("sourceforge query latest is required")
+		}
+		latest, err := s.SourceForgeLatest(target.Project, target.Path)
+		if err != nil {
+			return QueryResult{}, err
+		}
+		release := QueryRelease{Tag: latest.Version, Name: latest.Version}
+		return QueryResult{Action: action, Repo: repo, Latest: &release}, nil
+	case "assets":
+		if s.SourceForgeAssets == nil {
+			return QueryResult{}, fmt.Errorf("sourceforge query assets is required")
+		}
+		urls, err := s.SourceForgeAssets(target.Project, target.Path, opts.Tag)
+		if err != nil {
+			return QueryResult{}, err
+		}
+		return QueryResult{Action: action, Repo: repo, Tag: opts.Tag, Assets: sourceForgeQueryAssets(urls)}, nil
+	case "info", "releases":
+		return QueryResult{}, fmt.Errorf("sourceforge query does not support action %q", action)
+	default:
+		return QueryResult{}, fmt.Errorf("invalid query action %q", action)
+	}
+}
+
+func sourceForgeRepoName(target sourcesf.Target) string {
+	repo := sourcesf.Prefix + target.Project
+	if target.Path != "" {
+		repo += "/" + target.Path
+	}
+	return repo
+}
+
+func sourceForgeQueryAssets(urls []string) []QueryAsset {
+	assets := make([]QueryAsset, 0, len(urls))
+	for _, rawURL := range urls {
+		assets = append(assets, QueryAsset{
+			Name: sourceForgeAssetName(rawURL),
+			URL:  rawURL,
+		})
+	}
+	return assets
+}
+
+func sourceForgeAssetName(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	name := ""
+	if err == nil {
+		name = path.Base(strings.TrimRight(parsed.Path, "/"))
+	}
+	if name == "" || name == "." || name == "/" {
+		name = path.Base(strings.TrimRight(rawURL, "/"))
+	}
+	if unescaped, err := url.PathUnescape(name); err == nil {
+		name = unescaped
+	}
+	return name
 }
 
 func (r QueryResult) JSONString() (string, error) {

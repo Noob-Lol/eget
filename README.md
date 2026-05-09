@@ -17,7 +17,7 @@
 - Multi-source installs: install or download binaries from GitHub, GitLab, Gitea/Forgejo, SourceForge, direct download URLs, and local files.
 - Automatic selection and extraction: filter release assets by OS/arch, keyword, or regex, with SHA-256 verification and common archive extraction.
 - Managed package workflow: use `add`, `list`, `update`, and `uninstall` to manage frequently used tools, record install state, and check batch updates.
-- Query and search: query GitHub release info, list assets, and search repositories with native GitHub search qualifiers.
+- Query and search: query GitHub release info, query SourceForge latest/assets, and search repositories with native GitHub search qualifiers.
 - Cache and proxy support: use download cache, API response cache, `proxy_url`, and `ghproxy` for restricted networks or repeated installs.
 - Config-driven usage: configure global defaults, repo-level options, and `packages.<name>` managed packages; config and installed store default to `~/.config/eget/`.
 
@@ -115,6 +115,11 @@ eget download --extract-all --to ./dist windirstat/windirstat
 eget query owner/repo
 eget query --action releases --limit 5 owner/repo
 eget query --action assets --tag v1.2.3 owner/repo
+
+# query SourceForge latest version or assets
+eget query sourceforge:winmerge
+eget query --action assets sourceforge:winmerge/stable
+eget query --action assets --tag 2.16.44 sourceforge:winmerge/stable
 ```
 
 **Search GitHub repositories**:
@@ -166,7 +171,7 @@ The target argument accepted by `install` and `download` can be:
 - Direct download URL, for example `https://example.com/file.tar.gz`
 - Local file path, for example `file:///path/to/file`
 
-> Note: GitLab and Gitea/Forgejo support currently covers `install`, `download`, and `update` for release assets. The first version does not provide query/search parity, private repository authentication, or automatic provider detection from arbitrary web URLs.
+> Note: GitLab and Gitea/Forgejo support currently covers `install`, `download`, and `update` for release assets. SourceForge also supports `query latest` and `query assets`. Search parity, private repository authentication, and automatic provider detection from arbitrary web URLs are not provided.
 
 ## Available Commands
 
@@ -199,7 +204,7 @@ The target argument accepted by `install` and `download` can be:
 
 `query` (alias: `q`)
 
-- Queries GitHub repository release metadata without installing anything or touching local state.
+- Queries GitHub repository release metadata and SourceForge latest/assets without installing anything or touching local state.
 - Defaults to the `latest` action, and can switch to `info`, `releases`, or `assets` with `--action`.
 
 `search`
@@ -253,6 +258,8 @@ The target argument accepted by `install` and `download` can be:
 - `--limit`, `-l`: Limit the number of rows returned by the `releases` action. Default: `10`.
 - `--json`, `-j`: Output JSON for scripting or automation.
 - `--prerelease`, `-p`: Include prerelease entries for `latest` and `releases`.
+
+SourceForge query targets use `sourceforge:<project>` or `sourceforge:<project>/<path>` and currently support only `latest` and `assets`. `info`, `releases`, `--limit`, and `--prerelease` remain GitHub-only.
 
 `search` options:
 

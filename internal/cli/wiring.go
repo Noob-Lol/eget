@@ -88,6 +88,17 @@ func newCLIService() (*cliService, error) {
 	}
 	queryService := app.QueryService{
 		Client: githubClient,
+		SourceForgeLatest: func(project, sourcePath string) (sourcesf.LatestInfo, error) {
+			return sourcesf.LatestVersion(project, sourcePath, install.NewHTTPGetter(defaultOpts))
+		},
+		SourceForgeAssets: func(project, sourcePath, tag string) ([]string, error) {
+			return sourcesf.Finder{
+				Project: project,
+				Path:    sourcePath,
+				Tag:     tag,
+				Getter:  install.NewHTTPGetter(defaultOpts),
+			}.Find()
+		},
 	}
 	searchService := app.SearchService{
 		Client: githubClient,

@@ -17,7 +17,7 @@
 - 多来源安装：支持从 GitHub、GitLab、Gitea/Forgejo、SourceForge、直接下载 URL 和本地文件安装或下载二进制资源。
 - 自动选择与提取：按系统架构、资源关键词或正则筛选 release asset，支持 SHA-256 校验和常见归档格式提取。
 - 托管包管理：通过 `add`、`list`、`update`、`uninstall` 管理常用工具，记录安装状态并支持批量检查更新。
-- 查询与搜索：支持查询 GitHub release 信息、列出 assets，并使用 GitHub 搜索语法查找仓库。
+- 查询与搜索：支持查询 GitHub release 信息、SourceForge 最新版本和 assets，并使用 GitHub 搜索语法查找仓库。
 - 缓存与代理：支持下载缓存、API 响应缓存、`proxy_url` 和 `ghproxy`，适合网络受限或重复安装场景。
 - 配置化使用：支持全局配置、仓库配置和 `packages.<name>` 托管包配置，配置文件和 installed store 默认位于 `~/.config/eget/`。
 
@@ -115,6 +115,11 @@ eget download --extract-all --to ./dist windirstat/windirstat
 eget query owner/repo
 eget query --action releases --limit 5 owner/repo
 eget query --action assets --tag v1.2.3 owner/repo
+
+# 查询 SourceForge 最新版本或 assets
+eget query sourceforge:winmerge
+eget query --action assets sourceforge:winmerge/stable
+eget query --action assets --tag 2.16.44 sourceforge:winmerge/stable
 ```
 
 **搜索 GitHub 仓库**:
@@ -166,7 +171,7 @@ eget config set global.target ~/.local/bin
 - 直接下载 URL，例如 `https://example.com/file.tar.gz`
 - 本地文件路径，例如 `file:///path/to/file`
 
-> 注意：GitLab 和 Gitea/Forgejo 第一版支持通过 release assets 进行 `install`、`download` 和 `update`。暂不支持与 `query`/`search` 对齐、私有仓库认证，也不会从任意网页 URL 自动识别 provider。
+> 注意：GitLab 和 Gitea/Forgejo 目前支持通过 release assets 进行 `install`、`download` 和 `update`。SourceForge 还支持 `query latest` 和 `query assets`。暂不支持 search 对齐、私有仓库认证，也不会从任意网页 URL 自动识别 provider。
 
 ## 当前命令
 
@@ -199,7 +204,7 @@ eget config set global.target ~/.local/bin
 
 `query`(alias: `q`)
 
-- 查询 GitHub repo 的 release 与元数据，不涉及安装或本地状态写入。
+- 查询 GitHub repo 的 release 与元数据，以及 SourceForge 的最新版本和 assets，不涉及安装或本地状态写入。
 - 默认 action 为 `latest`，可通过 `--action` 切换为 `info`、`releases`、`assets`。
 
 `search`
@@ -253,6 +258,8 @@ eget config set global.target ~/.local/bin
 - `--limit`, `-l`: 限制 `releases` 动作返回数量，默认 `10`。
 - `--json`, `-j`: 使用 JSON 输出结果，方便脚本处理。
 - `--prerelease`, `-p`: 在 `latest` / `releases` 中包含预发布版本。
+
+SourceForge 查询目标使用 `sourceforge:<project>` 或 `sourceforge:<project>/<path>`，目前只支持 `latest` 和 `assets`。`info`、`releases`、`--limit` 和 `--prerelease` 仍仅适用于 GitHub。
 
 `search` 支持选项：
 

@@ -62,11 +62,17 @@ eget <command> --options... arguments...
 可选的 `source_path` 配置会把发现范围限制在项目 files 区域下的指定目录。
 SourceForge 返回候选下载 URL 后，`system`、`asset_filters`、`file`、下载、校验、提取和 installed store 记录继续复用普通安装链路。
 
+`query sourceforge:<project>` 复用同一套 SourceForge 发现能力，当前只支持 `latest` 和 `assets`：
+
+- `latest` 通过 SourceForge files 目录推断最新版本。
+- `assets` 返回 SourceForge 下载 URL，并从 URL 提取可读文件名。
+- `info` 和 `releases` 没有稳定的 SourceForge 元数据抽象，当前明确返回不支持。
+
 ## Forge Flow
 
 `gitlab:`、`gitea:`、`forgejo:` 目标由 `internal/source/forge` 解析并调用对应公开 release API。
 Forge 后端只返回候选下载 URL；`system`、`asset_filters`、`file`、下载、校验、提取和 installed store 记录继续复用普通安装链路。
-第一版不支持私有仓库认证、query/search parity 或从任意网页 URL 自动识别 provider。
+第一版不支持私有仓库认证、GitLab/Gitea/Forgejo 的 query/search parity，或从任意网页 URL 自动识别 provider。
 
 ## Download Flow
 
@@ -232,6 +238,11 @@ GUI 相关配置：
 - `--check`
 - `--dry-run`
 - `--interactive`
+
+`query` 额外支持：
+
+- GitHub target 的 `latest`、`releases`、`assets`、`info`
+- SourceForge target 的 `latest`、`assets`
 
 ## Constraints
 
