@@ -17,6 +17,11 @@ import (
 	"github.com/inherelab/eget/internal/util"
 )
 
+const (
+	maxChunkConcurrency = 32
+	maxBatchConcurrency = 16
+)
+
 type RunResult = install.RunResult
 
 type Runner interface {
@@ -57,6 +62,9 @@ type Service struct {
 func (s Service) InstallTarget(target string, opts install.Options, extras ...InstallExtras) (RunResult, error) {
 	runTarget, opts, err := s.resolveInstallRequest(target, opts, false)
 	if err != nil {
+		return RunResult{}, err
+	}
+	if err := validateConcurrencyOptions(opts); err != nil {
 		return RunResult{}, err
 	}
 	opts = normalizeExtractionOptions(opts)
@@ -111,6 +119,9 @@ func (s Service) InstallAllPackages(cli install.Options) ([]InstallAllResult, er
 		}
 		runTarget, opts, err := s.resolveInstallRequestWithConfig(cfg, name, cli, false)
 		if err != nil {
+			return nil, err
+		}
+		if err := validateConcurrencyOptions(opts); err != nil {
 			return nil, err
 		}
 		opts = normalizeExtractionOptions(opts)
@@ -232,6 +243,9 @@ func (s Service) DownloadTarget(target string, opts install.Options) (RunResult,
 	if err != nil {
 		return RunResult{}, err
 	}
+	if err := validateConcurrencyOptions(opts); err != nil {
+		return RunResult{}, err
+	}
 	opts = normalizeExtractionOptions(opts)
 	opts.DownloadOnly = opts.ExtractFile == "" && !opts.All
 	return s.Runner.Run(target, opts)
@@ -325,23 +339,24 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 	}
 
 	merged := cfgpkg.MergeInstallOptions(cfg.Global, cfg.Repos[repoKey], pkg, cfgpkg.CLIOverrides{
-		ExtractAll:   boolOpt(cli.All),
-		AssetFilters: stringsOpt(cli.Asset),
-		CacheDir:     stringOpt(cli.CacheDir),
-		ProxyURL:     stringOpt(cli.ProxyURL),
-		DownloadOnly: boolOpt(cli.DownloadOnly),
-		File:         stringOpt(cli.ExtractFile),
-		IsGUI:        boolOpt(cli.IsGUI),
-		Quiet:        boolOpt(cli.Quiet),
-		ShowHash:     boolOpt(cli.Hash),
-		Source:       boolOpt(cli.Source),
-		SourcePath:   stringOpt(cli.SourcePath),
-		System:       stringOpt(cli.System),
-		Tag:          stringOpt(cli.Tag),
-		Target:       stringOpt(cli.Output),
-		UpgradeOnly:  boolOpt(cli.UpgradeOnly),
-		Verify:       stringOpt(cli.Verify),
-		DisableSSL:   boolOpt(cli.DisableSSL),
+		ExtractAll:       boolOpt(cli.All),
+		AssetFilters:     stringsOpt(cli.Asset),
+		CacheDir:         stringOpt(cli.CacheDir),
+		ProxyURL:         stringOpt(cli.ProxyURL),
+		DownloadOnly:     boolOpt(cli.DownloadOnly),
+		File:             stringOpt(cli.ExtractFile),
+		IsGUI:            boolOpt(cli.IsGUI),
+		Quiet:            boolOpt(cli.Quiet),
+		ShowHash:         boolOpt(cli.Hash),
+		Source:           boolOpt(cli.Source),
+		SourcePath:       stringOpt(cli.SourcePath),
+		System:           stringOpt(cli.System),
+		Tag:              stringOpt(cli.Tag),
+		Target:           stringOpt(cli.Output),
+		UpgradeOnly:      boolOpt(cli.UpgradeOnly),
+		Verify:           stringOpt(cli.Verify),
+		DisableSSL:       boolOpt(cli.DisableSSL),
+		ChunkConcurrency: intOpt(cli.ChunkConcurrency),
 	})
 
 	targetDir, err := expandPath(merged.Target)
@@ -383,6 +398,12 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 	if cfg.Ghproxy.SupportAPI != nil {
 		ghproxySupportAPI = *cfg.Ghproxy.SupportAPI
 	}
+	batchConcurrency := 0
+	if cli.BatchConcurrency >= 0 {
+		batchConcurrency = cli.BatchConcurrency
+	} else if cfg.Global.BatchConcurrency != nil {
+		batchConcurrency = *cfg.Global.BatchConcurrency
+	}
 
 	return install.Options{
 		Tag:               merged.Tag,
@@ -410,12 +431,24 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		Quiet:             merged.Quiet,
 		DownloadOnly:      merged.DownloadOnly,
 		FallbackVersions:  cli.FallbackVersions,
+		ChunkConcurrency:  merged.ChunkConcurrency,
+		BatchConcurrency:  batchConcurrency,
 		UpgradeOnly:       merged.UpgradeOnly,
 		Asset:             append([]string(nil), merged.AssetFilters...),
 		Hash:              merged.ShowHash,
 		Verify:            merged.Verify,
 		DisableSSL:        merged.DisableSSL,
 	}, nil
+}
+
+func validateConcurrencyOptions(opts install.Options) error {
+	if opts.ChunkConcurrency < 0 || opts.ChunkConcurrency > maxChunkConcurrency {
+		return fmt.Errorf("chunk concurrency must be between 0 and %d", maxChunkConcurrency)
+	}
+	if opts.BatchConcurrency < 0 || opts.BatchConcurrency > maxBatchConcurrency {
+		return fmt.Errorf("batch concurrency must be between 0 and %d", maxBatchConcurrency)
+	}
+	return nil
 }
 
 func expandPath(value string) (string, error) {

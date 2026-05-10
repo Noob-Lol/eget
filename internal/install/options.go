@@ -39,6 +39,8 @@ type Options struct {
 	Quiet             bool
 	DownloadOnly      bool
 	FallbackVersions  int
+	ChunkConcurrency  int
+	BatchConcurrency  int
 	UpgradeOnly       bool
 	Asset             []string
 	Hash              bool

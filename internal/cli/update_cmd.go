@@ -3,22 +3,24 @@ package cli
 import "github.com/gookit/goutil/cflag/capp"
 
 type UpdateOptions struct {
-	All         bool
-	Check       bool
-	DryRun      bool
-	Interactive bool
-	Tag         string
-	System      string
-	To          string
-	File        string
-	Asset       string
-	Source      bool
-	Quiet       bool
-	Target      string
+	All              bool
+	Check            bool
+	DryRun           bool
+	Interactive      bool
+	Tag              string
+	System           string
+	To               string
+	File             string
+	Asset            string
+	Source           bool
+	Quiet            bool
+	ChunkConcurrency int
+	BatchConcurrency int
+	Target           string
 }
 
 func newUpdateCmd(handler CommandHandler) (*capp.Cmd, func()) {
-	opts := &UpdateOptions{}
+	opts := &UpdateOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 	cmd := capp.NewCmd("update", "Update installed targets", func(cmd *capp.Cmd) error {
 		if len(cmd.Args()) > 0 {
 			opts.Target = cmd.Arg("target").String()
@@ -44,8 +46,10 @@ func newUpdateCmd(handler CommandHandler) (*capp.Cmd, func()) {
 	cmd.StringVar(&opts.Asset, "asset", "", "Asset filter, multi use comma split;;a")
 	cmd.BoolVar(&opts.Source, "source", false, "Download source archive")
 	cmd.BoolVar(&opts.Quiet, "quiet", false, "Quiet output")
+	cmd.IntVar(&opts.ChunkConcurrency, "chunk", -1, "HTTP Range chunk concurrency: 0 auto, 1 single connection")
+	cmd.IntVar(&opts.BatchConcurrency, "batch", -1, "Concurrent package tasks for --all: 0 auto, 1 serial")
 	cmd.AddArg("target", "Target to update", false, nil)
 	return cmd, func() {
-		*opts = UpdateOptions{}
+		*opts = UpdateOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 	}
 }

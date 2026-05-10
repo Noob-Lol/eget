@@ -31,6 +31,7 @@ type Options struct {
 	GhproxySupportAPI bool
 	GhproxyFallbacks  []string
 	DisableSSL        bool
+	ChunkConcurrency  int
 }
 
 type CacheMeta struct {

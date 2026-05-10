@@ -196,6 +196,67 @@ func TestMain_FallbackVersionsFlagBindsInstallAndDownload(t *testing.T) {
 	}
 }
 
+func TestMain_ConcurrencyFlagsBindInstallDownloadUpdateAndAdd(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"install chunk", []string{"install", "--chunk", "8", "owner/repo"}, "install"},
+		{"download chunk", []string{"download", "--chunk", "8", "owner/repo"}, "download"},
+		{"update chunk", []string{"update", "--chunk", "8", "fd"}, "update"},
+		{"add chunk", []string{"add", "--chunk", "3", "sharkdp/fd"}, "add"},
+		{"install all batch", []string{"install", "--all", "--batch", "3"}, "install"},
+		{"update all batch", []string{"update", "--all", "--batch", "3"}, "update"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]commandCall, 0, 1)
+			handler := func(name string, options any) error {
+				calls = append(calls, commandCall{name: name, options: options})
+				return nil
+			}
+
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			err := newApp(handler, &stdout, &stderr).RunWithArgs(tt.args)
+			if err != nil {
+				t.Fatalf("expected %s command to parse, got %v", tt.name, err)
+			}
+			if len(calls) != 1 || calls[0].name != tt.want {
+				t.Fatalf("unexpected routed call: %#v", calls)
+			}
+			switch opts := calls[0].options.(type) {
+			case *InstallOptions:
+				if strings.Contains(tt.name, "chunk") && opts.ChunkConcurrency != 8 {
+					t.Fatalf("expected install chunk=8, got %d", opts.ChunkConcurrency)
+				}
+				if strings.Contains(tt.name, "batch") && opts.BatchConcurrency != 3 {
+					t.Fatalf("expected install batch=3, got %d", opts.BatchConcurrency)
+				}
+			case *DownloadOptions:
+				if opts.ChunkConcurrency != 8 {
+					t.Fatalf("expected download chunk=8, got %d", opts.ChunkConcurrency)
+				}
+			case *UpdateOptions:
+				if strings.Contains(tt.name, "chunk") && opts.ChunkConcurrency != 8 {
+					t.Fatalf("expected update chunk=8, got %d", opts.ChunkConcurrency)
+				}
+				if strings.Contains(tt.name, "batch") && opts.BatchConcurrency != 3 {
+					t.Fatalf("expected update batch=3, got %d", opts.BatchConcurrency)
+				}
+			case *AddOptions:
+				if opts.ChunkConcurrency != 3 {
+					t.Fatalf("expected add chunk=3, got %d", opts.ChunkConcurrency)
+				}
+			default:
+				t.Fatalf("unexpected options type %T", calls[0].options)
+			}
+		})
+	}
+}
+
 func TestMain_DownloadRejectsGUIFlag(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

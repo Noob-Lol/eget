@@ -192,6 +192,37 @@ func TestMergeInstallOptionsMergesSourcePath(t *testing.T) {
 	assert.Eq(t, "repo", merged.SourcePath)
 }
 
+func TestMergeInstallOptionsChunkConcurrencyPrecedence(t *testing.T) {
+	globalChunk := 1
+	repoChunk := 2
+	pkgChunk := 3
+	cliChunk := 4
+
+	merged := MergeInstallOptions(
+		Section{ChunkConcurrency: &globalChunk},
+		Section{ChunkConcurrency: &repoChunk},
+		Section{ChunkConcurrency: &pkgChunk},
+		CLIOverrides{ChunkConcurrency: &cliChunk},
+	)
+	assert.Eq(t, 4, merged.ChunkConcurrency)
+
+	merged = MergeInstallOptions(
+		Section{ChunkConcurrency: &globalChunk},
+		Section{ChunkConcurrency: &repoChunk},
+		Section{ChunkConcurrency: &pkgChunk},
+		CLIOverrides{},
+	)
+	assert.Eq(t, 3, merged.ChunkConcurrency)
+
+	merged = MergeInstallOptions(
+		Section{ChunkConcurrency: &globalChunk},
+		Section{ChunkConcurrency: &repoChunk},
+		Section{},
+		CLIOverrides{},
+	)
+	assert.Eq(t, 2, merged.ChunkConcurrency)
+}
+
 func boolPtr(v bool) *bool {
 	return &v
 }

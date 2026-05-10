@@ -302,6 +302,42 @@ func TestHandleInstallRejectsMissingTargetWithoutAll(t *testing.T) {
 	}
 }
 
+func TestHandleRejectsBatchWithoutAll(t *testing.T) {
+	svc := &cliService{}
+
+	err := svc.handle("install", &InstallOptions{Target: "owner/repo", BatchConcurrency: 2})
+	if err == nil || !strings.Contains(err.Error(), "--batch can only be used with --all") {
+		t.Fatalf("expected install --batch without --all to fail, got %v", err)
+	}
+
+	err = svc.handle("update", &UpdateOptions{Target: "fd", BatchConcurrency: 2})
+	if err == nil || !strings.Contains(err.Error(), "--batch can only be used with --all") {
+		t.Fatalf("expected update --batch without --all to fail, got %v", err)
+	}
+}
+
+func TestInstallOptionsFromCommandsPropagateConcurrency(t *testing.T) {
+	installOpts := installOptionsFromInstall(&InstallOptions{
+		ChunkConcurrency: 4,
+		BatchConcurrency: 2,
+	})
+	assert.Eq(t, 4, installOpts.ChunkConcurrency)
+	assert.Eq(t, 2, installOpts.BatchConcurrency)
+
+	downloadOpts := installOptionsFromDownload(&DownloadOptions{ChunkConcurrency: 3})
+	assert.Eq(t, 3, downloadOpts.ChunkConcurrency)
+
+	addOpts := installOptionsFromAdd(&AddOptions{ChunkConcurrency: 5})
+	assert.Eq(t, 5, addOpts.ChunkConcurrency)
+
+	updateOpts := installOptionsFromUpdate(&UpdateOptions{
+		ChunkConcurrency: 6,
+		BatchConcurrency: 4,
+	})
+	assert.Eq(t, 6, updateOpts.ChunkConcurrency)
+	assert.Eq(t, 4, updateOpts.BatchConcurrency)
+}
+
 func TestHandleInstallAllRejectsTarget(t *testing.T) {
 	svc := &cliService{}
 

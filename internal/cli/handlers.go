@@ -35,6 +35,9 @@ func (s *cliService) handle(name string, options any) error {
 			_, err := s.appService.InstallAllPackages(cliInstallOpts)
 			return err
 		}
+		if opts.BatchConcurrency > 0 {
+			return fmt.Errorf("--batch can only be used with --all")
+		}
 		if opts.Target == "" {
 			return fmt.Errorf("install target is required")
 		}
@@ -373,6 +376,9 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		ccolor.Magentaf("\n🪄🚀 Updating %d packages:\n", len(items))
 		_, err = s.updService.UpdateCandidates(items, installOpts)
 		return err
+	}
+	if opts.BatchConcurrency > 0 {
+		return fmt.Errorf("--batch can only be used with --all")
 	}
 	if opts.Target == "" {
 		return fmt.Errorf("update target is required")

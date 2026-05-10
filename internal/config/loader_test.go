@@ -302,6 +302,41 @@ fallbacks = ["https://gh.llkk.cc", "https://gh.fhjhy.top"]
 	}
 }
 
+func TestLoadFileDecodesConcurrencyOptions(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+
+	writeTestFile(t, configPath, `
+[global]
+chunk_concurrency = 0
+batch_concurrency = 3
+
+[packages.fd]
+repo = "sharkdp/fd"
+chunk_concurrency = 2
+
+["sharkdp/fd"]
+chunk_concurrency = 4
+`)
+
+	cfg, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.Global.ChunkConcurrency == nil || *cfg.Global.ChunkConcurrency != 0 {
+		t.Fatalf("expected global chunk_concurrency=0, got %#v", cfg.Global.ChunkConcurrency)
+	}
+	if cfg.Global.BatchConcurrency == nil || *cfg.Global.BatchConcurrency != 3 {
+		t.Fatalf("expected global batch_concurrency=3, got %#v", cfg.Global.BatchConcurrency)
+	}
+	if cfg.Packages["fd"].ChunkConcurrency == nil || *cfg.Packages["fd"].ChunkConcurrency != 2 {
+		t.Fatalf("expected package chunk_concurrency=2, got %#v", cfg.Packages["fd"].ChunkConcurrency)
+	}
+	if cfg.Repos["sharkdp/fd"].ChunkConcurrency == nil || *cfg.Repos["sharkdp/fd"].ChunkConcurrency != 4 {
+		t.Fatalf("expected repo chunk_concurrency=4, got %#v", cfg.Repos["sharkdp/fd"].ChunkConcurrency)
+	}
+}
+
 func writeTestFile(t *testing.T, path, content string) {
 	t.Helper()
 

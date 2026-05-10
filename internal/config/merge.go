@@ -23,6 +23,7 @@ func MergeInstallOptions(global, repo, pkg Section, cli CLIOverrides) Merged {
 	merged.Tag = firstString(cli.Tag, pkg.Tag, repo.Tag, global.Tag)
 	merged.Target = firstString(cli.Target, pkg.Target, repo.Target, global.Target)
 	merged.Verify = firstString(cli.Verify, pkg.Verify, repo.Verify, global.Verify)
+	merged.ChunkConcurrency = firstInt(cli.ChunkConcurrency, pkg.ChunkConcurrency, repo.ChunkConcurrency, global.ChunkConcurrency)
 
 	merged.AssetFilters = firstStrings(cli.AssetFilters, pkg.AssetFilters, repo.AssetFilters, global.AssetFilters)
 
@@ -45,6 +46,15 @@ func firstString(values ...*string) string {
 		}
 	}
 	return ""
+}
+
+func firstInt(values ...*int) int {
+	for _, value := range values {
+		if value != nil {
+			return *value
+		}
+	}
+	return 0
 }
 
 func firstStrings(cli *[]string, values ...[]string) []string {

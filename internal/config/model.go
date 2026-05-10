@@ -1,27 +1,29 @@
 package config
 
 type Section struct {
-	ExtractAll   *bool    `toml:"extract_all" mapstructure:"extract_all"`
-	AssetFilters []string `toml:"asset_filters" mapstructure:"asset_filters"`
-	CacheDir     *string  `toml:"cache_dir" mapstructure:"cache_dir"`
-	ProxyURL     *string  `toml:"proxy_url" mapstructure:"proxy_url"`
-	DownloadOnly *bool    `toml:"download_only" mapstructure:"download_only"`
-	File         *string  `toml:"file" mapstructure:"file"`
-	GithubToken  *string  `toml:"github_token" mapstructure:"github_token"`
-	GuiTarget    *string  `toml:"gui_target" mapstructure:"gui_target"`
-	IsGUI        *bool    `toml:"is_gui" mapstructure:"is_gui"`
-	Name         *string  `toml:"name" mapstructure:"name"`
-	Quiet        *bool    `toml:"quiet" mapstructure:"quiet"`
-	Repo         *string  `toml:"repo" mapstructure:"repo"`
-	ShowHash     *bool    `toml:"show_hash" mapstructure:"show_hash"`
-	Source       *bool    `toml:"download_source" mapstructure:"download_source"`
-	SourcePath   *string  `toml:"source_path" mapstructure:"source_path"`
-	System       *string  `toml:"system" mapstructure:"system"`
-	Tag          *string  `toml:"tag" mapstructure:"tag"`
-	Target       *string  `toml:"target" mapstructure:"target"`
-	UpgradeOnly  *bool    `toml:"upgrade_only" mapstructure:"upgrade_only"`
-	Verify       *string  `toml:"verify_sha256" mapstructure:"verify_sha256"`
-	DisableSSL   *bool    `toml:"disable_ssl" mapstructure:"disable_ssl"`
+	ExtractAll       *bool    `toml:"extract_all" mapstructure:"extract_all"`
+	AssetFilters     []string `toml:"asset_filters" mapstructure:"asset_filters"`
+	CacheDir         *string  `toml:"cache_dir" mapstructure:"cache_dir"`
+	ProxyURL         *string  `toml:"proxy_url" mapstructure:"proxy_url"`
+	DownloadOnly     *bool    `toml:"download_only" mapstructure:"download_only"`
+	File             *string  `toml:"file" mapstructure:"file"`
+	GithubToken      *string  `toml:"github_token" mapstructure:"github_token"`
+	GuiTarget        *string  `toml:"gui_target" mapstructure:"gui_target"`
+	IsGUI            *bool    `toml:"is_gui" mapstructure:"is_gui"`
+	Name             *string  `toml:"name" mapstructure:"name"`
+	Quiet            *bool    `toml:"quiet" mapstructure:"quiet"`
+	Repo             *string  `toml:"repo" mapstructure:"repo"`
+	ShowHash         *bool    `toml:"show_hash" mapstructure:"show_hash"`
+	Source           *bool    `toml:"download_source" mapstructure:"download_source"`
+	SourcePath       *string  `toml:"source_path" mapstructure:"source_path"`
+	System           *string  `toml:"system" mapstructure:"system"`
+	Tag              *string  `toml:"tag" mapstructure:"tag"`
+	Target           *string  `toml:"target" mapstructure:"target"`
+	UpgradeOnly      *bool    `toml:"upgrade_only" mapstructure:"upgrade_only"`
+	Verify           *string  `toml:"verify_sha256" mapstructure:"verify_sha256"`
+	DisableSSL       *bool    `toml:"disable_ssl" mapstructure:"disable_ssl"`
+	ChunkConcurrency *int     `toml:"chunk_concurrency" mapstructure:"chunk_concurrency"`
+	BatchConcurrency *int     `toml:"batch_concurrency" mapstructure:"batch_concurrency"`
 }
 
 type APICacheSection struct {
@@ -48,46 +50,48 @@ type File struct {
 }
 
 type Merged struct {
-	ExtractAll   bool
-	AssetFilters []string
-	CacheDir     string
-	ProxyURL     string
-	DownloadOnly bool
-	File         string
-	GithubToken  string
-	GuiTarget    string
-	IsGUI        bool
-	Name         string
-	Quiet        bool
-	ShowHash     bool
-	Source       bool
-	SourcePath   string
-	System       string
-	Tag          string
-	Target       string
-	UpgradeOnly  bool
-	Verify       string
-	DisableSSL   bool
+	ExtractAll       bool
+	AssetFilters     []string
+	CacheDir         string
+	ProxyURL         string
+	DownloadOnly     bool
+	File             string
+	GithubToken      string
+	GuiTarget        string
+	IsGUI            bool
+	Name             string
+	Quiet            bool
+	ShowHash         bool
+	Source           bool
+	SourcePath       string
+	System           string
+	Tag              string
+	Target           string
+	UpgradeOnly      bool
+	Verify           string
+	DisableSSL       bool
+	ChunkConcurrency int
 }
 
 type CLIOverrides struct {
-	ExtractAll   *bool
-	AssetFilters *[]string
-	CacheDir     *string
-	ProxyURL     *string
-	DownloadOnly *bool
-	File         *string
-	GithubToken  *string
-	IsGUI        *bool
-	Name         *string
-	Quiet        *bool
-	ShowHash     *bool
-	Source       *bool
-	SourcePath   *string
-	System       *string
-	Tag          *string
-	Target       *string
-	UpgradeOnly  *bool
-	Verify       *string
-	DisableSSL   *bool
+	ExtractAll       *bool
+	AssetFilters     *[]string
+	CacheDir         *string
+	ProxyURL         *string
+	DownloadOnly     *bool
+	File             *string
+	GithubToken      *string
+	IsGUI            *bool
+	Name             *string
+	Quiet            *bool
+	ShowHash         *bool
+	Source           *bool
+	SourcePath       *string
+	System           *string
+	Tag              *string
+	Target           *string
+	UpgradeOnly      *bool
+	Verify           *string
+	DisableSSL       *bool
+	ChunkConcurrency *int
 }

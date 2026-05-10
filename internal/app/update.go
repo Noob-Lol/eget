@@ -205,3 +205,10 @@ func stringsOpt(value []string) *[]string {
 	copied := append([]string(nil), value...)
 	return &copied
 }
+
+func intOpt(value int) *int {
+	if value < 0 {
+		return nil
+	}
+	return &value
+}

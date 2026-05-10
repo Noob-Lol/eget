@@ -32,6 +32,7 @@ func ClientOptions(opts Options) client.Options {
 		GhproxySupportAPI: opts.GhproxySupportAPI,
 		GhproxyFallbacks:  append([]string(nil), opts.GhproxyFallbacks...),
 		DisableSSL:        opts.DisableSSL,
+		ChunkConcurrency:  opts.ChunkConcurrency,
 	}
 }
 

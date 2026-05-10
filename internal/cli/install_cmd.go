@@ -16,11 +16,13 @@ type InstallOptions struct {
 	Quiet            bool
 	Add              bool
 	FallbackVersions int
+	ChunkConcurrency int
+	BatchConcurrency int
 	Target           string
 }
 
 func newInstallCmd(handler CommandHandler) (*capp.Cmd, func()) {
-	opts := &InstallOptions{}
+	opts := &InstallOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 	cmd := capp.NewCmd("install", "Install a target", func(cmd *capp.Cmd) error {
 		opts.Target = cmd.Arg("target").String()
 		if err := validateNoTrailingFlags(cmd); err != nil {
@@ -44,8 +46,10 @@ func newInstallCmd(handler CommandHandler) (*capp.Cmd, func()) {
 	cmd.BoolVar(&opts.Quiet, "quiet", false, "Quiet output")
 	cmd.BoolVar(&opts.Add, "add", false, "Add installed repo target to managed packages")
 	cmd.IntVar(&opts.FallbackVersions, "fallback-versions", 0, "Search older SourceForge version folders when asset is missing")
+	cmd.IntVar(&opts.ChunkConcurrency, "chunk", -1, "HTTP Range chunk concurrency: 0 auto, 1 single connection")
+	cmd.IntVar(&opts.BatchConcurrency, "batch", -1, "Concurrent package tasks for --all: 0 auto, 1 serial")
 	cmd.AddArg("target", "Installation target", false, nil)
 	return cmd, func() {
-		*opts = InstallOptions{}
+		*opts = InstallOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 	}
 }

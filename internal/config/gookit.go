@@ -165,7 +165,7 @@ func normalizePathValue(key string, value any) (any, bool) {
 			return nil, false
 		}
 		return parsed, true
-	case "cache_time":
+	case "cache_time", "chunk_concurrency", "batch_concurrency":
 		parsed, err := strconv.Atoi(text)
 		if err != nil {
 			return nil, false
@@ -261,6 +261,12 @@ func sectionToMap(section Section) map[string]any {
 	}
 	if section.DisableSSL != nil {
 		data["disable_ssl"] = *section.DisableSSL
+	}
+	if section.ChunkConcurrency != nil {
+		data["chunk_concurrency"] = *section.ChunkConcurrency
+	}
+	if section.BatchConcurrency != nil {
+		data["batch_concurrency"] = *section.BatchConcurrency
 	}
 	return data
 }

@@ -12,11 +12,12 @@ type DownloadOptions struct {
 	All              bool
 	Quiet            bool
 	FallbackVersions int
+	ChunkConcurrency int
 	Target           string
 }
 
 func newDownloadCmd(handler CommandHandler) (*capp.Cmd, func()) {
-	opts := &DownloadOptions{}
+	opts := &DownloadOptions{ChunkConcurrency: -1}
 	cmd := capp.NewCmd("download", "Download a target", func(cmd *capp.Cmd) error {
 		opts.Target = cmd.Arg("target").String()
 		if err := validateNoTrailingFlags(cmd); err != nil {
@@ -36,8 +37,9 @@ func newDownloadCmd(handler CommandHandler) (*capp.Cmd, func()) {
 	cmd.BoolVar(&opts.All, "extract-all", false, "Extract all files;;ea")
 	cmd.BoolVar(&opts.Quiet, "quiet", false, "Quiet output")
 	cmd.IntVar(&opts.FallbackVersions, "fallback-versions", 0, "Search older SourceForge version folders when asset is missing")
+	cmd.IntVar(&opts.ChunkConcurrency, "chunk", -1, "HTTP Range chunk concurrency: 0 auto, 1 single connection")
 	cmd.AddArg("target", "Download target", true, nil)
 	return cmd, func() {
-		*opts = DownloadOptions{}
+		*opts = DownloadOptions{ChunkConcurrency: -1}
 	}
 }

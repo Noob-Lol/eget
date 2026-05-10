@@ -22,8 +22,17 @@ func TestPathGetAndSet(t *testing.T) {
 	if err := SetByPath(cfg, "api_cache.cache_time", "300"); err != nil {
 		t.Fatalf("set api_cache.cache_time: %v", err)
 	}
+	if err := SetByPath(cfg, "global.chunk_concurrency", "0"); err != nil {
+		t.Fatalf("set global.chunk_concurrency: %v", err)
+	}
+	if err := SetByPath(cfg, "global.batch_concurrency", "3"); err != nil {
+		t.Fatalf("set global.batch_concurrency: %v", err)
+	}
 	if err := SetByPath(cfg, "packages.fzf.repo", "junegunn/fzf"); err != nil {
 		t.Fatalf("set packages.fzf.repo: %v", err)
+	}
+	if err := SetByPath(cfg, "packages.fzf.chunk_concurrency", "2"); err != nil {
+		t.Fatalf("set packages.fzf.chunk_concurrency: %v", err)
 	}
 	if err := SetByPath(cfg, "packages.fzf.asset_filters", "linux,amd64"); err != nil {
 		t.Fatalf("set packages.fzf.asset_filters: %v", err)
@@ -47,6 +56,14 @@ func TestPathGetAndSet(t *testing.T) {
 	if !ok || cacheTime != 300 {
 		t.Fatalf("expected api_cache.cache_time to be 300, got %#v ok=%t", cacheTime, ok)
 	}
+	chunk, ok := GetByPath(cfg, "global.chunk_concurrency")
+	if !ok || chunk != 0 {
+		t.Fatalf("expected global.chunk_concurrency to be 0, got %#v ok=%t", chunk, ok)
+	}
+	batch, ok := GetByPath(cfg, "global.batch_concurrency")
+	if !ok || batch != 3 {
+		t.Fatalf("expected global.batch_concurrency to be 3, got %#v ok=%t", batch, ok)
+	}
 	repo, ok := GetByPath(cfg, "packages.fzf.repo")
 	if !ok || repo != "junegunn/fzf" {
 		t.Fatalf("expected packages.fzf.repo to be set, got %#v ok=%t", repo, ok)
@@ -64,6 +81,9 @@ func TestPathGetAndSet(t *testing.T) {
 	}
 	if pkg.IsGUI == nil || !*pkg.IsGUI {
 		t.Fatalf("expected package is_gui to be parsed, got %#v", pkg.IsGUI)
+	}
+	if pkg.ChunkConcurrency == nil || *pkg.ChunkConcurrency != 2 {
+		t.Fatalf("expected package chunk_concurrency to be parsed, got %#v", pkg.ChunkConcurrency)
 	}
 }
 
@@ -158,6 +178,33 @@ func TestDumpConfigStringOmitsEmptySourcePath(t *testing.T) {
 	}
 	if strings.Contains(text, "source_path") {
 		t.Fatalf("expected empty source_path field to be absent, got %q", text)
+	}
+}
+
+func TestDumpConfigStringIncludesConcurrencyOptions(t *testing.T) {
+	cfg := NewFile()
+	chunk := 0
+	batch := 3
+	pkgChunk := 2
+	cfg.Global.ChunkConcurrency = &chunk
+	cfg.Global.BatchConcurrency = &batch
+	cfg.Packages["fd"] = Section{
+		Repo:             stringPtr("sharkdp/fd"),
+		ChunkConcurrency: &pkgChunk,
+	}
+
+	text, err := dumpConfigString(cfg)
+	if err != nil {
+		t.Fatalf("dump config string: %v", err)
+	}
+	if !strings.Contains(text, "chunk_concurrency = 0") {
+		t.Fatalf("expected global chunk_concurrency in dump, got %q", text)
+	}
+	if !strings.Contains(text, "batch_concurrency = 3") {
+		t.Fatalf("expected global batch_concurrency in dump, got %q", text)
+	}
+	if !strings.Contains(text, "chunk_concurrency = 2") {
+		t.Fatalf("expected package chunk_concurrency in dump, got %q", text)
 	}
 }
 
