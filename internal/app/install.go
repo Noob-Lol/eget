@@ -62,6 +62,9 @@ type Service struct {
 }
 
 func (s Service) InstallTarget(target string, opts install.Options, extras ...InstallExtras) (RunResult, error) {
+	if err := validateRawConcurrencyOptions(opts); err != nil {
+		return RunResult{}, err
+	}
 	runTarget, opts, err := s.resolveInstallRequest(target, opts, false)
 	if err != nil {
 		return RunResult{}, err
@@ -98,6 +101,9 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 }
 
 func (s Service) InstallAllPackages(cli install.Options) ([]InstallAllResult, error) {
+	if err := validateRawConcurrencyOptions(cli); err != nil {
+		return nil, err
+	}
 	cfg, err := s.loadConfig()
 	if err != nil {
 		return nil, err
@@ -310,6 +316,9 @@ func (s Service) installResolvedTarget(runTarget string, opts install.Options) (
 }
 
 func (s Service) DownloadTarget(target string, opts install.Options) (RunResult, error) {
+	if err := validateRawConcurrencyOptions(opts); err != nil {
+		return RunResult{}, err
+	}
 	var err error
 	opts, err = s.resolveInstallOptions(target, opts, true)
 	if err != nil {
@@ -521,6 +530,13 @@ func validateConcurrencyOptions(opts install.Options) error {
 	}
 	if opts.BatchConcurrency < 0 || opts.BatchConcurrency > maxBatchConcurrency {
 		return fmt.Errorf("batch concurrency must be between 0 and %d", maxBatchConcurrency)
+	}
+	return nil
+}
+
+func validateRawConcurrencyOptions(opts install.Options) error {
+	if opts.ChunkConcurrency < -1 || opts.BatchConcurrency < -1 {
+		return fmt.Errorf("concurrency must be 0 auto, 1 serial/single connection, or greater than 1")
 	}
 	return nil
 }

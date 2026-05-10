@@ -231,6 +231,7 @@ The target argument accepted by `install` and `download` can be:
 - `--asset`: Filter release assets by keyword; multiple filters can be separated by commas. Regex is also supported with the `REG:` prefix, for example `REG:\\.deb$`, and exclusions can use `^REG:...`.
 - `--source`: Download the source archive instead of a prebuilt binary release.
 - `--extract-all`, `--ea`: Extract all files from the archive instead of selecting a single target file.
+- `--chunk N`: Control HTTP Range chunk concurrency for one downloaded file. `0` means auto, `1` means single-connection download, and values greater than `1` request up to that many chunks.
 - `--quiet`: Reduce normal command output for scripting or batch use.
 
 `install` and `download` also support `--fallback-versions N` for SourceForge targets. When the latest version folder does not contain a matching asset, eget scans up to `N` older version folders and uses the first folder where the current `--asset` / `--system` filters produce a single match.
@@ -241,12 +242,15 @@ The target argument accepted by `install` and `download` can be:
 
 - `--add`: After a successful install, append the repo target to `[packages.<name>]` managed config.
 - `--all`: Install every package configured under `[packages]`; cannot be combined with a target or `--add`.
+- `--batch N`: Control package task concurrency for `install --all`. `0` means auto, `1` means serial, and values greater than `1` process up to that many packages at once.
 - `--gui`: Install as a GUI application; with `--add`, persist `is_gui = true`. Installer-like assets selected without `--gui` prompt before launch and also persist `is_gui = true` when confirmed with `--add`.
 - `--name`: Override the managed package name; for single executable assets, it also acts as the default output-name hint.
 
 `update` options:
 
 - `--all`: Check managed packages and update only outdated installed packages.
+- `--batch N`: Control package task concurrency for `update --all`. `0` means auto, `1` means serial, and values greater than `1` process up to that many packages at once.
+- `--chunk N`: Control HTTP Range chunk concurrency for downloads triggered by update.
 - `--check`: Check and list outdated installed packages, same as `list --outdated`.
 - `--dry-run`: Preview the update plan without performing installation changes.
 - `--interactive`: Interactively select which managed packages to update.
@@ -304,6 +308,8 @@ target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
 proxy_url = "http://127.0.0.1:7890"
 system = "windows/amd64"
+chunk_concurrency = 0
+batch_concurrency = 0
 
 [api_cache]
 enable = false
@@ -342,6 +348,8 @@ Common fields:
 - `gui_target`
 - `cache_dir`
 - `proxy_url`
+- `chunk_concurrency`
+- `batch_concurrency`
 - `api_cache.enable`
 - `api_cache.cache_time`
 - `ghproxy.enable`
@@ -370,6 +378,8 @@ This writes:
 - `global.target = "~/.local/bin"`
 - `global.cache_dir = "~/.cache/eget"`
 - `global.proxy_url = ""`
+- `global.chunk_concurrency = 0`
+- `global.batch_concurrency = 0`
 - `api_cache.enable = false`
 - `api_cache.cache_time = 300`
 - `ghproxy.enable = false`

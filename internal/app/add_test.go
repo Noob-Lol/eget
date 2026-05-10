@@ -112,7 +112,7 @@ func TestAddPackagePersistsChunkConcurrency(t *testing.T) {
 		Save: cfgpkg.Save,
 	}
 
-	err := svc.AddPackage("sharkdp/fd", "fd", install.Options{ChunkConcurrency: 3})
+	err := svc.AddPackage("sharkdp/fd", "fd", install.Options{ChunkConcurrency: 3, ChunkConcurrencySet: true})
 	assert.NoErr(t, err)
 
 	cfg, err := cfgpkg.LoadFile(configPath)

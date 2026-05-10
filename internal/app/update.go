@@ -149,14 +149,21 @@ func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFa
 }
 
 func (s UpdateService) UpdateCandidates(candidates []OutdatedItem, cli install.Options) ([]UpdateResult, error) {
+	if err := validateRawConcurrencyOptions(cli); err != nil {
+		return nil, err
+	}
 	sort.Slice(candidates, func(i, j int) bool {
 		return candidates[i].Name < candidates[j].Name
 	})
 
-	if err := validateConcurrencyOptions(install.Options{BatchConcurrency: cli.BatchConcurrency}); err != nil {
+	rawBatch := cli.BatchConcurrency
+	if !cli.BatchConcurrencySet && rawBatch <= 0 {
+		rawBatch = 0
+	}
+	if err := validateConcurrencyOptions(install.Options{BatchConcurrency: rawBatch}); err != nil {
 		return nil, err
 	}
-	batch := effectiveBatchConcurrency(cli.BatchConcurrency, len(candidates))
+	batch := effectiveBatchConcurrency(rawBatch, len(candidates))
 	if batch > 1 {
 		return s.updateCandidatesConcurrent(candidates, cli, batch)
 	}

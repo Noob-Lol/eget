@@ -10,6 +10,7 @@ require (
 	github.com/gookit/goutil v0.7.5
 	github.com/klauspost/compress v1.17.11
 	github.com/ulikunitz/xz v0.5.12
+	golang.org/x/net v0.19.0
 	golang.org/x/sys v0.38.0
 )
 

@@ -231,6 +231,7 @@ eget config set global.target ~/.local/bin
 - `--asset`: 指定资源过滤关键词；可用逗号分隔多个过滤条件，也支持 `REG:` 前缀正则，例如 `REG:\\.deb$`，排除可用 `^REG:...`。
 - `--source`: 下载源码归档而不是预构建二进制。
 - `--extract-all`, `--ea`: 提取归档中的全部文件，而不是只选择一个目标文件。
+- `--chunk N`: 控制单个下载文件的 HTTP Range 分片并发。`0` 表示自动，`1` 表示单连接下载，大于 `1` 表示最多使用该数量的分片。
 - `--quiet`: 精简常规输出，适用于脚本或批处理场景。
 
 `install` 和 `download` 还支持 SourceForge 目标的 `--fallback-versions N`。当最新版本目录没有匹配资产时，eget 会最多扫描 `N` 个更旧版本目录，并使用第一个能被当前 `--asset` / `--system` 过滤条件唯一匹配的文件。
@@ -241,12 +242,15 @@ eget config set global.target ~/.local/bin
 
 - `--add`: 安装成功后，将 repo 目标追加到 `[packages.<name>]` 托管配置中。
 - `--all`: 安装 `[packages]` 下配置的全部托管包；不能同时传入目标或 `--add`。
+- `--batch N`: 控制 `install --all` 的包任务并发。`0` 表示自动，`1` 表示串行，大于 `1` 表示最多同时处理该数量的包。
 - `--gui`: 按 GUI 应用安装；配合 `--add` 时会持久化 `is_gui = true`。未传 `--gui` 但确认启动疑似安装器时，配合 `--add` 也会持久化 `is_gui = true`。
 - `--name`: 指定托管包名；对于单文件可执行资产，也会作为默认输出文件名提示。
 
 `update` 支持选项：
 
 - `--all`: 检查托管包，只更新已安装且有新版本的包。
+- `--batch N`: 控制 `update --all` 的包任务并发。`0` 表示自动，`1` 表示串行，大于 `1` 表示最多同时处理该数量的包。
+- `--chunk N`: 控制 update 触发下载时的 HTTP Range 分片并发。
 - `--check`: 检查并列出有新版本的已安装包，等同于 `list --outdated`。
 - `--dry-run`: 仅预览更新计划，不执行实际安装。
 - `--interactive`: 交互式选择要更新的托管包。
@@ -304,6 +308,8 @@ target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
 proxy_url = "http://127.0.0.1:7890"
 system = "windows/amd64"
+chunk_concurrency = 0
+batch_concurrency = 0
 
 [api_cache]
 enable = false
@@ -342,6 +348,8 @@ asset_filters = ["linux", "amd64"]
 - `gui_target`
 - `cache_dir`
 - `proxy_url`
+- `chunk_concurrency`
+- `batch_concurrency`
 - `api_cache.enable`
 - `api_cache.cache_time`
 - `ghproxy.enable`
@@ -369,6 +377,8 @@ eget config init
 - `global.target = "~/.local/bin"`
 - `global.cache_dir = "~/.cache/eget"`
 - `global.proxy_url = ""`
+- `global.chunk_concurrency = 0`
+- `global.batch_concurrency = 0`
 - `api_cache.enable = false`
 - `api_cache.cache_time = 300`
 - `ghproxy.enable = false`

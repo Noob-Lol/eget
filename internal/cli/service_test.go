@@ -323,12 +323,16 @@ func TestInstallOptionsFromCommandsPropagateConcurrency(t *testing.T) {
 	})
 	assert.Eq(t, 4, installOpts.ChunkConcurrency)
 	assert.Eq(t, 2, installOpts.BatchConcurrency)
+	assert.True(t, installOpts.ChunkConcurrencySet)
+	assert.True(t, installOpts.BatchConcurrencySet)
 
 	downloadOpts := installOptionsFromDownload(&DownloadOptions{ChunkConcurrency: 3})
 	assert.Eq(t, 3, downloadOpts.ChunkConcurrency)
+	assert.True(t, downloadOpts.ChunkConcurrencySet)
 
 	addOpts := installOptionsFromAdd(&AddOptions{ChunkConcurrency: 5})
 	assert.Eq(t, 5, addOpts.ChunkConcurrency)
+	assert.True(t, addOpts.ChunkConcurrencySet)
 
 	updateOpts := installOptionsFromUpdate(&UpdateOptions{
 		ChunkConcurrency: 6,
@@ -336,6 +340,8 @@ func TestInstallOptionsFromCommandsPropagateConcurrency(t *testing.T) {
 	})
 	assert.Eq(t, 6, updateOpts.ChunkConcurrency)
 	assert.Eq(t, 4, updateOpts.BatchConcurrency)
+	assert.True(t, updateOpts.ChunkConcurrencySet)
+	assert.True(t, updateOpts.BatchConcurrencySet)
 }
 
 func TestHandleInstallAllRejectsTarget(t *testing.T) {

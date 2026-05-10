@@ -55,7 +55,7 @@
 - 修改：`internal/client/network.go`
 - 修改：`internal/install/network.go`
 
-- [ ] **Step 1：确认 cliui 版本**
+- [x] **Step 1：确认 cliui 版本**
 
 执行：
 
@@ -76,7 +76,7 @@ go get github.com/gookit/cliui@main
 go mod tidy
 ```
 
-- [ ] **Step 2：在 install options 增加字段**
+- [x] **Step 2：在 install options 增加字段**
 
 在 `internal/install/options.go` 的 `Options` 结构体里新增字段：
 
@@ -87,7 +87,7 @@ BatchConcurrency int
 
 字段放在 `FallbackVersions` 附近，保证安装/下载行为相关字段集中。
 
-- [ ] **Step 3：在 client options 增加字段**
+- [x] **Step 3：在 client options 增加字段**
 
 在 `internal/client/network.go` 的 `Options` 结构体里新增：
 
@@ -95,7 +95,7 @@ BatchConcurrency int
 ChunkConcurrency int
 ```
 
-- [ ] **Step 4：转发 chunk 配置**
+- [x] **Step 4：转发 chunk 配置**
 
 在 `internal/install/network.go` 的 `ClientOptions` 返回值中新增：
 
@@ -103,7 +103,7 @@ ChunkConcurrency int
 ChunkConcurrency: opts.ChunkConcurrency,
 ```
 
-- [ ] **Step 5：验证编译**
+- [x] **Step 5：验证编译**
 
 执行：
 
@@ -113,7 +113,7 @@ go test ./internal/client ./internal/install
 
 期望：PASS。
 
-- [ ] **Step 6：提交**
+- [x] **Step 6：提交**
 
 ```bash
 git add go.mod go.sum internal/install/options.go internal/client/network.go internal/install/network.go
@@ -132,7 +132,7 @@ git commit -m "feat(download): add concurrency option model"
 - 测试：`internal/config/*_test.go`
 - 测试：`internal/app/install_test.go`
 
-- [ ] **Step 1：补充配置读取测试**
+- [x] **Step 1：补充配置读取测试**
 
 在 `internal/config/loader_test.go` 增加测试，覆盖 global/package/repo 层级：
 
@@ -164,7 +164,7 @@ chunk_concurrency = 4
 }
 ```
 
-- [ ] **Step 2：补充 merge 优先级测试**
+- [x] **Step 2：补充 merge 优先级测试**
 
 在 `internal/config/merge_test.go` 增加：
 
@@ -193,7 +193,7 @@ func TestMergeInstallOptionsChunkConcurrencyPrecedence(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3：补充配置 dump/config set 测试**
+- [x] **Step 3：补充配置 dump/config set 测试**
 
 在 `internal/config/gookit_test.go` 增加 dump 覆盖：
 
@@ -220,7 +220,7 @@ func TestDumpConfigIncludesConcurrencyOptions(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4：先运行测试确认失败**
+- [x] **Step 4：先运行测试确认失败**
 
 ```bash
 go test ./internal/config -run 'Concurrency|DumpConfigIncludesConcurrencyOptions' -v
@@ -228,7 +228,7 @@ go test ./internal/config -run 'Concurrency|DumpConfigIncludesConcurrencyOptions
 
 期望：字段未实现时 FAIL。
 
-- [ ] **Step 5：增加配置模型字段**
+- [x] **Step 5：增加配置模型字段**
 
 在 `internal/config/model.go` 的 `Section` 增加：
 
@@ -249,7 +249,7 @@ ChunkConcurrency int
 ChunkConcurrency *int
 ```
 
-- [ ] **Step 6：实现 chunk merge 优先级**
+- [x] **Step 6：实现 chunk merge 优先级**
 
 在 `internal/config/merge.go` 中按下面优先级合并：
 
@@ -275,7 +275,7 @@ func firstInt(values ...*int) int {
 }
 ```
 
-- [ ] **Step 7：支持 gookit config 读写**
+- [x] **Step 7：支持 gookit config 读写**
 
 在 `internal/config/gookit.go` 的配置值解析中把这两个 key 作为 int：
 
@@ -299,7 +299,7 @@ if section.BatchConcurrency != nil {
 }
 ```
 
-- [ ] **Step 8：增加参数校验**
+- [x] **Step 8：增加参数校验**
 
 在 `internal/app/install.go` 增加：
 
@@ -322,7 +322,7 @@ func validateConcurrencyOptions(opts install.Options) error {
 
 在 `InstallTarget`、`DownloadTarget`、`InstallAllPackages` 完成配置合并后调用。
 
-- [ ] **Step 9：验证**
+- [x] **Step 9：验证**
 
 ```bash
 go test ./internal/config ./internal/app -run 'Concurrency|InstallTarget|DownloadTarget|InstallAllPackages' -v
@@ -330,7 +330,7 @@ go test ./internal/config ./internal/app -run 'Concurrency|InstallTarget|Downloa
 
 期望：PASS。
 
-- [ ] **Step 10：提交**
+- [x] **Step 10：提交**
 
 ```bash
 git add internal/config/model.go internal/config/merge.go internal/config/gookit.go internal/config/*_test.go internal/app/install.go internal/app/install_test.go
@@ -350,7 +350,7 @@ git commit -m "feat(config): add concurrency settings"
 - 修改：`internal/cli/handlers.go`
 - 测试：`internal/cli/*_test.go`
 
-- [ ] **Step 1：补充 CLI 解析测试**
+- [x] **Step 1：补充 CLI 解析测试**
 
 覆盖这些命令：
 
@@ -365,7 +365,7 @@ eget update --all --batch 3
 
 断言对应 options 中的 `ChunkConcurrency` / `BatchConcurrency` 被正确设置。
 
-- [ ] **Step 2：补充 `--batch` 约束测试**
+- [x] **Step 2：补充 `--batch` 约束测试**
 
 在 handler 测试中覆盖：
 
@@ -382,7 +382,7 @@ func TestHandleRejectsBatchWithoutAll(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3：确认测试先失败**
+- [x] **Step 3：确认测试先失败**
 
 ```bash
 go test ./internal/cli -run 'ConcurrencyFlags|RejectsBatch' -v
@@ -390,7 +390,7 @@ go test ./internal/cli -run 'ConcurrencyFlags|RejectsBatch' -v
 
 期望：FAIL。
 
-- [ ] **Step 4：增加 CLI option 字段**
+- [x] **Step 4：增加 CLI option 字段**
 
 在 install/update options 增加：
 
@@ -405,7 +405,7 @@ BatchConcurrency int
 ChunkConcurrency int
 ```
 
-- [ ] **Step 5：增加 flags**
+- [x] **Step 5：增加 flags**
 
 `install` / `update`：
 
@@ -420,7 +420,7 @@ cmd.IntVar(&opts.BatchConcurrency, "batch", 0, "Concurrent package tasks for --a
 cmd.IntVar(&opts.ChunkConcurrency, "chunk", 0, "HTTP Range chunk concurrency: 0 auto, 1 single connection")
 ```
 
-- [ ] **Step 6：映射到 install.Options**
+- [x] **Step 6：映射到 install.Options**
 
 在 CLI 到 app/install options 的转换函数中填充：
 
@@ -431,7 +431,7 @@ BatchConcurrency: cli.BatchConcurrency,
 
 download/add 场景只映射 `ChunkConcurrency`。
 
-- [ ] **Step 7：实现 `--batch` 使用范围校验**
+- [x] **Step 7：实现 `--batch` 使用范围校验**
 
 在 handler 中增加：
 
@@ -443,7 +443,7 @@ if opts.BatchConcurrency != 0 && !opts.All {
 
 `install` 和 `update` 都需要校验。
 
-- [ ] **Step 8：验证**
+- [x] **Step 8：验证**
 
 ```bash
 go test ./internal/cli -run 'ConcurrencyFlags|RejectsBatch|Install|Download|Update|Add' -v
@@ -451,7 +451,7 @@ go test ./internal/cli -run 'ConcurrencyFlags|RejectsBatch|Install|Download|Upda
 
 期望：PASS。
 
-- [ ] **Step 9：提交**
+- [x] **Step 9：提交**
 
 ```bash
 git add internal/cli/*.go internal/cli/*_test.go
@@ -466,7 +466,7 @@ git commit -m "feat(cli): add chunk and batch flags"
 - 修改：`internal/client/network.go`
 - 测试：`internal/client/*_test.go`
 
-- [ ] **Step 1：补充 Range 下载测试**
+- [x] **Step 1：补充 Range 下载测试**
 
 用 `httptest.Server` 模拟支持 Range 的服务：
 
@@ -500,7 +500,7 @@ func TestDownloadUsesRangeChunksForLargeFiles(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2：补充小文件 fallback 测试**
+- [x] **Step 2：补充小文件 fallback 测试**
 
 ```go
 func TestDownloadSkipsRangeChunksForSmallFiles(t *testing.T) {
@@ -527,11 +527,11 @@ func TestDownloadSkipsRangeChunksForSmallFiles(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3：补充不支持 Range fallback 测试**
+- [x] **Step 3：补充不支持 Range fallback 测试**
 
 服务端不返回 `Accept-Ranges: bytes` 时，断言仍然能单连接下载成功。
 
-- [ ] **Step 4：确认测试先失败**
+- [x] **Step 4：确认测试先失败**
 
 ```bash
 go test ./internal/client -run 'Range|SmallFile|Fallback' -v
@@ -539,7 +539,7 @@ go test ./internal/client -run 'Range|SmallFile|Fallback' -v
 
 期望：FAIL。
 
-- [ ] **Step 5：增加分片策略常量和计算函数**
+- [x] **Step 5：增加分片策略常量和计算函数**
 
 在 `internal/client/network.go` 增加：
 
@@ -576,7 +576,7 @@ func effectiveChunkCount(requested int, size int64) int {
 }
 ```
 
-- [ ] **Step 6：实现 Range 探测**
+- [x] **Step 6：实现 Range 探测**
 
 增加 HEAD 探测函数，满足以下条件才允许分片：
 
@@ -589,7 +589,7 @@ effectiveChunkCount(...) > 1
 
 如果 HEAD 被服务端拒绝或信息不完整，直接 fallback 单连接下载。
 
-- [ ] **Step 7：实现 range 拆分和并发下载**
+- [x] **Step 7：实现 range 拆分和并发下载**
 
 拆分逻辑要求：
 
@@ -602,11 +602,11 @@ effectiveChunkCount(...) > 1
 
 每个 goroutine 使用 `Range: bytes=start-end` 请求，要求返回 `206 Partial Content`，写入预分配 `[]byte` 的对应 slice。所有分片成功后再一次性写入目标 writer。
 
-- [ ] **Step 8：接入聚合进度**
+- [x] **Step 8：接入聚合进度**
 
 Range 分片下载时调用 `getbar(size)` 获取一个聚合 writer。多个 chunk worker 不直接操作 progress bar，而是写入 `progress.NewConcurrentWriterWithInterval(bar, 100*time.Millisecond)` 包装后的 writer。下载完成后 close writer，确保刷新剩余 byte。
 
-- [ ] **Step 9：接入 Download fallback**
+- [x] **Step 9：接入 Download fallback**
 
 在现有 `Download` 单连接逻辑前增加：
 
@@ -627,7 +627,7 @@ if opts.ChunkConcurrency != 1 {
 
 如果分片下载返回错误，本任务先返回错误，不做隐式重试单连接，避免写入目标 writer 后产生混合数据。
 
-- [ ] **Step 10：验证**
+- [x] **Step 10：验证**
 
 ```bash
 go test ./internal/client -run 'Download|Range|SmallFile|Fallback|Cache' -v
@@ -635,7 +635,7 @@ go test ./internal/client -run 'Download|Range|SmallFile|Fallback|Cache' -v
 
 期望：PASS。
 
-- [ ] **Step 11：提交**
+- [x] **Step 11：提交**
 
 ```bash
 git add internal/client/network.go internal/client/*_test.go
@@ -650,7 +650,7 @@ git commit -m "feat(download): support range chunk downloads"
 - 修改：`internal/install/runner.go`
 - 测试：`internal/install/runner_test.go`
 
-- [ ] **Step 1：补充进度 writer 兼容测试**
+- [x] **Step 1：补充进度 writer 兼容测试**
 
 测试 `newDownloadProgress` 返回的对象仍可作为 `io.Writer` 使用，且不会影响现有单包下载。
 
@@ -666,11 +666,11 @@ func TestNewDownloadProgressReturnsWriter(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2：保持单包行为稳定**
+- [x] **Step 2：保持单包行为稳定**
 
 `newDownloadProgress` 继续返回单个 progress bar，不在这个任务中引入 multi progress。batch 场景单独处理。
 
-- [ ] **Step 3：验证**
+- [x] **Step 3：验证**
 
 ```bash
 go test ./internal/install -run 'Download|Progress|Cache' -v
@@ -678,7 +678,7 @@ go test ./internal/install -run 'Download|Progress|Cache' -v
 
 期望：PASS。
 
-- [ ] **Step 4：提交**
+- [x] **Step 4：提交**
 
 ```bash
 git add internal/install/runner.go internal/install/runner_test.go
@@ -693,7 +693,7 @@ git commit -m "test(install): cover download progress writer behavior"
 - 修改：`internal/app/install.go`
 - 测试：`internal/app/install_test.go`
 
-- [ ] **Step 1：补充并发调度测试**
+- [x] **Step 1：补充并发调度测试**
 
 扩展 `fakeBatchRunner`，记录最大并发数、调用目标和 options。新增测试：
 
@@ -731,7 +731,7 @@ func TestInstallAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testin
 
 辅助函数可以放在同一测试文件中，使用 mutex 读取 `maxActive`。
 
-- [ ] **Step 2：确认测试先失败**
+- [x] **Step 2：确认测试先失败**
 
 ```bash
 go test ./internal/app -run TestInstallAllPackagesUsesBatchConcurrencyAndPreservesResultOrder -v
@@ -739,7 +739,7 @@ go test ./internal/app -run TestInstallAllPackagesUsesBatchConcurrencyAndPreserv
 
 期望：当前串行实现下 FAIL。
 
-- [ ] **Step 3：增加有效 batch 计算**
+- [x] **Step 3：增加有效 batch 计算**
 
 在 `internal/app/install.go` 增加：
 
@@ -758,7 +758,7 @@ func effectiveBatchConcurrency(value, total int) int {
 }
 ```
 
-- [ ] **Step 4：实现 worker scheduler**
+- [x] **Step 4：实现 worker scheduler**
 
 `InstallAllPackages` 保持现有排序逻辑。`batch <= 1` 时继续走原串行逻辑；`batch > 1` 时：
 
@@ -773,7 +773,7 @@ jobs 中包含 index/name
 
 必须保证返回结果顺序仍然按原 package name 排序。
 
-- [ ] **Step 5：验证**
+- [x] **Step 5：验证**
 
 ```bash
 go test ./internal/app -run 'InstallAllPackages' -v
@@ -781,7 +781,7 @@ go test ./internal/app -run 'InstallAllPackages' -v
 
 期望：PASS。
 
-- [ ] **Step 6：提交**
+- [x] **Step 6：提交**
 
 ```bash
 git add internal/app/install.go internal/app/install_test.go
@@ -796,7 +796,7 @@ git commit -m "feat(install): support batch concurrency"
 - 修改：`internal/app/update.go`
 - 测试：`internal/app/update_test.go`
 
-- [ ] **Step 1：补充 update batch 测试**
+- [x] **Step 1：补充 update batch 测试**
 
 扩展 fake install service，记录最大并发数。新增测试覆盖：
 
@@ -812,7 +812,7 @@ UpdateAllPackages(install.Options{BatchConcurrency: 2})
 每个 candidate 都被安装更新
 ```
 
-- [ ] **Step 2：确认测试先失败**
+- [x] **Step 2：确认测试先失败**
 
 ```bash
 go test ./internal/app -run TestUpdateAllPackagesUsesBatchConcurrencyAndPreservesResultOrder -v
@@ -820,13 +820,13 @@ go test ./internal/app -run TestUpdateAllPackagesUsesBatchConcurrencyAndPreserve
 
 期望：当前串行实现下 FAIL。
 
-- [ ] **Step 3：复用 batch 策略**
+- [x] **Step 3：复用 batch 策略**
 
 `UpdateCandidates` 使用 `effectiveBatchConcurrency(cli.BatchConcurrency, len(candidates))`。
 
 `batch <= 1` 保持现有串行逻辑；`batch > 1` 使用固定 worker 调度，按 candidate index 写回结果。
 
-- [ ] **Step 4：验证**
+- [x] **Step 4：验证**
 
 ```bash
 go test ./internal/app -run 'UpdateAll|UpdateCandidates|ListUpdateCandidates' -v
@@ -834,7 +834,7 @@ go test ./internal/app -run 'UpdateAll|UpdateCandidates|ListUpdateCandidates' -v
 
 期望：PASS。
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add internal/app/update.go internal/app/update_test.go
@@ -851,7 +851,7 @@ git commit -m "feat(update): support batch concurrency"
 - 修改：`internal/cli/add_cmd.go`
 - 修改：`internal/cli/options.go`
 
-- [ ] **Step 1：补充持久化测试**
+- [x] **Step 1：补充持久化测试**
 
 在 `internal/app/add_test.go` 增加：
 
@@ -870,7 +870,7 @@ func TestAddPackagePersistsChunkConcurrency(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2：确认测试先失败**
+- [x] **Step 2：确认测试先失败**
 
 ```bash
 go test ./internal/app -run TestAddPackagePersistsChunkConcurrency -v
@@ -878,7 +878,7 @@ go test ./internal/app -run TestAddPackagePersistsChunkConcurrency -v
 
 期望：FAIL。
 
-- [ ] **Step 3：写入 package 配置**
+- [x] **Step 3：写入 package 配置**
 
 在 `ConfigService.AddPackage` 创建 package section 时加入：
 
@@ -890,7 +890,7 @@ if opts.ChunkConcurrency != 0 {
 
 不要持久化 `BatchConcurrency`。
 
-- [ ] **Step 4：验证**
+- [x] **Step 4：验证**
 
 ```bash
 go test ./internal/app -run 'AddPackage|ResolvePackageName' -v
@@ -899,7 +899,7 @@ go test ./internal/cli -run 'Add|ConcurrencyFlags' -v
 
 期望：PASS。
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add internal/app/config.go internal/app/add_test.go internal/cli/add_cmd.go internal/cli/options.go internal/cli/app_test.go
@@ -917,7 +917,7 @@ git commit -m "feat(config): persist chunk concurrency for packages"
 - 测试：`internal/app/install_test.go`
 - 测试：`internal/app/update_test.go`
 
-- [ ] **Step 1：定义输出规则**
+- [x] **Step 1：定义输出规则**
 
 实现时遵循：
 
@@ -930,19 +930,19 @@ slot 被复用时用 ResetWith 更新 max/message
 普通日志通过 RunExclusive/Printf/Println 输出
 ```
 
-- [ ] **Step 2：为 batch 下载传递 worker slot**
+- [x] **Step 2：为 batch 下载传递 worker slot**
 
 在 app 层调度 worker 时，给每个 worker 分配稳定 slot。slot 只代表当前 worker 正在处理的包，不代表 package 固定身份。
 
-- [ ] **Step 3：chunk 下载使用 byte tracker**
+- [x] **Step 3：chunk 下载使用 byte tracker**
 
 单个 asset 下载进度只按总 byte 聚合。chunk worker 写入 concurrent writer，不创建子 bar。
 
-- [ ] **Step 4：验证输出互斥**
+- [x] **Step 4：验证输出互斥**
 
 增加轻量测试：使用 buffer 作为输出，模拟 batch > 1 的两个任务，断言输出不 panic、不出现交错错误标记。这里不做终端 UI 快照测试。
 
-- [ ] **Step 5：验证**
+- [x] **Step 5：验证**
 
 ```bash
 go test ./internal/app ./internal/install -run 'Progress|InstallAll|UpdateAll' -v
@@ -950,7 +950,7 @@ go test ./internal/app ./internal/install -run 'Progress|InstallAll|UpdateAll' -
 
 期望：PASS。
 
-- [ ] **Step 6：提交**
+- [x] **Step 6：提交**
 
 ```bash
 git add internal/app/install.go internal/app/update.go internal/install/runner.go internal/app/*_test.go internal/install/*_test.go
@@ -968,7 +968,7 @@ git commit -m "feat(progress): support concurrent download output"
 - 修改：`docs/example.eget.toml`
 - 修改：`docs/TODO.md`
 
-- [ ] **Step 1：更新 README**
+- [x] **Step 1：更新 README**
 
 英文 README 增加：
 
@@ -977,7 +977,7 @@ git commit -m "feat(progress): support concurrent download output"
 - `--batch N`: Control package task concurrency for `install --all` and `update --all`. `0` means auto, `1` means serial, and values greater than `1` process up to that many packages at once.
 ```
 
-- [ ] **Step 2：更新中文 README**
+- [x] **Step 2：更新中文 README**
 
 中文 README 增加：
 
@@ -986,7 +986,7 @@ git commit -m "feat(progress): support concurrent download output"
 - `--batch N`: 控制 `install --all` / `update --all` 的包任务并发。`0` 表示自动，`1` 表示串行，大于 `1` 表示最多同时处理该数量的包。
 ```
 
-- [ ] **Step 3：更新 `docs/DOCS.md`**
+- [x] **Step 3：更新 `docs/DOCS.md`**
 
 增加并发配置说明：
 
@@ -1008,7 +1008,7 @@ git commit -m "feat(progress): support concurrent download output"
 package/repo 配置只支持 `chunk_concurrency`。`batch_concurrency` 只支持 `[global]` 和 CLI `--batch`。
 ```
 
-- [ ] **Step 4：更新示例配置**
+- [x] **Step 4：更新示例配置**
 
 在 `docs/example.eget.toml` 的 `[global]` 增加：
 
@@ -1017,7 +1017,7 @@ chunk_concurrency = 0
 batch_concurrency = 0
 ```
 
-- [ ] **Step 5：更新 TODO**
+- [x] **Step 5：更新 TODO**
 
 所有实现和测试完成后，`docs/TODO.md` 中对应项标记为完成：
 
@@ -1027,7 +1027,7 @@ batch_concurrency = 0
   - `--batch N` / `global.batch_concurrency` 控制 `install --all` / `update --all` 批处理并发
 ```
 
-- [ ] **Step 6：验证**
+- [x] **Step 6：验证**
 
 ```bash
 go test ./...
@@ -1035,7 +1035,7 @@ go test ./...
 
 期望：PASS。
 
-- [ ] **Step 7：提交**
+- [x] **Step 7：提交**
 
 ```bash
 git add README.md README.zh-CN.md docs/DOCS.md docs/example.eget.toml docs/TODO.md
@@ -1049,13 +1049,13 @@ git commit -m "docs: document concurrent downloads"
 **文件：**
 - 无计划源码变更。
 
-- [ ] **Step 1：格式化 Go 文件**
+- [x] **Step 1：格式化 Go 文件**
 
 ```bash
 gofmt -w internal/client/network.go internal/install/options.go internal/install/network.go internal/install/runner.go internal/config/model.go internal/config/merge.go internal/config/gookit.go internal/app/install.go internal/app/update.go internal/app/config.go internal/cli/install_cmd.go internal/cli/download_cmd.go internal/cli/update_cmd.go internal/cli/add_cmd.go internal/cli/options.go internal/cli/handlers.go
 ```
 
-- [ ] **Step 2：完整测试**
+- [x] **Step 2：完整测试**
 
 ```bash
 go test ./...
@@ -1063,7 +1063,7 @@ go test ./...
 
 期望：PASS。
 
-- [ ] **Step 3：检查 diff**
+- [x] **Step 3：检查 diff**
 
 ```bash
 git diff --check
@@ -1077,7 +1077,7 @@ git diff --check 无输出
 git status --short 只包含本功能相关文件
 ```
 
-- [ ] **Step 4：必要时提交机械清理**
+- [x] **Step 4：必要时提交机械清理**
 
 如果 gofmt 或文档修正产生新 diff：
 

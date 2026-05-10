@@ -636,7 +636,13 @@ func TestProxyFuncForRejectsInvalidProxyURL(t *testing.T) {
 }
 
 func TestProxyFuncForFallsBackToEnvironment(t *testing.T) {
+	t.Setenv("HTTP_PROXY", "")
+	t.Setenv("http_proxy", "")
 	t.Setenv("HTTPS_PROXY", "http://127.0.0.1:7891")
+	t.Setenv("https_proxy", "http://127.0.0.1:7891")
+	t.Setenv("NO_PROXY", "")
+	t.Setenv("no_proxy", "")
+	t.Setenv("REQUEST_METHOD", "")
 	proxyFunc, err := proxyFuncFor("")
 	if err != nil {
 		t.Fatalf("proxyFuncFor env fallback: %v", err)

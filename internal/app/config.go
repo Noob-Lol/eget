@@ -115,10 +115,14 @@ func (s ConfigService) ConfigInit() (string, error) {
 	ghproxyEnable := false
 	ghproxyHostURL := ""
 	ghproxySupportAPI := true
+	chunkConcurrency := 0
+	batchConcurrency := 0
 	file.Global.Target = &target
 	file.Global.CacheDir = &cacheDir
 	file.Global.ProxyURL = &proxyURL
 	file.Global.System = &empty
+	file.Global.ChunkConcurrency = &chunkConcurrency
+	file.Global.BatchConcurrency = &batchConcurrency
 	file.ApiCache.Enable = &apiCacheEnable
 	file.ApiCache.CacheTime = &apiCacheTime
 	file.Ghproxy.Enable = &ghproxyEnable

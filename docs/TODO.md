@@ -17,7 +17,7 @@
 - [ ] 新增命令 run 用于运行已安装的工具，即使它没有在 PATH 中
   - 如果是 GUI 应用，需要启动应用安装目录下的可执行文件
   - 如果是命令行工具，直接运行可执行文件
-- [ ] 增强 install/download/update 支持并发下载
+- [x] 增强 install/download/update 支持并发下载
   - `--chunk N` / `global.chunk_concurrency` 控制单文件 HTTP Range 分片并发
   - `--batch N` / `global.batch_concurrency` 控制 `install --all` / `update --all` 批处理并发
 - [ ] 优化 `list --outdated / update --check` 缓存查询结果，2分钟内执行 `update` 不会重新检查更新

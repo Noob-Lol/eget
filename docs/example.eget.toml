@@ -4,6 +4,8 @@ proxy_url = ""
 system = ""
 target = "~/.local/bin"
 gui_target = "~/Applications"
+chunk_concurrency = 0
+batch_concurrency = 0
 
 # 配置 api 请求缓存策略
 [api_cache]

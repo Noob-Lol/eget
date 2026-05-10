@@ -22,6 +22,7 @@ import (
 	"github.com/gookit/cliui/progress"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/util"
+	"golang.org/x/net/http/httpproxy"
 )
 
 type Options struct {
@@ -267,7 +268,10 @@ func newHTTPClient(opts Options) (*http.Client, error) {
 
 func ProxyFuncFor(proxyURL string) (func(*http.Request) (*url.URL, error), error) {
 	if proxyURL == "" {
-		return http.ProxyFromEnvironment, nil
+		proxyFunc := httpproxy.FromEnvironment().ProxyFunc()
+		return func(req *http.Request) (*url.URL, error) {
+			return proxyFunc(req.URL)
+		}, nil
 	}
 	parsed, err := url.Parse(proxyURL)
 	if err != nil {
