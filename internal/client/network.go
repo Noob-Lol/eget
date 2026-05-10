@@ -14,9 +14,12 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/gookit/cliui/progress"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/util"
 )
@@ -277,6 +280,16 @@ type progressFinisher interface {
 	Finish(...string)
 }
 
+const (
+	defaultAutoChunkConcurrency = 5
+	minChunkSize                = 4 * 1024 * 1024
+)
+
+type byteRange struct {
+	Start int64
+	End   int64
+}
+
 func Download(rawURL string, out io.Writer, getbar func(size int64) io.Writer, opts Options) error {
 	if isLocalFile(rawURL) {
 		file, err := os.Open(rawURL)
@@ -289,6 +302,16 @@ func Download(rawURL string, out io.Writer, getbar func(size int64) io.Writer, o
 	}
 
 	printProxyNotice("download request", opts.ProxyURL)
+
+	if opts.ChunkConcurrency != 1 {
+		if size, ok := probeRangeSupport(rawURL, opts); ok {
+			chunks := effectiveChunkCount(opts.ChunkConcurrency, size)
+			if chunks > 1 {
+				bar := downloadProgressWriter(getbar, size)
+				return downloadRangeChunks(rawURL, out, bar, size, chunks, opts)
+			}
+		}
+	}
 
 	resp, err := downloadGetWithOptions(rawURL, opts)
 	if err != nil {
@@ -305,10 +328,7 @@ func Download(rawURL string, out io.Writer, getbar func(size int64) io.Writer, o
 		return fmt.Errorf("download error: %d: %s", resp.StatusCode, body)
 	}
 
-	bar := getbar(resp.ContentLength)
-	if bar == nil {
-		bar = io.Discard
-	}
+	bar := downloadProgressWriter(getbar, resp.ContentLength)
 	_, err = io.Copy(io.MultiWriter(out, bar), resp.Body)
 	if err == nil {
 		if finisher, ok := bar.(progressFinisher); ok {
@@ -316,6 +336,206 @@ func Download(rawURL string, out io.Writer, getbar func(size int64) io.Writer, o
 		}
 	}
 	return err
+}
+
+func effectiveChunkCount(requested int, size int64) int {
+	if requested == 1 || size < 2*minChunkSize {
+		return 1
+	}
+	maxBySize := int(size / minChunkSize)
+	if maxBySize < 2 {
+		return 1
+	}
+	limit := requested
+	if limit <= 0 {
+		limit = defaultAutoChunkConcurrency
+	}
+	if limit > maxBySize {
+		limit = maxBySize
+	}
+	if limit < 2 {
+		return 1
+	}
+	return limit
+}
+
+func probeRangeSupport(rawURL string, opts Options) (int64, bool) {
+	resp, err := requestWithOptions(http.MethodHead, rawURL, "", opts)
+	if err != nil {
+		verbosef("range probe failed: %v", err)
+		return 0, false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		verbosef("range probe unsupported status: %s", resp.Status)
+		return 0, false
+	}
+	if !strings.Contains(strings.ToLower(resp.Header.Get("Accept-Ranges")), "bytes") {
+		return 0, false
+	}
+	size := resp.ContentLength
+	if size <= 0 {
+		size, _ = strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
+	}
+	return size, size > 0
+}
+
+func splitByteRanges(size int64, chunks int) []byteRange {
+	if chunks <= 1 {
+		return []byteRange{{Start: 0, End: size - 1}}
+	}
+	ranges := make([]byteRange, 0, chunks)
+	step := size / int64(chunks)
+	start := int64(0)
+	for i := 0; i < chunks; i++ {
+		end := start + step - 1
+		if i == chunks-1 {
+			end = size - 1
+		}
+		ranges = append(ranges, byteRange{Start: start, End: end})
+		start = end + 1
+	}
+	return ranges
+}
+
+func downloadRangeChunks(rawURL string, out io.Writer, bar io.Writer, size int64, chunks int, opts Options) error {
+	if size <= 0 {
+		return fmt.Errorf("invalid range download size %d", size)
+	}
+	body := make([]byte, int(size))
+	ranges := splitByteRanges(size, chunks)
+	progressWriter, closeProgress := concurrentProgressWriter(bar)
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(ranges))
+	for _, br := range ranges {
+		br := br
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rangeHeader := fmt.Sprintf("bytes=%d-%d", br.Start, br.End)
+			resp, err := requestWithOptions(http.MethodGet, rawURL, rangeHeader, opts)
+			if err != nil {
+				errCh <- fmt.Errorf("download range %s: %w", rangeHeader, err)
+				return
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusPartialContent {
+				errCh <- fmt.Errorf("download range %s returned status %d", rangeHeader, resp.StatusCode)
+				return
+			}
+			dst := body[br.Start : br.End+1]
+			n, err := io.ReadFull(resp.Body, dst)
+			if err != nil {
+				errCh <- fmt.Errorf("download range %s: %w", rangeHeader, err)
+				return
+			}
+			if int64(n) != br.End-br.Start+1 {
+				errCh <- fmt.Errorf("download range %s length mismatch", rangeHeader)
+				return
+			}
+			if progressWriter != nil {
+				_, _ = progressWriter.Write(dst[:n])
+			}
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		if err != nil {
+			closeProgress()
+			return err
+		}
+	}
+	closeProgress()
+	_, err := out.Write(body)
+	if err == nil {
+		if finisher, ok := bar.(progressFinisher); ok {
+			finisher.Finish()
+		}
+	}
+	return err
+}
+
+func requestWithOptions(method, rawURL, rangeHeader string, opts Options) (*http.Response, error) {
+	client, err := newHTTPClient(opts)
+	if err != nil {
+		return nil, err
+	}
+	originalURL, err := urlpkgParse(rawURL)
+	if err != nil {
+		return nil, err
+	}
+	attempts := requestAttemptURLs(rawURL, originalURL, opts)
+	var lastErr error
+	for i, attemptURL := range attempts {
+		req, err := http.NewRequest(method, attemptURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		if rangeHeader != "" {
+			req.Header.Set("Range", rangeHeader)
+		}
+		if err := setAuthHeader(req, opts.DisableSSL); err != nil {
+			return nil, err
+		}
+		if attemptURL != rawURL {
+			verbosef("ghproxy rewrite: %s -> %s", rawURL, attemptURL)
+		}
+		if len(attempts) > 1 {
+			verbosef("ghproxy attempt %d/%d: %s", i+1, len(attempts), attemptURL)
+		}
+		verbosef("request: %s %s", req.Method, req.URL.String())
+		resp, err := httpDo(client, req)
+		if err != nil {
+			verbosef("request error: %v", err)
+			lastErr = err
+			if i < len(attempts)-1 {
+				verbosef("ghproxy fallback: switching to next host")
+				continue
+			}
+			return nil, err
+		}
+		verbosef("response: %s %s", req.URL.String(), resp.Status)
+		return resp, nil
+	}
+	return nil, lastErr
+}
+
+func downloadProgressWriter(getbar func(size int64) io.Writer, size int64) io.Writer {
+	if getbar == nil {
+		return io.Discard
+	}
+	bar := getbar(size)
+	if bar == nil {
+		return io.Discard
+	}
+	return bar
+}
+
+func concurrentProgressWriter(bar io.Writer) (io.Writer, func()) {
+	if bar == nil || bar == io.Discard {
+		return io.Discard, func() {}
+	}
+	if p, ok := bar.(*progress.Progress); ok {
+		writer := progress.NewConcurrentWriterWithInterval(p, 100*time.Millisecond)
+		return writer, func() { _ = writer.Close() }
+	}
+	if closer, ok := bar.(io.Closer); ok {
+		return &lockedWriter{writer: bar}, func() { _ = closer.Close() }
+	}
+	return &lockedWriter{writer: bar}, func() {}
+}
+
+type lockedWriter struct {
+	mu     sync.Mutex
+	writer io.Writer
+}
+
+func (w *lockedWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.writer.Write(p)
 }
 
 func isLocalFile(path string) bool {
