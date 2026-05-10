@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type giteaRelease struct {
-	Tag    string `json:"tag_name"`
-	Assets []struct {
+	Tag         string    `json:"tag_name"`
+	PublishedAt time.Time `json:"published_at"`
+	CreatedAt   time.Time `json:"created_at"`
+	Assets      []struct {
 		Name               string `json:"name"`
 		BrowserDownloadURL string `json:"browser_download_url"`
 	} `json:"assets"`
@@ -34,7 +37,11 @@ func (f Finder) giteaRelease() (releaseInfo, error) {
 		}
 	}
 	verbosef("forge %s assets: %d", f.Target.Provider, len(assets))
-	return releaseInfo{Tag: release.Tag, Assets: assets}, nil
+	publishedAt := release.PublishedAt
+	if publishedAt.IsZero() {
+		publishedAt = release.CreatedAt
+	}
+	return releaseInfo{Tag: release.Tag, PublishedAt: publishedAt, Assets: assets}, nil
 }
 
 func giteaReleaseURL(target Target, tag string) string {

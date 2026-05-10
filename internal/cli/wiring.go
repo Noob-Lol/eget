@@ -65,26 +65,26 @@ func newCLIService() (*cliService, error) {
 		return nil, err
 	}
 	cfgService := app.ConfigService{ConfigPath: cfgPath}
-	latestTag := func(repo, sourcePath string) (string, error) {
+	latestInfo := func(repo, sourcePath string) (app.LatestInfo, error) {
 		if sfTarget, err := sourcesf.ParseTarget(repo); err == nil {
 			info, err := sourcesf.LatestVersion(sfTarget.Project, sourcePath, install.NewHTTPGetter(defaultOpts))
 			if err != nil {
-				return "", err
+				return app.LatestInfo{}, err
 			}
-			return info.Version, nil
+			return app.LatestInfo{Tag: info.Version, PublishedAt: info.PublishedAt}, nil
 		}
 		if forgeTarget, err := forge.ParseTarget(repo); err == nil {
 			info, err := forge.LatestVersion(forgeTarget, install.NewHTTPGetter(defaultOpts))
 			if err != nil {
-				return "", err
+				return app.LatestInfo{}, err
 			}
-			return info.Tag, nil
+			return app.LatestInfo{Tag: info.Tag, PublishedAt: info.PublishedAt}, nil
 		}
-		tag, _, err := githubClient.LatestReleaseInfo(repo)
-		return tag, err
+		tag, publishedAt, err := githubClient.LatestReleaseInfo(repo)
+		return app.LatestInfo{Tag: tag, PublishedAt: publishedAt}, err
 	}
 	listService := app.ListService{
-		LatestTag: latestTag,
+		LatestInfo: latestInfo,
 	}
 	queryService := app.QueryService{
 		Client: githubClient,
@@ -114,14 +114,14 @@ func newCLIService() (*cliService, error) {
 		ReleaseInfo: func(repo, url string) (string, time.Time, error) {
 			if forgeTarget, err := forge.ParseTarget(repo); err == nil {
 				info, err := forge.LatestVersion(forgeTarget, install.NewHTTPGetter(defaultOpts))
-				return info.Tag, time.Time{}, err
+				return info.Tag, info.PublishedAt, err
 			}
 			return githubClient.LatestReleaseInfo(repo)
 		},
 	}
 	updService := app.UpdateService{
-		Install:   &appService,
-		LatestTag: latestTag,
+		Install:    &appService,
+		LatestInfo: latestInfo,
 	}
 	return &cliService{
 		appService:       appService,

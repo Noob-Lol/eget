@@ -228,14 +228,14 @@ func TestUpdateAllPackagesIteratesOutdatedManagedPackages(t *testing.T) {
 				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
 			}}, nil
 		},
-		LatestTag: func(repo, _ string) (string, error) {
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
 			switch repo {
 			case "junegunn/fzf":
-				return "v0.51.0", nil
+				return LatestInfo{Tag: "v0.51.0"}, nil
 			case "BurntSushi/ripgrep":
-				return "v14.0.0", nil
+				return LatestInfo{Tag: "v14.0.0"}, nil
 			default:
-				return "", nil
+				return LatestInfo{}, nil
 			}
 		},
 	}
@@ -271,15 +271,15 @@ func TestUpdateAllPackagesInstallsOnlyOutdatedInstalledPackages(t *testing.T) {
 				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", InstalledAt: now, Tag: "v13.0.0"},
 			}}, nil
 		},
-		LatestTag: func(repo, _ string) (string, error) {
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
 			switch repo {
 			case "junegunn/fzf":
-				return "v0.50.0", nil
+				return LatestInfo{Tag: "v0.50.0"}, nil
 			case "BurntSushi/ripgrep":
-				return "v14.0.0", nil
+				return LatestInfo{Tag: "v14.0.0"}, nil
 			default:
 				t.Fatalf("unexpected latest tag check for %s", repo)
-				return "", nil
+				return LatestInfo{}, nil
 			}
 		},
 	}
@@ -311,8 +311,8 @@ func TestUpdateAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testing
 				"sharkdp/fd":         {Repo: "sharkdp/fd", Tag: "v0.1.0"},
 			}}, nil
 		},
-		LatestTag: func(repo, _ string) (string, error) {
-			return "v1.0.0", nil
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+			return LatestInfo{Tag: "v1.0.0"}, nil
 		},
 	}
 
@@ -356,11 +356,11 @@ func TestListUpdateCandidatesPassesSourcePathToLatestChecker(t *testing.T) {
 				"sourceforge:winmerge": {Repo: "sourceforge:winmerge", Tag: "2.16.42"},
 			}}, nil
 		},
-		LatestTag: func(repo, sourcePath string) (string, error) {
+		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
 			if repo != "sourceforge:winmerge" || sourcePath != "stable" {
 				t.Fatalf("unexpected latest check repo=%q sourcePath=%q", repo, sourcePath)
 			}
-			return "2.16.44", nil
+			return LatestInfo{Tag: "2.16.44"}, nil
 		},
 	}
 
@@ -384,11 +384,11 @@ func TestListUpdateCandidatesChecksForgeRepo(t *testing.T) {
 				"gitlab:gitlab.com/fdroid/fdroidserver": {Repo: "gitlab:gitlab.com/fdroid/fdroidserver", Tag: "v2.3.3"},
 			}}, nil
 		},
-		LatestTag: func(repo, sourcePath string) (string, error) {
+		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
 			if repo != "gitlab:gitlab.com/fdroid/fdroidserver" || sourcePath != "" {
 				t.Fatalf("unexpected latest check repo=%q sourcePath=%q", repo, sourcePath)
 			}
-			return "v2.3.4", nil
+			return LatestInfo{Tag: "v2.3.4"}, nil
 		},
 	}
 

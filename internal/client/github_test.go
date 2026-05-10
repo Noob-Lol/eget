@@ -154,8 +154,9 @@ func TestGitHubClientLatestReleaseInfo(t *testing.T) {
 	client := NewGitHubClientWithGetter(Options{}, func(rawURL string, opts Options) (*http.Response, error) {
 		requestedURL = rawURL
 		payload, err := json.Marshal(map[string]any{
-			"tag_name":   "v0.3.6",
-			"created_at": "2026-04-20T14:10:17Z",
+			"tag_name":     "v0.3.6",
+			"created_at":   "2026-04-20T14:10:17Z",
+			"published_at": "2026-04-21T14:10:17Z",
 		})
 		if err != nil {
 			t.Fatalf("marshal payload: %v", err)
@@ -168,7 +169,7 @@ func TestGitHubClientLatestReleaseInfo(t *testing.T) {
 		}, nil
 	})
 
-	tag, createdAt, err := client.LatestReleaseInfo("gookit/gitw")
+	tag, publishedAt, err := client.LatestReleaseInfo("gookit/gitw")
 	if err != nil {
 		t.Fatalf("LatestReleaseInfo(): %v", err)
 	}
@@ -178,9 +179,9 @@ func TestGitHubClientLatestReleaseInfo(t *testing.T) {
 	if tag != "v0.3.6" {
 		t.Fatalf("expected tag v0.3.6, got %q", tag)
 	}
-	wantTime := time.Date(2026, 4, 20, 14, 10, 17, 0, time.UTC)
-	if !createdAt.Equal(wantTime) {
-		t.Fatalf("expected created_at %s, got %s", wantTime, createdAt)
+	wantTime := time.Date(2026, 4, 21, 14, 10, 17, 0, time.UTC)
+	if !publishedAt.Equal(wantTime) {
+		t.Fatalf("expected published_at %s, got %s", wantTime, publishedAt)
 	}
 }
 

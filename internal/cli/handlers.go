@@ -220,10 +220,11 @@ func (s *cliService) handleList(opts *ListOptions) error {
 			return nil
 		}
 
-		cols := []string{"Name", "Repo", "Installed", "Version", "Latest version"}
+		ccolor.Infoln("Outdated Packages:")
+		cols := []string{"Name", "Repo", "Version", "Latest version", "Published At"}
 		rows := make([][]any, 0, len(items))
 		for _, item := range items {
-			rows = append(rows, []any{item.Name, item.Repo, "yes", item.InstalledTag, item.LatestTag})
+			rows = append(rows, []any{item.Name, item.Repo, item.InstalledTag, item.LatestTag, formatListTime(item.PublishedAt)})
 		}
 		ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 		return nil
@@ -252,17 +253,66 @@ func (s *cliService) handleList(opts *ListOptions) error {
 		return nil
 	}
 
-	cols := []string{"Name", "Repo", "Installed", "Version"}
+	switch {
+	case opts != nil && opts.All:
+		ccolor.Infoln("Managed Packages:")
+	case opts == nil || !opts.GUI:
+		ccolor.Infoln("Installed Packages:")
+	}
+	cols := []string{"Name", "Repo", "Version", "Source", "Update Time"}
 	rows := make([][]any, 0, len(items))
 	for _, item := range items {
-		installed := "no"
-		if item.Installed {
-			installed = "yes"
-		}
-		rows = append(rows, []any{item.Name, item.Repo, installed, item.Version})
+		rows = append(rows, listPackageRow(item))
 	}
 	ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 	return nil
+}
+
+func listPackageRow(item app.ListItem) []any {
+	return []any{
+		item.Name,
+		item.Repo,
+		listPackageVersion(item),
+		packageSource(item),
+		formatListTime(item.InstalledAt),
+	}
+}
+
+func listPackageVersion(item app.ListItem) string {
+	if item.Version != "" {
+		return item.Version
+	}
+	if !item.Installed {
+		return "No-Install"
+	}
+	return ""
+}
+
+func packageSource(item app.ListItem) string {
+	switch install.DetectTargetKind(item.Repo) {
+	case install.TargetRepo, install.TargetGitHubURL:
+		return "github"
+	case install.TargetSourceForge:
+		return "sourceforge"
+	case install.TargetForge:
+		return "forge"
+	case install.TargetDirectURL:
+		return "url"
+	case install.TargetLocalFile:
+		return "local"
+	default:
+		if item.Repo == "" {
+			return "-"
+		}
+		return "unknown"
+	}
+}
+
+func formatListTime(value time.Time) string {
+	if value.IsZero() {
+		return "-"
+	}
+	return value.Format(time.RFC3339)
 }
 
 func appVerbose() bool {

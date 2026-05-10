@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 )
@@ -132,13 +133,14 @@ func TestGitLabLatestVersion(t *testing.T) {
 	assert.NoErr(t, err)
 	url := "https://gitlab.com/api/v4/projects/fdroid%2Ffdroidserver/releases/permalink/latest"
 	getter := &fakeGetter{responses: map[string]string{
-		url: `{"tag_name":"v2.3.4","assets":{"links":[{"name":"tool.tar.gz","url":"https://gitlab.com/tool.tar.gz"}]}}`,
+		url: `{"tag_name":"v2.3.4","released_at":"2026-04-21T14:10:17Z","assets":{"links":[{"name":"tool.tar.gz","url":"https://gitlab.com/tool.tar.gz"}]}}`,
 	}}
 
 	info, err := LatestVersion(target, getter)
 
 	assert.NoErr(t, err)
 	assert.Eq(t, "v2.3.4", info.Tag)
+	assert.Eq(t, time.Date(2026, 4, 21, 14, 10, 17, 0, time.UTC), info.PublishedAt)
 }
 
 func TestLatestVersionRequiresGetter(t *testing.T) {

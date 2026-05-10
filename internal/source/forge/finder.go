@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type HTTPGetter interface {
@@ -17,12 +18,14 @@ type Finder struct {
 }
 
 type LatestInfo struct {
-	Tag string
+	Tag         string
+	PublishedAt time.Time
 }
 
 type releaseInfo struct {
-	Tag    string
-	Assets []string
+	Tag         string
+	PublishedAt time.Time
+	Assets      []string
 }
 
 func (f Finder) Find() ([]string, error) {
@@ -50,7 +53,7 @@ func LatestVersion(target Target, getter HTTPGetter) (LatestInfo, error) {
 	if release.Tag == "" {
 		return LatestInfo{}, fmt.Errorf("%s latest release tag not found for %s/%s/%s", target.Provider, target.Host, target.Namespace, target.Project)
 	}
-	return LatestInfo{Tag: release.Tag}, nil
+	return LatestInfo{Tag: release.Tag, PublishedAt: release.PublishedAt}, nil
 }
 
 func (f Finder) release() (releaseInfo, error) {

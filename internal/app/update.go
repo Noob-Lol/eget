@@ -20,7 +20,7 @@ type UpdateService struct {
 	Install       Installer
 	LoadConfig    func() (*cfgpkg.File, error)
 	LoadInstalled func() (*storepkg.Config, error)
-	LatestTag     func(repo, sourcePath string) (string, error)
+	LatestInfo    func(repo, sourcePath string) (LatestInfo, error)
 }
 
 type UpdateResult struct {
@@ -73,8 +73,8 @@ func (s UpdateService) UpdateAllPackages(cli install.Options) ([]UpdateResult, e
 }
 
 func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFailure, int, error) {
-	if s.LatestTag == nil {
-		return nil, nil, 0, fmt.Errorf("latest tag checker is required")
+	if s.LatestInfo == nil {
+		return nil, nil, 0, fmt.Errorf("latest info checker is required")
 	}
 
 	cfg, err := s.loadConfig()
@@ -96,7 +96,7 @@ func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFa
 			return cfg, nil
 		},
 		LoadInstalled: s.loadInstalled,
-		LatestTag:     s.LatestTag,
+		LatestInfo:    s.LatestInfo,
 	}
 	items, err := listService.ListPackages()
 	if err != nil {
@@ -123,7 +123,7 @@ func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFa
 			continue
 		}
 
-		latestTag, err := s.LatestTag(item.Repo, item.SourcePath)
+		latest, err := s.LatestInfo(item.Repo, item.SourcePath)
 		if err != nil {
 			failures = append(failures, OutdatedCheckFailure{
 				Name:  item.Name,
@@ -132,7 +132,7 @@ func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFa
 			})
 			continue
 		}
-		if latestTag == "" || latestTag == item.InstalledTag {
+		if latest.Tag == "" || latest.Tag == item.InstalledTag {
 			continue
 		}
 
@@ -141,8 +141,9 @@ func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFa
 			Repo:         item.Repo,
 			Target:       item.Target,
 			InstalledTag: item.InstalledTag,
-			LatestTag:    latestTag,
+			LatestTag:    latest.Tag,
 			InstalledAt:  item.InstalledAt,
+			PublishedAt:  latest.PublishedAt,
 		})
 	}
 	return outdated, failures, checked, nil

@@ -143,8 +143,9 @@ func (c *GitHubClient) LatestRelease(repo string, includePrerelease bool) (Relea
 
 func (c *GitHubClient) LatestReleaseInfo(repo string) (string, time.Time, error) {
 	var payload struct {
-		Tag       string    `json:"tag_name"`
-		CreatedAt time.Time `json:"created_at"`
+		Tag         string    `json:"tag_name"`
+		CreatedAt   time.Time `json:"created_at"`
+		PublishedAt time.Time `json:"published_at"`
 	}
 	if err := c.fetchJSON(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo), "latest tag check", &payload); err != nil {
 		return "", time.Time{}, err
@@ -152,7 +153,10 @@ func (c *GitHubClient) LatestReleaseInfo(repo string) (string, time.Time, error)
 	if payload.Tag == "" {
 		return "", time.Time{}, fmt.Errorf("latest tag is empty")
 	}
-	return payload.Tag, payload.CreatedAt, nil
+	if payload.PublishedAt.IsZero() {
+		payload.PublishedAt = payload.CreatedAt
+	}
+	return payload.Tag, payload.PublishedAt, nil
 }
 
 func (c *GitHubClient) ListReleases(repo string, limit int, includePrerelease bool) ([]Release, error) {

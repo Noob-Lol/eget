@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 )
 
 type HTTPGetter interface {
@@ -21,8 +22,9 @@ type Finder struct {
 }
 
 type LatestInfo struct {
-	Version string
-	Path    string
+	Version     string
+	Path        string
+	PublishedAt time.Time
 }
 
 func (f Finder) Find() ([]string, error) {

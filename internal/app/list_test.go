@@ -263,6 +263,7 @@ func TestListPackagesMergesInstalledStateIntoExplicitPackageName(t *testing.T) {
 
 func TestListOutdatedPackagesIncludesInstalledOnlyEntries(t *testing.T) {
 	now := time.Unix(1710000000, 0).UTC()
+	publishedAt := time.Date(2026, 4, 21, 14, 10, 17, 0, time.UTC)
 	svc := ListService{
 		LoadConfig: func() (*cfgpkg.File, error) {
 			cfg := cfgpkg.NewFile()
@@ -287,14 +288,14 @@ func TestListOutdatedPackagesIncludesInstalledOnlyEntries(t *testing.T) {
 				},
 			}, nil
 		},
-		LatestTag: func(repo, _ string) (string, error) {
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
 			switch repo {
 			case "BurntSushi/ripgrep":
-				return "v14.0.0", nil
+				return LatestInfo{Tag: "v14.0.0", PublishedAt: publishedAt}, nil
 			case "junegunn/fzf":
-				return "v0.50.0", nil
+				return LatestInfo{Tag: "v0.50.0"}, nil
 			default:
-				return "", nil
+				return LatestInfo{}, nil
 			}
 		},
 	}
@@ -318,6 +319,7 @@ func TestListOutdatedPackagesIncludesInstalledOnlyEntries(t *testing.T) {
 	if items[0].InstalledTag != "v13.0.0" || items[0].LatestTag != "v14.0.0" {
 		t.Fatalf("expected outdated tag comparison, got %#v", items[0])
 	}
+	assert.Eq(t, publishedAt, items[0].PublishedAt)
 }
 
 func TestListOutdatedPackagesSkipsFailedChecks(t *testing.T) {
@@ -342,11 +344,11 @@ func TestListOutdatedPackagesSkipsFailedChecks(t *testing.T) {
 				},
 			}, nil
 		},
-		LatestTag: func(repo, _ string) (string, error) {
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
 			if repo == "junegunn/fzf" {
-				return "", fmt.Errorf("github api failed")
+				return LatestInfo{}, fmt.Errorf("github api failed")
 			}
-			return "v14.0.0", nil
+			return LatestInfo{Tag: "v14.0.0"}, nil
 		},
 	}
 
@@ -380,11 +382,11 @@ func TestListOutdatedPackagesPassesSourcePathToLatestChecker(t *testing.T) {
 				"sourceforge:winmerge": {Repo: "sourceforge:winmerge", Tag: "2.16.42"},
 			}}, nil
 		},
-		LatestTag: func(repo, sourcePath string) (string, error) {
+		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
 			if repo != "sourceforge:winmerge" || sourcePath != "stable" {
 				t.Fatalf("unexpected latest check repo=%q sourcePath=%q", repo, sourcePath)
 			}
-			return "2.16.44", nil
+			return LatestInfo{Tag: "2.16.44"}, nil
 		},
 	}
 
@@ -415,11 +417,11 @@ func TestListOutdatedPackagesChecksForgeRepo(t *testing.T) {
 				"gitea:codeberg.org/forgejo/forgejo": {Repo: "gitea:codeberg.org/forgejo/forgejo", Tag: "v8.0.0"},
 			}}, nil
 		},
-		LatestTag: func(repo, sourcePath string) (string, error) {
+		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
 			if repo != "gitea:codeberg.org/forgejo/forgejo" || sourcePath != "" {
 				t.Fatalf("unexpected latest check repo=%q sourcePath=%q", repo, sourcePath)
 			}
-			return "v9.0.0", nil
+			return LatestInfo{Tag: "v9.0.0"}, nil
 		},
 	}
 

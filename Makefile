@@ -23,7 +23,7 @@ all: build
 ## build: build Go binary (current platform)
 build:
 	@echo "🐹 Building Go binary ($(VERSION) @ $(GIT_HASH))..."
-	@go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(MAIN_DIR)
+	go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(MAIN_DIR)
 	@echo "📦 Compressing binary..."
 	@upx -6 --no-progress $(BINARY)
 	@echo "✅ Binary: $(BINARY) ($$(du -sh $(BINARY) | cut -f1))"

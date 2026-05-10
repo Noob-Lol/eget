@@ -38,6 +38,7 @@ type OutdatedItem struct {
 	InstalledTag string
 	LatestTag    string
 	InstalledAt  time.Time
+	PublishedAt  time.Time
 }
 
 type OutdatedCheckFailure struct {
@@ -46,10 +47,15 @@ type OutdatedCheckFailure struct {
 	Error error
 }
 
+type LatestInfo struct {
+	Tag         string
+	PublishedAt time.Time
+}
+
 type ListService struct {
 	LoadConfig    func() (*cfgpkg.File, error)
 	LoadInstalled func() (*storepkg.Config, error)
-	LatestTag     func(repo, sourcePath string) (string, error)
+	LatestInfo    func(repo, sourcePath string) (LatestInfo, error)
 }
 
 func (s ListService) ListPackages() ([]ListItem, error) {
@@ -181,8 +187,8 @@ func (s ListService) FindPackage(name string) (*ListItem, error) {
 }
 
 func (s ListService) ListOutdatedPackages() ([]OutdatedItem, []OutdatedCheckFailure, int, error) {
-	if s.LatestTag == nil {
-		return nil, nil, 0, fmt.Errorf("latest tag checker is required")
+	if s.LatestInfo == nil {
+		return nil, nil, 0, fmt.Errorf("latest info checker is required")
 	}
 
 	items, err := s.ListPackages()
@@ -207,7 +213,7 @@ func (s ListService) ListOutdatedPackages() ([]OutdatedItem, []OutdatedCheckFail
 			continue
 		}
 
-		latestTag, err := s.LatestTag(item.Repo, item.SourcePath)
+		latest, err := s.LatestInfo(item.Repo, item.SourcePath)
 		if err != nil {
 			failures = append(failures, OutdatedCheckFailure{
 				Name:  item.Name,
@@ -216,7 +222,7 @@ func (s ListService) ListOutdatedPackages() ([]OutdatedItem, []OutdatedCheckFail
 			})
 			continue
 		}
-		if latestTag == "" || latestTag == item.InstalledTag {
+		if latest.Tag == "" || latest.Tag == item.InstalledTag {
 			continue
 		}
 
@@ -225,8 +231,9 @@ func (s ListService) ListOutdatedPackages() ([]OutdatedItem, []OutdatedCheckFail
 			Repo:         item.Repo,
 			Target:       item.Target,
 			InstalledTag: item.InstalledTag,
-			LatestTag:    latestTag,
+			LatestTag:    latest.Tag,
 			InstalledAt:  item.InstalledAt,
+			PublishedAt:  latest.PublishedAt,
 		})
 	}
 	return outdated, failures, checked, nil

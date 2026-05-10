@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 )
@@ -80,11 +81,12 @@ func TestGiteaLatestVersion(t *testing.T) {
 
 	url := "https://codeberg.org/api/v1/repos/forgejo/forgejo/releases/latest"
 	getter := &fakeGetter{responses: map[string]string{
-		url: `{"tag_name":"v9.0.0","assets":[{"name":"forgejo-linux-amd64","browser_download_url":"https://codeberg.org/forgejo/forgejo/releases/download/v9.0.0/forgejo-linux-amd64"}]}`,
+		url: `{"tag_name":"v9.0.0","published_at":"2026-04-21T14:10:17Z","assets":[{"name":"forgejo-linux-amd64","browser_download_url":"https://codeberg.org/forgejo/forgejo/releases/download/v9.0.0/forgejo-linux-amd64"}]}`,
 	}}
 
 	info, err := LatestVersion(target, getter)
 
 	assert.NoErr(t, err)
 	assert.Eq(t, "v9.0.0", info.Tag)
+	assert.Eq(t, time.Date(2026, 4, 21, 14, 10, 17, 0, time.UTC), info.PublishedAt)
 }

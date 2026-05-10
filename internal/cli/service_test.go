@@ -515,16 +515,6 @@ func TestConfigureVerboseUpdatesVerboseLoggers(t *testing.T) {
 func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 	svc := &cliService{
 		listService: app.ListService{
-			LatestTag: func(repo, _ string) (string, error) {
-				switch repo {
-				case "BurntSushi/ripgrep":
-					return "v14.0.0", nil
-				case "junegunn/fzf":
-					return "v0.50.0", nil
-				default:
-					return "", nil
-				}
-			},
 			LoadConfig: func() (*cfgpkg.File, error) {
 				cfg := cfgpkg.NewFile()
 				cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
@@ -540,6 +530,17 @@ func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 			},
 		},
 	}
+	publishedAt := time.Date(2026, 4, 21, 14, 10, 17, 0, time.UTC)
+	svc.listService.LatestInfo = func(repo, _ string) (app.LatestInfo, error) {
+		switch repo {
+		case "BurntSushi/ripgrep":
+			return app.LatestInfo{Tag: "v14.0.0", PublishedAt: publishedAt}, nil
+		case "junegunn/fzf":
+			return app.LatestInfo{Tag: "v0.50.0"}, nil
+		default:
+			return app.LatestInfo{}, nil
+		}
+	}
 
 	var out bytes.Buffer
 	ccolor.SetOutput(&out)
@@ -551,8 +552,20 @@ func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 	}
 
 	got := out.String()
+	if !strings.Contains(got, "Outdated Packages:") {
+		t.Fatalf("expected outdated packages title, got %q", got)
+	}
 	if !strings.Contains(strings.ToLower(got), "latest version") {
 		t.Fatalf("expected last_version column in output, got %q", got)
+	}
+	if !strings.Contains(got, "Published At") {
+		t.Fatalf("expected published at column in output, got %q", got)
+	}
+	if !strings.Contains(got, publishedAt.Format(time.RFC3339)) {
+		t.Fatalf("expected published time in output, got %q", got)
+	}
+	if strings.Contains(got, " yes ") || strings.Contains(got, " no ") {
+		t.Fatalf("expected Installed column values to be removed, got %q", got)
 	}
 	if !strings.Contains(got, "BurntSushi/ripgrep") {
 		t.Fatalf("expected outdated repo in output, got %q", got)
@@ -568,16 +581,16 @@ func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 func TestHandleListOutdatedPrintsCheckedInstalledCountWhenNothingOutdated(t *testing.T) {
 	svc := &cliService{
 		listService: app.ListService{
-			LatestTag: func(repo, _ string) (string, error) {
+			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
 				switch repo {
 				case "gookit/gitw":
-					return "v0.3.6", nil
+					return app.LatestInfo{Tag: "v0.3.6"}, nil
 				case "sipeed/picoclaw":
-					return "v0.2.7", nil
+					return app.LatestInfo{Tag: "v0.2.7"}, nil
 				case "windirstat/windirstat":
-					return "release/v2.5.0", nil
+					return app.LatestInfo{Tag: "release/v2.5.0"}, nil
 				default:
-					return "", nil
+					return app.LatestInfo{}, nil
 				}
 			},
 			LoadConfig: func() (*cfgpkg.File, error) {
@@ -614,6 +627,7 @@ func TestHandleListOutdatedPrintsCheckedInstalledCountWhenNothingOutdated(t *tes
 }
 
 func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
+	now := time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
 	svc := &cliService{
 		listService: app.ListService{
 			LoadConfig: func() (*cfgpkg.File, error) {
@@ -625,7 +639,7 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 			LoadInstalled: func() (*storepkg.Config, error) {
 				return &storepkg.Config{
 					Installed: map[string]storepkg.Entry{
-						"gookit/gitw": {Repo: "gookit/gitw", Tag: "v0.3.6"},
+						"gookit/gitw": {Repo: "gookit/gitw", Tag: "v0.3.6", InstalledAt: now},
 					},
 				}, nil
 			},
@@ -642,11 +656,23 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 	}
 
 	got := out.String()
+	if !strings.Contains(got, "Installed Packages:") {
+		t.Fatalf("expected installed packages title, got %q", got)
+	}
 	if !strings.Contains(strings.ToLower(got), "name") || !strings.Contains(strings.ToLower(got), "version") {
 		t.Fatalf("expected table headers in output, got %q", got)
 	}
+	if strings.Contains(got, " yes ") || strings.Contains(got, " no ") {
+		t.Fatalf("expected Installed column values to be removed, got %q", got)
+	}
+	if !strings.Contains(got, "Source") || !strings.Contains(got, "Update Time") {
+		t.Fatalf("expected Source and Update Time columns, got %q", got)
+	}
 	if !strings.Contains(got, "chlog") || !strings.Contains(got, "v0.3.6") {
 		t.Fatalf("expected table row in output, got %q", got)
+	}
+	if !strings.Contains(got, "github") || !strings.Contains(got, now.Format(time.RFC3339)) {
+		t.Fatalf("expected source and update time in output, got %q", got)
 	}
 	if strings.Contains(got, "ripgrep") {
 		t.Fatalf("expected default list to omit managed-only package, got %q", got)
@@ -654,6 +680,7 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 }
 
 func TestHandleListAllPrintsManagedAndInstalledPackages(t *testing.T) {
+	now := time.Date(2026, 5, 10, 13, 0, 0, 0, time.UTC)
 	svc := &cliService{
 		listService: app.ListService{
 			LoadConfig: func() (*cfgpkg.File, error) {
@@ -665,7 +692,7 @@ func TestHandleListAllPrintsManagedAndInstalledPackages(t *testing.T) {
 			LoadInstalled: func() (*storepkg.Config, error) {
 				return &storepkg.Config{
 					Installed: map[string]storepkg.Entry{
-						"gookit/gitw": {Repo: "gookit/gitw", Tag: "v0.3.6"},
+						"gookit/gitw": {Repo: "gookit/gitw", Tag: "v0.3.6", InstalledAt: now},
 					},
 				}, nil
 			},
@@ -682,8 +709,23 @@ func TestHandleListAllPrintsManagedAndInstalledPackages(t *testing.T) {
 	}
 
 	got := out.String()
+	if !strings.Contains(got, "Managed Packages:") {
+		t.Fatalf("expected managed packages title, got %q", got)
+	}
+	if !strings.Contains(got, "Source") || !strings.Contains(got, "Update Time") {
+		t.Fatalf("expected Source and Update Time columns, got %q", got)
+	}
 	if !strings.Contains(got, "chlog") || !strings.Contains(got, "ripgrep") {
 		t.Fatalf("expected all list to include installed and managed-only packages, got %q", got)
+	}
+	if !strings.Contains(got, "v0.3.6") || !strings.Contains(got, "No-Install") {
+		t.Fatalf("expected installed and non-installed versions, got %q", got)
+	}
+	if strings.Contains(got, " yes ") || strings.Contains(got, " no ") {
+		t.Fatalf("expected Installed column values to be removed, got %q", got)
+	}
+	if !strings.Contains(got, now.Format(time.RFC3339)) {
+		t.Fatalf("expected update time in output, got %q", got)
 	}
 }
 
@@ -806,15 +848,15 @@ func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {
 					"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
 				}}, nil
 			},
-			LatestTag: func(repo, _ string) (string, error) {
+			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
 				switch repo {
 				case "junegunn/fzf":
-					return "v0.50.0", nil
+					return app.LatestInfo{Tag: "v0.50.0"}, nil
 				case "BurntSushi/ripgrep":
-					return "v14.0.0", nil
+					return app.LatestInfo{Tag: "v14.0.0"}, nil
 				default:
 					t.Fatalf("unexpected latest tag check for %s", repo)
-					return "", nil
+					return app.LatestInfo{}, nil
 				}
 			},
 		},
@@ -845,14 +887,14 @@ func TestHandleUpdateCheckPrintsSameOutdatedListWithoutUpdating(t *testing.T) {
 	installer := &fakeUpdateInstallerForCLI{}
 	svc := &cliService{
 		listService: app.ListService{
-			LatestTag: func(repo, _ string) (string, error) {
+			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
 				switch repo {
 				case "BurntSushi/ripgrep":
-					return "v14.0.0", nil
+					return app.LatestInfo{Tag: "v14.0.0"}, nil
 				case "junegunn/fzf":
-					return "v0.50.0", nil
+					return app.LatestInfo{Tag: "v0.50.0"}, nil
 				default:
-					return "", nil
+					return app.LatestInfo{}, nil
 				}
 			},
 			LoadConfig: func() (*cfgpkg.File, error) {

@@ -4,11 +4,15 @@ import (
 	"encoding/json"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type gitLabRelease struct {
-	Tag    string `json:"tag_name"`
-	Assets struct {
+	Tag         string    `json:"tag_name"`
+	ReleasedAt  time.Time `json:"released_at"`
+	CreatedAt   time.Time `json:"created_at"`
+	PublishedAt time.Time `json:"published_at"`
+	Assets      struct {
 		Links []struct {
 			Name           string `json:"name"`
 			URL            string `json:"url"`
@@ -40,7 +44,17 @@ func (f Finder) gitLabRelease() (releaseInfo, error) {
 		}
 	}
 	verbosef("forge gitlab assets: %d", len(assets))
-	return releaseInfo{Tag: release.Tag, Assets: assets}, nil
+	return releaseInfo{Tag: release.Tag, PublishedAt: gitLabPublishedAt(release), Assets: assets}, nil
+}
+
+func gitLabPublishedAt(release gitLabRelease) time.Time {
+	if !release.ReleasedAt.IsZero() {
+		return release.ReleasedAt
+	}
+	if !release.PublishedAt.IsZero() {
+		return release.PublishedAt
+	}
+	return release.CreatedAt
 }
 
 func gitLabReleaseURL(target Target, tag string) string {
