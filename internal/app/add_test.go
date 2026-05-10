@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/gookit/goutil/testutil/assert"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 )
@@ -98,6 +99,25 @@ func TestAddPackageWithCustomName(t *testing.T) {
 	if _, ok := cfg.Packages["myfzf"]; !ok {
 		t.Fatal("expected packages.myfzf to be created")
 	}
+}
+
+func TestAddPackagePersistsChunkConcurrency(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+	svc := ConfigService{
+		ConfigPath: configPath,
+		Load: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+		Save: cfgpkg.Save,
+	}
+
+	err := svc.AddPackage("sharkdp/fd", "fd", install.Options{ChunkConcurrency: 3})
+	assert.NoErr(t, err)
+
+	cfg, err := cfgpkg.LoadFile(configPath)
+	assert.NoErr(t, err)
+	assert.Eq(t, 3, *cfg.Packages["fd"].ChunkConcurrency)
 }
 
 func TestAddPackageNormalizesSourceForgeTargetWithPath(t *testing.T) {

@@ -1,8 +1,10 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"sort"
+	"sync"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
@@ -151,6 +153,14 @@ func (s UpdateService) UpdateCandidates(candidates []OutdatedItem, cli install.O
 		return candidates[i].Name < candidates[j].Name
 	})
 
+	if err := validateConcurrencyOptions(install.Options{BatchConcurrency: cli.BatchConcurrency}); err != nil {
+		return nil, err
+	}
+	batch := effectiveBatchConcurrency(cli.BatchConcurrency, len(candidates))
+	if batch > 1 {
+		return s.updateCandidatesConcurrent(candidates, cli, batch)
+	}
+
 	results := make([]UpdateResult, 0, len(candidates))
 	for _, item := range candidates {
 		result, err := s.UpdatePackage(item.Name, cli)
@@ -162,6 +172,57 @@ func (s UpdateService) UpdateCandidates(candidates []OutdatedItem, cli install.O
 			Target: item.Repo,
 			Result: result,
 		})
+	}
+	return results, nil
+}
+
+func (s UpdateService) updateCandidatesConcurrent(candidates []OutdatedItem, cli install.Options, batch int) ([]UpdateResult, error) {
+	type job struct {
+		index int
+		item  OutdatedItem
+	}
+	results := make([]UpdateResult, len(candidates))
+	jobs := make(chan job)
+	errCh := make(chan error, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+	for i := 0; i < batch; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for work := range jobs {
+				select {
+				case <-ctx.Done():
+					continue
+				default:
+				}
+				result, err := s.UpdatePackage(work.item.Name, cli)
+				if err != nil {
+					sendFirstError(errCh, err, cancel)
+					continue
+				}
+				results[work.index] = UpdateResult{Name: work.item.Name, Target: work.item.Repo, Result: result}
+			}
+		}()
+	}
+
+sendLoop:
+	for index, item := range candidates {
+		select {
+		case <-ctx.Done():
+			break sendLoop
+		case jobs <- job{index: index, item: item}:
+		}
+	}
+	close(jobs)
+	wg.Wait()
+
+	select {
+	case err := <-errCh:
+		return nil, err
+	default:
 	}
 	return results, nil
 }
@@ -206,8 +267,11 @@ func stringsOpt(value []string) *[]string {
 	return &copied
 }
 
-func intOpt(value int) *int {
+func intOpt(value int, explicit bool) *int {
 	if value < 0 {
+		return nil
+	}
+	if !explicit && value == 0 {
 		return nil
 	}
 	return &value

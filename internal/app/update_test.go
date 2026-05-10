@@ -1,6 +1,7 @@
 package app
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -12,16 +13,41 @@ import (
 )
 
 type fakeInstallService struct {
-	targets []string
-	options []install.Options
-	result  RunResult
-	err     error
+	mu        sync.Mutex
+	targets   []string
+	options   []install.Options
+	result    RunResult
+	err       error
+	active    int
+	maxActive int
+	block     chan struct{}
 }
 
 func (f *fakeInstallService) InstallTarget(target string, opts install.Options, extras ...InstallExtras) (RunResult, error) {
+	f.mu.Lock()
 	f.targets = append(f.targets, target)
 	f.options = append(f.options, opts)
+	f.active++
+	if f.active > f.maxActive {
+		f.maxActive = f.active
+	}
+	block := f.block
+	f.mu.Unlock()
+
+	if block != nil {
+		<-block
+	}
+
+	f.mu.Lock()
+	f.active--
+	f.mu.Unlock()
 	return f.result, f.err
+}
+
+func (f *fakeInstallService) currentMaxActive() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.maxActive
 }
 
 func TestUpdatePackageDelegatesManagedPackageNameWithRawCLIOptions(t *testing.T) {
@@ -264,6 +290,55 @@ func TestUpdateAllPackagesInstallsOnlyOutdatedInstalledPackages(t *testing.T) {
 	assert.Eq(t, 1, len(results))
 	assert.Eq(t, "rg", results[0].Name)
 	assert.Eq(t, "BurntSushi/ripgrep", results[0].Target)
+}
+
+func TestUpdateAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testing.T) {
+	block := make(chan struct{})
+	installer := &fakeInstallService{block: block}
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			cfg.Packages["fd"] = cfgpkg.Section{Repo: util.StringPtr("sharkdp/fd")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.1.0"},
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v0.1.0"},
+				"sharkdp/fd":         {Repo: "sharkdp/fd", Tag: "v0.1.0"},
+			}}, nil
+		},
+		LatestTag: func(repo, _ string) (string, error) {
+			return "v1.0.0", nil
+		},
+	}
+
+	done := make(chan []UpdateResult, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		results, err := svc.UpdateAllPackages(install.Options{BatchConcurrency: 2})
+		if err != nil {
+			errCh <- err
+			return
+		}
+		done <- results
+	}()
+
+	waitForMaxActive(t, func() int { return installer.currentMaxActive() }, 2)
+	close(block)
+
+	select {
+	case err := <-errCh:
+		t.Fatalf("update all packages: %v", err)
+	case results := <-done:
+		assert.Eq(t, []string{"fd", "fzf", "rg"}, []string{results[0].Name, results[1].Name, results[2].Name})
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for update all")
+	}
+	assert.Eq(t, 2, installer.currentMaxActive())
 }
 
 func TestListUpdateCandidatesPassesSourcePathToLatestChecker(t *testing.T) {

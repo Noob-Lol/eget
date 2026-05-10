@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -911,19 +912,108 @@ func TestInstallAllPackagesRejectsEmptyConfig(t *testing.T) {
 }
 
 type fakeBatchRunner struct {
-	targets []string
-	opts    map[string]install.Options
-	results map[string]RunResult
+	mu        sync.Mutex
+	targets   []string
+	opts      map[string]install.Options
+	results   map[string]RunResult
+	active    int
+	maxActive int
+	block     chan struct{}
 }
 
 func (f *fakeBatchRunner) Run(target string, opts install.Options) (RunResult, error) {
+	f.mu.Lock()
 	f.targets = append(f.targets, target)
 	if f.opts == nil {
 		f.opts = map[string]install.Options{}
 	}
 	f.opts[target] = opts
+	f.active++
+	if f.active > f.maxActive {
+		f.maxActive = f.active
+	}
+	block := f.block
+	f.mu.Unlock()
+
+	if block != nil {
+		<-block
+	}
+
+	f.mu.Lock()
+	f.active--
+	f.mu.Unlock()
+
 	if result, ok := f.results[target]; ok {
 		return result, nil
 	}
 	return RunResult{}, nil
+}
+
+func (f *fakeBatchRunner) currentMaxActive() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.maxActive
+}
+
+func TestInstallAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testing.T) {
+	block := make(chan struct{})
+	runner := &fakeBatchRunner{
+		block: block,
+		results: map[string]RunResult{
+			"junegunn/fzf":       {Tool: "fzf"},
+			"BurntSushi/ripgrep": {Tool: "rg"},
+			"sharkdp/fd":         {Tool: "fd"},
+		},
+	}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			cfg.Packages["fd"] = cfgpkg.Section{Repo: util.StringPtr("sharkdp/fd")}
+			return cfg, nil
+		},
+	}
+
+	done := make(chan []InstallAllResult, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		results, err := svc.InstallAllPackages(install.Options{BatchConcurrency: 2, Quiet: true})
+		if err != nil {
+			errCh <- err
+			return
+		}
+		done <- results
+	}()
+
+	waitForMaxActive(t, func() int { return runner.currentMaxActive() }, 2)
+	close(block)
+
+	select {
+	case err := <-errCh:
+		t.Fatalf("install all packages: %v", err)
+	case results := <-done:
+		assert.Eq(t, []string{"fd", "fzf", "rg"}, []string{results[0].Name, results[1].Name, results[2].Name})
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for install all")
+	}
+	assert.Eq(t, 2, runner.currentMaxActive())
+}
+
+func waitForMaxActive(t *testing.T, current func() int, want int) {
+	t.Helper()
+	deadline := time.After(time.Second)
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-deadline:
+			t.Fatalf("timed out waiting for max active %d, got %d", want, current())
+		case <-ticker.C:
+			if current() >= want {
+				return
+			}
+		}
+	}
 }

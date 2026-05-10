@@ -219,6 +219,9 @@ func sectionFromInstallOptions(repo, name string, opts install.Options) cfgpkg.S
 	if opts.DisableSSL {
 		section.DisableSSL = util.BoolPtr(true)
 	}
+	if opts.ChunkConcurrencySet || opts.ChunkConcurrency > 0 {
+		section.ChunkConcurrency = &opts.ChunkConcurrency
+	}
 	if opts.All {
 		section.ExtractAll = util.BoolPtr(true)
 	}

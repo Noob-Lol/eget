@@ -1,12 +1,14 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
@@ -110,6 +112,15 @@ func (s Service) InstallAllPackages(cli install.Options) ([]InstallAllResult, er
 	}
 	sort.Strings(names)
 
+	rawBatch := batchConcurrencyFromConfig(cfg, cli)
+	if err := validateConcurrencyOptions(install.Options{BatchConcurrency: rawBatch}); err != nil {
+		return nil, err
+	}
+	batch := effectiveBatchConcurrency(rawBatch, len(names))
+	if batch > 1 {
+		return s.installAllPackagesConcurrent(cfg, names, cli, batch)
+	}
+
 	results := make([]InstallAllResult, 0, len(names))
 	for _, name := range names {
 		pkg := cfg.Packages[name]
@@ -134,6 +145,67 @@ func (s Service) InstallAllPackages(cli install.Options) ([]InstallAllResult, er
 			Target: runTarget,
 			Result: result,
 		})
+	}
+	return results, nil
+}
+
+func (s Service) installAllPackagesConcurrent(cfg *cfgpkg.File, names []string, cli install.Options, batch int) ([]InstallAllResult, error) {
+	type job struct {
+		index int
+		name  string
+	}
+	results := make([]InstallAllResult, len(names))
+	jobs := make(chan job)
+	errCh := make(chan error, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+	for i := 0; i < batch; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for item := range jobs {
+				select {
+				case <-ctx.Done():
+					continue
+				default:
+				}
+				runTarget, opts, err := s.resolveInstallRequestWithConfig(cfg, item.name, cli, false)
+				if err != nil {
+					sendFirstError(errCh, err, cancel)
+					continue
+				}
+				if err := validateConcurrencyOptions(opts); err != nil {
+					sendFirstError(errCh, err, cancel)
+					continue
+				}
+				opts = normalizeExtractionOptions(opts)
+				result, err := s.installResolvedTarget(runTarget, opts)
+				if err != nil {
+					sendFirstError(errCh, err, cancel)
+					continue
+				}
+				results[item.index] = InstallAllResult{Name: item.name, Target: runTarget, Result: result}
+			}
+		}()
+	}
+
+sendLoop:
+	for index, name := range names {
+		select {
+		case <-ctx.Done():
+			break sendLoop
+		case jobs <- job{index: index, name: name}:
+		}
+	}
+	close(jobs)
+	wg.Wait()
+
+	select {
+	case err := <-errCh:
+		return nil, err
+	default:
 	}
 	return results, nil
 }
@@ -356,7 +428,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		UpgradeOnly:      boolOpt(cli.UpgradeOnly),
 		Verify:           stringOpt(cli.Verify),
 		DisableSSL:       boolOpt(cli.DisableSSL),
-		ChunkConcurrency: intOpt(cli.ChunkConcurrency),
+		ChunkConcurrency: intOpt(cli.ChunkConcurrency, cli.ChunkConcurrencySet),
 	})
 
 	targetDir, err := expandPath(merged.Target)
@@ -399,45 +471,47 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		ghproxySupportAPI = *cfg.Ghproxy.SupportAPI
 	}
 	batchConcurrency := 0
-	if cli.BatchConcurrency >= 0 {
+	if cli.BatchConcurrencySet || cli.BatchConcurrency > 0 {
 		batchConcurrency = cli.BatchConcurrency
 	} else if cfg.Global.BatchConcurrency != nil {
 		batchConcurrency = *cfg.Global.BatchConcurrency
 	}
 
 	return install.Options{
-		Tag:               merged.Tag,
-		Name:              cli.Name,
-		Source:            merged.Source,
-		SourcePath:        merged.SourcePath,
-		Output:            output,
-		OutputExplicit:    cli.Output != "",
-		GuiTarget:         guiTarget,
-		IsGUI:             merged.IsGUI,
-		CacheDir:          cacheDir,
-		CacheName:         merged.Name,
-		CacheVersion:      merged.Tag,
-		ProxyURL:          merged.ProxyURL,
-		APICacheEnabled:   apiCacheEnabled,
-		APICacheDir:       apiCacheDir,
-		APICacheTime:      apiCacheTime,
-		GhproxyEnabled:    ghproxyEnabled,
-		GhproxyHostURL:    ghproxyHostURL,
-		GhproxySupportAPI: ghproxySupportAPI,
-		GhproxyFallbacks:  append([]string(nil), cfg.Ghproxy.Fallbacks...),
-		System:            merged.System,
-		ExtractFile:       merged.File,
-		All:               merged.ExtractAll,
-		Quiet:             merged.Quiet,
-		DownloadOnly:      merged.DownloadOnly,
-		FallbackVersions:  cli.FallbackVersions,
-		ChunkConcurrency:  merged.ChunkConcurrency,
-		BatchConcurrency:  batchConcurrency,
-		UpgradeOnly:       merged.UpgradeOnly,
-		Asset:             append([]string(nil), merged.AssetFilters...),
-		Hash:              merged.ShowHash,
-		Verify:            merged.Verify,
-		DisableSSL:        merged.DisableSSL,
+		Tag:                 merged.Tag,
+		Name:                cli.Name,
+		Source:              merged.Source,
+		SourcePath:          merged.SourcePath,
+		Output:              output,
+		OutputExplicit:      cli.Output != "",
+		GuiTarget:           guiTarget,
+		IsGUI:               merged.IsGUI,
+		CacheDir:            cacheDir,
+		CacheName:           merged.Name,
+		CacheVersion:        merged.Tag,
+		ProxyURL:            merged.ProxyURL,
+		APICacheEnabled:     apiCacheEnabled,
+		APICacheDir:         apiCacheDir,
+		APICacheTime:        apiCacheTime,
+		GhproxyEnabled:      ghproxyEnabled,
+		GhproxyHostURL:      ghproxyHostURL,
+		GhproxySupportAPI:   ghproxySupportAPI,
+		GhproxyFallbacks:    append([]string(nil), cfg.Ghproxy.Fallbacks...),
+		System:              merged.System,
+		ExtractFile:         merged.File,
+		All:                 merged.ExtractAll,
+		Quiet:               merged.Quiet,
+		DownloadOnly:        merged.DownloadOnly,
+		FallbackVersions:    cli.FallbackVersions,
+		ChunkConcurrency:    merged.ChunkConcurrency,
+		BatchConcurrency:    batchConcurrency,
+		ChunkConcurrencySet: true,
+		BatchConcurrencySet: true,
+		UpgradeOnly:         merged.UpgradeOnly,
+		Asset:               append([]string(nil), merged.AssetFilters...),
+		Hash:                merged.ShowHash,
+		Verify:              merged.Verify,
+		DisableSSL:          merged.DisableSSL,
 	}, nil
 }
 
@@ -449,6 +523,37 @@ func validateConcurrencyOptions(opts install.Options) error {
 		return fmt.Errorf("batch concurrency must be between 0 and %d", maxBatchConcurrency)
 	}
 	return nil
+}
+
+func batchConcurrencyFromConfig(cfg *cfgpkg.File, cli install.Options) int {
+	if cli.BatchConcurrencySet || cli.BatchConcurrency > 0 {
+		return cli.BatchConcurrency
+	}
+	if cfg != nil && cfg.Global.BatchConcurrency != nil {
+		return *cfg.Global.BatchConcurrency
+	}
+	return 0
+}
+
+func effectiveBatchConcurrency(value, total int) int {
+	if total <= 1 {
+		return 1
+	}
+	if value <= 0 {
+		return 1
+	}
+	if value > total {
+		return total
+	}
+	return value
+}
+
+func sendFirstError(errCh chan<- error, err error, cancel func()) {
+	select {
+	case errCh <- err:
+		cancel()
+	default:
+	}
 }
 
 func expandPath(value string) (string, error) {

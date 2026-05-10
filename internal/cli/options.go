@@ -9,20 +9,22 @@ import (
 
 func installOptionsFromInstall(opts *InstallOptions) install.Options {
 	return install.Options{
-		Tag:              opts.Tag,
-		Name:             opts.Name,
-		Source:           opts.Source,
-		Output:           opts.To,
-		OutputExplicit:   opts.To != "",
-		System:           opts.System,
-		ExtractFile:      opts.File,
-		All:              opts.All,
-		IsGUI:            opts.GUI,
-		Quiet:            opts.Quiet,
-		FallbackVersions: opts.FallbackVersions,
-		ChunkConcurrency: opts.ChunkConcurrency,
-		BatchConcurrency: opts.BatchConcurrency,
-		Asset:            splitAssetFilters(opts.Asset),
+		Tag:                 opts.Tag,
+		Name:                opts.Name,
+		Source:              opts.Source,
+		Output:              opts.To,
+		OutputExplicit:      opts.To != "",
+		System:              opts.System,
+		ExtractFile:         opts.File,
+		All:                 opts.All,
+		IsGUI:               opts.GUI,
+		Quiet:               opts.Quiet,
+		FallbackVersions:    opts.FallbackVersions,
+		ChunkConcurrency:    opts.ChunkConcurrency,
+		BatchConcurrency:    opts.BatchConcurrency,
+		ChunkConcurrencySet: opts.ChunkConcurrency >= 0,
+		BatchConcurrencySet: opts.BatchConcurrency >= 0,
+		Asset:               splitAssetFilters(opts.Asset),
 	}
 }
 
@@ -63,6 +65,7 @@ func installOptionsFromDownload(opts *DownloadOptions) install.Options {
 	})
 	base.FallbackVersions = opts.FallbackVersions
 	base.ChunkConcurrency = opts.ChunkConcurrency
+	base.ChunkConcurrencySet = opts.ChunkConcurrency >= 0
 	if hasMultipleFilePatterns(opts.File) {
 		base.All = true
 	}
@@ -72,30 +75,33 @@ func installOptionsFromDownload(opts *DownloadOptions) install.Options {
 
 func installOptionsFromAdd(opts *AddOptions) install.Options {
 	return install.Options{
-		Tag:              opts.Tag,
-		Source:           opts.Source,
-		Output:           opts.To,
-		OutputExplicit:   opts.To != "",
-		System:           opts.System,
-		ExtractFile:      opts.File,
-		All:              opts.All,
-		IsGUI:            opts.GUI,
-		Quiet:            opts.Quiet,
-		ChunkConcurrency: opts.ChunkConcurrency,
-		Asset:            splitAssetFilters(opts.Asset),
+		Tag:                 opts.Tag,
+		Source:              opts.Source,
+		Output:              opts.To,
+		OutputExplicit:      opts.To != "",
+		System:              opts.System,
+		ExtractFile:         opts.File,
+		All:                 opts.All,
+		IsGUI:               opts.GUI,
+		Quiet:               opts.Quiet,
+		ChunkConcurrency:    opts.ChunkConcurrency,
+		ChunkConcurrencySet: opts.ChunkConcurrency >= 0,
+		Asset:               splitAssetFilters(opts.Asset),
 	}
 }
 
 func installOptionsFromUpdate(opts *UpdateOptions) install.Options {
 	return install.Options{
-		Tag:              opts.Tag,
-		Source:           opts.Source,
-		Output:           opts.To,
-		System:           opts.System,
-		Quiet:            opts.Quiet,
-		ChunkConcurrency: opts.ChunkConcurrency,
-		BatchConcurrency: opts.BatchConcurrency,
-		Asset:            splitAssetFilters(opts.Asset),
+		Tag:                 opts.Tag,
+		Source:              opts.Source,
+		Output:              opts.To,
+		System:              opts.System,
+		Quiet:               opts.Quiet,
+		ChunkConcurrency:    opts.ChunkConcurrency,
+		BatchConcurrency:    opts.BatchConcurrency,
+		ChunkConcurrencySet: opts.ChunkConcurrency >= 0,
+		BatchConcurrencySet: opts.BatchConcurrency >= 0,
+		Asset:               splitAssetFilters(opts.Asset),
 	}
 }
 
