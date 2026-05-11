@@ -393,7 +393,7 @@ eget config init
 - `cache_dir` 是默认下载缓存目录
 - `proxy_url` 是全局远程请求代理，GitHub 查询和远程下载都会使用它
 - `source_path` 用于限定 SourceForge 项目 files 区域下的发现路径，例如 `stable`
-- `api_cache` 仅缓存 GitHub API 的 `GET` 响应，缓存文件目录派生为 `{cache_dir}/api-cache/`
+- `api_cache` 会缓存已知 provider 的元数据 `GET` 响应，包括 GitHub API、GitLab/Gitea release API 和 SourceForge files 列表；缓存文件目录派生为 `{cache_dir}/api-cache/`
 - `cache_time` 单位为秒；缓存过期后会重新请求并刷新缓存
 - `ghproxy` 会重写 GitHub 资源下载 URL；当 `support_api = true` 时，也会重写 `api.github.com` 请求
 - `ghproxy.fallbacks` 会在主代理失败时按顺序回退重试

@@ -781,7 +781,7 @@ func requestAttemptURLs(rawURL string, parsed *url.URL, opts Options) []string {
 }
 
 func resolvedAPICachePath(opts Options, rawURL string, parsed *url.URL) (string, bool) {
-	if !opts.APICacheEnabled || !isGitHubAPIRequest(parsed) {
+	if !opts.APICacheEnabled || !isProviderMetadataRequest(parsed) {
 		return "", false
 	}
 	cacheDir := opts.APICacheDir
@@ -794,6 +794,51 @@ func resolvedAPICachePath(opts Options, rawURL string, parsed *url.URL) (string,
 		return "", false
 	}
 	return APICacheFilePath(expanded, rawURL), true
+}
+
+func isProviderMetadataRequest(u *url.URL) bool {
+	if u == nil {
+		return false
+	}
+	switch {
+	case isGitHubAPIRequest(u):
+		return true
+	case isGitLabAPIRequest(u):
+		return true
+	case isGiteaAPIRequest(u):
+		return true
+	case isSourceForgeFilesRequest(u):
+		return true
+	default:
+		return false
+	}
+}
+
+func isGitLabAPIRequest(u *url.URL) bool {
+	if u == nil {
+		return false
+	}
+	parts := strings.Split(strings.Trim(u.EscapedPath(), "/"), "/")
+	return len(parts) >= 5 && parts[0] == "api" && parts[1] == "v4" && parts[2] == "projects" && parts[4] == "releases"
+}
+
+func isGiteaAPIRequest(u *url.URL) bool {
+	if u == nil {
+		return false
+	}
+	parts := strings.Split(strings.Trim(u.EscapedPath(), "/"), "/")
+	return len(parts) >= 6 && parts[0] == "api" && parts[1] == "v1" && parts[2] == "repos" && parts[5] == "releases"
+}
+
+func isSourceForgeFilesRequest(u *url.URL) bool {
+	if u == nil || !strings.EqualFold(u.Host, "sourceforge.net") {
+		return false
+	}
+	parts := strings.Split(strings.Trim(u.EscapedPath(), "/"), "/")
+	if len(parts) < 3 || parts[0] != "projects" || parts[2] != "files" {
+		return false
+	}
+	return !strings.EqualFold(parts[len(parts)-1], "download")
 }
 
 func loadAPICacheResponse(path string, cacheTime int) (*http.Response, bool, error) {

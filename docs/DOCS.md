@@ -214,6 +214,7 @@ CLI > package > repo > global > default
 - `cache_dir`: 默认下载缓存目录
 - `proxy_url`: 全局远程请求代理，优先于环境变量代理并同时作用于 GitHub 查询与远程下载
 - `download` 未传 `--to` 时，app 层会把输出目录回退到 `cache_dir`
+- `api_cache`: 缓存已知 provider 的元数据 GET 响应，包含 GitHub API、GitLab/Gitea release API 和 SourceForge files 列表；不缓存下载文件
 - `chunk_concurrency`: 单文件 HTTP Range 分片并发
 - `batch_concurrency`: `install --all` / `update --all` 批处理并发
 

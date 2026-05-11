@@ -394,7 +394,7 @@ Directory semantics:
 - `cache_dir` is the default download cache directory
 - `proxy_url` is the global proxy for remote requests; both GitHub lookups and remote downloads use it
 - `source_path` narrows SourceForge discovery under a project's files area, for example `stable`
-- `api_cache` only caches GitHub API `GET` responses, and the cache file directory is derived as `{cache_dir}/api-cache/`
+- `api_cache` caches known provider metadata `GET` responses, including GitHub API, GitLab/Gitea release API, and SourceForge files listings; the cache file directory is derived as `{cache_dir}/api-cache/`
 - `cache_time` is measured in seconds; expired cache entries are refreshed from the network
 - `ghproxy` rewrites GitHub asset download URLs; when `support_api = true`, it also rewrites `api.github.com` requests
 - `ghproxy.fallbacks` are tried in order when the primary ghproxy host fails
