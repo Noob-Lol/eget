@@ -85,6 +85,28 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	}
 }
 
+func TestApplyGlobalNetworkConfigDerivesAPICacheDir(t *testing.T) {
+	cacheDir := "~/.cache/eget"
+	proxyURL := "http://127.0.0.1:7890"
+	apiCacheEnabled := true
+	apiCacheTime := 120
+	cfg := cfgpkg.NewFile()
+	cfg.Global.CacheDir = &cacheDir
+	cfg.Global.ProxyURL = &proxyURL
+	cfg.ApiCache.Enable = &apiCacheEnabled
+	cfg.ApiCache.CacheTime = &apiCacheTime
+
+	opts := install.Options{}
+	applyGlobalNetworkConfig(&opts, cfg)
+
+	expectedCache, err := util.Expand(cacheDir)
+	assert.NoErr(t, err)
+	assert.True(t, opts.APICacheEnabled)
+	assert.Eq(t, 120, opts.APICacheTime)
+	assert.Eq(t, filepath.Join(expectedCache, "api-cache"), opts.APICacheDir)
+	assert.Eq(t, proxyURL, opts.ProxyURL)
+}
+
 func TestInstallOptionsFromDownloadEnablesArchiveExtractionWhenRequested(t *testing.T) {
 	opts := installOptionsFromDownload(&DownloadOptions{
 		File: "tool,LICENSE",

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
+	"github.com/inherelab/eget/internal/install"
 	storepkg "github.com/inherelab/eget/internal/installed"
 	"github.com/inherelab/eget/internal/util"
 )
@@ -191,52 +193,121 @@ func (s ListService) ListOutdatedPackages() ([]OutdatedItem, []OutdatedCheckFail
 		return nil, nil, 0, fmt.Errorf("latest info checker is required")
 	}
 
-	items, err := s.ListPackages()
+	cfg, err := s.loadConfig()
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	listService := ListService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+		LoadInstalled: s.loadInstalled,
+		LatestInfo:    s.LatestInfo,
+	}
+	items, err := listService.ListPackages()
 	if err != nil {
 		return nil, nil, 0, err
 	}
 
-	outdated := make([]OutdatedItem, 0, len(items))
-	failures := make([]OutdatedCheckFailure, 0)
-	checked := 0
+	outdated, failures, checked := checkOutdatedItems(items, s.LatestInfo, nil, batchConcurrencyFromConfig(cfg, install.Options{}))
+	return outdated, failures, checked, nil
+}
+
+func checkOutdatedItems(items []ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error), include func(ListItem) bool, batch int) ([]OutdatedItem, []OutdatedCheckFailure, int) {
+	eligible := make([]ListItem, 0, len(items))
 	for _, item := range items {
+		if include != nil && !include(item) {
+			continue
+		}
 		if !item.Installed || item.Repo == "" {
 			continue
 		}
-		checked++
-		if item.InstalledTag == "" {
-			failures = append(failures, OutdatedCheckFailure{
-				Name:  item.Name,
-				Repo:  item.Repo,
-				Error: fmt.Errorf("installed tag is empty"),
-			})
-			continue
-		}
-
-		latest, err := s.LatestInfo(item.Repo, item.SourcePath)
-		if err != nil {
-			failures = append(failures, OutdatedCheckFailure{
-				Name:  item.Name,
-				Repo:  item.Repo,
-				Error: err,
-			})
-			continue
-		}
-		if latest.Tag == "" || latest.Tag == item.InstalledTag {
-			continue
-		}
-
-		outdated = append(outdated, OutdatedItem{
-			Name:         item.Name,
-			Repo:         item.Repo,
-			Target:       item.Target,
-			InstalledTag: item.InstalledTag,
-			LatestTag:    latest.Tag,
-			InstalledAt:  item.InstalledAt,
-			PublishedAt:  latest.PublishedAt,
-		})
+		eligible = append(eligible, item)
 	}
-	return outdated, failures, checked, nil
+	results := runOutdatedChecks(eligible, latestInfo, effectiveBatchConcurrency(batch, len(eligible)))
+
+	outdated := make([]OutdatedItem, 0, len(results))
+	failures := make([]OutdatedCheckFailure, 0)
+	for _, result := range results {
+		if result.failure != nil {
+			failures = append(failures, *result.failure)
+		}
+		if result.outdated != nil {
+			outdated = append(outdated, *result.outdated)
+		}
+	}
+	return outdated, failures, len(eligible)
+}
+
+type outdatedCheckResult struct {
+	outdated *OutdatedItem
+	failure  *OutdatedCheckFailure
+}
+
+func runOutdatedChecks(items []ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error), batch int) []outdatedCheckResult {
+	results := make([]outdatedCheckResult, len(items))
+	if len(items) == 0 {
+		return results
+	}
+	if batch <= 1 {
+		for i, item := range items {
+			results[i] = checkOutdatedItem(item, latestInfo)
+		}
+		return results
+	}
+
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	for i := 0; i < batch; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for index := range jobs {
+				results[index] = checkOutdatedItem(items[index], latestInfo)
+			}
+		}()
+	}
+	for i := range items {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+	return results
+}
+
+func checkOutdatedItem(item ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error)) outdatedCheckResult {
+	if item.InstalledTag == "" {
+		failure := OutdatedCheckFailure{
+			Name:  item.Name,
+			Repo:  item.Repo,
+			Error: fmt.Errorf("installed tag is empty"),
+		}
+		return outdatedCheckResult{failure: &failure}
+	}
+
+	latest, err := latestInfo(item.Repo, item.SourcePath)
+	if err != nil {
+		failure := OutdatedCheckFailure{
+			Name:  item.Name,
+			Repo:  item.Repo,
+			Error: err,
+		}
+		return outdatedCheckResult{failure: &failure}
+	}
+	if latest.Tag == "" || latest.Tag == item.InstalledTag {
+		return outdatedCheckResult{}
+	}
+
+	outdated := OutdatedItem{
+		Name:         item.Name,
+		Repo:         item.Repo,
+		Target:       item.Target,
+		InstalledTag: item.InstalledTag,
+		LatestTag:    latest.Tag,
+		InstalledAt:  item.InstalledAt,
+		PublishedAt:  latest.PublishedAt,
+	}
+	return outdatedCheckResult{outdated: &outdated}
 }
 
 func repoName(repo string) string {

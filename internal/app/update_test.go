@@ -292,6 +292,40 @@ func TestUpdateAllPackagesInstallsOnlyOutdatedInstalledPackages(t *testing.T) {
 	assert.Eq(t, "BurntSushi/ripgrep", results[0].Target)
 }
 
+func TestUpdateAllPackagesPassesAPICacheOptionsFromConfigToInstaller(t *testing.T) {
+	installer := &fakeInstallService{}
+	cacheTime := 120
+	apiCacheEnabled := true
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Global.CacheDir = util.StringPtr("~/.cache/eget")
+			cfg.ApiCache.Enable = &apiCacheEnabled
+			cfg.ApiCache.CacheTime = &cacheTime
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	_, err := svc.UpdateAllPackages(install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(installer.options))
+	assert.True(t, installer.options[0].APICacheEnabled)
+	assert.Eq(t, 120, installer.options[0].APICacheTime)
+	if installer.options[0].APICacheDir == "" {
+		t.Fatalf("expected api cache dir to be derived from config, got %#v", installer.options[0])
+	}
+}
+
 func TestUpdateAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testing.T) {
 	block := make(chan struct{})
 	installer := &fakeInstallService{block: block}

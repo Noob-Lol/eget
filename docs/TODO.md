@@ -19,9 +19,9 @@
 - [x] 增强 install/download/update 支持并发下载
   - `--chunk N` / `global.chunk_concurrency` 控制单文件 HTTP Range 分片并发
   - `--batch N` / `global.batch_concurrency` 控制 `install --all` / `update --all` 批处理并发
-- [ ] 优化 `list --outdated / update --check` 查询处理。
-  - 支持并发查询结果
-  - 缓存一下，2分钟内执行 `update` 不会重新检查更新
+- [x] 优化 `list --outdated / update --check` 查询处理。
+  - [x] 支持并发查询多个包信息 API
+  - [x] 复用 `api_cache.cache_time`，`update --check` 后在缓存时间内执行 `update` 不会重复检查 GitHub API
 
 ## search 结果展示 ✅
 
@@ -51,4 +51,3 @@ required = ["required1", "required2"]
 optional = ["optional1", "optional2"]
 dev = ["dev1", "dev2"]
 ```
-

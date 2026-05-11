@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"path/filepath"
 	"strings"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
+	"github.com/inherelab/eget/internal/util"
 )
 
 func installOptionsFromInstall(opts *InstallOptions) install.Options {
@@ -37,6 +39,15 @@ func applyGlobalNetworkConfig(opts *install.Options, cfg *cfgpkg.File) {
 	}
 	if cfg.ApiCache.CacheTime != nil {
 		opts.APICacheTime = *cfg.ApiCache.CacheTime
+	}
+	if cfg.Global.CacheDir != nil {
+		if cacheDir, err := util.Expand(*cfg.Global.CacheDir); err == nil && cacheDir != "" {
+			opts.CacheDir = cacheDir
+			opts.APICacheDir = filepath.Join(cacheDir, "api-cache")
+		}
+	}
+	if cfg.Global.ProxyURL != nil {
+		opts.ProxyURL = *cfg.Global.ProxyURL
 	}
 	if cfg.Ghproxy.Enable != nil {
 		opts.GhproxyEnabled = *cfg.Ghproxy.Enable

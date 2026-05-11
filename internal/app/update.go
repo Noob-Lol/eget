@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"sync"
 
@@ -103,53 +104,18 @@ func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFa
 		return nil, nil, 0, err
 	}
 
-	outdated := make([]OutdatedItem, 0, len(items))
-	failures := make([]OutdatedCheckFailure, 0)
-	checked := 0
-	for _, item := range items {
-		if !managedNames[item.Name] && !managedRepos[item.Repo] {
-			continue
-		}
-		if !item.Installed || item.Repo == "" {
-			continue
-		}
-		checked++
-		if item.InstalledTag == "" {
-			failures = append(failures, OutdatedCheckFailure{
-				Name:  item.Name,
-				Repo:  item.Repo,
-				Error: fmt.Errorf("installed tag is empty"),
-			})
-			continue
-		}
-
-		latest, err := s.LatestInfo(item.Repo, item.SourcePath)
-		if err != nil {
-			failures = append(failures, OutdatedCheckFailure{
-				Name:  item.Name,
-				Repo:  item.Repo,
-				Error: err,
-			})
-			continue
-		}
-		if latest.Tag == "" || latest.Tag == item.InstalledTag {
-			continue
-		}
-
-		outdated = append(outdated, OutdatedItem{
-			Name:         item.Name,
-			Repo:         item.Repo,
-			Target:       item.Target,
-			InstalledTag: item.InstalledTag,
-			LatestTag:    latest.Tag,
-			InstalledAt:  item.InstalledAt,
-			PublishedAt:  latest.PublishedAt,
-		})
-	}
+	outdated, failures, checked := checkOutdatedItems(items, s.LatestInfo, func(item ListItem) bool {
+		return managedNames[item.Name] || managedRepos[item.Repo]
+	}, batchConcurrencyFromConfig(cfg, install.Options{}))
 	return outdated, failures, checked, nil
 }
 
 func (s UpdateService) UpdateCandidates(candidates []OutdatedItem, cli install.Options) ([]UpdateResult, error) {
+	cfg, err := s.loadConfig()
+	if err != nil {
+		return nil, err
+	}
+	cli = applyConfigNetworkOptions(cfg, cli)
 	if err := validateRawConcurrencyOptions(cli); err != nil {
 		return nil, err
 	}
@@ -251,6 +217,40 @@ func (s UpdateService) loadInstalled() (*storepkg.Config, error) {
 		return nil, err
 	}
 	return store.Load()
+}
+
+func applyConfigNetworkOptions(cfg *cfgpkg.File, opts install.Options) install.Options {
+	if cfg == nil {
+		return opts
+	}
+	if opts.CacheDir == "" {
+		opts.CacheDir, _ = expandPath(util.DerefString(cfg.Global.CacheDir))
+	}
+	if opts.ProxyURL == "" {
+		opts.ProxyURL = util.DerefString(cfg.Global.ProxyURL)
+	}
+	if cfg.ApiCache.Enable != nil {
+		opts.APICacheEnabled = *cfg.ApiCache.Enable
+	}
+	if cfg.ApiCache.CacheTime != nil {
+		opts.APICacheTime = *cfg.ApiCache.CacheTime
+	}
+	if opts.APICacheDir == "" && opts.CacheDir != "" {
+		opts.APICacheDir = filepath.Join(opts.CacheDir, "api-cache")
+	}
+	if cfg.Ghproxy.Enable != nil {
+		opts.GhproxyEnabled = *cfg.Ghproxy.Enable
+	}
+	if opts.GhproxyHostURL == "" {
+		opts.GhproxyHostURL = util.DerefString(cfg.Ghproxy.HostURL)
+	}
+	if cfg.Ghproxy.SupportAPI != nil {
+		opts.GhproxySupportAPI = *cfg.Ghproxy.SupportAPI
+	}
+	if len(opts.GhproxyFallbacks) == 0 && len(cfg.Ghproxy.Fallbacks) > 0 {
+		opts.GhproxyFallbacks = append([]string(nil), cfg.Ghproxy.Fallbacks...)
+	}
+	return opts
 }
 
 func boolOpt(value bool) *bool {

@@ -24,7 +24,8 @@ func newCLIService() (*cliService, error) {
 	}
 	defaultOpts := install.Options{}
 	applyGlobalNetworkConfig(&defaultOpts, cfg)
-	githubClient := client.NewGitHubClient(install.ClientOptions(defaultOpts))
+	defaultClientOpts := install.ClientOptions(defaultOpts)
+	githubClient := client.NewGitHubClient(defaultClientOpts)
 	installService := install.NewDefaultService(githubClient, binaryModTime)
 	installService.GitHubGetterFactory = func(opts install.Options) sourcegithub.HTTPGetter {
 		return client.NewGitHubClient(install.ClientOptions(opts))
@@ -67,14 +68,14 @@ func newCLIService() (*cliService, error) {
 	cfgService := app.ConfigService{ConfigPath: cfgPath}
 	latestInfo := func(repo, sourcePath string) (app.LatestInfo, error) {
 		if sfTarget, err := sourcesf.ParseTarget(repo); err == nil {
-			info, err := sourcesf.LatestVersion(sfTarget.Project, sourcePath, install.NewHTTPGetter(defaultOpts))
+			info, err := sourcesf.LatestVersion(sfTarget.Project, sourcePath, client.NewHTTPGetter(defaultClientOpts))
 			if err != nil {
 				return app.LatestInfo{}, err
 			}
 			return app.LatestInfo{Tag: info.Version, PublishedAt: info.PublishedAt}, nil
 		}
 		if forgeTarget, err := forge.ParseTarget(repo); err == nil {
-			info, err := forge.LatestVersion(forgeTarget, install.NewHTTPGetter(defaultOpts))
+			info, err := forge.LatestVersion(forgeTarget, client.NewHTTPGetter(defaultClientOpts))
 			if err != nil {
 				return app.LatestInfo{}, err
 			}
@@ -113,7 +114,7 @@ func newCLIService() (*cliService, error) {
 		Now:    time.Now,
 		ReleaseInfo: func(repo, url string) (string, time.Time, error) {
 			if forgeTarget, err := forge.ParseTarget(repo); err == nil {
-				info, err := forge.LatestVersion(forgeTarget, install.NewHTTPGetter(defaultOpts))
+				info, err := forge.LatestVersion(forgeTarget, client.NewHTTPGetter(defaultClientOpts))
 				return info.Tag, info.PublishedAt, err
 			}
 			return githubClient.LatestReleaseInfo(repo)
