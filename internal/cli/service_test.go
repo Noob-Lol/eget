@@ -165,6 +165,50 @@ func TestPromptIndexConsumesTrailingNewline(t *testing.T) {
 	}
 }
 
+func TestPromptIndexRendersInteractiveSelect(t *testing.T) {
+	origStdin := os.Stdin
+	origStderr := os.Stderr
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create stdin pipe: %v", err)
+	}
+	errReader, errWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create stderr pipe: %v", err)
+	}
+	os.Stdin = reader
+	os.Stderr = errWriter
+	defer func() {
+		os.Stdin = origStdin
+		os.Stderr = origStderr
+		_ = reader.Close()
+		_ = errReader.Close()
+		_ = errWriter.Close()
+	}()
+	if _, err := writer.WriteString("2\n"); err != nil {
+		t.Fatalf("write stdin: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close stdin writer: %v", err)
+	}
+
+	picked, err := promptIndex([]string{"first.zip", "second.zip"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, picked)
+
+	if err := errWriter.Close(); err != nil {
+		t.Fatalf("close stderr writer: %v", err)
+	}
+	rendered, err := io.ReadAll(errReader)
+	if err != nil {
+		t.Fatalf("read stderr: %v", err)
+	}
+	got := string(rendered)
+	assert.Contains(t, got, "Select package resource")
+	assert.Contains(t, got, "1) first.zip")
+	assert.Contains(t, got, "2) second.zip")
+}
+
 func TestHandleInstallPrintsAddedPackageMessage(t *testing.T) {
 	origStdout := os.Stdout
 	r, w, err := os.Pipe()

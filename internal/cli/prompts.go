@@ -1,27 +1,69 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/gookit/cliui/interact/backend"
+	"github.com/gookit/cliui/interact/backend/readline"
+	interactui "github.com/gookit/cliui/interact/ui"
+	"golang.org/x/term"
 )
 
 func promptIndex(choices []string) (int, error) {
+	return runSelectIndex(os.Stdin, os.Stderr, readline.New(), choices)
+}
+
+func runSelectIndex(in io.Reader, out io.Writer, be backend.Backend, choices []string) (int, error) {
+	items := make([]interactui.Item, 0, len(choices))
 	for i, choice := range choices {
-		fmt.Fprintf(os.Stderr, "(%d) %s\n", i+1, choice)
+		key := strconv.Itoa(i + 1)
+		items = append(items, interactui.Item{
+			Key:   key,
+			Label: choice,
+			Value: i,
+		})
 	}
-	fmt.Fprint(os.Stderr, "Enter selection number: ")
-	line, err := readStdinLine()
+
+	selectUI := interactui.NewSelect("Select package resource", items)
+	selectUI.Filterable = true
+	selectUI.FilterPrompt = "Filter assets"
+	selectUI.PageSize = 12
+	if len(items) > 0 {
+		selectUI.DefaultKey = items[0].Key
+	}
+
+	result, err := selectUI.RunWithIO(context.Background(), be, selectInputReader(in), out)
 	if err != nil {
 		return 0, err
 	}
-	picked, err := strconv.Atoi(strings.TrimSpace(line))
-	if err != nil {
-		return 0, err
+	if index, ok := result.Value.(int); ok {
+		return index, nil
 	}
-	return picked - 1, nil
+	picked, err := strconv.Atoi(result.Key)
+	return picked - 1, err
+}
+
+func selectInputReader(in io.Reader) io.Reader {
+	if file, ok := in.(*os.File); ok && term.IsTerminal(int(file.Fd())) {
+		return file
+	}
+	return singleByteReader{reader: in}
+}
+
+type singleByteReader struct {
+	reader io.Reader
+}
+
+func (r singleByteReader) Read(p []byte) (int, error) {
+	if len(p) > 1 {
+		p = p[:1]
+	}
+	return r.reader.Read(p)
 }
 
 func readStdinLine() (string, error) {
