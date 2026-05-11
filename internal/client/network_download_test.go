@@ -86,6 +86,23 @@ func TestDownloadFallsBackWhenServerDoesNotSupportRange(t *testing.T) {
 	assert.Eq(t, int64(0), rangeRequests.Load())
 }
 
+func TestDownloadRangeChunksRejectsSizeAboveIntMax(t *testing.T) {
+	if strconv.IntSize > 32 {
+		t.Skip("requires a 32-bit int platform")
+	}
+	size := int64(1) << 31
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			t.Fatalf("expected an error instead of panic: %v", recovered)
+		}
+	}()
+
+	err := downloadRangeChunks("https://example.com/tool", &bytes.Buffer{}, nil, size, 2, Options{})
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "too large")
+}
+
 func parseTestRange(t *testing.T, header string) (int, int) {
 	t.Helper()
 	value := strings.TrimPrefix(header, "bytes=")

@@ -406,7 +406,11 @@ func downloadRangeChunks(rawURL string, out io.Writer, bar io.Writer, size int64
 	if size <= 0 {
 		return fmt.Errorf("invalid range download size %d", size)
 	}
-	body := make([]byte, int(size))
+	bodyLen, err := intFromContentLength(size)
+	if err != nil {
+		return err
+	}
+	body := make([]byte, bodyLen)
 	ranges := splitByteRanges(size, chunks)
 	progressWriter, closeProgress := concurrentProgressWriter(bar)
 
@@ -452,13 +456,24 @@ func downloadRangeChunks(rawURL string, out io.Writer, bar io.Writer, size int64
 		}
 	}
 	closeProgress()
-	_, err := out.Write(body)
+	_, err = out.Write(body)
 	if err == nil {
 		if finisher, ok := bar.(progressFinisher); ok {
 			finisher.Finish()
 		}
 	}
 	return err
+}
+
+func intFromContentLength(size int64) (int, error) {
+	if size <= 0 {
+		return 0, fmt.Errorf("invalid range download size %d", size)
+	}
+	maxInt := int64(^uint(0) >> 1)
+	if size > maxInt {
+		return 0, fmt.Errorf("range download size %d is too large for this platform", size)
+	}
+	return int(size), nil
 }
 
 func requestWithOptions(method, rawURL, rangeHeader string, opts Options) (*http.Response, error) {
