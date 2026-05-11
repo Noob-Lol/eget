@@ -10,7 +10,6 @@
 - [x] 增强功能：参考自 https://github.com/marwanhawari/stew
   - [x] 新增命令 query 用于浏览 GitHub repository 的 releases
   - [x] 新增命令 search 用于搜索 GitHub 上的 repository
-- [ ] 配置新增 global.restore_packages 用于指定 `eget install` 需要恢复的 package names
 - [x] 新增配置 global.gui_target 用于指定 GUI 应用的安装目录
   - 同时 package 新增 isgui 字段用于指定是否为 GUI 应用, 如果是 msi, setup exe, 如何启动应用安装？
   - list 支持 --gui 选项用于显示 GUI 应用
@@ -20,7 +19,9 @@
 - [x] 增强 install/download/update 支持并发下载
   - `--chunk N` / `global.chunk_concurrency` 控制单文件 HTTP Range 分片并发
   - `--batch N` / `global.batch_concurrency` 控制 `install --all` / `update --all` 批处理并发
-- [ ] 优化 `list --outdated / update --check` 缓存查询结果，2分钟内执行 `update` 不会重新检查更新
+- [ ] 优化 `list --outdated / update --check` 查询处理。
+  - 支持并发查询结果
+  - 缓存一下，2分钟内执行 `update` 不会重新检查更新
 
 ## search 结果展示 ✅
 
@@ -29,3 +30,25 @@
 {description}
 ---
 ```
+
+## 新增 global.group_packages 用于配置 package 分组 ⏳
+
+配置新增 `global.group_packages` 用于配置 package 分组, 可以配置多个分组,在需要恢复时指定分组快速安装。
+例如:
+
+- `required` 分组用于指定必须安装的 package names
+- `optional` 分组用于指定可选安装的 package names
+- `dev` 分组用于指定开发环境的 package names
+
+通过 `eget install --group <group-names>` 选项可以安装指定分组的 packages. 可以多个分组名称, 用逗号分隔.
+例如：`eget install --group required,dev` 需要安装 `required` 和 `dev` 分组的 packages.
+
+config example:
+
+```toml
+[group_packages]
+required = ["required1", "required2"]
+optional = ["optional1", "optional2"]
+dev = ["dev1", "dev2"]
+```
+
