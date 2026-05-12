@@ -134,6 +134,7 @@ func TestInstallTargetRunsInstallFlowAndRecordsInstalledState(t *testing.T) {
 }
 
 func TestInstallTargetRecordsTagFromReleaseURLBeforeLatestFallback(t *testing.T) {
+	releaseInfoCalls := 0
 	runner := &fakeRunner{
 		result: RunResult{
 			URL:            "https://github.com/junegunn/fzf/releases/download/v1.0.0/fzf.tar.gz",
@@ -146,6 +147,7 @@ func TestInstallTargetRecordsTagFromReleaseURLBeforeLatestFallback(t *testing.T)
 		Runner: runner,
 		Store:  store,
 		ReleaseInfo: func(repo, url string) (string, time.Time, error) {
+			releaseInfoCalls++
 			return "v9.9.9", time.Unix(1710000000, 0).UTC(), nil
 		},
 	}
@@ -158,6 +160,7 @@ func TestInstallTargetRecordsTagFromReleaseURLBeforeLatestFallback(t *testing.T)
 	if store.entry.Tag != "v1.0.0" {
 		t.Fatalf("expected tag from release URL, got %q", store.entry.Tag)
 	}
+	assert.Eq(t, 0, releaseInfoCalls)
 }
 
 func TestInstallTargetRecordsSourceForgeVersionFromURL(t *testing.T) {

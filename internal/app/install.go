@@ -285,7 +285,7 @@ func (s Service) installResolvedTarget(runTarget string, opts install.Options) (
 	if tag == "" && isForge && opts.Tag != "" {
 		tag = opts.Tag
 	}
-	if s.ReleaseInfo != nil {
+	if tag == "" && s.ReleaseInfo != nil {
 		if gotTag, gotDate, err := s.ReleaseInfo(repo, result.URL); err == nil {
 			if tag == "" {
 				tag = gotTag
