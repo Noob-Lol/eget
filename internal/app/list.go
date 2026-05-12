@@ -58,6 +58,7 @@ type ListService struct {
 	LoadConfig    func() (*cfgpkg.File, error)
 	LoadInstalled func() (*storepkg.Config, error)
 	LatestInfo    func(repo, sourcePath string) (LatestInfo, error)
+	OnCheckDone   func(checked, total int)
 }
 
 func (s ListService) ListPackages() ([]ListItem, error) {
@@ -209,11 +210,11 @@ func (s ListService) ListOutdatedPackages() ([]OutdatedItem, []OutdatedCheckFail
 		return nil, nil, 0, err
 	}
 
-	outdated, failures, checked := checkOutdatedItems(items, s.LatestInfo, nil, batchConcurrencyFromConfig(cfg, install.Options{}))
+	outdated, failures, checked := checkOutdatedItems(items, s.LatestInfo, nil, batchConcurrencyFromConfig(cfg, install.Options{}), s.OnCheckDone)
 	return outdated, failures, checked, nil
 }
 
-func checkOutdatedItems(items []ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error), include func(ListItem) bool, batch int) ([]OutdatedItem, []OutdatedCheckFailure, int) {
+func checkOutdatedItems(items []ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error), include func(ListItem) bool, batch int, onCheckDone func(checked, total int)) ([]OutdatedItem, []OutdatedCheckFailure, int) {
 	eligible := make([]ListItem, 0, len(items))
 	for _, item := range items {
 		if include != nil && !include(item) {
@@ -224,7 +225,10 @@ func checkOutdatedItems(items []ListItem, latestInfo func(repo, sourcePath strin
 		}
 		eligible = append(eligible, item)
 	}
-	results := runOutdatedChecks(eligible, latestInfo, effectiveBatchConcurrency(batch, len(eligible)))
+	if onCheckDone != nil {
+		onCheckDone(0, len(eligible))
+	}
+	results := runOutdatedChecks(eligible, latestInfo, effectiveBatchConcurrency(batch, len(eligible)), onCheckDone)
 
 	outdated := make([]OutdatedItem, 0, len(results))
 	failures := make([]OutdatedCheckFailure, 0)
@@ -244,14 +248,16 @@ type outdatedCheckResult struct {
 	failure  *OutdatedCheckFailure
 }
 
-func runOutdatedChecks(items []ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error), batch int) []outdatedCheckResult {
+func runOutdatedChecks(items []ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error), batch int, onCheckDone func(checked, total int)) []outdatedCheckResult {
 	results := make([]outdatedCheckResult, len(items))
 	if len(items) == 0 {
 		return results
 	}
+	progress := newOutdatedCheckProgress(len(items), onCheckDone)
 	if batch <= 1 {
 		for i, item := range items {
 			results[i] = checkOutdatedItem(item, latestInfo)
+			progress.Done()
 		}
 		return results
 	}
@@ -264,6 +270,7 @@ func runOutdatedChecks(items []ListItem, latestInfo func(repo, sourcePath string
 			defer wg.Done()
 			for index := range jobs {
 				results[index] = checkOutdatedItem(items[index], latestInfo)
+				progress.Done()
 			}
 		}()
 	}
@@ -273,6 +280,29 @@ func runOutdatedChecks(items []ListItem, latestInfo func(repo, sourcePath string
 	close(jobs)
 	wg.Wait()
 	return results
+}
+
+type outdatedCheckProgress struct {
+	total int
+	done  int
+	mu    sync.Mutex
+	fn    func(checked, total int)
+}
+
+func newOutdatedCheckProgress(total int, fn func(checked, total int)) *outdatedCheckProgress {
+	return &outdatedCheckProgress{total: total, fn: fn}
+}
+
+func (p *outdatedCheckProgress) Done() {
+	if p == nil || p.fn == nil {
+		return
+	}
+	p.mu.Lock()
+	p.done++
+	done := p.done
+	total := p.total
+	p.mu.Unlock()
+	p.fn(done, total)
 }
 
 func checkOutdatedItem(item ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error)) outdatedCheckResult {

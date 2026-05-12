@@ -21,6 +21,7 @@ type cliService struct {
 	lookupEnv          func(string) (string, bool)
 	lookupUserHome     func(string) (string, error)
 	fileExists         func(string) bool
+	proxyURL           string
 }
 
 func (s *cliService) stderrWriter() io.Writer {

@@ -42,6 +42,18 @@ func SetVerbose(enabled bool, writer io.Writer) {
 	client.SetVerbose(enabled, writer)
 }
 
+func SetProxyNoticeWriter(writer io.Writer) io.Writer {
+	prev := proxyNoticeWriter
+	proxyNoticeWriter = writer
+	return prev
+}
+
+func SetAPICacheNoticeWriter(writer io.Writer) io.Writer {
+	prev := apiCacheNoticeWriter
+	apiCacheNoticeWriter = writer
+	return prev
+}
+
 func VerboseEnabledForTest() bool {
 	return client.VerboseEnabledForTest()
 }

@@ -507,6 +507,46 @@ func TestListOutdatedPackagesUsesConfiguredBatchConcurrencyAndPreservesOrder(t *
 	}())
 }
 
+func TestListOutdatedPackagesReportsCheckProgress(t *testing.T) {
+	var mu sync.Mutex
+	var progress []int
+	svc := ListService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			cfg.Packages["fd"] = cfgpkg.Section{Repo: util.StringPtr("sharkdp/fd")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.1.0"},
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v0.1.0"},
+				"sharkdp/fd":         {Repo: "sharkdp/fd", Tag: "v0.1.0"},
+			}}, nil
+		},
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+			return LatestInfo{Tag: "v1.0.0"}, nil
+		},
+		OnCheckDone: func(checked, total int) {
+			assert.Eq(t, 3, total)
+			mu.Lock()
+			defer mu.Unlock()
+			progress = append(progress, checked)
+		},
+	}
+
+	_, _, checked, err := svc.ListOutdatedPackages()
+	assert.NoErr(t, err)
+	assert.Eq(t, 3, checked)
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Eq(t, 4, len(progress))
+	assert.Eq(t, 0, progress[0])
+	assert.Eq(t, 3, progress[len(progress)-1])
+}
+
 func TestFindPackageReturnsMergedItem(t *testing.T) {
 	now := time.Unix(1710000000, 0).UTC()
 	svc := ListService{

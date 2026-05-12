@@ -13,6 +13,7 @@ import (
 	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
+	"github.com/inherelab/eget/internal/client"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 	storepkg "github.com/inherelab/eget/internal/installed"
@@ -689,6 +690,70 @@ func TestHandleListOutdatedPrintsCheckedInstalledCountWhenNothingOutdated(t *tes
 	}
 	if !strings.Contains(got, "No outdated packages found") {
 		t.Fatalf("expected no outdated message, got %q", got)
+	}
+}
+
+func TestHandleListOutdatedPrintsSingleProxyNoticeAndCacheSummary(t *testing.T) {
+	cacheDir := t.TempDir()
+	repos := []string{"gookit/gitw", "sipeed/picoclaw", "windirstat/windirstat"}
+	for _, repo := range repos {
+		apiURL := "https://api.github.com/repos/" + repo + "/releases/latest"
+		cachePath := install.APICacheFilePath(cacheDir, apiURL)
+		if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
+			t.Fatalf("mkdir cache dir: %v", err)
+		}
+		if err := os.WriteFile(cachePath, []byte(`{"tag_name":"v1.0.0"}`), 0o644); err != nil {
+			t.Fatalf("write cache file: %v", err)
+		}
+	}
+
+	svc := &cliService{
+		proxyURL: "http://127.0.0.1:1081",
+		listService: app.ListService{
+			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
+				apiURL := "https://api.github.com/repos/" + repo + "/releases/latest"
+				resp, err := client.GetWithOptions(apiURL, client.Options{
+					ProxyURL:        "http://127.0.0.1:1081",
+					APICacheEnabled: true,
+					APICacheDir:     cacheDir,
+					APICacheTime:    300,
+				})
+				if err != nil {
+					return app.LatestInfo{}, err
+				}
+				_ = resp.Body.Close()
+				return app.LatestInfo{Tag: "v1.0.0"}, nil
+			},
+			LoadConfig: func() (*cfgpkg.File, error) {
+				return cfgpkg.NewFile(), nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"gookit/gitw":           {Repo: "gookit/gitw", Tag: "v1.0.0"},
+					"sipeed/picoclaw":       {Repo: "sipeed/picoclaw", Tag: "v1.0.0"},
+					"windirstat/windirstat": {Repo: "windirstat/windirstat", Tag: "v1.0.0"},
+				}}, nil
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	svc.stderr = &stderr
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleList(&ListOptions{Outdated: true})
+	if err != nil {
+		t.Fatalf("handle list outdated: %v", err)
+	}
+
+	gotErr := ccolor.ClearCode(stderr.String())
+	if strings.Count(gotErr, "proxy_url for GitHub API request") != 1 {
+		t.Fatalf("expected one proxy notice, got %q", gotErr)
+	}
+	if !strings.Contains(gotErr, "Reused api_cache files: 3") {
+		t.Fatalf("expected cache summary, got %q", gotErr)
 	}
 }
 

@@ -78,6 +78,8 @@ github.com/gookit/cliui v0.2.5-0.20260509152712-bda530f32df3 h1:pFfP0fniXRY6W1O+
 github.com/gookit/cliui v0.2.5-0.20260509152712-bda530f32df3/go.mod h1:BoloSh1+/IiIPKIWKG7G21mLww7wylzmSOUsjv2XsHY=
 github.com/gookit/cliui v0.3.0 h1:KVvKC2Ys2SsBABg1+hHp0BzFjUMuAknkyRkCslpjJos=
 github.com/gookit/cliui v0.3.0/go.mod h1:BoloSh1+/IiIPKIWKG7G21mLww7wylzmSOUsjv2XsHY=
+github.com/gookit/cliui v0.3.1-0.20260511123424-fbf2479d9105 h1:M7hP/SKXuB4iThmiGKj+2S0MdQ/N/gJW6wF5zj8ICyk=
+github.com/gookit/cliui v0.3.1-0.20260511123424-fbf2479d9105/go.mod h1:BoloSh1+/IiIPKIWKG7G21mLww7wylzmSOUsjv2XsHY=
 github.com/gookit/color v1.6.1 h1:KoTnDxJPRgrL0SoX0f8rCFg2zI0t4E3GZZBMo2nN8LU=
 github.com/gookit/color v1.6.1/go.mod h1:9ACFc7/1IpHGBW8RwuDm/0YEnhg3dwwXpoMsmtyHfjs=
 github.com/gookit/config/v2 v2.2.8 h1:TX6CypFUj9mZeDxpigerUG2P27u/BDM2l6UUIj0G8rA=

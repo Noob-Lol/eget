@@ -133,6 +133,7 @@ func newCLIService() (*cliService, error) {
 		uninstallService: uninstallService,
 		updService:       updService,
 		stderr:           os.Stderr,
+		proxyURL:         defaultOpts.ProxyURL,
 	}, nil
 }
 

@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/bodgit/sevenzip v1.6.1
 	github.com/gobwas/glob v0.2.3
-	github.com/gookit/cliui v0.3.0
+	github.com/gookit/cliui v0.3.1-0.20260511123424-fbf2479d9105
 	github.com/gookit/config/v2 v2.2.8
 	github.com/gookit/goutil v0.7.5
 	github.com/klauspost/compress v1.17.11

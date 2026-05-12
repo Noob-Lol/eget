@@ -22,6 +22,7 @@ type UpdateService struct {
 	LoadConfig    func() (*cfgpkg.File, error)
 	LoadInstalled func() (*storepkg.Config, error)
 	LatestInfo    func(repo, sourcePath string) (LatestInfo, error)
+	OnCheckDone   func(checked, total int)
 }
 
 type UpdateResult struct {
@@ -106,7 +107,7 @@ func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFa
 
 	outdated, failures, checked := checkOutdatedItems(items, s.LatestInfo, func(item ListItem) bool {
 		return managedNames[item.Name] || managedRepos[item.Repo]
-	}, batchConcurrencyFromConfig(cfg, install.Options{}))
+	}, batchConcurrencyFromConfig(cfg, install.Options{}), s.OnCheckDone)
 	return outdated, failures, checked, nil
 }
 

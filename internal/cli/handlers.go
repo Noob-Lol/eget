@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gookit/cliui/progress"
@@ -15,6 +17,7 @@ import (
 	"github.com/gookit/goutil/cliutil"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
+	"github.com/inherelab/eget/internal/client"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 )
@@ -201,15 +204,22 @@ func (s *cliService) handleList(opts *ListOptions) error {
 
 	if opts != nil && opts.Outdated {
 		ccolor.Infoln("🚀 Checking outdated packages")
-		sp := progress.RoundTripSpinner(progress.RandomCharTheme(), 100*time.Millisecond)
-		if !appVerbose() {
-			sp.Start("%s checking")
-		}
+		s.printOutdatedProxyNotice()
+		reporter := newOutdatedProgressReporter(s.stderrWriter(), !appVerbose())
+		cacheNotices := &apiCacheNoticeCounter{}
+		restoreNotices := suppressOutdatedNetworkNotices(cacheNotices)
+		defer restoreNotices()
+		prevOnDone := s.listService.OnCheckDone
+		s.listService.OnCheckDone = reporter.OnCheckDone
+		defer func() {
+			s.listService.OnCheckDone = prevOnDone
+		}()
 		items, failures, checked, err := s.listService.ListOutdatedPackages()
+		reporter.Finish()
 		if err != nil {
 			return err
 		}
-		sp.Stop()
+		s.printAPICacheSummary(cacheNotices.Count())
 		ccolor.Successf("✅ Checked %d packages\n", checked)
 
 		for _, failure := range failures {
@@ -319,6 +329,89 @@ func appVerbose() bool {
 	return cliApp != nil && cliApp.Verbose()
 }
 
+type outdatedProgressReporter struct {
+	writer  io.Writer
+	bar     *progress.Progress
+	enabled bool
+	started bool
+}
+
+func newOutdatedProgressReporter(writer io.Writer, enabled bool) *outdatedProgressReporter {
+	if writer == nil {
+		writer = os.Stderr
+	}
+	return &outdatedProgressReporter{
+		writer:  writer,
+		enabled: enabled && progress.IsTerminal(writer),
+	}
+}
+
+func (r *outdatedProgressReporter) OnCheckDone(checked, total int) {
+	if r == nil || !r.enabled || total <= 0 {
+		return
+	}
+	if r.bar == nil {
+		r.bar = progress.Bar(int64(total))
+		r.bar.Out = r.writer
+		r.bar.Format = "Checking ({@current}/{@max}) [{@bar}]"
+		r.bar.Start()
+		r.started = true
+	}
+	r.bar.AdvanceTo(int64(checked))
+}
+
+func (r *outdatedProgressReporter) Finish() {
+	if r == nil || !r.started || r.bar == nil {
+		return
+	}
+	r.bar.Finish()
+}
+
+type apiCacheNoticeCounter struct {
+	mu    sync.Mutex
+	count int
+}
+
+func (c *apiCacheNoticeCounter) Write(p []byte) (int, error) {
+	c.mu.Lock()
+	c.count++
+	c.mu.Unlock()
+	return len(p), nil
+}
+
+func (c *apiCacheNoticeCounter) Count() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.count
+}
+
+func suppressOutdatedNetworkNotices(cacheNotices io.Writer) func() {
+	prevInstallProxy := install.SetProxyNoticeWriter(io.Discard)
+	prevInstallCache := install.SetAPICacheNoticeWriter(cacheNotices)
+	prevClientProxy := client.SetProxyNoticeWriter(io.Discard)
+	prevClientCache := client.SetAPICacheNoticeWriter(cacheNotices)
+	return func() {
+		install.SetProxyNoticeWriter(prevInstallProxy)
+		install.SetAPICacheNoticeWriter(prevInstallCache)
+		client.SetProxyNoticeWriter(prevClientProxy)
+		client.SetAPICacheNoticeWriter(prevClientCache)
+	}
+}
+
+func (s *cliService) printOutdatedProxyNotice() {
+	if s == nil || s.proxyURL == "" {
+		return
+	}
+	ccolor.Fprintf(s.stderrWriter(), " - Using <ylw>proxy_url for GitHub API request</>: %s\n", s.proxyURL)
+}
+
+func (s *cliService) printAPICacheSummary(count int) {
+	if count <= 0 {
+		return
+	}
+	ccolor.Fprintf(s.stderrWriter(), " - Reused <ylw>api_cache files</>: %d\n", count)
+}
+
 func (s *cliService) handleConfig(opts *ConfigOptions) error {
 	switch opts.Action {
 	case "init":
@@ -396,16 +489,23 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 	installOpts := installOptionsFromUpdate(opts)
 	if opts.All {
 		ccolor.Infoln("🚀 Checking outdated packages")
-		sp := progress.RoundTripSpinner(progress.RandomCharTheme(), 100*time.Millisecond)
-		if !appVerbose() {
-			sp.Start("%s checking")
-		}
+		s.printOutdatedProxyNotice()
+		reporter := newOutdatedProgressReporter(s.stderrWriter(), !appVerbose())
+		cacheNotices := &apiCacheNoticeCounter{}
+		restoreNotices := suppressOutdatedNetworkNotices(cacheNotices)
+		defer restoreNotices()
+		prevOnDone := s.updService.OnCheckDone
+		s.updService.OnCheckDone = reporter.OnCheckDone
+		defer func() {
+			s.updService.OnCheckDone = prevOnDone
+		}()
 
 		items, failures, checked, err := s.updService.ListUpdateCandidates()
+		reporter.Finish()
 		if err != nil {
 			return err
 		}
-		sp.Stop()
+		s.printAPICacheSummary(cacheNotices.Count())
 		ccolor.Successf("✅ Checked %d packages\n", checked)
 
 		for _, failure := range failures {
