@@ -143,7 +143,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	}
 	verbosef("extractor selected for tool=%s", tool)
 
-	if opts.All {
+	if opts.All && opts.ExtractFile == "" {
 		if direct, ok := extractor.(DirectAllExtractor); ok && effectiveOutput(opts) != "-" {
 			result := RunResult{
 				URL:         url,

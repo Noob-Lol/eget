@@ -83,6 +83,10 @@ type Archive interface {
 	ReadAll() ([]byte, error)
 }
 
+type archiveEntryWriter interface {
+	WriteTo(w io.Writer) (int64, error)
+}
+
 type ArchiveFn func(data []byte, decomp DecompFn) (Archive, error)
 type DecompFn func(r io.Reader) (io.Reader, error)
 
@@ -665,6 +669,113 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 	return ExtractedFile{}, candidates, fmt.Errorf("%d candidates for target %v found", len(candidates), a.File)
 }
 
+func (a *ArchiveExtractor) ExtractAllTo(data []byte, output string) ([]string, error) {
+	if output == "" {
+		output = "."
+	}
+	ar, err := a.Ar(data, a.Decompress)
+	if err != nil {
+		return nil, err
+	}
+	writer, _ := ar.(archiveEntryWriter)
+	var extracted []string
+	var links []struct {
+		newname string
+		oldname string
+		sym     bool
+	}
+	for {
+		f, err := ar.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("extract: %w", err)
+		}
+		direct, possible := a.File.Choose(f.Name, f.Dir(), f.Mode)
+		if !direct && !possible {
+			continue
+		}
+		target, err := safeArchiveOutputPath(output, f.Name)
+		if err != nil {
+			return nil, fmt.Errorf("extract: %w", err)
+		}
+		switch f.Type {
+		case TypeDir:
+			if err := os.MkdirAll(target, 0o755); err != nil {
+				return nil, fmt.Errorf("extract: %w", err)
+			}
+		case TypeLink, TypeSymlink:
+			if err := validateArchiveLinkTarget(f.LinkName); err != nil {
+				return nil, fmt.Errorf("extract: %w", err)
+			}
+			links = append(links, struct {
+				newname string
+				oldname string
+				sym     bool
+			}{newname: target, oldname: f.LinkName, sym: f.Type == TypeSymlink})
+		default:
+			if err := writeArchiveEntry(ar, writer, target, f.Mode); err != nil {
+				return nil, fmt.Errorf("extract: %w", err)
+			}
+			extracted = append(extracted, target)
+		}
+	}
+	for _, l := range links {
+		os.Remove(l.newname)
+		if err := os.MkdirAll(filepath.Dir(l.newname), 0o755); err != nil {
+			return nil, fmt.Errorf("extract: %w", err)
+		}
+		var err error
+		if l.sym {
+			err = os.Symlink(l.oldname, l.newname)
+		} else {
+			oldname, pathErr := safeArchiveOutputPath(output, l.oldname)
+			if pathErr != nil {
+				return nil, fmt.Errorf("extract: %w", pathErr)
+			}
+			err = os.Link(oldname, l.newname)
+		}
+		if err != nil && err != os.ErrExist {
+			return nil, fmt.Errorf("extract: %w", err)
+		}
+	}
+	return extracted, nil
+}
+
+func writeArchiveEntry(ar Archive, writer archiveEntryWriter, target string, mode fs.FileMode) error {
+	if target == "-" {
+		if writer != nil {
+			_, err := writer.WriteTo(os.Stdout)
+			return err
+		}
+		data, err := ar.ReadAll()
+		if err != nil {
+			return err
+		}
+		_, err = os.Stdout.Write(data)
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		return err
+	}
+	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, modeFrom(target, mode))
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	if writer != nil {
+		_, err = writer.WriteTo(out)
+		return err
+	}
+	data, err := ar.ReadAll()
+	if err != nil {
+		return err
+	}
+	_, err = out.Write(data)
+	return err
+}
+
 func (s *SingleFileExtractor) Extract(data []byte, multiple bool) (ExtractedFile, []ExtractedFile, error) {
 	name := rename(s.Name, s.Rename)
 	return ExtractedFile{
@@ -825,6 +936,10 @@ func (t *TarArchive) ReadAll() ([]byte, error) {
 	return io.ReadAll(t.r)
 }
 
+func (t *TarArchive) WriteTo(w io.Writer) (int64, error) {
+	return io.Copy(w, t.r)
+}
+
 func NewZipArchive(data []byte, d DecompFn) (Archive, error) {
 	r := bytes.NewReader(data)
 	zr, err := zip.NewReader(r, int64(len(data)))
@@ -872,6 +987,19 @@ func (z *ZipArchive) ReadAll() ([]byte, error) {
 	return io.ReadAll(rc)
 }
 
+func (z *ZipArchive) WriteTo(w io.Writer) (int64, error) {
+	if z.idx < 0 || z.idx >= len(z.r.File) {
+		return 0, io.EOF
+	}
+	f := z.r.File[z.idx]
+	rc, err := f.Open()
+	if err != nil {
+		return 0, fmt.Errorf("zip extract: %w", err)
+	}
+	defer rc.Close()
+	return io.Copy(w, rc)
+}
+
 func (z *SevenZipArchive) Next() (File, error) {
 	z.idx++
 	if z.idx < 0 || z.idx >= len(z.r.File) {
@@ -901,6 +1029,19 @@ func (z *SevenZipArchive) ReadAll() ([]byte, error) {
 	}
 	defer rc.Close()
 	return io.ReadAll(rc)
+}
+
+func (z *SevenZipArchive) WriteTo(w io.Writer) (int64, error) {
+	if z.idx < 0 || z.idx >= len(z.r.File) {
+		return 0, io.EOF
+	}
+	f := z.r.File[z.idx]
+	rc, err := f.Open()
+	if err != nil {
+		return 0, fmt.Errorf("7z extract: %w", err)
+	}
+	defer rc.Close()
+	return io.Copy(w, rc)
 }
 
 func writeFile(data []byte, rename string, mode fs.FileMode) error {

@@ -1066,6 +1066,7 @@ git commit -m "test: verify system 7z extractor"
 - `.rar` 没有 Go fallback 支持时，如果系统 7z 不存在，仍会按现有单文件逻辑保存原文件；这是当前 fallback 能力边界。后续如需对 `.rar` 缺少系统 7z 时直接提示错误，需要单独设计。
 - 外部 7z 已进入解压后失败时返回错误，不再回退 Go extractor，避免隐藏真实 archive 或权限问题。
 - `--extract-all` 对系统 7z 增加 direct all 快路径：runner 优先调用 `ExtractAllTo`，系统 7z 只执行一次 `7z x`，不再先执行 `7z l -slt`。解压完成后扫描临时目录，继续使用安全相对路径校验并复制到目标目录。
+- `--extract-all` 对 Go 内置 archive extractor 也增加 direct all 快路径：单次遍历 archive 并把当前条目流式写出，避免旧流程先 `ReadAll()` 缓存全部候选文件内容。
 
 ## Self-Review
 

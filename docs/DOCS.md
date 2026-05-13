@@ -47,7 +47,7 @@ eget <command> --options... arguments...
 
 `install --all` 会读取配置文件中的 `[packages]`，按包名排序后复用单包 install 流程；每个包仍按 `CLI > package > repo > global` 的优先级合并安装选项。`--batch N` 或 `global.batch_concurrency` 大于 `1` 时会启用固定 worker 并发调度，并保持返回结果按包名排序。该模式不接收 target，也不能和 `--add` 同时使用。
 
-解压时，`.7z`、`.rar`、`.msi`、`.cab`、`.iso`、以及 `--extract-all` 的 `.exe` 会优先尝试系统 7z。查找顺序为 `global.sys7z_path`、`PATH` 中的 `7z` / `7zz` / `7za`、最后回退内置 Go 解压实现。系统 7z 处理 `--extract-all` 时会直接执行一次 `7z x` 解压到临时目录，再安全复制到目标目录，不再先执行 `7z l` 枚举文件列表。`.tar.gz` / `.tgz` / `.tar.xz` / `.txz` / `.tar.bz2` / `.tbz` / `.tar.zst` 继续使用内置 Go 解压流程，以保持 tar 成员选择和路径安全校验稳定。
+解压时，`.7z`、`.rar`、`.msi`、`.cab`、`.iso`、以及 `--extract-all` 的 `.exe` 会优先尝试系统 7z。查找顺序为 `global.sys7z_path`、`PATH` 中的 `7z` / `7zz` / `7za`、最后回退内置 Go 解压实现。系统 7z 处理 `--extract-all` 时会直接执行一次 `7z x` 解压到临时目录，再安全复制到目标目录，不再先执行 `7z l` 枚举文件列表。内置 Go 解压处理 `--extract-all` 时会单次遍历 archive 并流式写出匹配文件，避免先把所有文件内容缓存到内存。`.tar.gz` / `.tgz` / `.tar.xz` / `.txz` / `.tar.bz2` / `.tbz` / `.tar.zst` 继续使用内置 Go 解压流程，以保持 tar 成员选择和路径安全校验稳定。
 
 目标类型支持：
 

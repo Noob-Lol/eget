@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -80,6 +81,74 @@ func TestArchiveDirectoryExtractRejectsPathTraversal(t *testing.T) {
 	}
 	if _, statErr := os.Stat(filepath.Join(root, "evil.txt")); !os.IsNotExist(statErr) {
 		t.Fatalf("expected traversal output to be absent, stat error: %v", statErr)
+	}
+}
+
+type streamArchiveEntry struct {
+	file    File
+	content string
+}
+
+type streamArchive struct {
+	entries []streamArchiveEntry
+	idx     int
+}
+
+func (s *streamArchive) Next() (File, error) {
+	if s.idx >= len(s.entries) {
+		return File{}, io.EOF
+	}
+	file := s.entries[s.idx].file
+	s.idx++
+	return file, nil
+}
+
+func (s *streamArchive) ReadAll() ([]byte, error) {
+	return nil, fmt.Errorf("ReadAll should not be used by direct extract-all")
+}
+
+func (s *streamArchive) WriteTo(w io.Writer) (int64, error) {
+	entry := s.entries[s.idx-1]
+	n, err := io.WriteString(w, entry.content)
+	return int64(n), err
+}
+
+func TestArchiveExtractorExtractAllToStreamsArchiveOnce(t *testing.T) {
+	opens := 0
+	extractor := NewArchiveExtractor(&GlobChooser{all: true, expr: "*"}, func(data []byte, d DecompFn) (Archive, error) {
+		opens++
+		return &streamArchive{entries: []streamArchiveEntry{
+			{file: File{Name: "docs", Mode: 0o755, Type: TypeDir}},
+			{file: File{Name: "docs/readme.txt", Mode: 0o644, Type: TypeNormal}, content: "readme"},
+			{file: File{Name: "bin/tool.exe", Mode: 0o755, Type: TypeNormal}, content: "tool"},
+		}}, nil
+	}, nil)
+
+	tmp := t.TempDir()
+	files, err := extractor.ExtractAllTo([]byte("archive"), tmp)
+	if err != nil {
+		t.Fatalf("extract all: %v", err)
+	}
+
+	if opens != 1 {
+		t.Fatalf("expected archive to be opened once, got %d", opens)
+	}
+	if len(files) != 2 {
+		t.Fatalf("expected 2 extracted files, got %#v", files)
+	}
+	data, err := os.ReadFile(filepath.Join(tmp, "docs", "readme.txt"))
+	if err != nil {
+		t.Fatalf("read extracted file: %v", err)
+	}
+	if string(data) != "readme" {
+		t.Fatalf("expected readme content, got %q", string(data))
+	}
+	data, err = os.ReadFile(filepath.Join(tmp, "bin", "tool.exe"))
+	if err != nil {
+		t.Fatalf("read extracted executable: %v", err)
+	}
+	if string(data) != "tool" {
+		t.Fatalf("expected tool content, got %q", string(data))
 	}
 }
 
