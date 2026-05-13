@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 var system7zCandidates = []string{"7z", "7zz", "7za"}
@@ -339,19 +340,26 @@ func copyExtractedPath(src, dst string, mode fs.FileMode) error {
 				target = dst
 			}
 			if entry.IsDir() {
-				return os.MkdirAll(target, 0o755)
+				if err := os.MkdirAll(target, 0o755); err != nil {
+					return err
+				}
+				entryInfo, err := entry.Info()
+				if err != nil {
+					return err
+				}
+				return applyModTime(target, entryInfo.ModTime())
 			}
 			entryInfo, err := entry.Info()
 			if err != nil {
 				return err
 			}
-			return copyFile(path, target, modeFrom(target, entryInfo.Mode()))
+			return copyFile(path, target, modeFrom(target, entryInfo.Mode()), entryInfo.ModTime())
 		})
 	}
-	return copyFile(src, dst, modeFrom(dst, mode))
+	return copyFile(src, dst, modeFrom(dst, mode), info.ModTime())
 }
 
-func copyFile(src, dst string, mode fs.FileMode) error {
+func copyFile(src, dst string, mode fs.FileMode, modTime time.Time) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
@@ -365,6 +373,8 @@ func copyFile(src, dst string, mode fs.FileMode) error {
 		return err
 	}
 	defer out.Close()
-	_, err = io.Copy(out, in)
-	return err
+	if _, err = io.Copy(out, in); err != nil {
+		return err
+	}
+	return applyModTime(dst, modTime)
 }

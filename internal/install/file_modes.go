@@ -5,9 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func writeFile(data []byte, rename string, mode fs.FileMode) error {
+	return writeFileWithModTime(data, rename, mode, time.Time{})
+}
+
+func writeFileWithModTime(data []byte, rename string, mode fs.FileMode, modTime time.Time) error {
 	if rename[0] == '-' {
 		_, err := os.Stdout.Write(data)
 		return err
@@ -19,8 +24,17 @@ func writeFile(data []byte, rename string, mode fs.FileMode) error {
 		return err
 	}
 	defer f.Close()
-	_, err = f.Write(data)
-	return err
+	if _, err = f.Write(data); err != nil {
+		return err
+	}
+	return applyModTime(rename, modTime)
+}
+
+func applyModTime(path string, modTime time.Time) error {
+	if modTime.IsZero() {
+		return nil
+	}
+	return os.Chtimes(path, modTime, modTime)
 }
 
 func modeFrom(fname string, mode fs.FileMode) fs.FileMode {

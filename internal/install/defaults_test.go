@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewFileChooserSupportsCommaSeparatedPatterns(t *testing.T) {
@@ -81,6 +82,100 @@ func TestArchiveDirectoryExtractRejectsPathTraversal(t *testing.T) {
 	}
 	if _, statErr := os.Stat(filepath.Join(root, "evil.txt")); !os.IsNotExist(statErr) {
 		t.Fatalf("expected traversal output to be absent, stat error: %v", statErr)
+	}
+}
+
+func TestArchiveExtractorExtractAllToPreservesEmptyDirsAndTimestamps(t *testing.T) {
+	pluginTime := time.Date(2024, 1, 2, 3, 4, 4, 0, time.UTC)
+	fileTime := time.Date(2024, 2, 3, 4, 5, 6, 0, time.UTC)
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	dirHeader := &zip.FileHeader{Name: `Plugins\`, Method: zip.Store, Modified: pluginTime}
+	dirHeader.SetMode(0o755 | os.ModeDir)
+	if _, err := zw.CreateHeader(dirHeader); err != nil {
+		t.Fatalf("create zip dir: %v", err)
+	}
+	fileHeader := &zip.FileHeader{Name: "KeePass.exe", Method: zip.Store, Modified: fileTime}
+	fileHeader.SetMode(0o644)
+	w, err := zw.CreateHeader(fileHeader)
+	if err != nil {
+		t.Fatalf("create zip file: %v", err)
+	}
+	if _, err := w.Write([]byte("keepass")); err != nil {
+		t.Fatalf("write zip file: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+
+	chooser, err := NewFileChooser("*")
+	if err != nil {
+		t.Fatalf("NewFileChooser: %v", err)
+	}
+	extractor := NewArchiveExtractor(chooser, NewZipArchive, nil)
+	root := t.TempDir()
+	files, err := extractor.ExtractAllTo(buf.Bytes(), root)
+	if err != nil {
+		t.Fatalf("extract all: %v", err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("expected one extracted file, got %#v", files)
+	}
+
+	dirInfo, err := os.Stat(filepath.Join(root, "Plugins"))
+	if err != nil {
+		t.Fatalf("expected empty Plugins dir: %v", err)
+	}
+	if !dirInfo.IsDir() {
+		t.Fatalf("expected Plugins to be a directory")
+	}
+	if !dirInfo.ModTime().Equal(pluginTime) {
+		t.Fatalf("expected Plugins mtime %s, got %s", pluginTime, dirInfo.ModTime())
+	}
+	fileInfo, err := os.Stat(filepath.Join(root, "KeePass.exe"))
+	if err != nil {
+		t.Fatalf("expected KeePass.exe: %v", err)
+	}
+	if !fileInfo.ModTime().Equal(fileTime) {
+		t.Fatalf("expected KeePass.exe mtime %s, got %s", fileTime, fileInfo.ModTime())
+	}
+}
+
+func TestArchiveExtractorExtractPreservesFileTimestamp(t *testing.T) {
+	fileTime := time.Date(2024, 3, 4, 5, 6, 8, 0, time.UTC)
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	fileHeader := &zip.FileHeader{Name: "bin/tool.exe", Method: zip.Store, Modified: fileTime}
+	fileHeader.SetMode(0o755)
+	w, err := zw.CreateHeader(fileHeader)
+	if err != nil {
+		t.Fatalf("create zip file: %v", err)
+	}
+	if _, err := w.Write([]byte("tool")); err != nil {
+		t.Fatalf("write zip file: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+
+	extractor := NewArchiveExtractor(NewBinaryChooser("tool"), NewZipArchive, nil)
+	file, candidates, err := extractor.Extract(buf.Bytes(), false)
+	if err != nil {
+		t.Fatalf("extract candidate: %v", err)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("expected direct file, got candidates %#v", candidates)
+	}
+	target := filepath.Join(t.TempDir(), "tool.exe")
+	if err := file.Extract(target); err != nil {
+		t.Fatalf("extract file: %v", err)
+	}
+	info, err := os.Stat(target)
+	if err != nil {
+		t.Fatalf("stat extracted file: %v", err)
+	}
+	if !info.ModTime().Equal(fileTime) {
+		t.Fatalf("expected tool.exe mtime %s, got %s", fileTime, info.ModTime())
 	}
 }
 

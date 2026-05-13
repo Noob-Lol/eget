@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type FileType byte
@@ -23,6 +24,7 @@ type File struct {
 	Name     string
 	LinkName string
 	Mode     fs.FileMode
+	ModTime  time.Time
 	Type     FileType
 }
 
@@ -87,7 +89,7 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 			var extract func(to string) error
 			if !f.Dir() {
 				extract = func(to string) error {
-					return writeFile(fdata, to, modeFrom(name, f.Mode))
+					return writeFileWithModTime(fdata, to, modeFrom(name, f.Mode), f.ModTime)
 				}
 			} else {
 				dirs = append(dirs, f.Name)
@@ -150,7 +152,7 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 						if err != nil {
 							return fmt.Errorf("extract: %w", err)
 						}
-						if err := writeFile(subData, name, subf.Mode); err != nil {
+						if err := writeFileWithModTime(subData, name, subf.Mode, subf.ModTime); err != nil {
 							return fmt.Errorf("extract: %w", err)
 						}
 					}
@@ -200,6 +202,7 @@ func (a *ArchiveExtractor) ExtractAllTo(data []byte, output string) ([]string, e
 	}
 	writer, _ := ar.(archiveEntryWriter)
 	var extracted []string
+	var dirs []File
 	var links []struct {
 		newname string
 		oldname string
@@ -226,6 +229,7 @@ func (a *ArchiveExtractor) ExtractAllTo(data []byte, output string) ([]string, e
 			if err := os.MkdirAll(target, 0o755); err != nil {
 				return nil, fmt.Errorf("extract: %w", err)
 			}
+			dirs = append(dirs, File{Name: target, ModTime: f.ModTime})
 		case TypeLink, TypeSymlink:
 			if err := validateArchiveLinkTarget(f.LinkName); err != nil {
 				return nil, fmt.Errorf("extract: %w", err)
@@ -236,7 +240,7 @@ func (a *ArchiveExtractor) ExtractAllTo(data []byte, output string) ([]string, e
 				sym     bool
 			}{newname: target, oldname: f.LinkName, sym: f.Type == TypeSymlink})
 		default:
-			if err := writeArchiveEntry(ar, writer, target, f.Mode); err != nil {
+			if err := writeArchiveEntry(ar, writer, target, f.Mode, f.ModTime); err != nil {
 				return nil, fmt.Errorf("extract: %w", err)
 			}
 			extracted = append(extracted, target)
@@ -261,10 +265,15 @@ func (a *ArchiveExtractor) ExtractAllTo(data []byte, output string) ([]string, e
 			return nil, fmt.Errorf("extract: %w", err)
 		}
 	}
+	for i := len(dirs) - 1; i >= 0; i-- {
+		if err := applyModTime(dirs[i].Name, dirs[i].ModTime); err != nil {
+			return nil, fmt.Errorf("extract: %w", err)
+		}
+	}
 	return extracted, nil
 }
 
-func writeArchiveEntry(ar Archive, writer archiveEntryWriter, target string, mode fs.FileMode) error {
+func writeArchiveEntry(ar Archive, writer archiveEntryWriter, target string, mode fs.FileMode, modTime time.Time) error {
 	if target == "-" {
 		if writer != nil {
 			_, err := writer.WriteTo(os.Stdout)
@@ -287,12 +296,17 @@ func writeArchiveEntry(ar Archive, writer archiveEntryWriter, target string, mod
 	defer out.Close()
 	if writer != nil {
 		_, err = writer.WriteTo(out)
-		return err
+		if err != nil {
+			return err
+		}
+		return applyModTime(target, modTime)
 	}
 	data, err := ar.ReadAll()
 	if err != nil {
 		return err
 	}
-	_, err = out.Write(data)
-	return err
+	if _, err = out.Write(data); err != nil {
+		return err
+	}
+	return applyModTime(target, modTime)
 }

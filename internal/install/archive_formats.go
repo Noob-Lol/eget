@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"strings"
+	"time"
 
 	"github.com/bodgit/sevenzip"
 )
@@ -66,7 +67,7 @@ func (t *TarArchive) Next() (File, error) {
 			if err != nil {
 				return File{}, err
 			}
-			return File{Name: name, LinkName: linkName, Mode: fs.FileMode(hdr.Mode), Type: ft}, nil
+			return File{Name: name, LinkName: linkName, Mode: fs.FileMode(hdr.Mode), ModTime: hdr.ModTime, Type: ft}, nil
 		}
 	}
 }
@@ -98,14 +99,14 @@ func (z *ZipArchive) Next() (File, error) {
 	}
 	f := z.r.File[z.idx]
 	typ := TypeNormal
-	if strings.HasSuffix(f.Name, "/") {
+	if strings.HasSuffix(f.Name, "/") || strings.HasSuffix(f.Name, `\`) || f.FileInfo().IsDir() {
 		typ = TypeDir
 	}
 	name, err := safeArchiveRelativePath(f.Name)
 	if err != nil {
 		return File{}, err
 	}
-	return File{Name: name, Mode: f.Mode(), Type: typ}, nil
+	return File{Name: name, Mode: f.Mode(), ModTime: f.Modified.UTC(), Type: typ}, nil
 }
 
 func (z *ZipArchive) ReadAll() ([]byte, error) {
@@ -149,7 +150,7 @@ func (z *SevenZipArchive) Next() (File, error) {
 	if err != nil {
 		return File{}, err
 	}
-	return File{Name: name, Mode: mode, Type: typ}, nil
+	return File{Name: name, Mode: mode, ModTime: sevenZipModTime(f), Type: typ}, nil
 }
 
 func (z *SevenZipArchive) ReadAll() ([]byte, error) {
@@ -176,4 +177,8 @@ func (z *SevenZipArchive) WriteTo(w io.Writer) (int64, error) {
 	}
 	defer rc.Close()
 	return io.Copy(w, rc)
+}
+
+func sevenZipModTime(f *sevenzip.File) time.Time {
+	return f.FileHeader.Modified.UTC()
 }
