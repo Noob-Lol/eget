@@ -14,5 +14,6 @@ eget.1
 .agents/
 .worktrees/
 .xenv.toml
-# Added by goreleaser init:
 dist/
+tmp/
+

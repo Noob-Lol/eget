@@ -6,7 +6,7 @@
 -->
 
 - [x] 增强 list --outdated 用于显示有更新的工具
-- [ ] 新增命令 clean 用于清理缓存
+- [ ] 新增 eget 自身管理命令，eg: clean 用于清理缓存
 - [x] 增强功能：参考自 https://github.com/marwanhawari/stew
   - [x] 新增命令 query 用于浏览 GitHub repository 的 releases
   - [x] 新增命令 search 用于搜索 GitHub 上的 repository
@@ -22,6 +22,12 @@
 - [x] 优化 `list --outdated / update --check` 查询处理。
   - [x] 支持并发查询多个包信息 API
   - [x] 复用 `api_cache.cache_time`，`update --check` 后在缓存时间内执行 `update` 不会重复检查 GitHub API
+- [x] 优化 新增 global.sys7z_path 用于指定 7z 可执行文件路径
+  - 解压文件处理时优先使用系统环境中的 7z 可执行文件进行处理(优先从sys7z_path获取, 再从环境变量PATH中获取)
+  - 如果系统环境中没有, 则使用 go mod 包进行解压处理
+- [ ] 新增 global.group_packages 用于配置 package 分组（详情见下面）
+- [ ] 全局配置 新增 global.ignore_update_packages 用于配置忽略检查/更新的 packages
+- [ ] 新增支持 sdk 下载安装，需要支持多版本。例如 go, node, python 等 sdk（详情见下面）
 
 ## search 结果展示 ✅
 
@@ -50,4 +56,62 @@ config example:
 required = ["required1", "required2"]
 optional = ["optional1", "optional2"]
 dev = ["dev1", "dev2"]
+```
+
+## 新增支持 sdk 下载安装，需要支持多版本 ⏳
+
+新增支持 sdk 下载安装，需要支持多版本。例如 go, node, python 等 sdk（详情见下面）
+- 支持指定版本安装, 安装到每个sdk的目录下
+- 支持自动检测并安装最新版本
+
+设想是通过配置 url template 来指定 sdk 下载地址，例如：`https://go.dev/dl/go1.21.1.windows-amd64.zip` 来指定 go 下载地址
+
+```toml
+[global]
+sdk_target = "path/to/sdk"
+# 从远程下载的 sdk 工具包默认格式
+sdk_download_ext = {
+  windows = "zip",
+  linux = "tar.gz",
+  darwin = "tar.gz"
+}
+
+[sdk]
+[sdk.go]
+aliases = ["golang"]
+# 如果是相对路径，则是基于 global.sdk_target 目录
+target = "gosdk/go{version}"
+# eg: https://golang.org/dl/go1.21.1.windows-amd64.zip
+url_template = "https://golang.org/dl/go{version}.{os}-{arch}.{download_ext}"
+
+[sdk.node]
+# index_url 用于指定 nodejs 版本/下载地址的索引页面（html,json 格式都支持）
+# 配置了 index_url 时
+#  1. 支持版本搜索
+#  2. 会从 index_url 中获取 nodejs 下载地址, 而不是从 url_template 构建下载地址
+# 无 index_url 时, 必须指定完整的 {version} 版本号才能下载
+index_url = "https://registry.npmmirror.com/binary.html"
+aliases = ["nodejs"]
+# 如果是相对路径，则是基于 global.sdk_target 目录
+target = "nodejs/node{version}"
+download_ext = {windows = "zip", linux = "tar.gz"}
+
+# mirror, see https://registry.npmmirror.com/binary.html 查看二进制文件列表 node,python,bun,deno
+url_template = "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{download_ext}"
+# eg: https://nodejs.org/dist/v18.16.0/node-v18.16.0-x64.msi
+# url_template = "https://nodejs.org/dist/v{version}/node-v{version}-{os}-{arch}.{download_ext}"
+```
+
+url template 中的占位符有
+- `{version}`
+- `{os}`
+- `{arch}`
+- `{download_ext}`
+
+target 目标目录结构示例：
+
+```txt
+{sdk_target}/
+|- gosdk/go{version}
+|- nodejs/node{version}
 ```
