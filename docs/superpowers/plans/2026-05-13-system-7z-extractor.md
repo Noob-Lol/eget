@@ -1014,7 +1014,7 @@ git commit -m "docs: document system 7z configuration"
 **文件：**
 - 不新增文件
 
-- [ ] **Step 1：格式化 Go 文件**
+- [x] **Step 1：格式化 Go 文件**
 
 执行：
 
@@ -1024,7 +1024,7 @@ gofmt -w internal/config/model.go internal/config/merge.go internal/config/gooki
 
 预期：无输出。
 
-- [ ] **Step 2：运行全量测试**
+- [x] **Step 2：运行全量测试**
 
 执行：
 
@@ -1034,7 +1034,7 @@ go test ./...
 
 预期：全部通过。
 
-- [ ] **Step 3：检查工作区差异**
+- [x] **Step 3：检查工作区差异**
 
 执行：
 
@@ -1045,7 +1045,7 @@ git diff --stat
 
 预期：只包含本计划相关文件变更，没有无关格式化或无关文件改动。
 
-- [ ] **Step 4：提交最终修正**
+- [x] **Step 4：提交最终修正**
 
 如果 Task 7 中有格式化或修正改动，执行：
 
