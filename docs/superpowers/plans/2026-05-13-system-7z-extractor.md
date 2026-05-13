@@ -676,7 +676,7 @@ git commit -m "feat(install): prefer system 7z for supported archives"
 - 修改：`internal/install/system7z.go`
 - 修改：`internal/install/system7z_test.go`
 
-- [ ] **Step 1：定义命令 runner 以便测试**
+- [x] **Step 1：定义命令 runner 以便测试**
 
 在 `internal/install/system7z.go` 增加：
 
@@ -689,7 +689,7 @@ var runSystem7zCommand system7zCommandRunner = func(exe string, args ...string) 
 }
 ```
 
-- [ ] **Step 2：编写 `7z l -slt` 解析测试**
+- [x] **Step 2：编写 `7z l -slt` 解析测试**
 
 在 `internal/install/system7z_test.go` 增加：
 
@@ -730,7 +730,7 @@ Attributes = D
 }
 ```
 
-- [ ] **Step 3：编写路径穿越测试**
+- [x] **Step 3：编写路径穿越测试**
 
 在 `internal/install/system7z_test.go` 增加：
 
@@ -753,7 +753,7 @@ Size = 1
 }
 ```
 
-- [ ] **Step 4：实现 list 输出解析**
+- [x] **Step 4：实现 list 输出解析**
 
 在 `internal/install/system7z.go` 增加 parser：
 
@@ -796,7 +796,7 @@ func parseSystem7zListOutput(output []byte) ([]File, error) {
 }
 ```
 
-- [ ] **Step 5：编写 extractor 行为测试**
+- [x] **Step 5：编写 extractor 行为测试**
 
 在 `internal/install/system7z_test.go` 增加：
 
@@ -858,7 +858,7 @@ Size = 4
 }
 ```
 
-- [ ] **Step 6：实现 System7zExtractor.Extract**
+- [x] **Step 6：实现 System7zExtractor.Extract**
 
 实现要求：
 
@@ -884,7 +884,7 @@ func copyExtractedPath(src, dst string, mode fs.FileMode) error
 
 `copyExtractedPath()` 首版只需要支持普通文件和目录递归复制，路径必须来自 `safeArchiveOutputPath()` 计算结果。
 
-- [ ] **Step 7：运行 extractor 测试确认通过**
+- [x] **Step 7：运行 extractor 测试确认通过**
 
 执行：
 
@@ -894,7 +894,7 @@ go test ./internal/install -run 'System7zExtractor|ParseSystem7zListOutput' -v
 
 预期：通过。
 
-- [ ] **Step 8：提交系统 7z extractor**
+- [x] **Step 8：提交系统 7z extractor**
 
 执行：
 

@@ -1,7 +1,10 @@
 package install
 
 import (
+	"bufio"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -47,10 +50,205 @@ type System7zExtractor struct {
 	Exe      string
 }
 
+type system7zCommandRunner func(exe string, args ...string) ([]byte, error)
+
+var runSystem7zCommand system7zCommandRunner = func(exe string, args ...string) ([]byte, error) {
+	cmd := exec.Command(exe, args...)
+	return cmd.CombinedOutput()
+}
+
 func NewSystem7zExtractor(filename, tool string, chooser Chooser, exe string) *System7zExtractor {
 	return &System7zExtractor{Filename: filename, Tool: tool, Chooser: chooser, Exe: exe}
 }
 
 func (e *System7zExtractor) Extract(data []byte, multiple bool) (ExtractedFile, []ExtractedFile, error) {
-	return ExtractedFile{}, nil, fmt.Errorf("system 7z extractor is not implemented")
+	archivePath, cleanup, err := writeTempArchive(data, e.Filename)
+	if err != nil {
+		return ExtractedFile{}, nil, err
+	}
+	defer cleanup()
+
+	output, err := runSystem7zCommand(e.Exe, "l", "-slt", archivePath)
+	if err != nil {
+		return ExtractedFile{}, nil, fmt.Errorf("7z list: %w: %s", err, strings.TrimSpace(string(output)))
+	}
+	files, err := parseSystem7zListOutput(output)
+	if err != nil {
+		return ExtractedFile{}, nil, err
+	}
+
+	var candidates []ExtractedFile
+	for _, file := range files {
+		direct, possible := e.Chooser.Choose(file.Name, file.Dir(), file.Mode)
+		if !direct && !possible {
+			continue
+		}
+		name := rename(file.Name, file.Name)
+		archiveName := filepath.ToSlash(file.Name)
+		mode := file.Mode
+		extracted := ExtractedFile{
+			Name:        name,
+			ArchiveName: file.Name,
+			mode:        mode,
+			Dir:         file.Dir(),
+			Extract: func(to string) error {
+				return e.extractMember(data, archiveName, to, mode)
+			},
+		}
+		if direct && !multiple {
+			return extracted, nil, nil
+		}
+		candidates = append(candidates, extracted)
+	}
+
+	if len(candidates) == 1 {
+		return candidates[0], nil, nil
+	}
+	if len(candidates) == 0 {
+		return ExtractedFile{}, candidates, fmt.Errorf("target %v not found in archive", e.Chooser)
+	}
+	return ExtractedFile{}, candidates, fmt.Errorf("%d candidates for target %v found", len(candidates), e.Chooser)
+}
+
+func (e *System7zExtractor) extractMember(data []byte, archiveName, to string, mode fs.FileMode) error {
+	archivePath, cleanupArchive, err := writeTempArchive(data, e.Filename)
+	if err != nil {
+		return err
+	}
+	defer cleanupArchive()
+
+	tempDir, err := os.MkdirTemp("", "eget-7z-out-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tempDir)
+
+	output, err := runSystem7zCommand(e.Exe, "x", "-y", "-o"+tempDir, archivePath, archiveName)
+	if err != nil {
+		return fmt.Errorf("7z extract: %w: %s", err, strings.TrimSpace(string(output)))
+	}
+	src, err := safeArchiveOutputPath(tempDir, archiveName)
+	if err != nil {
+		return err
+	}
+	return copyExtractedPath(src, to, mode)
+}
+
+func parseSystem7zListOutput(output []byte) ([]File, error) {
+	var files []File
+	fields := map[string]string{}
+	flush := func() error {
+		rawPath := fields["Path"]
+		if rawPath == "" {
+			return nil
+		}
+		if _, ok := fields["Size"]; !ok {
+			return nil
+		}
+		name, err := safeArchiveRelativePath(rawPath)
+		if err != nil {
+			return err
+		}
+		typ := TypeNormal
+		if fields["Folder"] == "+" || strings.HasSuffix(rawPath, "/") || strings.HasSuffix(rawPath, `\`) {
+			typ = TypeDir
+		}
+		files = append(files, File{Name: name, Mode: 0o666, Type: typ})
+		return nil
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(string(output)))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || line == "----------" {
+			if err := flush(); err != nil {
+				return nil, err
+			}
+			fields = map[string]string{}
+			continue
+		}
+		key, value, ok := strings.Cut(line, " = ")
+		if !ok {
+			continue
+		}
+		fields[key] = value
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	if err := flush(); err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
+func writeTempArchive(data []byte, filename string) (string, func(), error) {
+	ext := filepath.Ext(filename)
+	if ext == "" {
+		ext = ".archive"
+	}
+	file, err := os.CreateTemp("", "eget-7z-*"+ext)
+	if err != nil {
+		return "", nil, err
+	}
+	cleanup := func() { _ = os.Remove(file.Name()) }
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		cleanup()
+		return "", nil, err
+	}
+	if err := file.Close(); err != nil {
+		cleanup()
+		return "", nil, err
+	}
+	return file.Name(), cleanup, nil
+}
+
+func copyExtractedPath(src, dst string, mode fs.FileMode) error {
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return filepath.WalkDir(src, func(path string, entry fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			rel, err := filepath.Rel(src, path)
+			if err != nil {
+				return err
+			}
+			target := filepath.Join(dst, rel)
+			if rel == "." {
+				target = dst
+			}
+			if entry.IsDir() {
+				return os.MkdirAll(target, 0o755)
+			}
+			entryInfo, err := entry.Info()
+			if err != nil {
+				return err
+			}
+			return copyFile(path, target, modeFrom(target, entryInfo.Mode()))
+		})
+	}
+	return copyFile(src, dst, modeFrom(dst, mode))
+}
+
+func copyFile(src, dst string, mode fs.FileMode) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, in)
+	return err
 }
