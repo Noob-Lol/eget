@@ -177,6 +177,55 @@ func (e *System7zExtractor) extractAllToTempDir(data []byte) (string, error) {
 	return tempDir, nil
 }
 
+func (e *System7zExtractor) ExtractAllTo(data []byte, output string) ([]string, error) {
+	tempDir, err := e.extractAllToTempDir(data)
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tempDir)
+
+	if output == "" {
+		output = "."
+	}
+	var extracted []string
+	err = filepath.WalkDir(tempDir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(tempDir, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		safeRel, err := safeArchiveRelativePath(filepath.ToSlash(rel))
+		if err != nil {
+			return err
+		}
+		target, err := safeArchiveOutputPath(output, filepath.ToSlash(safeRel))
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if err := copyExtractedPath(path, target, info.Mode()); err != nil {
+			return err
+		}
+		extracted = append(extracted, target)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return extracted, nil
+}
+
 func (e *System7zExtractor) extractMember(data []byte, archiveName, to string, mode fs.FileMode) error {
 	archivePath, cleanupArchive, err := writeTempArchive(data, e.Filename)
 	if err != nil {

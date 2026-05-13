@@ -33,6 +33,10 @@ type Extractor interface {
 	Extract(data []byte, multiple bool) (ExtractedFile, []ExtractedFile, error)
 }
 
+type DirectAllExtractor interface {
+	ExtractAllTo(data []byte, output string) ([]string, error)
+}
+
 type ExtractedFile struct {
 	Name        string
 	ArchiveName string

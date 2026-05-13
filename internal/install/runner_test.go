@@ -379,6 +379,68 @@ func (f fakeInstallExtractor) Extract([]byte, bool) (ExtractedFile, []ExtractedF
 	return f.file, nil, nil
 }
 
+type fakeDirectAllExtractor struct {
+	extractCalled bool
+	files         []string
+}
+
+func (f *fakeDirectAllExtractor) Extract([]byte, bool) (ExtractedFile, []ExtractedFile, error) {
+	f.extractCalled = true
+	return ExtractedFile{}, nil, nil
+}
+
+func (f *fakeDirectAllExtractor) ExtractAllTo([]byte, string) ([]string, error) {
+	return f.files, nil
+}
+
+func TestRunExtractAllUsesDirectExtractorWithoutListing(t *testing.T) {
+	assetURL := "https://example.com/setup.exe"
+	outputDir := t.TempDir()
+	direct := &fakeDirectAllExtractor{
+		files: []string{filepath.Join(outputDir, "$PLUGINSDIR", "nsDialogs.dll")},
+	}
+
+	svc := NewService()
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return direct
+	}
+	svc.System7zPathResolver = func(configured string) string {
+		return ""
+	}
+	svc.GlobChooserFactory = func(pattern string) (any, error) {
+		return NewFileChooser(pattern)
+	}
+	svc.NoVerifierFactory = func() Verifier {
+		return &fakeVerifier{}
+	}
+
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("installer")),
+		}, nil
+	}
+
+	runner := NewRunner(svc)
+	runner.Stderr = io.Discard
+	result, err := runner.Run(assetURL, Options{All: true, Output: outputDir})
+	if err != nil {
+		t.Fatalf("run extract-all: %v", err)
+	}
+
+	if direct.extractCalled {
+		t.Fatal("expected direct extract-all to skip Extract")
+	}
+	if len(result.ExtractedFiles) != 1 {
+		t.Fatalf("expected extracted files, got %#v", result.ExtractedFiles)
+	}
+}
+
 func TestRunQuietSuppressesInstallNotice(t *testing.T) {
 	tmpDir := t.TempDir()
 	source := filepath.Join(tmpDir, "tool.exe")

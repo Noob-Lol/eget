@@ -25,6 +25,7 @@
 - [x] 优化 新增 global.sys7z_path 用于指定 7z 可执行文件路径
   - 解压文件处理时优先使用系统环境中的 7z 可执行文件进行处理(优先从sys7z_path获取, 再从环境变量PATH中获取)
   - 如果系统环境中没有, 则使用 go mod 包进行解压处理
+  - `--extract-all` 使用系统 7z 时直接一次性解压，不再先 list 文件列表
 - [ ] 新增 global.group_packages 用于配置 package 分组（详情见下面）
 - [ ] 全局配置 新增 global.ignore_update_packages 用于配置忽略检查/更新的 packages
 - [ ] 新增支持 sdk 下载安装，需要支持多版本。例如 go, node, python 等 sdk（详情见下面）

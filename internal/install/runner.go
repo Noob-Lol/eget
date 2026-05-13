@@ -143,6 +143,30 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	}
 	verbosef("extractor selected for tool=%s", tool)
 
+	if opts.All {
+		if direct, ok := extractor.(DirectAllExtractor); ok && effectiveOutput(opts) != "-" {
+			result := RunResult{
+				URL:         url,
+				Tool:        tool,
+				Asset:       path.Base(url),
+				IsGUI:       opts.IsGUI,
+				InstallMode: opts.InstallMode,
+			}
+			paths, err := direct.ExtractAllTo(body, effectiveOutput(opts))
+			if err != nil {
+				return RunResult{}, err
+			}
+			for _, out := range paths {
+				verbosef("extract output: %s", out)
+				ccolor.Fprintf(output, "✅ Extracted <cyan>%s</>\n", out)
+				if out != "-" {
+					result.ExtractedFiles = append(result.ExtractedFiles, out)
+				}
+			}
+			return result, nil
+		}
+	}
+
 	bin, bins, err := extractor.Extract(body, opts.All)
 	if len(bins) != 0 && err != nil && !opts.All {
 		bin, opts.All, err = r.resolveExtractedFile(bins, opts)
