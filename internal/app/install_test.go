@@ -1004,6 +1004,25 @@ func TestInstallAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testin
 	assert.Eq(t, 2, runner.currentMaxActive())
 }
 
+func TestResolveInstallOptionsPassesGlobalSys7zPath(t *testing.T) {
+	cfg := cfgpkg.NewFile()
+	path := "~/bin/7z"
+	cfg.Global.Sys7zPath = &path
+
+	svc := Service{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	opts, err := svc.resolveInstallOptions("owner/repo", install.Options{}, false)
+	if err != nil {
+		t.Fatalf("resolve install options: %v", err)
+	}
+
+	assert.Contains(t, filepath.ToSlash(opts.Sys7zPath), "bin/7z")
+}
+
 func waitForMaxActive(t *testing.T, current func() int, want int) {
 	t.Helper()
 	deadline := time.After(time.Second)

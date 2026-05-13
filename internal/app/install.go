@@ -452,6 +452,10 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 	if err != nil {
 		return install.Options{}, err
 	}
+	sys7zPath, err := expandPath(merged.Sys7zPath)
+	if err != nil {
+		return install.Options{}, err
+	}
 	apiCacheDir := ""
 	if cacheDir != "" {
 		apiCacheDir = filepath.Join(cacheDir, "api-cache")
@@ -491,6 +495,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		Name:                cli.Name,
 		Source:              merged.Source,
 		SourcePath:          merged.SourcePath,
+		Sys7zPath:           sys7zPath,
 		Output:              output,
 		OutputExplicit:      cli.Output != "",
 		GuiTarget:           guiTarget,

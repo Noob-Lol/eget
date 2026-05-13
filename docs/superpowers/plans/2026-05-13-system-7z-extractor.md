@@ -229,7 +229,7 @@ git commit -m "feat(config): add system 7z path"
 - 修改：`internal/app/install.go`
 - 修改：`internal/app/install_test.go`
 
-- [ ] **Step 1：编写 app 层传递测试**
+- [x] **Step 1：编写 app 层传递测试**
 
 在 `internal/app/install_test.go` 增加测试：
 
@@ -254,7 +254,7 @@ func TestResolveInstallOptionsPassesGlobalSys7zPath(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2：运行 app 测试确认失败**
+- [x] **Step 2：运行 app 测试确认失败**
 
 执行：
 
@@ -264,7 +264,7 @@ go test ./internal/app -run TestResolveInstallOptionsPassesGlobalSys7zPath -v
 
 预期：失败，提示 `Sys7zPath` 字段不存在或为空。
 
-- [ ] **Step 3：实现 install options 字段**
+- [x] **Step 3：实现 install options 字段**
 
 在 `internal/install/options.go` 的 `Options` 增加：
 
@@ -272,7 +272,7 @@ go test ./internal/app -run TestResolveInstallOptionsPassesGlobalSys7zPath -v
 Sys7zPath string
 ```
 
-- [ ] **Step 4：在 app 层展开并传递路径**
+- [x] **Step 4：在 app 层展开并传递路径**
 
 在 `internal/app/install.go` 的 `resolveInstallOptionsWithConfig()` 中，在 `guiTarget` 后增加：
 
@@ -289,7 +289,7 @@ if err != nil {
 Sys7zPath: sys7zPath,
 ```
 
-- [ ] **Step 5：运行 app 测试确认通过**
+- [x] **Step 5：运行 app 测试确认通过**
 
 执行：
 
@@ -299,7 +299,7 @@ go test ./internal/app -run TestResolveInstallOptionsPassesGlobalSys7zPath -v
 
 预期：通过。
 
-- [ ] **Step 6：提交安装选项传递改动**
+- [x] **Step 6：提交安装选项传递改动**
 
 执行：
 

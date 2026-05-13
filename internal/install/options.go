@@ -17,6 +17,7 @@ type Options struct {
 	Verbose             bool
 	Source              bool
 	SourcePath          string
+	Sys7zPath           string
 	Output              string
 	OutputExplicit      bool
 	GuiTarget           string
