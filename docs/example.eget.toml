@@ -4,6 +4,7 @@ proxy_url = ""
 system = ""
 target = "~/.local/bin"
 gui_target = "~/Applications"
+sys7z_path = ""
 chunk_concurrency = 0
 batch_concurrency = 0
 

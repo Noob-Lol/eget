@@ -914,7 +914,7 @@ git commit -m "feat(install): extract archives with system 7z"
 - 修改：`README.md`
 - 修改：`README.zh-CN.md`
 
-- [ ] **Step 1：补充 `.exe --all` 选择测试**
+- [x] **Step 1：补充 `.exe --all` 选择测试**
 
 在 `internal/install/service_test.go` 增加：
 
@@ -943,7 +943,7 @@ func TestSelectExtractorUsesSystem7zForExeExtractAll(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2：运行 install 测试**
+- [x] **Step 2：运行 install 测试**
 
 执行：
 
@@ -953,7 +953,7 @@ go test ./internal/install -run 'System7z|SelectExtractor.*7z|SelectExtractorKee
 
 预期：通过。
 
-- [ ] **Step 3：更新 `docs/example.eget.toml`**
+- [x] **Step 3：更新 `docs/example.eget.toml`**
 
 在 `[global]` 示例中增加：
 
@@ -962,7 +962,7 @@ go test ./internal/install -run 'System7z|SelectExtractor.*7z|SelectExtractorKee
 sys7z_path = ""
 ```
 
-- [ ] **Step 4：更新 `docs/DOCS.md`**
+- [x] **Step 4：更新 `docs/DOCS.md`**
 
 在 Config Model 或目录相关语义处增加：
 
@@ -976,7 +976,7 @@ sys7z_path = ""
 `.tar.gz` / `.tgz` / `.tar.xz` / `.txz` / `.tar.bz2` / `.tbz` / `.tar.zst` 继续使用内置 Go 解压流程，以保持 tar 成员选择和路径安全校验稳定。
 ```
 
-- [ ] **Step 5：更新 README**
+- [x] **Step 5：更新 README**
 
 在 `README.md` 和 `README.zh-CN.md` 的配置项说明中补充 `global.sys7z_path`，中文 README 使用中文说明：
 
@@ -988,7 +988,7 @@ sys7z_path = ""
 - `global.sys7z_path`：可选的 7z 可执行文件路径。为空时会从 `PATH` 依次查找 `7z`、`7zz`、`7za`。
 ```
 
-- [ ] **Step 6：运行文档相关测试包**
+- [x] **Step 6：运行文档相关测试包**
 
 执行：
 
@@ -998,7 +998,7 @@ go test ./internal/config ./internal/app ./internal/install -v
 
 预期：通过。
 
-- [ ] **Step 7：提交文档和集成测试**
+- [x] **Step 7：提交文档和集成测试**
 
 执行：
 

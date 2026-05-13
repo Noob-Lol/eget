@@ -47,6 +47,8 @@ eget <command> --options... arguments...
 
 `install --all` 会读取配置文件中的 `[packages]`，按包名排序后复用单包 install 流程；每个包仍按 `CLI > package > repo > global` 的优先级合并安装选项。`--batch N` 或 `global.batch_concurrency` 大于 `1` 时会启用固定 worker 并发调度，并保持返回结果按包名排序。该模式不接收 target，也不能和 `--add` 同时使用。
 
+解压时，`.7z`、`.rar`、`.msi`、`.cab`、`.iso`、以及 `--extract-all` 的 `.exe` 会优先尝试系统 7z。查找顺序为 `global.sys7z_path`、`PATH` 中的 `7z` / `7zz` / `7za`、最后回退内置 Go 解压实现。`.tar.gz` / `.tgz` / `.tar.xz` / `.txz` / `.tar.bz2` / `.tbz` / `.tar.zst` 继续使用内置 Go 解压流程，以保持 tar 成员选择和路径安全校验稳定。
+
 目标类型支持：
 
 - repo 标识符
@@ -192,6 +194,7 @@ target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
 proxy_url = "http://127.0.0.1:7890"
 system = ""
+sys7z_path = ""
 ```
 
 路径查找优先级：
@@ -213,6 +216,7 @@ CLI > package > repo > global > default
 - `gui_target`: 免安装 GUI 应用的默认安装目录
 - `cache_dir`: 默认下载缓存目录
 - `proxy_url`: 全局远程请求代理，优先于环境变量代理并同时作用于 GitHub 查询与远程下载
+- `sys7z_path`: 可选系统 7z 可执行文件路径。为空时从 `PATH` 依次查找 `7z`、`7zz`、`7za`
 - `download` 未传 `--to` 时，app 层会把输出目录回退到 `cache_dir`
 - `api_cache`: 缓存已知 provider 的元数据 GET 响应，包含 GitHub API、GitLab/Gitea release API 和 SourceForge files 列表；不缓存下载文件
 - `chunk_concurrency`: 单文件 HTTP Range 分片并发

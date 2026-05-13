@@ -110,6 +110,7 @@ func (s ConfigService) ConfigInit() (string, error) {
 	cacheDir := "~/.cache/eget"
 	proxyURL := ""
 	empty := ""
+	sys7zPath := ""
 	apiCacheEnable := false
 	apiCacheTime := 300
 	ghproxyEnable := false
@@ -121,6 +122,7 @@ func (s ConfigService) ConfigInit() (string, error) {
 	file.Global.CacheDir = &cacheDir
 	file.Global.ProxyURL = &proxyURL
 	file.Global.System = &empty
+	file.Global.Sys7zPath = &sys7zPath
 	file.Global.ChunkConcurrency = &chunkConcurrency
 	file.Global.BatchConcurrency = &batchConcurrency
 	file.ApiCache.Enable = &apiCacheEnable

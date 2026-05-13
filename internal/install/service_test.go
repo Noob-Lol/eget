@@ -663,6 +663,30 @@ func TestSelectExtractorTreatsExeWithExtractAllAsSevenZipArchive(t *testing.T) {
 	}
 }
 
+func TestSelectExtractorUsesSystem7zForExeExtractAll(t *testing.T) {
+	svc := NewService()
+	svc.GlobChooserFactory = func(pattern string) (any, error) {
+		return NewFileChooser(pattern)
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return &fakeExtractor{name: "go:" + filename}
+	}
+	svc.System7zPathResolver = func(configured string) string {
+		return "C:/Tools/7z.exe"
+	}
+	svc.System7zExtractorFactory = func(filename, tool string, chooser Chooser, exe string) Extractor {
+		return &fakeExtractor{name: "system7z:" + filepath.Base(filename)}
+	}
+
+	extractor, err := svc.SelectExtractor("https://example.com/setup.exe", "setup", &Options{All: true})
+	if err != nil {
+		t.Fatalf("SelectExtractor(exe extract-all): %v", err)
+	}
+	if got := extractor.(*fakeExtractor).name; got != "system7z:setup.exe" {
+		t.Fatalf("expected system 7z extractor, got %q", got)
+	}
+}
+
 func TestSelectExtractorPrefersExplicitFilePatternsOverAll(t *testing.T) {
 	svc := NewService()
 	svc.GlobChooserFactory = func(pattern string) (any, error) {

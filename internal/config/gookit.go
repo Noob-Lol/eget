@@ -244,7 +244,7 @@ func sectionToMap(section Section) map[string]any {
 	if section.SourcePath != nil && *section.SourcePath != "" {
 		data["source_path"] = *section.SourcePath
 	}
-	if section.Sys7zPath != nil && *section.Sys7zPath != "" {
+	if section.Sys7zPath != nil {
 		data["sys7z_path"] = *section.Sys7zPath
 	}
 	if section.System != nil {

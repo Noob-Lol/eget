@@ -282,7 +282,7 @@ SourceForge 查询目标使用 `sourceforge:<project>` 或 `sourceforge:<project
 - `install --add` 仅对 repo 目标生效，并在安装成功后追加托管包配置。
 - `global.gui_target` 只用于免安装 GUI 应用。`.msi`、`setup.exe` 等 GUI 安装器会被启动，但不会记录最终安装目录。
 - `download` 默认保存原始下载文件；只有设置了 `--file` 或 `--extract-all` 才会自动提取归档内容。
-- 归档提取当前支持 `zip`、`tar.*` 以及 `7z`。
+- 归档提取当前支持 `zip`、`tar.*` 以及 `7z`。当 `global.sys7z_path` 或 `PATH` 提供 `7z`、`7zz`、`7za` 时，`.7z`、`.rar`、`.msi`、`.cab`、`.iso` 以及 `--extract-all` 的 `.exe` 会优先使用系统 7z；`tar.*` 归档继续使用内置 Go 解压流程。
 - 参数顺序遵循 `cflag/capp` 约束，必须是 `CMD --OPTIONS... ARGUMENTS...`。
 
 ## 配置
@@ -308,6 +308,7 @@ target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
 proxy_url = "http://127.0.0.1:7890"
 system = "windows/amd64"
+sys7z_path = ""
 chunk_concurrency = 0
 batch_concurrency = 0
 
@@ -348,6 +349,7 @@ asset_filters = ["linux", "amd64"]
 - `gui_target`
 - `cache_dir`
 - `proxy_url`
+- `sys7z_path`
 - `chunk_concurrency`
 - `batch_concurrency`
 - `api_cache.enable`
@@ -377,6 +379,7 @@ eget config init
 - `global.target = "~/.local/bin"`
 - `global.cache_dir = "~/.cache/eget"`
 - `global.proxy_url = ""`
+- `global.sys7z_path = ""`
 - `global.chunk_concurrency = 0`
 - `global.batch_concurrency = 0`
 - `api_cache.enable = false`
@@ -392,6 +395,7 @@ eget config init
 - `target` 是默认安装目录
 - `cache_dir` 是默认下载缓存目录
 - `proxy_url` 是全局远程请求代理，GitHub 查询和远程下载都会使用它
+- `sys7z_path` 是可选的 7z 可执行文件路径。为空时会从 `PATH` 依次查找 `7z`、`7zz`、`7za`
 - `source_path` 用于限定 SourceForge 项目 files 区域下的发现路径，例如 `stable`
 - `api_cache` 会缓存已知 provider 的元数据 `GET` 响应，包括 GitHub API、GitLab/Gitea release API 和 SourceForge files 列表；缓存文件目录派生为 `{cache_dir}/api-cache/`
 - `cache_time` 单位为秒；缓存过期后会重新请求并刷新缓存

@@ -55,6 +55,9 @@ func TestConfigInit(t *testing.T) {
 	if cfg.Global.ProxyURL == nil || *cfg.Global.ProxyURL != "" {
 		t.Fatalf("expected default global.proxy_url, got %#v", cfg.Global.ProxyURL)
 	}
+	if cfg.Global.Sys7zPath == nil || *cfg.Global.Sys7zPath != "" {
+		t.Fatalf("expected default global.sys7z_path, got %#v", cfg.Global.Sys7zPath)
+	}
 	if cfg.ApiCache.Enable == nil || *cfg.ApiCache.Enable {
 		t.Fatalf("expected default api_cache.enable=false, got %#v", cfg.ApiCache.Enable)
 	}

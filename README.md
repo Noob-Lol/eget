@@ -282,7 +282,7 @@ Notes:
 - `install --add` only applies to repo targets and appends the managed package definition after a successful install.
 - `global.gui_target` is used only for portable GUI applications. GUI installers such as `.msi` or `setup.exe` are launched and do not record a final install directory.
 - `download` stores the raw downloaded asset by default; extraction only happens when `--file` or `--extract-all` is provided.
-- Archive extraction currently supports `zip`, `tar.*`, and `7z`.
+- Archive extraction currently supports `zip`, `tar.*`, and `7z`. System 7z is preferred for `.7z`, `.rar`, `.msi`, `.cab`, `.iso`, and `--extract-all` `.exe` archives when `global.sys7z_path` or `PATH` provides `7z`, `7zz`, or `7za`; `tar.*` archives continue to use the built-in Go extractor.
 - Argument order follows the `cflag/capp` parser constraint and must be `CMD --OPTIONS... ARGUMENTS...`.
 
 ## Configuration
@@ -308,6 +308,7 @@ target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
 proxy_url = "http://127.0.0.1:7890"
 system = "windows/amd64"
+sys7z_path = ""
 chunk_concurrency = 0
 batch_concurrency = 0
 
@@ -348,6 +349,7 @@ Common fields:
 - `gui_target`
 - `cache_dir`
 - `proxy_url`
+- `sys7z_path`
 - `chunk_concurrency`
 - `batch_concurrency`
 - `api_cache.enable`
@@ -378,6 +380,7 @@ This writes:
 - `global.target = "~/.local/bin"`
 - `global.cache_dir = "~/.cache/eget"`
 - `global.proxy_url = ""`
+- `global.sys7z_path = ""`
 - `global.chunk_concurrency = 0`
 - `global.batch_concurrency = 0`
 - `api_cache.enable = false`
@@ -393,6 +396,7 @@ Directory semantics:
 - `target` is the default install directory
 - `cache_dir` is the default download cache directory
 - `proxy_url` is the global proxy for remote requests; both GitHub lookups and remote downloads use it
+- `sys7z_path` is an optional 7z executable path. When empty, eget searches `PATH` for `7z`, `7zz`, then `7za`
 - `source_path` narrows SourceForge discovery under a project's files area, for example `stable`
 - `api_cache` caches known provider metadata `GET` responses, including GitHub API, GitLab/Gitea release API, and SourceForge files listings; the cache file directory is derived as `{cache_dir}/api-cache/`
 - `cache_time` is measured in seconds; expired cache entries are refreshed from the network
