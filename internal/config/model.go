@@ -16,6 +16,7 @@ type Section struct {
 	ShowHash         *bool    `toml:"show_hash" mapstructure:"show_hash"`
 	Source           *bool    `toml:"download_source" mapstructure:"download_source"`
 	SourcePath       *string  `toml:"source_path" mapstructure:"source_path"`
+	Sys7zPath        *string  `toml:"sys7z_path" mapstructure:"sys7z_path"`
 	System           *string  `toml:"system" mapstructure:"system"`
 	Tag              *string  `toml:"tag" mapstructure:"tag"`
 	Target           *string  `toml:"target" mapstructure:"target"`
@@ -64,6 +65,7 @@ type Merged struct {
 	ShowHash         bool
 	Source           bool
 	SourcePath       string
+	Sys7zPath        string
 	System           string
 	Tag              string
 	Target           string

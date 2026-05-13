@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestPathGetAndSet(t *testing.T) {
@@ -206,6 +208,33 @@ func TestDumpConfigStringIncludesConcurrencyOptions(t *testing.T) {
 	if !strings.Contains(text, "chunk_concurrency = 2") {
 		t.Fatalf("expected package chunk_concurrency in dump, got %q", text)
 	}
+}
+
+func TestDumpConfigStringIncludesSys7zPath(t *testing.T) {
+	path := "C:/Program Files/7-Zip/7z.exe"
+	cfg := NewFile()
+	cfg.Global.Sys7zPath = &path
+
+	text, err := dumpConfigString(cfg)
+	if err != nil {
+		t.Fatalf("dump config string: %v", err)
+	}
+
+	assert.Contains(t, text, `sys7z_path = "C:/Program Files/7-Zip/7z.exe"`)
+}
+
+func TestSetByPathSupportsGlobalSys7zPath(t *testing.T) {
+	cfg := NewFile()
+
+	if err := SetByPath(cfg, "global.sys7z_path", "C:/Tools/7z.exe"); err != nil {
+		t.Fatalf("set global.sys7z_path: %v", err)
+	}
+
+	value, ok := GetByPath(cfg, "global.sys7z_path")
+	if !ok {
+		t.Fatal("expected global.sys7z_path to be set")
+	}
+	assert.Eq(t, "C:/Tools/7z.exe", value)
 }
 
 func TestSaveAndLoadRoundTrip(t *testing.T) {

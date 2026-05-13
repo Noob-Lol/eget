@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestResolveConfigPathPrefersEnv(t *testing.T) {
@@ -335,6 +337,23 @@ chunk_concurrency = 4
 	if cfg.Repos["sharkdp/fd"].ChunkConcurrency == nil || *cfg.Repos["sharkdp/fd"].ChunkConcurrency != 4 {
 		t.Fatalf("expected repo chunk_concurrency=4, got %#v", cfg.Repos["sharkdp/fd"].ChunkConcurrency)
 	}
+}
+
+func TestLoadFileReadsGlobalSys7zPath(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+
+	writeTestFile(t, configPath, `
+[global]
+sys7z_path = "C:/Program Files/7-Zip/7z.exe"
+`)
+
+	cfg, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+
+	assert.Eq(t, "C:/Program Files/7-Zip/7z.exe", *cfg.Global.Sys7zPath)
 }
 
 func writeTestFile(t *testing.T, path, content string) {

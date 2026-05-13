@@ -223,6 +223,36 @@ func TestMergeInstallOptionsChunkConcurrencyPrecedence(t *testing.T) {
 	assert.Eq(t, 2, merged.ChunkConcurrency)
 }
 
+func TestMergeInstallOptionsMergesSys7zPath(t *testing.T) {
+	globalPath := "C:/global/7z.exe"
+	repoPath := "C:/repo/7z.exe"
+	pkgPath := "C:/pkg/7z.exe"
+
+	merged := MergeInstallOptions(
+		Section{Sys7zPath: &globalPath},
+		Section{},
+		Section{},
+		CLIOverrides{},
+	)
+	assert.Eq(t, globalPath, merged.Sys7zPath)
+
+	merged = MergeInstallOptions(
+		Section{Sys7zPath: &globalPath},
+		Section{Sys7zPath: &repoPath},
+		Section{},
+		CLIOverrides{},
+	)
+	assert.Eq(t, repoPath, merged.Sys7zPath)
+
+	merged = MergeInstallOptions(
+		Section{Sys7zPath: &globalPath},
+		Section{Sys7zPath: &repoPath},
+		Section{Sys7zPath: &pkgPath},
+		CLIOverrides{},
+	)
+	assert.Eq(t, pkgPath, merged.Sys7zPath)
+}
+
 func boolPtr(v bool) *bool {
 	return &v
 }
