@@ -316,7 +316,7 @@ git commit -m "feat(install): pass system 7z path to runner"
 - 新增：`internal/install/system7z.go`
 - 新增：`internal/install/system7z_test.go`
 
-- [ ] **Step 1：编写 7z 查找测试**
+- [x] **Step 1：编写 7z 查找测试**
 
 新增 `internal/install/system7z_test.go`：
 
@@ -382,7 +382,7 @@ func TestShouldUseSystem7zForPreferredFormats(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2：运行测试确认失败**
+- [x] **Step 2：运行测试确认失败**
 
 执行：
 
@@ -392,7 +392,7 @@ go test ./internal/install -run 'System7z|ShouldUseSystem7z' -v
 
 预期：失败，提示函数不存在。
 
-- [ ] **Step 3：实现查找和格式判定**
+- [x] **Step 3：实现查找和格式判定**
 
 新增 `internal/install/system7z.go`：
 
@@ -439,7 +439,7 @@ func shouldUseSystem7z(filename string, extractAll bool) bool {
 }
 ```
 
-- [ ] **Step 4：运行测试确认通过**
+- [x] **Step 4：运行测试确认通过**
 
 执行：
 
@@ -449,7 +449,7 @@ go test ./internal/install -run 'System7z|ShouldUseSystem7z' -v
 
 预期：通过。
 
-- [ ] **Step 5：提交基础能力**
+- [x] **Step 5：提交基础能力**
 
 执行：
 
