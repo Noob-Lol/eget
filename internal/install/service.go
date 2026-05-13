@@ -65,6 +65,8 @@ type Service struct {
 	GlobChooserFactory           func(pattern string) (any, error)
 	BinaryChooserFactory         func(tool string) any
 	ExtractorFactory             func(filename, tool string, chooser any) any
+	System7zPathResolver         func(configured string) string
+	System7zExtractorFactory     func(filename, tool string, chooser Chooser, exe string) Extractor
 }
 
 func NewService() *Service {
@@ -289,7 +291,7 @@ func (s *Service) SelectExtractor(url, tool string, opts *Options) (any, error) 
 		if err != nil {
 			return nil, err
 		}
-		return s.ExtractorFactory(filename, tool, chooser), nil
+		return s.newExtractor(filename, tool, chooser, opts)
 	}
 
 	if opts.All {
@@ -300,13 +302,39 @@ func (s *Service) SelectExtractor(url, tool string, opts *Options) (any, error) 
 		if err != nil {
 			return nil, err
 		}
-		return s.ExtractorFactory(filename, tool, chooser), nil
+		return s.newExtractor(filename, tool, chooser, opts)
 	}
 
 	if s.BinaryChooserFactory == nil || s.ExtractorFactory == nil {
 		return nil, fmt.Errorf("extractor factories are required")
 	}
-	return s.ExtractorFactory(filename, tool, s.BinaryChooserFactory(tool)), nil
+	return s.newExtractor(filename, tool, s.BinaryChooserFactory(tool), opts)
+}
+
+func (s *Service) newExtractor(filename, tool string, chooser any, opts *Options) (any, error) {
+	typedChooser, ok := chooser.(Chooser)
+	if !ok {
+		return nil, fmt.Errorf("unexpected chooser type %T", chooser)
+	}
+	if opts != nil && shouldUseSystem7z(filename, opts.All) {
+		resolver := s.System7zPathResolver
+		if resolver == nil {
+			resolver = resolveSystem7zPath
+		}
+		if exe := resolver(opts.Sys7zPath); exe != "" {
+			factory := s.System7zExtractorFactory
+			if factory == nil {
+				factory = func(filename, tool string, chooser Chooser, exe string) Extractor {
+					return NewSystem7zExtractor(filename, tool, chooser, exe)
+				}
+			}
+			return factory(filename, tool, typedChooser, exe), nil
+		}
+	}
+	if s.ExtractorFactory == nil {
+		return nil, fmt.Errorf("extractor factories are required")
+	}
+	return s.ExtractorFactory(filename, tool, typedChooser), nil
 }
 
 func NormalizeRepoTarget(target string) (string, error) {

@@ -467,7 +467,7 @@ git commit -m "feat(install): detect system 7z executable"
 - 修改：`internal/install/service_test.go`
 - 修改：`internal/install/system7z.go`
 
-- [ ] **Step 1：编写选择逻辑测试**
+- [x] **Step 1：编写选择逻辑测试**
 
 在 `internal/install/service_test.go` 增加测试：
 
@@ -560,7 +560,7 @@ func TestSelectExtractorDoesNotUseSystem7zForPureDownloadOnly(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2：运行选择测试确认失败**
+- [x] **Step 2：运行选择测试确认失败**
 
 执行：
 
@@ -570,7 +570,7 @@ go test ./internal/install -run 'SelectExtractor.*System7z|SelectExtractorKeepsT
 
 预期：失败，提示注入字段不存在或选择逻辑未接入。
 
-- [ ] **Step 3：给 Service 增加注入点**
+- [x] **Step 3：给 Service 增加注入点**
 
 在 `internal/install/service.go` 的 `Service` 增加字段：
 
@@ -588,7 +588,7 @@ System7zExtractorFactory: func(filename, tool string, chooser Chooser, exe strin
 },
 ```
 
-- [ ] **Step 4：在 SelectExtractor 中接入系统 7z**
+- [x] **Step 4：在 SelectExtractor 中接入系统 7z**
 
 在 `Service.SelectExtractor()` 中先保留 `DownloadOnly` 分支。为 `ExtractFile`、`All`、默认 binary 三个分支创建 chooser 后，统一调用 helper：
 
@@ -626,7 +626,7 @@ func (s *Service) newExtractor(filename, tool string, chooser any, opts *Options
 }
 ```
 
-- [ ] **Step 5：补齐临时 constructor**
+- [x] **Step 5：补齐临时 constructor**
 
 在 `internal/install/system7z.go` 增加最小类型、constructor 和临时 `Extract` 方法，实际 extractor 在后续任务完善。这里必须先提供 `Extract` 方法，否则 `NewDefaultService()` 中的 `System7zExtractorFactory` 无法返回 `Extractor` 接口：
 
@@ -649,7 +649,7 @@ func (e *System7zExtractor) Extract(data []byte, multiple bool) (ExtractedFile, 
 
 确保 `internal/install/system7z.go` 已导入 `fmt`。
 
-- [ ] **Step 6：运行选择测试确认通过**
+- [x] **Step 6：运行选择测试确认通过**
 
 执行：
 
@@ -659,7 +659,7 @@ go test ./internal/install -run 'SelectExtractor.*System7z|SelectExtractorKeepsT
 
 预期：通过。
 
-- [ ] **Step 7：提交选择逻辑**
+- [x] **Step 7：提交选择逻辑**
 
 执行：
 

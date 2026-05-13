@@ -223,6 +223,10 @@ func NewDefaultService(githubGetter sourcegithub.HTTPGetter, binaryModTime func(
 		ExtractorFactory: func(filename, tool string, chooser any) any {
 			return NewExtractor(filename, tool, chooser.(Chooser))
 		},
+		System7zPathResolver: resolveSystem7zPath,
+		System7zExtractorFactory: func(filename, tool string, chooser Chooser, exe string) Extractor {
+			return NewSystem7zExtractor(filename, tool, chooser, exe)
+		},
 	}
 }
 

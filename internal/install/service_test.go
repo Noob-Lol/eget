@@ -44,6 +44,10 @@ type fakeExtractor struct {
 	name string
 }
 
+func (f *fakeExtractor) Extract([]byte, bool) (ExtractedFile, []ExtractedFile, error) {
+	return ExtractedFile{}, nil, nil
+}
+
 type fakeHTTPGetterFunc func(url string) (*http.Response, error)
 
 func (f fakeHTTPGetterFunc) Get(url string) (*http.Response, error) {
@@ -497,6 +501,96 @@ func TestSelectExtractor(t *testing.T) {
 	}
 	if got := extractor.(*fakeExtractor).name; got != "tool.tar.gz|tool|binary:tool" {
 		t.Fatalf("SelectExtractor(binary) = %q", got)
+	}
+}
+
+func TestSelectExtractorUsesSystem7zForSevenZipWhenAvailable(t *testing.T) {
+	svc := NewService()
+	svc.BinaryChooserFactory = func(tool string) any {
+		return NewBinaryChooser(tool)
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return &fakeExtractor{name: "go:" + filename}
+	}
+	svc.System7zPathResolver = func(configured string) string {
+		if configured != "C:/Tools/7z.exe" {
+			t.Fatalf("expected configured 7z path to propagate, got %q", configured)
+		}
+		return "C:/Tools/7z.exe"
+	}
+	svc.System7zExtractorFactory = func(filename, tool string, chooser Chooser, exe string) Extractor {
+		return &fakeExtractor{name: "system7z:" + filepath.Base(filename)}
+	}
+
+	extractor, err := svc.SelectExtractor("https://example.com/tool.7z", "tool", &Options{Sys7zPath: "C:/Tools/7z.exe"})
+	if err != nil {
+		t.Fatalf("SelectExtractor(system 7z): %v", err)
+	}
+	if got := extractor.(*fakeExtractor).name; got != "system7z:tool.7z" {
+		t.Fatalf("expected system 7z extractor, got %q", got)
+	}
+}
+
+func TestSelectExtractorFallsBackToGoExtractorWithoutSystem7z(t *testing.T) {
+	svc := NewService()
+	svc.BinaryChooserFactory = func(tool string) any {
+		return NewBinaryChooser(tool)
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return &fakeExtractor{name: "go:" + filename}
+	}
+	svc.System7zPathResolver = func(configured string) string {
+		return ""
+	}
+
+	extractor, err := svc.SelectExtractor("https://example.com/tool.7z", "tool", &Options{})
+	if err != nil {
+		t.Fatalf("SelectExtractor(go fallback): %v", err)
+	}
+	if got := extractor.(*fakeExtractor).name; got != "go:tool.7z" {
+		t.Fatalf("expected Go extractor fallback, got %q", got)
+	}
+}
+
+func TestSelectExtractorKeepsTarGzOnGoExtractorEvenWithSystem7z(t *testing.T) {
+	svc := NewService()
+	svc.BinaryChooserFactory = func(tool string) any {
+		return NewBinaryChooser(tool)
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return &fakeExtractor{name: "go:" + filename}
+	}
+	svc.System7zPathResolver = func(configured string) string {
+		return "C:/Tools/7z.exe"
+	}
+	svc.System7zExtractorFactory = func(filename, tool string, chooser Chooser, exe string) Extractor {
+		return &fakeExtractor{name: "system7z:" + filepath.Base(filename)}
+	}
+
+	extractor, err := svc.SelectExtractor("https://example.com/tool.tar.gz", "tool", &Options{})
+	if err != nil {
+		t.Fatalf("SelectExtractor(tar.gz): %v", err)
+	}
+	if got := extractor.(*fakeExtractor).name; got != "go:tool.tar.gz" {
+		t.Fatalf("expected tar.gz to stay on Go extractor, got %q", got)
+	}
+}
+
+func TestSelectExtractorDoesNotUseSystem7zForPureDownloadOnly(t *testing.T) {
+	svc := NewService()
+	svc.DownloadOnlyExtractorFactory = func(name string) any {
+		return &fakeExtractor{name: "download:" + name}
+	}
+	svc.System7zPathResolver = func(configured string) string {
+		return "C:/Tools/7z.exe"
+	}
+
+	extractor, err := svc.SelectExtractor("https://example.com/tool.7z", "tool", &Options{DownloadOnly: true})
+	if err != nil {
+		t.Fatalf("SelectExtractor(download-only): %v", err)
+	}
+	if got := extractor.(*fakeExtractor).name; got != "download:tool.7z" {
+		t.Fatalf("expected pure download-only extractor, got %q", got)
 	}
 }
 
