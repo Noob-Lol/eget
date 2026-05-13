@@ -1,0 +1,56 @@
+package install
+
+import (
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+func writeFile(data []byte, rename string, mode fs.FileMode) error {
+	if rename[0] == '-' {
+		_, err := os.Stdout.Write(data)
+		return err
+	}
+	os.Remove(rename)
+	os.MkdirAll(filepath.Dir(rename), 0o755)
+	f, err := os.OpenFile(rename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.Write(data)
+	return err
+}
+
+func modeFrom(fname string, mode fs.FileMode) fs.FileMode {
+	if isExec(fname, mode) {
+		return mode | 0o111
+	}
+	return mode
+}
+
+func rename(file string, nameguess string) string {
+	if isDefinitelyNotExec(file) {
+		return file
+	}
+	switch {
+	case strings.HasSuffix(file, ".appimage"):
+		return file[:len(file)-len(".appimage")]
+	case strings.HasSuffix(file, ".exe"):
+		return file
+	default:
+		return nameguess
+	}
+}
+
+func isDefinitelyNotExec(file string) bool {
+	return strings.HasSuffix(file, ".deb") || strings.HasSuffix(file, ".1") || strings.HasSuffix(file, ".txt")
+}
+
+func isExec(file string, mode os.FileMode) bool {
+	if isDefinitelyNotExec(file) {
+		return false
+	}
+	return strings.HasSuffix(file, ".exe") || strings.HasSuffix(file, ".appimage") || !strings.Contains(file, ".") || mode&0o111 != 0
+}

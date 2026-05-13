@@ -630,17 +630,6 @@ func outputPath(file ExtractedFile, output string, all bool, preferredName strin
 	return out, nil
 }
 
-func safeArchiveOutputPath(output, name string) (string, error) {
-	if output == "" {
-		output = "."
-	}
-	cleanName := filepath.Clean(filepath.FromSlash(name))
-	if cleanName == "." || filepath.IsAbs(cleanName) || strings.HasPrefix(cleanName, ".."+string(os.PathSeparator)) || cleanName == ".." || filepath.VolumeName(cleanName) != "" {
-		return "", fmt.Errorf("unsafe archive path %q", name)
-	}
-	return filepath.Join(output, cleanName), nil
-}
-
 func resolvedOutputName(name string, mode os.FileMode, preferredName string) string {
 	base := filepath.Base(name)
 	if preferredName != "" {
