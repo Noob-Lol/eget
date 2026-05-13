@@ -312,16 +312,16 @@ func (s *Service) SelectExtractor(url, tool string, opts *Options) (any, error) 
 }
 
 func (s *Service) newExtractor(filename, tool string, chooser any, opts *Options) (any, error) {
-	typedChooser, ok := chooser.(Chooser)
-	if !ok {
-		return nil, fmt.Errorf("unexpected chooser type %T", chooser)
-	}
 	if opts != nil && shouldUseSystem7z(filename, opts.All) {
 		resolver := s.System7zPathResolver
 		if resolver == nil {
 			resolver = resolveSystem7zPath
 		}
 		if exe := resolver(opts.Sys7zPath); exe != "" {
+			typedChooser, ok := chooser.(Chooser)
+			if !ok {
+				return s.ExtractorFactory(filename, tool, chooser), nil
+			}
 			factory := s.System7zExtractorFactory
 			if factory == nil {
 				factory = func(filename, tool string, chooser Chooser, exe string) Extractor {
@@ -334,7 +334,7 @@ func (s *Service) newExtractor(filename, tool string, chooser any, opts *Options
 	if s.ExtractorFactory == nil {
 		return nil, fmt.Errorf("extractor factories are required")
 	}
-	return s.ExtractorFactory(filename, tool, typedChooser), nil
+	return s.ExtractorFactory(filename, tool, chooser), nil
 }
 
 func NormalizeRepoTarget(target string) (string, error) {

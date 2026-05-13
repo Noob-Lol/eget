@@ -648,6 +648,9 @@ func TestSelectExtractorTreatsDownloadWithAllAsArchiveExtraction(t *testing.T) {
 
 func TestSelectExtractorTreatsExeWithExtractAllAsSevenZipArchive(t *testing.T) {
 	svc := NewDefaultService(nil, nil)
+	svc.System7zPathResolver = func(configured string) string {
+		return ""
+	}
 
 	extractor, err := SelectExtractorAs[Extractor](svc, "https://example.com/qbittorrent_5.2.0_x64_setup.exe", "qbittorrent", &Options{
 		All: true,
