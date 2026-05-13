@@ -166,3 +166,72 @@ Size = 4
 	assert.Eq(t, "tool", string(data))
 	assert.Contains(t, strings.Join(extractArgs, " "), "bin/tool.exe")
 }
+
+func TestSystem7zExtractorExtractAllRunsSevenZipOnce(t *testing.T) {
+	tmp := t.TempDir()
+	extractCalls := 0
+	origRunner := runSystem7zCommand
+	defer func() { runSystem7zCommand = origRunner }()
+
+	runSystem7zCommand = func(exe string, args ...string) ([]byte, error) {
+		if args[0] == "l" {
+			return []byte(`
+Path = setup.exe
+Type = NSIS
+
+----------
+Path = $PLUGINSDIR/modern-wizard.bmp
+Size = 4
+
+Path = $PLUGINSDIR/nsDialogs.dll
+Size = 3
+`), nil
+		}
+		extractCalls++
+		outDir := ""
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "-o") {
+				outDir = strings.TrimPrefix(arg, "-o")
+			}
+		}
+		if outDir == "" {
+			t.Fatal("expected output dir")
+		}
+		files := map[string]string{
+			"$PLUGINSDIR/modern-wizard.bmp": "bmp",
+			"$PLUGINSDIR/nsDialogs.dll":     "dll",
+		}
+		for name, content := range files {
+			extracted := filepath.Join(outDir, filepath.FromSlash(name))
+			if err := os.MkdirAll(filepath.Dir(extracted), 0o755); err != nil {
+				return nil, err
+			}
+			if err := os.WriteFile(extracted, []byte(content), 0o644); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	}
+
+	chooser, err := NewFileChooser("*")
+	if err != nil {
+		t.Fatalf("new chooser: %v", err)
+	}
+	extractor := NewSystem7zExtractor("setup.exe", "setup", chooser, "7z")
+	_, files, err := extractor.Extract([]byte("archive"), true)
+	if err != nil && len(files) == 0 {
+		t.Fatalf("extract candidates: %v", err)
+	}
+	if len(files) != 2 {
+		t.Fatalf("expected 2 files, got %#v", files)
+	}
+
+	for _, file := range files {
+		out := filepath.Join(tmp, file.Name)
+		if err := file.Extract(out); err != nil {
+			t.Fatalf("extract %s: %v", file.Name, err)
+		}
+	}
+
+	assert.Eq(t, 1, extractCalls)
+}

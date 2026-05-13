@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 var system7zCandidates = []string{"7z", "7zz", "7za"}
@@ -78,6 +79,10 @@ func (e *System7zExtractor) Extract(data []byte, multiple bool) (ExtractedFile, 
 	}
 
 	var candidates []ExtractedFile
+	var shared *system7zExtractAllState
+	if multiple {
+		shared = &system7zExtractAllState{}
+	}
 	for _, file := range files {
 		direct, possible := e.Chooser.Choose(file.Name, file.Dir(), file.Mode)
 		if !direct && !possible {
@@ -92,6 +97,9 @@ func (e *System7zExtractor) Extract(data []byte, multiple bool) (ExtractedFile, 
 			mode:        mode,
 			Dir:         file.Dir(),
 			Extract: func(to string) error {
+				if shared != nil {
+					return e.extractSharedMember(shared, data, archiveName, to, mode)
+				}
 				return e.extractMember(data, archiveName, to, mode)
 			},
 		}
@@ -102,12 +110,71 @@ func (e *System7zExtractor) Extract(data []byte, multiple bool) (ExtractedFile, 
 	}
 
 	if len(candidates) == 1 {
+		if shared != nil {
+			shared.remaining = 1
+		}
 		return candidates[0], nil, nil
 	}
 	if len(candidates) == 0 {
 		return ExtractedFile{}, candidates, fmt.Errorf("target %v not found in archive", e.Chooser)
 	}
+	if shared != nil {
+		shared.remaining = len(candidates)
+	}
 	return ExtractedFile{}, candidates, fmt.Errorf("%d candidates for target %v found", len(candidates), e.Chooser)
+}
+
+type system7zExtractAllState struct {
+	once      sync.Once
+	mu        sync.Mutex
+	tempDir   string
+	err       error
+	remaining int
+}
+
+func (e *System7zExtractor) extractSharedMember(state *system7zExtractAllState, data []byte, archiveName, to string, mode fs.FileMode) error {
+	state.once.Do(func() {
+		state.tempDir, state.err = e.extractAllToTempDir(data)
+	})
+	if state.err != nil {
+		return state.err
+	}
+	defer state.release()
+
+	src, err := safeArchiveOutputPath(state.tempDir, archiveName)
+	if err != nil {
+		return err
+	}
+	return copyExtractedPath(src, to, mode)
+}
+
+func (s *system7zExtractAllState) release() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.remaining--
+	if s.remaining <= 0 && s.tempDir != "" {
+		_ = os.RemoveAll(s.tempDir)
+		s.tempDir = ""
+	}
+}
+
+func (e *System7zExtractor) extractAllToTempDir(data []byte) (string, error) {
+	archivePath, cleanupArchive, err := writeTempArchive(data, e.Filename)
+	if err != nil {
+		return "", err
+	}
+	defer cleanupArchive()
+
+	tempDir, err := os.MkdirTemp("", "eget-7z-out-*")
+	if err != nil {
+		return "", err
+	}
+	output, err := runSystem7zCommand(e.Exe, "x", "-y", "-o"+tempDir, archivePath)
+	if err != nil {
+		_ = os.RemoveAll(tempDir)
+		return "", fmt.Errorf("7z extract: %w: %s", err, strings.TrimSpace(string(output)))
+	}
+	return tempDir, nil
 }
 
 func (e *System7zExtractor) extractMember(data []byte, archiveName, to string, mode fs.FileMode) error {
