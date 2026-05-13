@@ -85,6 +85,33 @@ func TestArchiveDirectoryExtractRejectsPathTraversal(t *testing.T) {
 	}
 }
 
+func TestSafeArchiveRelativePathNormalizesBackslashes(t *testing.T) {
+	got, err := safeArchiveRelativePath(`Plugins\`)
+	if err != nil {
+		t.Fatalf("safe archive path: %v", err)
+	}
+	if got != "Plugins" {
+		t.Fatalf("expected Plugins, got %q", got)
+	}
+
+	got, err = safeArchiveRelativePath(`docs\readme.txt`)
+	if err != nil {
+		t.Fatalf("safe archive file path: %v", err)
+	}
+	if got != filepath.Join("docs", "readme.txt") {
+		t.Fatalf("expected normalized path, got %q", got)
+	}
+
+	root := t.TempDir()
+	out, err := safeArchiveOutputPath(root, `docs\readme.txt`)
+	if err != nil {
+		t.Fatalf("safe archive output path: %v", err)
+	}
+	if out != filepath.Join(root, "docs", "readme.txt") {
+		t.Fatalf("expected nested output path, got %q", out)
+	}
+}
+
 func TestArchiveExtractorExtractAllToPreservesEmptyDirsAndTimestamps(t *testing.T) {
 	pluginTime := time.Date(2024, 1, 2, 3, 4, 4, 0, time.UTC)
 	fileTime := time.Date(2024, 2, 3, 4, 5, 6, 0, time.UTC)

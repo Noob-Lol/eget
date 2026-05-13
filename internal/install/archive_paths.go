@@ -3,6 +3,7 @@ package install
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -21,7 +22,7 @@ func archiveChildPath(parent, name string) (string, bool) {
 }
 
 func archivePathForCompare(name string) string {
-	return filepath.ToSlash(filepath.Clean(filepath.FromSlash(name)))
+	return path.Clean(strings.ReplaceAll(name, `\`, "/"))
 }
 
 func safeArchiveRelativePath(name string) (string, error) {
@@ -37,6 +38,7 @@ func safeArchiveOutputPath(output, name string) (string, error) {
 	if output == "" {
 		output = "."
 	}
+	name = archivePathForCompare(name)
 	cleanName := filepath.Clean(filepath.FromSlash(name))
 	if cleanName == "." || filepath.IsAbs(cleanName) || strings.HasPrefix(cleanName, ".."+string(os.PathSeparator)) || cleanName == ".." || filepath.VolumeName(cleanName) != "" {
 		return "", fmt.Errorf("unsafe archive path %q", name)
