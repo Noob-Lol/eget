@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 type FileType string
@@ -60,6 +63,7 @@ func ParseFilesPage(body []byte) ([]File, error) {
 		return nil, fmt.Errorf("sourceforge files data not found")
 	}
 
+	modifiedTimes := parseModifiedTimes(body)
 	keys := make([]string, 0, len(filesByKey))
 	for key := range filesByKey {
 		keys = append(keys, key)
@@ -76,6 +80,13 @@ func ParseFilesPage(body []byte) ([]File, error) {
 	for _, key := range keys {
 		file := filesByKey[key]
 		file.PublishedAt = sourceForgeFileTime(file)
+		if file.PublishedAt.IsZero() {
+			if modifiedAt := modifiedTimes[file.Name]; !modifiedAt.IsZero() {
+				file.PublishedAt = modifiedAt
+			} else if modifiedAt := modifiedTimes[key]; !modifiedAt.IsZero() {
+				file.PublishedAt = modifiedAt
+			}
+		}
 		files = append(files, file)
 	}
 	return files, nil
@@ -89,6 +100,69 @@ func sourceForgeFileTime(file File) time.Time {
 		return time.Unix(file.UpdatedAt, 0).UTC()
 	}
 	return time.Time{}
+}
+
+func parseModifiedTimes(body []byte) map[string]time.Time {
+	doc, err := html.Parse(bytes.NewReader(body))
+	if err != nil {
+		return nil
+	}
+
+	times := make(map[string]time.Time)
+	var walk func(*html.Node)
+	walk = func(node *html.Node) {
+		if node.Type == html.ElementNode && node.Data == "tr" {
+			name := strings.TrimSpace(attrValue(node, "title"))
+			modifiedAt := modifiedTimeFromRow(node)
+			if name != "" && !modifiedAt.IsZero() {
+				times[name] = modifiedAt
+			}
+			return
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			walk(child)
+		}
+	}
+	walk(doc)
+	return times
+}
+
+func modifiedTimeFromRow(row *html.Node) time.Time {
+	if row.Type == html.ElementNode && row.Data == "td" && strings.Contains(attrValue(row, "headers"), "files_date_h") {
+		if modifiedAt := firstAbbrTitleTime(row); !modifiedAt.IsZero() {
+			return modifiedAt
+		}
+	}
+	for child := row.FirstChild; child != nil; child = child.NextSibling {
+		if modifiedAt := modifiedTimeFromRow(child); !modifiedAt.IsZero() {
+			return modifiedAt
+		}
+	}
+	return time.Time{}
+}
+
+func firstAbbrTitleTime(node *html.Node) time.Time {
+	if node.Type == html.ElementNode && node.Data == "abbr" {
+		modifiedAt, err := time.Parse("2006-01-02 15:04:05 MST", strings.TrimSpace(attrValue(node, "title")))
+		if err == nil {
+			return modifiedAt.UTC()
+		}
+	}
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		if modifiedAt := firstAbbrTitleTime(child); !modifiedAt.IsZero() {
+			return modifiedAt
+		}
+	}
+	return time.Time{}
+}
+
+func attrValue(node *html.Node, key string) string {
+	for _, attr := range node.Attr {
+		if attr.Key == key {
+			return attr.Val
+		}
+	}
+	return ""
 }
 
 func findJSONObjectEnd(body []byte, start int) (int, error) {

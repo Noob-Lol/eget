@@ -54,6 +54,38 @@ net.sf.staging_days = 3;
 	assert.Eq(t, time.Date(2026, 2, 3, 9, 20, 19, 0, time.UTC), files[1].PublishedAt)
 }
 
+func TestParseFilesPageUsesModifiedColumnTime(t *testing.T) {
+	body := []byte(`
+<table>
+  <tr title="qbittorrent_5.2.0_x64_setup.exe" class="file ">
+    <th scope="row" headers="files_name_h">
+      <a href="https://sourceforge.net/projects/qbittorrent/files/qbittorrent-win32/qbittorrent-5.2.0/qbittorrent_5.2.0_x64_setup.exe/download">
+        <span class="name">qbittorrent_5.2.0_x64_setup.exe</span>
+      </a>
+    </th>
+    <td headers="files_date_h" class="opt">
+      <abbr title="2026-05-03 19:10:36 UTC">2026-05-03</abbr>
+    </td>
+  </tr>
+</table>
+<script>
+net.sf.files = {
+  "qbittorrent_5.2.0_x64_setup.exe": {
+    "name":"qbittorrent_5.2.0_x64_setup.exe",
+    "download_url":"https://sourceforge.net/projects/qbittorrent/files/qbittorrent-win32/qbittorrent-5.2.0/qbittorrent_5.2.0_x64_setup.exe/download",
+    "full_path":"qbittorrent-win32/qbittorrent-5.2.0/qbittorrent_5.2.0_x64_setup.exe",
+    "type":"f"
+  }
+};
+</script>`)
+
+	files, err := ParseFilesPage(body)
+
+	assert.NoErr(t, err)
+	assert.Len(t, files, 1)
+	assert.Eq(t, time.Date(2026, 5, 3, 19, 10, 36, 0, time.UTC), files[0].PublishedAt)
+}
+
 func TestParseFilesPageRejectsMissingData(t *testing.T) {
 	_, err := ParseFilesPage([]byte(""))
 	if err == nil || !strings.Contains(err.Error(), "sourceforge files data not found") {
