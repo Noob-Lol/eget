@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 )
@@ -152,14 +153,38 @@ net.sf.files = {
   "2.16.44": {"name":"2.16.44","full_path":"/stable/2.16.44","type":"d"}
 };
 </script>`,
+		"https://sourceforge.net/projects/winmerge/files/stable/2.16.44/": `
+<script>
+net.sf.files = {
+  "WinMerge-2.16.44-x64-Setup.exe": {
+    "name":"WinMerge-2.16.44-x64-Setup.exe",
+    "download_url":"https://downloads.sourceforge.net/project/winmerge/stable/2.16.44/WinMerge-2.16.44-x64-Setup.exe",
+    "full_path":"/stable/2.16.44/WinMerge-2.16.44-x64-Setup.exe",
+    "type":"f",
+    "mtime":1770110419
+  },
+  "WinMerge-2.16.44-x64-Portable.zip": {
+    "name":"WinMerge-2.16.44-x64-Portable.zip",
+    "download_url":"https://downloads.sourceforge.net/project/winmerge/stable/2.16.44/WinMerge-2.16.44-x64-Portable.zip",
+    "full_path":"/stable/2.16.44/WinMerge-2.16.44-x64-Portable.zip",
+    "type":"f",
+    "mtime":1770110500
+  }
+};
+</script>`,
 	}}
 
 	info, err := LatestVersion("winmerge", "stable", getter)
 
 	assert.NoErr(t, err)
-	assert.Eq(t, []string{"https://sourceforge.net/projects/winmerge/files/stable/"}, getter.requests)
+	assert.Eq(t, []string{
+		"https://sourceforge.net/projects/winmerge/files/stable/",
+		"https://sourceforge.net/projects/winmerge/files/stable/2.16.44/",
+	}, getter.requests)
 	assert.Eq(t, "2.16.44", info.Version)
 	assert.Eq(t, "/stable/2.16.44", info.Path)
+	assert.Eq(t, 2, info.AssetsCount)
+	assert.Eq(t, time.Date(2026, 2, 3, 9, 21, 40, 0, time.UTC), info.PublishedAt)
 }
 
 func TestFinderFallbackVersionAssetsSkipsLatestAndScansOlderVersions(t *testing.T) {

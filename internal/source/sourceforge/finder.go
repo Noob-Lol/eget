@@ -25,6 +25,7 @@ type LatestInfo struct {
 	Version     string
 	Path        string
 	PublishedAt time.Time
+	AssetsCount int
 }
 
 func (f Finder) Find() ([]string, error) {
@@ -143,7 +144,29 @@ func LatestVersion(project, sourcePath string, getter HTTPGetter) (LatestInfo, e
 	if version == "" {
 		return LatestInfo{}, fmt.Errorf("could not determine SourceForge latest version for %s", project)
 	}
-	return LatestInfo{Version: version, Path: latest.FullPath}, nil
+	assets, err := finder.list(latest.FullPath)
+	if err != nil {
+		return LatestInfo{}, err
+	}
+	return LatestInfo{
+		Version:     version,
+		Path:        latest.FullPath,
+		PublishedAt: latestPublishedAt(assets),
+		AssetsCount: len(downloadableURLs(assets)),
+	}, nil
+}
+
+func latestPublishedAt(files []File) time.Time {
+	var latest time.Time
+	for _, file := range files {
+		if file.Type != TypeFile || file.DownloadURL == "" || file.PublishedAt.IsZero() {
+			continue
+		}
+		if latest.IsZero() || file.PublishedAt.After(latest) {
+			latest = file.PublishedAt
+		}
+	}
+	return latest
 }
 
 func stableDirectory(files []File) (File, bool) {

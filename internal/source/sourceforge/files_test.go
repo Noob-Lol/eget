@@ -3,6 +3,7 @@ package sourceforge
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 )
@@ -28,7 +29,8 @@ net.sf.files = {
     "url": "https://sourceforge.net/projects/winmerge/files/stable/2.16.44/WinMerge-2.16.44-x64-Setup.exe/download",
     "full_path": "/stable/2.16.44/WinMerge-2.16.44-x64-Setup.exe",
     "type": "f",
-    "downloadable": true
+    "downloadable": true,
+    "mtime": 1770110419
   }
 };
 net.sf.staging_days = 3;
@@ -49,6 +51,7 @@ net.sf.staging_days = 3;
 	assert.Eq(t, TypeFile, files[1].Type)
 	assert.True(t, files[1].Downloadable)
 	assert.Eq(t, "https://downloads.sourceforge.net/project/winmerge/stable/2.16.44/WinMerge-2.16.44-x64-Setup.exe", files[1].DownloadURL)
+	assert.Eq(t, time.Date(2026, 2, 3, 9, 20, 19, 0, time.UTC), files[1].PublishedAt)
 }
 
 func TestParseFilesPageRejectsMissingData(t *testing.T) {

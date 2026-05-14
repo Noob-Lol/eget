@@ -53,7 +53,12 @@ func TestQueryServiceSourceForgeLatest(t *testing.T) {
 		SourceForgeLatest: func(project, sourcePath string) (sourcesf.LatestInfo, error) {
 			assert.Eq(t, "project", project)
 			assert.Eq(t, "files", sourcePath)
-			return sourcesf.LatestInfo{Version: "1.2.3", Path: "files/1.2.3"}, nil
+			return sourcesf.LatestInfo{
+				Version:     "1.2.3",
+				Path:        "files/1.2.3",
+				PublishedAt: time.Date(2026, 2, 3, 9, 21, 40, 0, time.UTC),
+				AssetsCount: 2,
+			}, nil
 		},
 	}
 
@@ -69,6 +74,8 @@ func TestQueryServiceSourceForgeLatest(t *testing.T) {
 	}
 	assert.Eq(t, "1.2.3", result.Latest.Tag)
 	assert.Eq(t, "1.2.3", result.Latest.Name)
+	assert.Eq(t, time.Date(2026, 2, 3, 9, 21, 40, 0, time.UTC), result.Latest.PublishedAt)
+	assert.Eq(t, 2, result.Latest.AssetsCount)
 }
 
 func TestQueryServiceSourceForgeAssets(t *testing.T) {

@@ -144,7 +144,12 @@ func (s QueryService) querySourceForge(opts QueryOptions, action string) (QueryR
 		if err != nil {
 			return QueryResult{}, err
 		}
-		release := QueryRelease{Tag: latest.Version, Name: latest.Version}
+		release := QueryRelease{
+			Tag:         latest.Version,
+			Name:        latest.Version,
+			PublishedAt: latest.PublishedAt,
+			AssetsCount: latest.AssetsCount,
+		}
 		return QueryResult{Action: action, Repo: repo, Latest: &release}, nil
 	case "assets":
 		if s.SourceForgeAssets == nil {

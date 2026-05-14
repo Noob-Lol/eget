@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"time"
 )
 
 type FileType string
@@ -22,6 +23,9 @@ type File struct {
 	FullPath     string   `json:"full_path"`
 	Type         FileType `json:"type"`
 	Downloadable bool     `json:"downloadable"`
+	PublishedAt  time.Time
+	ModTime      int64 `json:"mtime"`
+	UpdatedAt    int64 `json:"updated"`
 }
 
 func ParseFilesPage(body []byte) ([]File, error) {
@@ -70,9 +74,21 @@ func ParseFilesPage(body []byte) ([]File, error) {
 
 	files := make([]File, 0, len(keys))
 	for _, key := range keys {
-		files = append(files, filesByKey[key])
+		file := filesByKey[key]
+		file.PublishedAt = sourceForgeFileTime(file)
+		files = append(files, file)
 	}
 	return files, nil
+}
+
+func sourceForgeFileTime(file File) time.Time {
+	if file.ModTime > 0 {
+		return time.Unix(file.ModTime, 0).UTC()
+	}
+	if file.UpdatedAt > 0 {
+		return time.Unix(file.UpdatedAt, 0).UTC()
+	}
+	return time.Time{}
 }
 
 func findJSONObjectEnd(body []byte, start int) (int, error) {
