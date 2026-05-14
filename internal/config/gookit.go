@@ -171,7 +171,7 @@ func normalizePathValue(key string, value any) (any, bool) {
 			return nil, false
 		}
 		return parsed, true
-	case "asset_filters", "fallbacks":
+	case "asset_filters", "fallbacks", "ignore_update_packages":
 		return splitAndTrim(text), true
 	default:
 		return text, true
@@ -222,6 +222,9 @@ func sectionToMap(section Section) map[string]any {
 	}
 	if section.GuiTarget != nil {
 		data["gui_target"] = *section.GuiTarget
+	}
+	if len(section.IgnoreUpdatePackages) > 0 {
+		data["ignore_update_packages"] = append([]string(nil), section.IgnoreUpdatePackages...)
 	}
 	if section.IsGUI != nil {
 		data["is_gui"] = *section.IsGUI

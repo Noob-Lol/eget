@@ -311,6 +311,7 @@ system = "windows/amd64"
 sys7z_path = ""
 chunk_concurrency = 0
 batch_concurrency = 0
+ignore_update_packages = []
 
 [api_cache]
 enable = false
@@ -382,6 +383,7 @@ eget config init
 - `global.sys7z_path = ""`
 - `global.chunk_concurrency = 0`
 - `global.batch_concurrency = 0`
+- `global.ignore_update_packages = []`
 - `api_cache.enable = false`
 - `api_cache.cache_time = 300`
 - `ghproxy.enable = false`
@@ -404,6 +406,7 @@ eget config init
 - `proxy_url` 是 HTTP 层代理，`ghproxy` 是请求 URL 重写，两者可以同时启用
 - `download` 在未指定 `--to` 时默认使用 `cache_dir`
 - `install`/`download` 对远程 URL 的原始下载内容会优先复用 `cache_dir` 中的缓存文件
+- `ignore_update_packages` 用于在 `list --outdated`、`update --check` 和 `update --all` 中跳过指定 package 名称
 
 安装记录 store 默认也会写入 `~/.config/eget/installed.toml`。
 

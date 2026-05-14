@@ -292,6 +292,69 @@ func TestUpdateAllPackagesInstallsOnlyOutdatedInstalledPackages(t *testing.T) {
 	assert.Eq(t, "BurntSushi/ripgrep", results[0].Target)
 }
 
+func TestUpdateAllPackagesIgnoresConfiguredPackageNames(t *testing.T) {
+	installer := &fakeInstallService{}
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Global.IgnoreUpdatePackages = []string{"fzf"}
+			cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.50.0"},
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+			if repo == "junegunn/fzf" {
+				t.Fatal("expected ignored package fzf not to be checked")
+			}
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	results, err := svc.UpdateAllPackages(install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"rg"}, installer.targets)
+	assert.Eq(t, 1, len(results))
+	assert.Eq(t, "rg", results[0].Name)
+}
+
+func TestListUpdateCandidatesIgnoresConfiguredPackageNames(t *testing.T) {
+	svc := UpdateService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Global.IgnoreUpdatePackages = []string{"fzf"}
+			cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.50.0"},
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+			if repo == "junegunn/fzf" {
+				t.Fatal("expected ignored package fzf not to be checked")
+			}
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	items, failures, checked, err := svc.ListUpdateCandidates()
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, checked)
+	assert.Eq(t, 0, len(failures))
+	assert.Eq(t, 1, len(items))
+	assert.Eq(t, "rg", items[0].Name)
+}
+
 func TestUpdateAllPackagesPassesAPICacheOptionsFromConfigToInstaller(t *testing.T) {
 	installer := &fakeInstallService{}
 	cacheTime := 120

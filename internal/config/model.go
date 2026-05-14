@@ -1,30 +1,31 @@
 package config
 
 type Section struct {
-	ExtractAll       *bool    `toml:"extract_all" mapstructure:"extract_all"`
-	AssetFilters     []string `toml:"asset_filters" mapstructure:"asset_filters"`
-	CacheDir         *string  `toml:"cache_dir" mapstructure:"cache_dir"`
-	ProxyURL         *string  `toml:"proxy_url" mapstructure:"proxy_url"`
-	DownloadOnly     *bool    `toml:"download_only" mapstructure:"download_only"`
-	File             *string  `toml:"file" mapstructure:"file"`
-	GithubToken      *string  `toml:"github_token" mapstructure:"github_token"`
-	GuiTarget        *string  `toml:"gui_target" mapstructure:"gui_target"`
-	IsGUI            *bool    `toml:"is_gui" mapstructure:"is_gui"`
-	Name             *string  `toml:"name" mapstructure:"name"`
-	Quiet            *bool    `toml:"quiet" mapstructure:"quiet"`
-	Repo             *string  `toml:"repo" mapstructure:"repo"`
-	ShowHash         *bool    `toml:"show_hash" mapstructure:"show_hash"`
-	Source           *bool    `toml:"download_source" mapstructure:"download_source"`
-	SourcePath       *string  `toml:"source_path" mapstructure:"source_path"`
-	Sys7zPath        *string  `toml:"sys7z_path" mapstructure:"sys7z_path"`
-	System           *string  `toml:"system" mapstructure:"system"`
-	Tag              *string  `toml:"tag" mapstructure:"tag"`
-	Target           *string  `toml:"target" mapstructure:"target"`
-	UpgradeOnly      *bool    `toml:"upgrade_only" mapstructure:"upgrade_only"`
-	Verify           *string  `toml:"verify_sha256" mapstructure:"verify_sha256"`
-	DisableSSL       *bool    `toml:"disable_ssl" mapstructure:"disable_ssl"`
-	ChunkConcurrency *int     `toml:"chunk_concurrency" mapstructure:"chunk_concurrency"`
-	BatchConcurrency *int     `toml:"batch_concurrency" mapstructure:"batch_concurrency"`
+	ExtractAll           *bool    `toml:"extract_all" mapstructure:"extract_all"`
+	AssetFilters         []string `toml:"asset_filters" mapstructure:"asset_filters"`
+	CacheDir             *string  `toml:"cache_dir" mapstructure:"cache_dir"`
+	ProxyURL             *string  `toml:"proxy_url" mapstructure:"proxy_url"`
+	DownloadOnly         *bool    `toml:"download_only" mapstructure:"download_only"`
+	File                 *string  `toml:"file" mapstructure:"file"`
+	GithubToken          *string  `toml:"github_token" mapstructure:"github_token"`
+	GuiTarget            *string  `toml:"gui_target" mapstructure:"gui_target"`
+	IgnoreUpdatePackages []string `toml:"ignore_update_packages" mapstructure:"ignore_update_packages"`
+	IsGUI                *bool    `toml:"is_gui" mapstructure:"is_gui"`
+	Name                 *string  `toml:"name" mapstructure:"name"`
+	Quiet                *bool    `toml:"quiet" mapstructure:"quiet"`
+	Repo                 *string  `toml:"repo" mapstructure:"repo"`
+	ShowHash             *bool    `toml:"show_hash" mapstructure:"show_hash"`
+	Source               *bool    `toml:"download_source" mapstructure:"download_source"`
+	SourcePath           *string  `toml:"source_path" mapstructure:"source_path"`
+	Sys7zPath            *string  `toml:"sys7z_path" mapstructure:"sys7z_path"`
+	System               *string  `toml:"system" mapstructure:"system"`
+	Tag                  *string  `toml:"tag" mapstructure:"tag"`
+	Target               *string  `toml:"target" mapstructure:"target"`
+	UpgradeOnly          *bool    `toml:"upgrade_only" mapstructure:"upgrade_only"`
+	Verify               *string  `toml:"verify_sha256" mapstructure:"verify_sha256"`
+	DisableSSL           *bool    `toml:"disable_ssl" mapstructure:"disable_ssl"`
+	ChunkConcurrency     *int     `toml:"chunk_concurrency" mapstructure:"chunk_concurrency"`
+	BatchConcurrency     *int     `toml:"batch_concurrency" mapstructure:"batch_concurrency"`
 }
 
 type APICacheSection struct {

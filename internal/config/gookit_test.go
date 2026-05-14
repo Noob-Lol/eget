@@ -223,6 +223,33 @@ func TestDumpConfigStringIncludesSys7zPath(t *testing.T) {
 	assert.Contains(t, text, `sys7z_path = "C:/Program Files/7-Zip/7z.exe"`)
 }
 
+func TestDumpConfigStringIncludesIgnoreUpdatePackages(t *testing.T) {
+	cfg := NewFile()
+	cfg.Global.IgnoreUpdatePackages = []string{"fzf", "rg"}
+
+	text, err := dumpConfigString(cfg)
+	if err != nil {
+		t.Fatalf("dump config string: %v", err)
+	}
+
+	assert.Contains(t, text, `ignore_update_packages = ["fzf", "rg"]`)
+}
+
+func TestSetByPathSupportsGlobalIgnoreUpdatePackages(t *testing.T) {
+	cfg := NewFile()
+
+	if err := SetByPath(cfg, "global.ignore_update_packages", "fzf, rg"); err != nil {
+		t.Fatalf("set global.ignore_update_packages: %v", err)
+	}
+
+	value, ok := GetByPath(cfg, "global.ignore_update_packages")
+	if !ok {
+		t.Fatal("expected global.ignore_update_packages to be set")
+	}
+	assert.Eq(t, []string{"fzf", "rg"}, value)
+	assert.Eq(t, []string{"fzf", "rg"}, cfg.Global.IgnoreUpdatePackages)
+}
+
 func TestSetByPathSupportsGlobalSys7zPath(t *testing.T) {
 	cfg := NewFile()
 

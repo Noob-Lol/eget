@@ -323,6 +323,37 @@ func TestListOutdatedPackagesIncludesInstalledOnlyEntries(t *testing.T) {
 	assert.Eq(t, publishedAt, items[0].PublishedAt)
 }
 
+func TestListOutdatedPackagesIgnoresConfiguredPackageNames(t *testing.T) {
+	svc := ListService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Global.IgnoreUpdatePackages = []string{"fzf"}
+			cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.50.0"},
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+			if repo == "junegunn/fzf" {
+				t.Fatal("expected ignored package fzf not to be checked")
+			}
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	items, failures, checked, err := svc.ListOutdatedPackages()
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, checked)
+	assert.Eq(t, 0, len(failures))
+	assert.Eq(t, 1, len(items))
+	assert.Eq(t, "rg", items[0].Name)
+}
+
 func TestListOutdatedPackagesSkipsFailedChecks(t *testing.T) {
 	now := time.Unix(1710000000, 0).UTC()
 	svc := ListService{

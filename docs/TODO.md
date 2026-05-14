@@ -28,7 +28,7 @@
   - `--extract-all` 使用系统 7z 时直接一次性解压，不再先 list 文件列表
   - `--extract-all` 使用 Go 内置解压时单次遍历并流式写出，避免先缓存所有文件内容
 - [ ] 新增 global.group_packages 用于配置 package 分组（详情见下面）
-- [ ] 全局配置 新增 global.ignore_update_packages 用于配置忽略检查/更新的 packages
+- [x] 全局配置 新增 global.ignore_update_packages 用于配置忽略检查/更新的 packages
 - [ ] 新增支持 sdk 下载安装，需要支持多版本。例如 go, node, python 等 sdk（详情见下面）
 - [x] 增强 install/update 的 target 参数支持多个目标。eg: `install name1 name2 ...`
   - 只输入一个参数时，也支持使用逗号分隔，例如: `install name1,name2,name3`

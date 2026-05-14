@@ -356,6 +356,23 @@ sys7z_path = "C:/Program Files/7-Zip/7z.exe"
 	assert.Eq(t, "C:/Program Files/7-Zip/7z.exe", *cfg.Global.Sys7zPath)
 }
 
+func TestLoadFileReadsGlobalIgnoreUpdatePackages(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+
+	writeTestFile(t, configPath, `
+[global]
+ignore_update_packages = ["fzf", "rg"]
+`)
+
+	cfg, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+
+	assert.Eq(t, []string{"fzf", "rg"}, cfg.Global.IgnoreUpdatePackages)
+}
+
 func writeTestFile(t *testing.T, path, content string) {
 	t.Helper()
 

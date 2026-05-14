@@ -31,6 +31,7 @@ type ListItem struct {
 	URL          string
 	IsGUI        bool
 	InstallMode  string
+	IgnoreUpdate bool
 }
 
 type OutdatedItem struct {
@@ -71,15 +72,17 @@ func (s ListService) ListPackages() ([]ListItem, error) {
 		return nil, err
 	}
 
+	ignoredUpdates := ignoreUpdatePackageSet(cfg)
 	byName := make(map[string]ListItem, len(cfg.Packages))
 	for name, pkg := range cfg.Packages {
 		repo := util.DerefString(pkg.Repo)
 		item := ListItem{
-			Name:       name,
-			Repo:       repo,
-			SourcePath: util.DerefString(pkg.SourcePath),
-			Target:     util.DerefString(pkg.Target),
-			Tag:        util.DerefString(pkg.Tag),
+			Name:         name,
+			Repo:         repo,
+			SourcePath:   util.DerefString(pkg.SourcePath),
+			Target:       util.DerefString(pkg.Target),
+			Tag:          util.DerefString(pkg.Tag),
+			IgnoreUpdate: ignoredUpdates[name],
 		}
 		if pkg.IsGUI != nil && *pkg.IsGUI {
 			item.IsGUI = true
@@ -102,9 +105,13 @@ func (s ListService) ListPackages() ([]ListItem, error) {
 			item, ok := byName[name]
 			if !ok {
 				item = ListItem{
-					Name: name,
-					Repo: repo,
+					Name:         name,
+					Repo:         repo,
+					IgnoreUpdate: ignoredUpdates[name],
 				}
+			}
+			if ignoredUpdates[name] {
+				item.IgnoreUpdate = true
 			}
 			if item.Repo == "" {
 				item.Repo = repo
@@ -223,6 +230,9 @@ func checkOutdatedItems(items []ListItem, latestInfo func(repo, sourcePath strin
 		if !item.Installed || item.Repo == "" {
 			continue
 		}
+		if item.IgnoreUpdate {
+			continue
+		}
 		eligible = append(eligible, item)
 	}
 	if onCheckDone != nil {
@@ -241,6 +251,20 @@ func checkOutdatedItems(items []ListItem, latestInfo func(repo, sourcePath strin
 		}
 	}
 	return outdated, failures, len(eligible)
+}
+
+func ignoreUpdatePackageSet(cfg *cfgpkg.File) map[string]bool {
+	if cfg == nil || len(cfg.Global.IgnoreUpdatePackages) == 0 {
+		return nil
+	}
+	ignored := make(map[string]bool, len(cfg.Global.IgnoreUpdatePackages))
+	for _, name := range cfg.Global.IgnoreUpdatePackages {
+		name = strings.TrimSpace(name)
+		if name != "" {
+			ignored[name] = true
+		}
+	}
+	return ignored
 }
 
 type outdatedCheckResult struct {

@@ -311,6 +311,7 @@ system = "windows/amd64"
 sys7z_path = ""
 chunk_concurrency = 0
 batch_concurrency = 0
+ignore_update_packages = []
 
 [api_cache]
 enable = false
@@ -383,6 +384,7 @@ This writes:
 - `global.sys7z_path = ""`
 - `global.chunk_concurrency = 0`
 - `global.batch_concurrency = 0`
+- `global.ignore_update_packages = []`
 - `api_cache.enable = false`
 - `api_cache.cache_time = 300`
 - `ghproxy.enable = false`
@@ -405,6 +407,7 @@ Directory semantics:
 - `proxy_url` is the HTTP-layer proxy, while `ghproxy` rewrites request URLs; both can be enabled together
 - `download` uses `cache_dir` by default when `--to` is not provided
 - `install` and `download` will reuse cached remote download contents from `cache_dir` when available
+- `ignore_update_packages` skips named packages during `list --outdated`, `update --check`, and `update --all`
 
 The installed-state store also defaults to `~/.config/eget/installed.toml`.
 
