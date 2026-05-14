@@ -78,6 +78,23 @@ func TestQueryServiceSourceForgeLatest(t *testing.T) {
 	assert.Eq(t, 2, result.Latest.AssetsCount)
 }
 
+func TestQueryServiceSourceForgeAliasNormalizesRepo(t *testing.T) {
+	svc := QueryService{
+		SourceForgeLatest: func(project, sourcePath string) (sourcesf.LatestInfo, error) {
+			assert.Eq(t, "project", project)
+			assert.Eq(t, "files", sourcePath)
+			return sourcesf.LatestInfo{Version: "1.2.3"}, nil
+		},
+	}
+
+	result, err := svc.Query(QueryOptions{Repo: "sf:project/files"})
+	if err != nil {
+		t.Fatalf("Query(): %v", err)
+	}
+
+	assert.Eq(t, "sourceforge:project/files", result.Repo)
+}
+
 func TestQueryServiceSourceForgeAssets(t *testing.T) {
 	svc := QueryService{
 		SourceForgeAssets: func(project, sourcePath, tag string) ([]string, error) {

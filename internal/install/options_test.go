@@ -20,6 +20,7 @@ func TestDetectTargetKind(t *testing.T) {
 	}{
 		{name: "repo target", target: "inhere/markview", want: TargetRepo},
 		{name: "sourceforge target", target: "sourceforge:winmerge", want: TargetSourceForge},
+		{name: "sourceforge alias target", target: "sf:winmerge", want: TargetSourceForge},
 		{name: "sourceforge target with path", target: "sourceforge:winmerge/stable", want: TargetSourceForge},
 		{name: "gitlab target", target: "gitlab:fdroid/fdroidserver", want: TargetForge},
 		{name: "gitlab target with host", target: "gitlab:gitlab.gnome.org/GNOME/gtk", want: TargetForge},

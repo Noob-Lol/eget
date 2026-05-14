@@ -17,6 +17,7 @@ func TestParseTarget(t *testing.T) {
 		{name: "project only", input: "sourceforge:winmerge", wantProject: "winmerge", wantNorm: "sourceforge:winmerge"},
 		{name: "project with path", input: "sourceforge:winmerge/stable", wantProject: "winmerge", wantPath: "stable", wantNorm: "sourceforge:winmerge"},
 		{name: "nested path", input: "sourceforge:winmerge/stable/2.16.44", wantProject: "winmerge", wantPath: "stable/2.16.44", wantNorm: "sourceforge:winmerge"},
+		{name: "sf alias with path", input: "sf:winmerge/stable", wantProject: "winmerge", wantPath: "stable", wantNorm: "sourceforge:winmerge"},
 		{name: "empty project", input: "sourceforge:", wantErr: "sourceforge project is required"},
 		{name: "not sourceforge", input: "junegunn/fzf", wantErr: "invalid SourceForge target"},
 	}

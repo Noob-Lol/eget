@@ -32,11 +32,12 @@ func newQueryCmd(handler CommandHandler) (*capp.Cmd, func()) {
 <info>Examples</>:
   eget query owner/repo
   eget query sourceforge:project
+  eget query sf:project/path
   eget query --action info owner/repo
   eget query --action releases --limit 20 owner/repo
-  eget query --action releases --limit 20 sourceforge:project/path
+  eget query --action releases --limit 20 sf:project/path
   eget query --action assets --tag v1.2.3 owner/repo
-  eget query --action assets --tag 1.2.3 sourceforge:project/path
+  eget query --action assets --tag 1.2.3 sf:project/path
   eget query --action latest --json owner/repo
 
 SourceForge targets support latest, releases and assets actions.`
@@ -46,7 +47,7 @@ SourceForge targets support latest, releases and assets actions.`
 	cmd.IntVar(&opts.Limit, "limit", 10, "Limit release count for releases action;false;l")
 	cmd.BoolVar(&opts.JSON, "json", false, "Output as JSON;false;j")
 	cmd.BoolVar(&opts.Prerelease, "prerelease", false, "Include prerelease entries;false;p")
-	cmd.AddArg("target", "Repository target owner/repo or sourceforge:project[/path]", true, nil)
+	cmd.AddArg("target", "Repository target owner/repo, sourceforge:project[/path] or sf:project[/path]", true, nil)
 	return cmd, func() {
 		*opts = QueryOptions{Action: "latest", Limit: 10}
 	}

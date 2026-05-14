@@ -5,7 +5,10 @@ import (
 	"strings"
 )
 
-const Prefix = "sourceforge:"
+const (
+	Prefix      = "sourceforge:"
+	AliasPrefix = "sf:"
+)
 
 type Target struct {
 	Project    string
@@ -14,14 +17,14 @@ type Target struct {
 }
 
 func IsTarget(value string) bool {
-	return strings.HasPrefix(value, Prefix)
+	return strings.HasPrefix(value, Prefix) || strings.HasPrefix(value, AliasPrefix)
 }
 
 func ParseTarget(value string) (Target, error) {
 	if !IsTarget(value) {
 		return Target{}, fmt.Errorf("invalid SourceForge target %q", value)
 	}
-	rest := strings.TrimPrefix(value, Prefix)
+	rest := strings.TrimPrefix(value, targetPrefix(value))
 	rest = strings.Trim(rest, "/")
 	if rest == "" {
 		return Target{}, fmt.Errorf("sourceforge project is required")
@@ -32,4 +35,11 @@ func ParseTarget(value string) (Target, error) {
 	}
 	sourcePath = strings.Trim(sourcePath, "/")
 	return Target{Project: project, Path: sourcePath, Normalized: Prefix + project}, nil
+}
+
+func targetPrefix(value string) string {
+	if strings.HasPrefix(value, AliasPrefix) {
+		return AliasPrefix
+	}
+	return Prefix
 }
