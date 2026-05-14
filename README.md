@@ -214,7 +214,7 @@ The target argument accepted by `install` and `download` can be:
 
 `update` (alias: `up`)
 
-- Updates a single managed package, or all managed packages with `--all`.
+- Updates a configured or installed target after checking that a newer version exists, or all managed packages with `--all`.
 
 `config` (alias: `cfg`)
 
@@ -249,6 +249,7 @@ The target argument accepted by `install` and `download` can be:
 `update` options:
 
 - `--all`: Check managed packages and update only outdated installed packages.
+- Single-target `update <target>` requires the target to already exist in config or the installed store. Use `install` for new targets.
 - `--batch N`: Control package task concurrency for `update --all`. `0` means auto, `1` means serial, and values greater than `1` process up to that many packages at once.
 - `--chunk N`: Control HTTP Range chunk concurrency for downloads triggered by update.
 - `--check`: Check and list outdated installed packages, same as `list --outdated`.

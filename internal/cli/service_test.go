@@ -365,6 +365,23 @@ func TestHandleUpdateUpdatesMultipleTargets(t *testing.T) {
 				cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
 				return cfg, nil
 			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.50.0"},
+					"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+				}}, nil
+			},
+			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
+				switch repo {
+				case "junegunn/fzf":
+					return app.LatestInfo{Tag: "v0.51.0"}, nil
+				case "BurntSushi/ripgrep":
+					return app.LatestInfo{Tag: "v14.0.0"}, nil
+				default:
+					t.Fatalf("unexpected latest check for %s", repo)
+					return app.LatestInfo{}, nil
+				}
+			},
 		},
 	}
 

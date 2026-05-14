@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -50,7 +51,7 @@ func (f *fakeInstallService) currentMaxActive() int {
 	return f.maxActive
 }
 
-func TestUpdatePackageDelegatesManagedPackageNameWithRawCLIOptions(t *testing.T) {
+func TestUpdatePackageUpdatesOutdatedManagedPackage(t *testing.T) {
 	installer := &fakeInstallService{}
 	svc := UpdateService{
 		Install: installer,
@@ -64,6 +65,16 @@ func TestUpdatePackageDelegatesManagedPackageNameWithRawCLIOptions(t *testing.T)
 				Tag:    util.StringPtr("nightly"),
 			}
 			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf": {Repo: "junegunn/fzf", Tag: "v0.50.0"},
+			}}, nil
+		},
+		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+			assert.Eq(t, "junegunn/fzf", repo)
+			assert.Eq(t, "", sourcePath)
+			return LatestInfo{Tag: "v0.51.0"}, nil
 		},
 	}
 
@@ -83,58 +94,83 @@ func TestUpdatePackageDelegatesManagedPackageNameWithRawCLIOptions(t *testing.T)
 	}
 }
 
-func TestUpdatePackageAllowsDirectRepo(t *testing.T) {
+func TestUpdatePackageSkipsUpToDateManagedPackage(t *testing.T) {
 	installer := &fakeInstallService{}
 	svc := UpdateService{
 		Install: installer,
 		LoadConfig: func() (*cfgpkg.File, error) {
 			cfg := cfgpkg.NewFile()
-			cfg.Global.Target = util.StringPtr("~/bin")
-			cfg.Repos["junegunn/fzf"] = cfgpkg.Section{System: util.StringPtr("linux/amd64")}
+			cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
 			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf": {Repo: "junegunn/fzf", Tag: "v0.50.0"},
+			}}, nil
+		},
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+			assert.Eq(t, "junegunn/fzf", repo)
+			return LatestInfo{Tag: "v0.50.0"}, nil
 		},
 	}
 
-	if _, err := svc.UpdatePackage("junegunn/fzf", install.Options{Tag: "v1.0.0"}); err != nil {
-		t.Fatalf("update direct repo: %v", err)
-	}
-
-	if len(installer.targets) != 1 || installer.targets[0] != "junegunn/fzf" {
-		t.Fatalf("expected installer to use direct repo, got %#v", installer.targets)
-	}
-	if installer.options[0].Tag != "v1.0.0" {
-		t.Fatalf("expected cli tag to win, got %#v", installer.options[0].Tag)
-	}
+	_, err := svc.UpdatePackage("fzf", install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, 0, len(installer.targets))
 }
 
-func TestUpdatePackageAllowsDirectSourceForgeTarget(t *testing.T) {
+func TestUpdatePackageRejectsUnknownDirectTargetWithInstallHint(t *testing.T) {
 	installer := &fakeInstallService{}
 	svc := UpdateService{
 		Install: installer,
 		LoadConfig: func() (*cfgpkg.File, error) {
 			return cfgpkg.NewFile(), nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{}}, nil
 		},
 	}
 
 	_, err := svc.UpdatePackage("sourceforge:winmerge", install.Options{})
-	assert.NoErr(t, err)
-	assert.Eq(t, []string{"sourceforge:winmerge"}, installer.targets)
+	if err == nil || !strings.Contains(err.Error(), "use install") {
+		t.Fatalf("expected use install hint, got %v", err)
+	}
+	assert.Eq(t, 0, len(installer.targets))
 }
 
-func TestUpdatePackageAllowsDirectForgeTargets(t *testing.T) {
+func TestUpdatePackageUpdatesInstalledOnlySourceForgeTarget(t *testing.T) {
 	installer := &fakeInstallService{}
 	svc := UpdateService{
 		Install: installer,
 		LoadConfig: func() (*cfgpkg.File, error) {
 			return cfgpkg.NewFile(), nil
 		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"sourceforge:keepass": {
+					Repo: "sourceforge:keepass",
+					Tag:  "2.58",
+					Options: map[string]any{
+						"source_path":  "KeePass 2.x",
+						"asset":        []string{"zip", "^REG:Source"},
+						"extract_file": "KeePass.exe",
+					},
+				},
+			}}, nil
+		},
+		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+			assert.Eq(t, "sourceforge:keepass", repo)
+			assert.Eq(t, "KeePass 2.x", sourcePath)
+			return LatestInfo{Tag: "2.59"}, nil
+		},
 	}
 
-	_, err := svc.UpdatePackage("gitlab:fdroid/fdroidserver", install.Options{})
+	_, err := svc.UpdatePackage("sourceforge:keepass", install.Options{})
 	assert.NoErr(t, err)
-	_, err = svc.UpdatePackage("gitea:codeberg.org/forgejo/forgejo", install.Options{})
-	assert.NoErr(t, err)
-	assert.Eq(t, []string{"gitlab:fdroid/fdroidserver", "gitea:codeberg.org/forgejo/forgejo"}, installer.targets)
+	assert.Eq(t, []string{"sourceforge:keepass"}, installer.targets)
+	assert.Eq(t, "KeePass 2.x", installer.options[0].SourcePath)
+	assert.Eq(t, []string{"zip", "^REG:Source"}, installer.options[0].Asset)
+	assert.Eq(t, "KeePass.exe", installer.options[0].ExtractFile)
 }
 
 func TestUpdatePackageRejectsUnknownPlainWords(t *testing.T) {
@@ -144,12 +180,15 @@ func TestUpdatePackageRejectsUnknownPlainWords(t *testing.T) {
 		LoadConfig: func() (*cfgpkg.File, error) {
 			return cfgpkg.NewFile(), nil
 		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{}}, nil
+		},
 	}
 
 	for _, name := range []string{"gitlab", "not-managed", "foo/bar/baz"} {
 		t.Run(name, func(t *testing.T) {
 			_, err := svc.UpdatePackage(name, install.Options{})
-			if err == nil || err.Error() != `unknown package "`+name+`"` {
+			if err == nil || !strings.Contains(err.Error(), "use install") {
 				t.Fatalf("expected unknown package error for %q, got %v", name, err)
 			}
 		})
@@ -188,6 +227,15 @@ asset_filters = ["linux"]
 		Install: installSvc,
 		LoadConfig: func() (*cfgpkg.File, error) {
 			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf": {Repo: "junegunn/fzf", Tag: "v0.50.0"},
+			}}, nil
+		},
+		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+			assert.Eq(t, "junegunn/fzf", repo)
+			return LatestInfo{Tag: "nightly"}, nil
 		},
 	}
 

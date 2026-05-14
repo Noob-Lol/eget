@@ -214,7 +214,7 @@ eget config set global.target ~/.local/bin
 
 `update`(alias: `up`)
 
-- 更新单个托管包，或通过 `--all` 更新全部托管包。
+- 先检查目标是否有新版本，再更新已配置或已安装的目标；也可通过 `--all` 更新全部托管包。
 
 `config`(alias: `cfg`)
 
@@ -249,6 +249,7 @@ eget config set global.target ~/.local/bin
 `update` 支持选项：
 
 - `--all`: 检查托管包，只更新已安装且有新版本的包。
+- 单目标 `update <target>` 要求目标已存在于 config 或 installed store；新目标请使用 `install`。
 - `--batch N`: 控制 `update --all` 的包任务并发。`0` 表示自动，`1` 表示串行，大于 `1` 表示最多同时处理该数量的包。
 - `--chunk N`: 控制 update 触发下载时的 HTTP Range 分片并发。
 - `--check`: 检查并列出有新版本的已安装包，等同于 `list --outdated`。

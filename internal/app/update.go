@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 	storepkg "github.com/inherelab/eget/internal/installed"
+	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
 	"github.com/inherelab/eget/internal/util"
 )
 
@@ -36,33 +38,37 @@ func (s UpdateService) UpdatePackage(nameOrRepo string, cli install.Options) (Ru
 	if err != nil {
 		return RunResult{}, err
 	}
-
-	if pkg, ok := cfg.Packages[nameOrRepo]; ok {
-		if util.DerefString(pkg.Repo) == "" {
-			return RunResult{}, fmt.Errorf("package %q has no repo", nameOrRepo)
-		}
-		return s.Install.InstallTarget(nameOrRepo, cli)
+	installed, err := s.loadInstalled()
+	if err != nil {
+		return RunResult{}, err
 	}
 
-	if isDirectUpdateTarget(nameOrRepo) {
-		return s.Install.InstallTarget(nameOrRepo, cli)
+	item, entry, managed, ok := findUpdateTarget(cfg, installed, nameOrRepo)
+	if !ok {
+		return RunResult{}, fmt.Errorf("update target %q is not configured or installed; use install first", nameOrRepo)
+	}
+	if !item.Installed {
+		return RunResult{}, fmt.Errorf("update target %q is not installed; use install first", nameOrRepo)
+	}
+	if s.LatestInfo == nil {
+		return RunResult{}, fmt.Errorf("latest info checker is required")
+	}
+	enrichListItemFromInstalledEntry(&item, entry)
+	check := checkOutdatedItem(item, s.LatestInfo)
+	if check.failure != nil {
+		return RunResult{}, check.failure.Error
+	}
+	if check.outdated == nil {
+		return RunResult{}, nil
 	}
 
-	return RunResult{}, fmt.Errorf("unknown package %q", nameOrRepo)
-}
-
-func isDirectUpdateTarget(target string) bool {
-	switch install.DetectTargetKind(target) {
-	case install.TargetRepo,
-		install.TargetGitHubURL,
-		install.TargetDirectURL,
-		install.TargetLocalFile,
-		install.TargetSourceForge,
-		install.TargetForge:
-		return true
-	default:
-		return false
+	target := item.Name
+	opts := cli
+	if !managed {
+		target = installedUpdateTarget(item, entry)
+		opts = applyUpdateCLIOverrides(optionsFromInstalledEntry(entry), cli)
 	}
+	return s.Install.InstallTarget(target, opts)
 }
 
 func (s UpdateService) UpdateAllPackages(cli install.Options) ([]UpdateResult, error) {
@@ -72,6 +78,188 @@ func (s UpdateService) UpdateAllPackages(cli install.Options) ([]UpdateResult, e
 	}
 
 	return s.UpdateCandidates(candidates, cli)
+}
+
+func findUpdateTarget(cfg *cfgpkg.File, installed *storepkg.Config, target string) (ListItem, storepkg.Entry, bool, bool) {
+	if cfg == nil {
+		cfg = cfgpkg.NewFile()
+	}
+	if installed == nil {
+		installed = &storepkg.Config{}
+	}
+	items, err := (ListService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return installed, nil
+		},
+	}).ListPackages()
+	if err != nil {
+		return ListItem{}, storepkg.Entry{}, false, false
+	}
+
+	normalizedTarget := storepkg.NormalizeRepoName(target)
+	for _, item := range items {
+		entry := installedEntryForItem(installed, item)
+		if _, managed := cfg.Packages[item.Name]; managed && target == item.Name {
+			return item, entry, true, true
+		}
+		if item.Repo == target || item.Repo == normalizedTarget || entry.Target == target || storepkg.NormalizeRepoName(entry.Target) == normalizedTarget {
+			_, managed := cfg.Packages[item.Name]
+			return item, entry, managed, true
+		}
+	}
+	return ListItem{}, storepkg.Entry{}, false, false
+}
+
+func installedEntryForItem(installed *storepkg.Config, item ListItem) storepkg.Entry {
+	if installed == nil || installed.Installed == nil {
+		return storepkg.Entry{}
+	}
+	if entry, ok := installed.Installed[item.Repo]; ok {
+		return entry
+	}
+	normalized := storepkg.NormalizeRepoName(item.Repo)
+	if entry, ok := installed.Installed[normalized]; ok {
+		return entry
+	}
+	return storepkg.Entry{}
+}
+
+func enrichListItemFromInstalledEntry(item *ListItem, entry storepkg.Entry) {
+	if item == nil {
+		return
+	}
+	if item.SourcePath == "" {
+		if sourcePath, ok := stringOption(entry.Options, "source_path"); ok {
+			item.SourcePath = sourcePath
+		} else if sfTarget, err := sourcesf.ParseTarget(entry.Target); err == nil {
+			item.SourcePath = sfTarget.Path
+		}
+	}
+}
+
+func installedUpdateTarget(item ListItem, entry storepkg.Entry) string {
+	if entry.Target != "" {
+		return entry.Target
+	}
+	if item.Repo != "" {
+		return item.Repo
+	}
+	return entry.Repo
+}
+
+func optionsFromInstalledEntry(entry storepkg.Entry) install.Options {
+	opts := install.Options{}
+	if entry.Options == nil {
+		return opts
+	}
+	opts.Tag, _ = stringOption(entry.Options, "tag")
+	opts.System, _ = stringOption(entry.Options, "system")
+	opts.SourcePath, _ = stringOption(entry.Options, "source_path")
+	opts.Output, _ = stringOption(entry.Options, "output", "target")
+	opts.OutputExplicit = opts.Output != ""
+	opts.GuiTarget, _ = stringOption(entry.Options, "gui_target")
+	opts.ExtractFile, _ = stringOption(entry.Options, "extract_file", "file")
+	opts.Verify, _ = stringOption(entry.Options, "verify")
+	opts.All, _ = boolOption(entry.Options, "all", "extract_all")
+	opts.IsGUI, _ = boolOption(entry.Options, "is_gui")
+	opts.Quiet, _ = boolOption(entry.Options, "quiet")
+	opts.DownloadOnly, _ = boolOption(entry.Options, "download_only")
+	opts.UpgradeOnly, _ = boolOption(entry.Options, "upgrade_only")
+	opts.Source, _ = boolOption(entry.Options, "download_source", "source")
+	opts.DisableSSL, _ = boolOption(entry.Options, "disable_ssl")
+	opts.Asset = stringSliceOption(entry.Options, "asset", "asset_filters")
+	return opts
+}
+
+func applyUpdateCLIOverrides(base, cli install.Options) install.Options {
+	if cli.Tag != "" {
+		base.Tag = cli.Tag
+	}
+	if cli.Source {
+		base.Source = true
+	}
+	if cli.SourcePath != "" {
+		base.SourcePath = cli.SourcePath
+	}
+	if cli.Output != "" {
+		base.Output = cli.Output
+		base.OutputExplicit = cli.OutputExplicit
+	}
+	if cli.System != "" {
+		base.System = cli.System
+	}
+	if cli.ExtractFile != "" {
+		base.ExtractFile = cli.ExtractFile
+	}
+	if cli.All {
+		base.All = true
+	}
+	if cli.Quiet {
+		base.Quiet = true
+	}
+	if cli.ChunkConcurrencySet {
+		base.ChunkConcurrency = cli.ChunkConcurrency
+		base.ChunkConcurrencySet = true
+	}
+	if cli.BatchConcurrencySet {
+		base.BatchConcurrency = cli.BatchConcurrency
+		base.BatchConcurrencySet = true
+	}
+	if len(cli.Asset) > 0 {
+		base.Asset = append([]string(nil), cli.Asset...)
+	}
+	return base
+}
+
+func stringOption(values map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		if value, ok := values[key]; ok {
+			if text, ok := value.(string); ok && text != "" {
+				return text, true
+			}
+		}
+	}
+	return "", false
+}
+
+func boolOption(values map[string]any, keys ...string) (bool, bool) {
+	for _, key := range keys {
+		if value, ok := values[key]; ok {
+			if enabled, ok := value.(bool); ok {
+				return enabled, true
+			}
+		}
+	}
+	return false, false
+}
+
+func stringSliceOption(values map[string]any, keys ...string) []string {
+	for _, key := range keys {
+		value, ok := values[key]
+		if !ok {
+			continue
+		}
+		switch typed := value.(type) {
+		case []string:
+			return append([]string(nil), typed...)
+		case []any:
+			items := make([]string, 0, len(typed))
+			for _, item := range typed {
+				if text, ok := item.(string); ok {
+					items = append(items, text)
+				}
+			}
+			return items
+		case string:
+			if typed != "" {
+				return strings.Split(typed, ",")
+			}
+		}
+	}
+	return nil
 }
 
 func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFailure, int, error) {
