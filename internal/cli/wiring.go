@@ -92,6 +92,9 @@ func newCLIService() (*cliService, error) {
 		SourceForgeLatest: func(project, sourcePath string) (sourcesf.LatestInfo, error) {
 			return sourcesf.LatestVersion(project, sourcePath, install.NewHTTPGetter(defaultOpts))
 		},
+		SourceForgeReleases: func(project, sourcePath string, limit int, includePrerelease bool) ([]sourcesf.LatestInfo, error) {
+			return sourcesf.ListReleases(project, sourcePath, limit, includePrerelease, install.NewHTTPGetter(defaultOpts))
+		},
 		SourceForgeAssets: func(project, sourcePath, tag string) ([]string, error) {
 			return sourcesf.Finder{
 				Project: project,

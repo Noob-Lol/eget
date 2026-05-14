@@ -104,14 +104,52 @@ func TestQueryServiceSourceForgeAssets(t *testing.T) {
 	assert.Eq(t, "https://downloads.sourceforge.net/project/project/files/1.2.3/tool-linux.tar.gz", result.Assets[0].URL)
 }
 
+func TestQueryServiceSourceForgeReleases(t *testing.T) {
+	svc := QueryService{
+		SourceForgeReleases: func(project, sourcePath string, limit int, includePrerelease bool) ([]sourcesf.LatestInfo, error) {
+			assert.Eq(t, "project", project)
+			assert.Eq(t, "files", sourcePath)
+			assert.Eq(t, 2, limit)
+			assert.True(t, includePrerelease)
+			return []sourcesf.LatestInfo{
+				{
+					Tag:         "tool-1.2.3",
+					Version:     "1.2.3",
+					Path:        "files/1.2.3",
+					PublishedAt: time.Date(2026, 2, 3, 9, 21, 40, 0, time.UTC),
+					Prerelease:  true,
+					AssetsCount: 2,
+				},
+				{
+					Version:     "1.2.2",
+					Path:        "files/1.2.2",
+					PublishedAt: time.Date(2026, 1, 3, 9, 21, 40, 0, time.UTC),
+					AssetsCount: 1,
+				},
+			}, nil
+		},
+	}
+
+	result, err := svc.Query(QueryOptions{Repo: "sourceforge:project/files", Action: "releases", Limit: 2, Prerelease: true})
+	if err != nil {
+		t.Fatalf("Query(): %v", err)
+	}
+
+	assert.Eq(t, "releases", result.Action)
+	assert.Eq(t, "sourceforge:project/files", result.Repo)
+	assert.Len(t, result.Releases, 2)
+	assert.Eq(t, "tool-1.2.3", result.Releases[0].Tag)
+	assert.Eq(t, "1.2.3", result.Releases[0].Name)
+	assert.Eq(t, time.Date(2026, 2, 3, 9, 21, 40, 0, time.UTC), result.Releases[0].PublishedAt)
+	assert.True(t, result.Releases[0].Prerelease)
+	assert.Eq(t, 2, result.Releases[0].AssetsCount)
+}
+
 func TestQueryServiceSourceForgeRejectsUnsupportedActions(t *testing.T) {
 	svc := QueryService{}
 
 	if _, err := svc.Query(QueryOptions{Repo: "sourceforge:project", Action: "info"}); err == nil {
 		t.Fatal("expected sourceforge info to fail")
-	}
-	if _, err := svc.Query(QueryOptions{Repo: "sourceforge:project", Action: "releases"}); err == nil {
-		t.Fatal("expected sourceforge releases to fail")
 	}
 }
 

@@ -22,9 +22,11 @@ type Finder struct {
 }
 
 type LatestInfo struct {
+	Tag         string
 	Version     string
 	Path        string
 	PublishedAt time.Time
+	Prerelease  bool
 	AssetsCount int
 }
 
@@ -121,39 +123,100 @@ func LatestVersion(project, sourcePath string, getter HTTPGetter) (LatestInfo, e
 		return LatestInfo{}, err
 	}
 
-	latest, ok := LatestVersionFile(files)
-	if !ok {
-		if sourcePath == "" {
-			stable, stableOK := stableDirectory(files)
-			if stableOK {
-				files, err = finder.list(stable.FullPath)
-				if err != nil {
-					return LatestInfo{}, err
-				}
-				latest, ok = LatestVersionFile(files)
+	versions, err := releaseVersionFiles(finder, files, sourcePath)
+	if err != nil {
+		return LatestInfo{}, err
+	}
+	if len(versions) == 0 {
+		return LatestInfo{}, fmt.Errorf("could not determine SourceForge latest version for %s", project)
+	}
+	return releaseInfo(finder, versions[0])
+}
+
+func ListReleases(project, sourcePath string, limit int, includePrerelease bool, getter HTTPGetter) ([]LatestInfo, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	finder := Finder{Project: project, Path: sourcePath, Getter: getter}
+	files, err := finder.list(strings.Trim(sourcePath, "/"))
+	if err != nil {
+		return nil, err
+	}
+
+	versions, err := releaseVersionFiles(finder, files, sourcePath)
+	if err != nil {
+		return nil, err
+	}
+	if len(versions) == 0 {
+		return nil, fmt.Errorf("could not determine SourceForge releases for %s", project)
+	}
+
+	releases := make([]LatestInfo, 0, min(limit, len(versions)))
+	for _, version := range versions {
+		if len(releases) == limit {
+			break
+		}
+		if !includePrerelease && isPrereleaseVersion(version) {
+			continue
+		}
+		info, err := releaseInfo(finder, version)
+		if err != nil {
+			return nil, err
+		}
+		releases = append(releases, info)
+	}
+	return releases, nil
+}
+
+func releaseVersionFiles(finder Finder, files []File, sourcePath string) ([]File, error) {
+	versions := sortedVersionDirectories(files)
+	if len(versions) == 0 && sourcePath == "" {
+		stable, stableOK := stableDirectory(files)
+		if stableOK {
+			var err error
+			files, err = finder.list(stable.FullPath)
+			if err != nil {
+				return nil, err
 			}
+			versions = sortedVersionDirectories(files)
 		}
 	}
-	if !ok {
-		return LatestInfo{}, fmt.Errorf("could not determine SourceForge latest version for %s", project)
-	}
-	version := VersionFromText(latest.Name)
+	return versions, nil
+}
+
+func releaseInfo(finder Finder, versionFile File) (LatestInfo, error) {
+	version := fileVersion(versionFile)
 	if version == "" {
-		version = VersionFromText(latest.FullPath)
+		return LatestInfo{}, fmt.Errorf("could not determine SourceForge version from %s", versionFile.Name)
 	}
-	if version == "" {
-		return LatestInfo{}, fmt.Errorf("could not determine SourceForge latest version for %s", project)
-	}
-	assets, err := finder.list(latest.FullPath)
+	assets, err := finder.list(versionFile.FullPath)
 	if err != nil {
 		return LatestInfo{}, err
 	}
 	return LatestInfo{
+		Tag:         sourceForgeReleaseTag(versionFile),
 		Version:     version,
-		Path:        latest.FullPath,
+		Path:        versionFile.FullPath,
 		PublishedAt: latestPublishedAt(assets),
+		Prerelease:  isPrereleaseVersion(versionFile),
 		AssetsCount: len(downloadableURLs(assets)),
 	}, nil
+}
+
+func sourceForgeReleaseTag(file File) string {
+	if file.Name != "" {
+		return file.Name
+	}
+	return path.Base(strings.Trim(file.FullPath, "/"))
+}
+
+func isPrereleaseVersion(file File) bool {
+	name := strings.ToLower(sourceForgeReleaseTag(file))
+	return strings.Contains(name, "alpha") ||
+		strings.Contains(name, "beta") ||
+		strings.Contains(name, "rc") ||
+		strings.Contains(name, "pre") ||
+		strings.Contains(name, "preview")
 }
 
 func latestPublishedAt(files []File) time.Time {

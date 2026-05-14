@@ -43,9 +43,10 @@ type QueryClient interface {
 }
 
 type QueryService struct {
-	Client            QueryClient
-	SourceForgeLatest func(project, sourcePath string) (sourcesf.LatestInfo, error)
-	SourceForgeAssets func(project, sourcePath, tag string) ([]string, error)
+	Client              QueryClient
+	SourceForgeLatest   func(project, sourcePath string) (sourcesf.LatestInfo, error)
+	SourceForgeReleases func(project, sourcePath string, limit int, includePrerelease bool) ([]sourcesf.LatestInfo, error)
+	SourceForgeAssets   func(project, sourcePath, tag string) ([]string, error)
 }
 
 func (s QueryService) Query(opts QueryOptions) (QueryResult, error) {
@@ -151,6 +152,32 @@ func (s QueryService) querySourceForge(opts QueryOptions, action string) (QueryR
 			AssetsCount: latest.AssetsCount,
 		}
 		return QueryResult{Action: action, Repo: repo, Latest: &release}, nil
+	case "releases":
+		if opts.Tag != "" {
+			return QueryResult{}, fmt.Errorf("query releases does not support --tag")
+		}
+		if s.SourceForgeReleases == nil {
+			return QueryResult{}, fmt.Errorf("sourceforge query releases is required")
+		}
+		limit := opts.Limit
+		if limit <= 0 {
+			limit = 10
+		}
+		infos, err := s.SourceForgeReleases(target.Project, target.Path, limit, opts.Prerelease)
+		if err != nil {
+			return QueryResult{}, err
+		}
+		releases := make([]QueryRelease, 0, len(infos))
+		for _, info := range infos {
+			releases = append(releases, QueryRelease{
+				Tag:         sourceForgeReleaseTag(info),
+				Name:        info.Version,
+				PublishedAt: info.PublishedAt,
+				Prerelease:  info.Prerelease,
+				AssetsCount: info.AssetsCount,
+			})
+		}
+		return QueryResult{Action: action, Repo: repo, Releases: releases}, nil
 	case "assets":
 		if s.SourceForgeAssets == nil {
 			return QueryResult{}, fmt.Errorf("sourceforge query assets is required")
@@ -160,11 +187,18 @@ func (s QueryService) querySourceForge(opts QueryOptions, action string) (QueryR
 			return QueryResult{}, err
 		}
 		return QueryResult{Action: action, Repo: repo, Tag: opts.Tag, Assets: sourceForgeQueryAssets(urls)}, nil
-	case "info", "releases":
+	case "info":
 		return QueryResult{}, fmt.Errorf("sourceforge query does not support action %q", action)
 	default:
 		return QueryResult{}, fmt.Errorf("invalid query action %q", action)
 	}
+}
+
+func sourceForgeReleaseTag(info sourcesf.LatestInfo) string {
+	if info.Tag != "" {
+		return info.Tag
+	}
+	return info.Version
 }
 
 func sourceForgeRepoName(target sourcesf.Target) string {

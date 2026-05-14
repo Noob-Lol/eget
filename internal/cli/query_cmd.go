@@ -34,11 +34,12 @@ func newQueryCmd(handler CommandHandler) (*capp.Cmd, func()) {
   eget query sourceforge:project
   eget query --action info owner/repo
   eget query --action releases --limit 20 owner/repo
+  eget query --action releases --limit 20 sourceforge:project/path
   eget query --action assets --tag v1.2.3 owner/repo
   eget query --action assets --tag 1.2.3 sourceforge:project/path
   eget query --action latest --json owner/repo
 
-SourceForge targets support latest and assets actions.`
+SourceForge targets support latest, releases and assets actions.`
 
 	cmd.StringVar(&opts.Action, "action", "latest", "Query action: latest, releases, assets, info;false;a")
 	cmd.StringVar(&opts.Tag, "tag", "", "Release tag for assets action;false;t")
