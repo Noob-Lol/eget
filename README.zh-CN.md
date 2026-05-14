@@ -17,6 +17,7 @@
 - 多来源安装：支持从 GitHub、GitLab、Gitea/Forgejo、SourceForge、直接下载 URL 和本地文件安装或下载二进制资源。
 - 自动选择与提取：按系统架构、资源关键词或正则筛选 release asset，支持 SHA-256 校验和常见归档格式提取。
 - 托管包管理：通过 `add`、`list`、`update`、`uninstall` 管理常用工具，记录安装状态并支持批量检查更新。
+- 并发下载：大文件会自动使用 HTTP Range 分片并发下载，安装或更新全部包时会自动批量并发下载。
 - 查询与搜索：支持查询 GitHub release 信息、SourceForge 最新版本和 assets，并使用 GitHub 搜索语法查找仓库。
 - 缓存与代理：支持下载缓存、API 响应缓存、`proxy_url` 和 `ghproxy`，适合网络受限或重复安装场景。
 - 配置化使用：支持全局配置、仓库配置和 `packages.<name>` 托管包配置，配置文件和 installed store 默认位于 `~/.config/eget/`。
