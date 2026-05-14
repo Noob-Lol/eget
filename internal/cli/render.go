@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,6 +12,218 @@ import (
 	"github.com/inherelab/eget/internal/app"
 )
 
+const compactTimeLayout = "2006-01-02T15:04:05"
+
+type releaseDisplay struct {
+	Tag         string `json:"tag,omitempty" mapstructure:"tag"`
+	Name        string `json:"name,omitempty" mapstructure:"name"`
+	PublishedAt string `json:"published_at,omitempty" mapstructure:"published_at"`
+	Prerelease  bool   `json:"prerelease,omitempty" mapstructure:"prerelease"`
+	AssetsCount int    `json:"assets_count,omitempty" mapstructure:"assets_count"`
+}
+
+type listItemDisplay struct {
+	Name         string `mapstructure:"Name"`
+	Repo         string `mapstructure:"Repo"`
+	SourcePath   string `mapstructure:"SourcePath"`
+	Target       string `mapstructure:"Target"`
+	Tag          string `mapstructure:"Tag"`
+	Version      string `mapstructure:"Version"`
+	InstalledTag string `mapstructure:"InstalledTag"`
+	Installed    bool   `mapstructure:"Installed"`
+	InstalledAt  string `mapstructure:"InstalledAt"`
+	Asset        string `mapstructure:"Asset"`
+	URL          string `mapstructure:"URL"`
+	IsGUI        bool   `mapstructure:"IsGUI"`
+	InstallMode  string `mapstructure:"InstallMode"`
+	IgnoreUpdate bool   `mapstructure:"IgnoreUpdate"`
+}
+
+type repoInfoDisplay struct {
+	Repo          string `json:"repo" mapstructure:"repo"`
+	Description   string `json:"description,omitempty" mapstructure:"description"`
+	Homepage      string `json:"homepage,omitempty" mapstructure:"homepage"`
+	DefaultBranch string `json:"default_branch,omitempty" mapstructure:"default_branch"`
+	Stars         int    `json:"stars,omitempty" mapstructure:"stars"`
+	Forks         int    `json:"forks,omitempty" mapstructure:"forks"`
+	OpenIssues    int    `json:"open_issues,omitempty" mapstructure:"open_issues"`
+	UpdatedAt     string `json:"updated_at,omitempty" mapstructure:"updated_at"`
+}
+
+type assetDisplay struct {
+	Name          string `json:"name" mapstructure:"name"`
+	Size          int64  `json:"size,omitempty" mapstructure:"size"`
+	DownloadCount int    `json:"download_count,omitempty" mapstructure:"download_count"`
+	UpdatedAt     string `json:"updated_at,omitempty" mapstructure:"updated_at"`
+	URL           string `json:"url,omitempty" mapstructure:"url"`
+}
+
+type queryResultDisplay struct {
+	Action   string           `json:"action"`
+	Repo     string           `json:"repo"`
+	Tag      string           `json:"tag,omitempty"`
+	Info     *repoInfoDisplay `json:"info,omitempty"`
+	Latest   *releaseDisplay  `json:"latest,omitempty"`
+	Releases []releaseDisplay `json:"releases,omitempty"`
+	Assets   []assetDisplay   `json:"assets,omitempty"`
+}
+
+type searchRepoDisplay struct {
+	FullName        string `json:"full_name,omitempty"`
+	Description     string `json:"description,omitempty"`
+	HTMLURL         string `json:"html_url,omitempty"`
+	Homepage        string `json:"homepage,omitempty"`
+	Language        string `json:"language,omitempty"`
+	StargazersCount int    `json:"stargazers_count,omitempty"`
+	ForksCount      int    `json:"forks_count,omitempty"`
+	OpenIssuesCount int    `json:"open_issues_count,omitempty"`
+	UpdatedAt       string `json:"updated_at,omitempty"`
+	Archived        bool   `json:"archived,omitempty"`
+	Private         bool   `json:"private,omitempty"`
+}
+
+type searchResultDisplay struct {
+	Query      string              `json:"query"`
+	TotalCount int                 `json:"total_count"`
+	Items      []searchRepoDisplay `json:"items,omitempty"`
+}
+
+func compactTime(value time.Time) string {
+	if value.IsZero() {
+		return "-"
+	}
+	return value.Format(compactTimeLayout)
+}
+
+func compactTimeOmit(value time.Time) string {
+	if value.IsZero() {
+		return ""
+	}
+	return value.Format(compactTimeLayout)
+}
+
+func listItemToDisplay(item app.ListItem) listItemDisplay {
+	return listItemDisplay{
+		Name:         item.Name,
+		Repo:         item.Repo,
+		SourcePath:   item.SourcePath,
+		Target:       item.Target,
+		Tag:          item.Tag,
+		Version:      item.Version,
+		InstalledTag: item.InstalledTag,
+		Installed:    item.Installed,
+		InstalledAt:  compactTime(item.InstalledAt),
+		Asset:        item.Asset,
+		URL:          item.URL,
+		IsGUI:        item.IsGUI,
+		InstallMode:  item.InstallMode,
+		IgnoreUpdate: item.IgnoreUpdate,
+	}
+}
+
+func repoInfoToDisplay(info app.QueryRepoInfo) repoInfoDisplay {
+	return repoInfoDisplay{
+		Repo:          info.Repo,
+		Description:   info.Description,
+		Homepage:      info.Homepage,
+		DefaultBranch: info.DefaultBranch,
+		Stars:         info.Stars,
+		Forks:         info.Forks,
+		OpenIssues:    info.OpenIssues,
+		UpdatedAt:     compactTime(info.UpdatedAt),
+	}
+}
+
+func releaseToDisplay(item app.QueryRelease) releaseDisplay {
+	return releaseDisplay{
+		Tag:         item.Tag,
+		Name:        item.Name,
+		PublishedAt: compactTime(item.PublishedAt),
+		Prerelease:  item.Prerelease,
+		AssetsCount: item.AssetsCount,
+	}
+}
+
+func releaseToJSONDisplay(item app.QueryRelease) releaseDisplay {
+	display := releaseToDisplay(item)
+	display.PublishedAt = compactTimeOmit(item.PublishedAt)
+	return display
+}
+
+func assetToDisplay(item app.QueryAsset) assetDisplay {
+	return assetDisplay{
+		Name:          item.Name,
+		Size:          item.Size,
+		DownloadCount: item.DownloadCount,
+		UpdatedAt:     compactTimeOmit(item.UpdatedAt),
+		URL:           item.URL,
+	}
+}
+
+func queryResultToDisplay(result app.QueryResult) queryResultDisplay {
+	display := queryResultDisplay{
+		Action: result.Action,
+		Repo:   result.Repo,
+		Tag:    result.Tag,
+	}
+	if result.Info != nil {
+		info := repoInfoToDisplay(*result.Info)
+		info.UpdatedAt = compactTimeOmit(result.Info.UpdatedAt)
+		display.Info = &info
+	}
+	if result.Latest != nil {
+		latest := releaseToJSONDisplay(*result.Latest)
+		display.Latest = &latest
+	}
+	for _, item := range result.Releases {
+		display.Releases = append(display.Releases, releaseToJSONDisplay(item))
+	}
+	for _, item := range result.Assets {
+		display.Assets = append(display.Assets, assetToDisplay(item))
+	}
+	return display
+}
+
+func searchResultToDisplay(result app.SearchResult) searchResultDisplay {
+	display := searchResultDisplay{
+		Query:      result.Query,
+		TotalCount: result.TotalCount,
+		Items:      make([]searchRepoDisplay, 0, len(result.Items)),
+	}
+	for _, item := range result.Items {
+		display.Items = append(display.Items, searchRepoDisplay{
+			FullName:        item.FullName,
+			Description:     item.Description,
+			HTMLURL:         item.HTMLURL,
+			Homepage:        item.Homepage,
+			Language:        item.Language,
+			StargazersCount: item.StargazersCount,
+			ForksCount:      item.ForksCount,
+			OpenIssuesCount: item.OpenIssuesCount,
+			UpdatedAt:       compactTimeOmit(item.UpdatedAt),
+			Archived:        item.Archived,
+			Private:         item.Private,
+		})
+	}
+	return display
+}
+
+func queryResultJSON(result app.QueryResult) (string, error) {
+	data, err := json.MarshalIndent(queryResultToDisplay(result), "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func searchResultJSON(result app.SearchResult) (string, error) {
+	data, err := json.MarshalIndent(searchResultToDisplay(result), "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
 func printQueryResult(result app.QueryResult) {
 	fmt.Printf("action: %s\n", result.Action)
 	fmt.Printf("repo: %s\n", result.Repo)
@@ -19,12 +232,14 @@ func printQueryResult(result app.QueryResult) {
 	}
 
 	if result.Info != nil {
-		show.AList("Repo Info", result.Info)
+		info := repoInfoToDisplay(*result.Info)
+		show.AList("Repo Info", info)
 		return
 	}
 
 	if result.Latest != nil {
-		show.AList("Latest Release", result.Latest)
+		latest := releaseToDisplay(*result.Latest)
+		show.AList("Latest Release", latest)
 		return
 	}
 
@@ -35,7 +250,7 @@ func printQueryResult(result app.QueryResult) {
 			rows = append(rows, []any{
 				item.Tag,
 				item.Name,
-				item.PublishedAt.Format(time.RFC3339),
+				compactTime(item.PublishedAt),
 				item.Prerelease,
 				item.AssetsCount,
 			})
@@ -70,7 +285,7 @@ func printSearchResult(result app.SearchResult) {
 		}
 		updatedAt := "-"
 		if !item.UpdatedAt.IsZero() {
-			updatedAt = item.UpdatedAt.Format(time.RFC3339)
+			updatedAt = compactTime(item.UpdatedAt)
 		}
 
 		ccolor.Printf("<info>%s</> ⭐%d language: %s update: %s\n", item.FullName, item.StargazersCount, language, updatedAt)

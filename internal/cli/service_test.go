@@ -678,8 +678,11 @@ func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 	if !strings.Contains(got, "Published At") {
 		t.Fatalf("expected published at column in output, got %q", got)
 	}
-	if !strings.Contains(got, publishedAt.Format(time.RFC3339)) {
+	if !strings.Contains(got, "2026-04-21T14:10:17") {
 		t.Fatalf("expected published time in output, got %q", got)
+	}
+	if strings.Contains(got, "2026-04-21T14:10:17Z") {
+		t.Fatalf("expected published time without timezone offset, got %q", got)
 	}
 	if strings.Contains(got, " yes ") || strings.Contains(got, " no ") {
 		t.Fatalf("expected Installed column values to be removed, got %q", got)
@@ -808,7 +811,7 @@ func TestHandleListOutdatedPrintsSingleProxyNoticeAndCacheSummary(t *testing.T) 
 }
 
 func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
-	now := time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
+	now := time.Date(2026, 5, 5, 13, 20, 19, 0, time.FixedZone("CST", 8*60*60))
 	svc := &cliService{
 		listService: app.ListService{
 			LoadConfig: func() (*cfgpkg.File, error) {
@@ -852,8 +855,11 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 	if !strings.Contains(got, "chlog") || !strings.Contains(got, "v0.3.6") {
 		t.Fatalf("expected table row in output, got %q", got)
 	}
-	if !strings.Contains(got, "github") || !strings.Contains(got, now.Format(time.RFC3339)) {
+	if !strings.Contains(got, "github") || !strings.Contains(got, "2026-05-05T13:20:19") {
 		t.Fatalf("expected source and update time in output, got %q", got)
+	}
+	if strings.Contains(got, "2026-05-05T13:20:19+08:00") {
+		t.Fatalf("expected update time without timezone offset, got %q", got)
 	}
 	if strings.Contains(got, "ripgrep") {
 		t.Fatalf("expected default list to omit managed-only package, got %q", got)
@@ -861,7 +867,7 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 }
 
 func TestHandleListAllPrintsManagedAndInstalledPackages(t *testing.T) {
-	now := time.Date(2026, 5, 10, 13, 0, 0, 0, time.UTC)
+	now := time.Date(2026, 5, 5, 13, 20, 19, 0, time.FixedZone("CST", 8*60*60))
 	svc := &cliService{
 		listService: app.ListService{
 			LoadConfig: func() (*cfgpkg.File, error) {
@@ -905,8 +911,11 @@ func TestHandleListAllPrintsManagedAndInstalledPackages(t *testing.T) {
 	if strings.Contains(got, " yes ") || strings.Contains(got, " no ") {
 		t.Fatalf("expected Installed column values to be removed, got %q", got)
 	}
-	if !strings.Contains(got, now.Format(time.RFC3339)) {
+	if !strings.Contains(got, "2026-05-05T13:20:19") {
 		t.Fatalf("expected update time in output, got %q", got)
+	}
+	if strings.Contains(got, "2026-05-05T13:20:19+08:00") {
+		t.Fatalf("expected update time without timezone offset, got %q", got)
 	}
 }
 
@@ -942,7 +951,7 @@ func TestHandleListGUIPrintsOnlyGUIPackages(t *testing.T) {
 }
 
 func TestHandleListInfoPrintsDetails(t *testing.T) {
-	now := time.Unix(1710000000, 0).UTC()
+	now := time.Date(2026, 5, 5, 13, 20, 19, 0, time.FixedZone("CST", 8*60*60))
 	svc := &cliService{
 		listService: app.ListService{
 			LoadConfig: func() (*cfgpkg.File, error) {
@@ -987,6 +996,12 @@ func TestHandleListInfoPrintsDetails(t *testing.T) {
 	}
 	if !strings.Contains(got, "URL") || !strings.Contains(got, "https://github.com/gookit/gitw/releases/download/v0.3.6/chlog-windows-amd64.exe") {
 		t.Fatalf("expected detailed url output, got %q", got)
+	}
+	if !strings.Contains(got, "2026-05-05T13:20:19") {
+		t.Fatalf("expected compact installed time in detail output, got %q", got)
+	}
+	if strings.Contains(got, "2026-05-05T13:20:19+08:00") || strings.Contains(got, "2026-05-05 13:20:19 +0800") {
+		t.Fatalf("expected detail time without timezone offset, got %q", got)
 	}
 }
 
@@ -1254,7 +1269,11 @@ func TestHandleQueryPrintsLatestRelease(t *testing.T) {
 	defer r.Close()
 	defer w.Close()
 	os.Stdout = w
-	defer func() { os.Stdout = origStdout }()
+	cliui.SetOutput(w)
+	defer func() {
+		os.Stdout = origStdout
+		cliui.ResetOutput()
+	}()
 
 	err = svc.handleQuery(&QueryOptions{Target: "owner/repo"})
 	if err != nil {
@@ -1270,13 +1289,72 @@ func TestHandleQueryPrintsLatestRelease(t *testing.T) {
 	if !strings.Contains(got, "action: latest") || !strings.Contains(got, "repo: owner/repo") {
 		t.Fatalf("expected latest query output, got %q", got)
 	}
+	if !strings.Contains(got, "2026-04-22T09:00:00") {
+		t.Fatalf("expected compact published time in latest output, got %q", got)
+	}
+	if strings.Contains(got, "2026-04-22T09:00:00Z") {
+		t.Fatalf("expected latest output without timezone offset, got %q", got)
+	}
+}
+
+func TestPrintQueryResultReleasesUsesCompactTime(t *testing.T) {
+	result := app.QueryResult{
+		Action: "releases",
+		Repo:   "owner/repo",
+		Releases: []app.QueryRelease{{
+			Tag:         "v1.2.3",
+			Name:        "v1.2.3",
+			PublishedAt: time.Date(2026, 4, 22, 9, 0, 0, 0, time.FixedZone("CST", 8*60*60)),
+			AssetsCount: 2,
+		}},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	printQueryResult(result)
+	got := out.String()
+	if !strings.Contains(got, "2026-04-22T09:00:00") {
+		t.Fatalf("expected compact published time in releases output, got %q", got)
+	}
+	if strings.Contains(got, "2026-04-22T09:00:00+08:00") {
+		t.Fatalf("expected releases output without timezone offset, got %q", got)
+	}
+}
+
+func TestPrintQueryResultInfoUsesCompactTime(t *testing.T) {
+	result := app.QueryResult{
+		Action: "info",
+		Repo:   "owner/repo",
+		Info: &app.QueryRepoInfo{
+			Repo:      "owner/repo",
+			UpdatedAt: time.Date(2026, 4, 22, 9, 0, 0, 0, time.FixedZone("CST", 8*60*60)),
+		},
+	}
+
+	var out bytes.Buffer
+	cliui.SetOutput(&out)
+	defer cliui.ResetOutput()
+
+	printQueryResult(result)
+	got := out.String()
+	if !strings.Contains(got, "2026-04-22T09:00:00") {
+		t.Fatalf("expected compact updated time in info output, got %q", got)
+	}
+	if strings.Contains(got, "2026-04-22T09:00:00+08:00") {
+		t.Fatalf("expected info output without timezone offset, got %q", got)
+	}
 }
 
 func TestHandleQueryJSONOutput(t *testing.T) {
 	svc := &cliService{
 		queryService: app.QueryService{
 			Client: &fakeQueryClientForCLI{
-				releases: []app.QueryRelease{{Tag: "v1.2.3"}},
+				releases: []app.QueryRelease{{
+					Tag:         "v1.2.3",
+					PublishedAt: time.Date(2026, 4, 22, 9, 0, 0, 0, time.FixedZone("CST", 8*60*60)),
+				}},
 			},
 		},
 	}
@@ -1301,8 +1379,15 @@ func TestHandleQueryJSONOutput(t *testing.T) {
 	if _, err := io.Copy(&out, r); err != nil {
 		t.Fatalf("copy stdout: %v", err)
 	}
-	if !strings.Contains(out.String(), `"action": "latest"`) {
-		t.Fatalf("expected json query output, got %q", out.String())
+	got := out.String()
+	if !strings.Contains(got, `"action": "latest"`) {
+		t.Fatalf("expected json query output, got %q", got)
+	}
+	if !strings.Contains(got, `"published_at": "2026-04-22T09:00:00"`) {
+		t.Fatalf("expected compact json query time, got %q", got)
+	}
+	if strings.Contains(got, "2026-04-22T09:00:00+08:00") {
+		t.Fatalf("expected json query time without timezone offset, got %q", got)
 	}
 }
 
@@ -1358,8 +1443,11 @@ func TestHandleSearchPrintsList(t *testing.T) {
 	if strings.Contains(strings.ToLower(got), "repo |") || strings.Contains(strings.ToLower(got), "language |") {
 		t.Fatalf("expected search to not render a table, got %q", got)
 	}
-	if !strings.Contains(got, "BurntSushi/ripgrep") || !strings.Contains(got, "⭐123 language: Rust update: 2026-04-24T08:30:00Z") {
+	if !strings.Contains(got, "BurntSushi/ripgrep") || !strings.Contains(got, "⭐123 language: Rust update: 2026-04-24T08:30:00") {
 		t.Fatalf("expected formatted search headline, got %q", got)
+	}
+	if strings.Contains(got, "2026-04-24T08:30:00Z") {
+		t.Fatalf("expected search time without timezone offset, got %q", got)
 	}
 	if !strings.Contains(got, "ripgrep recursively searches directories") {
 		t.Fatalf("expected description line, got %q", got)
@@ -1375,6 +1463,7 @@ func TestHandleSearchJSONOutput(t *testing.T) {
 					Items: []app.SearchRepo{{
 						FullName:        "BurntSushi/ripgrep",
 						StargazersCount: 321,
+						UpdatedAt:       time.Date(2026, 4, 24, 8, 30, 0, 0, time.FixedZone("CST", 8*60*60)),
 					}},
 				},
 			},
@@ -1401,8 +1490,15 @@ func TestHandleSearchJSONOutput(t *testing.T) {
 	if _, err := io.Copy(&out, r); err != nil {
 		t.Fatalf("copy stdout: %v", err)
 	}
-	if !strings.Contains(out.String(), `"total_count": 1`) || !strings.Contains(out.String(), `"full_name": "BurntSushi/ripgrep"`) {
-		t.Fatalf("expected search json output, got %q", out.String())
+	got := out.String()
+	if !strings.Contains(got, `"total_count": 1`) || !strings.Contains(got, `"full_name": "BurntSushi/ripgrep"`) {
+		t.Fatalf("expected search json output, got %q", got)
+	}
+	if !strings.Contains(got, `"updated_at": "2026-04-24T08:30:00"`) {
+		t.Fatalf("expected compact search json time, got %q", got)
+	}
+	if strings.Contains(got, "2026-04-24T08:30:00+08:00") {
+		t.Fatalf("expected search json time without timezone offset, got %q", got)
 	}
 }
 

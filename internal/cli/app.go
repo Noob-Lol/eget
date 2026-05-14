@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/gookit/goutil/cflag/capp"
 	"github.com/gookit/goutil/x/ccolor"
@@ -31,7 +32,21 @@ type App struct {
 func SetBuildInfo(versionStr, gitHashStr, buildTimeStr string) {
 	version = versionStr
 	gitHash = gitHashStr
-	buildTime = buildTimeStr
+	buildTime = normalizeBuildTime(buildTimeStr)
+}
+
+func normalizeBuildTime(value string) string {
+	for _, layout := range []string{
+		compactTimeLayout,
+		time.RFC3339,
+		"2006/01/02-15:04:05",
+		"2006-01-02 15:04:05",
+	} {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed.Format(compactTimeLayout)
+		}
+	}
+	return value
 }
 
 var cliApp *App

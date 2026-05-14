@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -206,7 +205,7 @@ func (s *cliService) handleList(opts *ListOptions) error {
 		if err != nil {
 			return err
 		}
-		show.AList("Package Info", item)
+		show.AList("Package Info", listItemToDisplay(*item))
 		return nil
 	}
 
@@ -242,7 +241,7 @@ func (s *cliService) handleList(opts *ListOptions) error {
 		cols := []string{"Name", "Repo", "Version", "Latest version", "Published At"}
 		rows := make([][]any, 0, len(items))
 		for _, item := range items {
-			rows = append(rows, []any{item.Name, item.Repo, item.InstalledTag, item.LatestTag, formatListTime(item.PublishedAt)})
+			rows = append(rows, []any{item.Name, item.Repo, item.InstalledTag, item.LatestTag, formatOutdatedTime(item.PublishedAt)})
 		}
 		ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 		return nil
@@ -327,10 +326,11 @@ func packageSource(item app.ListItem) string {
 }
 
 func formatListTime(value time.Time) string {
-	if value.IsZero() {
-		return "-"
-	}
-	return value.Format(time.RFC3339)
+	return compactTime(value)
+}
+
+func formatOutdatedTime(value time.Time) string {
+	return formatListTime(value)
 }
 
 func appVerbose() bool {
@@ -575,7 +575,7 @@ func (s *cliService) handleQuery(opts *QueryOptions) error {
 		return err
 	}
 	if opts.JSON {
-		text, err := result.JSONString()
+		text, err := queryResultJSON(result)
 		if err != nil {
 			return err
 		}
@@ -599,11 +599,11 @@ func (s *cliService) handleSearch(opts *SearchOptions) error {
 	}
 
 	if opts.JSON {
-		text, err := json.MarshalIndent(result, "", "  ")
+		text, err := searchResultJSON(result)
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(text))
+		fmt.Println(text)
 		return nil
 	}
 

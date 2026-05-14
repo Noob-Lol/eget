@@ -32,6 +32,25 @@ func TestMain_NoSubcommandReturnsErrorAndHelp(t *testing.T) {
 	}
 }
 
+func TestSetBuildInfoCompactsBuildTime(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"rfc3339 offset", "2026-05-05T13:20:19+08:00", "2026-05-05T13:20:19"},
+		{"makefile legacy", "2026/05/05-13:20:19", "2026-05-05T13:20:19"},
+		{"unknown", "unknown", "unknown"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SetBuildInfo("dev", "hash", tt.input)
+			assert.Eq(t, tt.want, buildTime)
+		})
+	}
+}
+
 func TestMain_InstallStandardOrderRoutesAndBindsOptions(t *testing.T) {
 	calls := make([]commandCall, 0, 1)
 	handler := func(name string, options any) error {
