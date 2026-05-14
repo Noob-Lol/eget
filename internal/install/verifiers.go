@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"strings"
 
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 )
@@ -71,14 +72,20 @@ func (s *sha256AssetVerifier) Verify(b []byte) error {
 	if err != nil {
 		return err
 	}
-	expected := make([]byte, sha256.Size)
-	n, err := hex.Decode(expected, data)
-	if n < sha256.Size {
-		return fmt.Errorf("sha256sum (%s) too small: %d bytes decoded", string(data), n)
+	fields := strings.Fields(string(data))
+	if len(fields) == 0 {
+		return fmt.Errorf("sha256sum is empty")
+	}
+	expected, err := hex.DecodeString(fields[0])
+	if err != nil {
+		return fmt.Errorf("invalid checksum %q: %w", fields[0], err)
+	}
+	if len(expected) < sha256.Size {
+		return fmt.Errorf("sha256sum (%s) too small: %d bytes decoded", fields[0], len(expected))
 	}
 	sum := sha256.Sum256(b)
-	if bytes.Equal(sum[:], expected[:n]) {
+	if bytes.Equal(sum[:], expected[:sha256.Size]) {
 		return nil
 	}
-	return &sha256Error{Expected: expected[:n], Got: sum[:]}
+	return &sha256Error{Expected: expected[:sha256.Size], Got: sum[:]}
 }
