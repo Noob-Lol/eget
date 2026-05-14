@@ -29,7 +29,7 @@ func resolveSystem7zPath(configured string) string {
 	return ""
 }
 
-func shouldUseSystem7z(filename string, extractAll bool) bool {
+func shouldUseSystem7z(filename string, extractArchive bool) bool {
 	name := strings.ToLower(filepath.Base(filename))
 	switch {
 	case strings.HasSuffix(name, ".7z"),
@@ -38,7 +38,7 @@ func shouldUseSystem7z(filename string, extractAll bool) bool {
 		strings.HasSuffix(name, ".cab"),
 		strings.HasSuffix(name, ".iso"):
 		return true
-	case strings.HasSuffix(name, ".exe") && extractAll:
+	case strings.HasSuffix(name, ".exe") && extractArchive:
 		return true
 	default:
 		return false

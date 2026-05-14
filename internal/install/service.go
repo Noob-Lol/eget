@@ -312,7 +312,8 @@ func (s *Service) SelectExtractor(url, tool string, opts *Options) (any, error) 
 }
 
 func (s *Service) newExtractor(filename, tool string, chooser any, opts *Options) (any, error) {
-	if opts != nil && shouldUseSystem7z(filename, opts.All) {
+	extractArchive := opts != nil && (opts.All || opts.ExtractFile != "")
+	if opts != nil && shouldUseSystem7z(filename, extractArchive) {
 		resolver := s.System7zPathResolver
 		if resolver == nil {
 			resolver = resolveSystem7zPath
@@ -330,11 +331,19 @@ func (s *Service) newExtractor(filename, tool string, chooser any, opts *Options
 			}
 			return factory(filename, tool, typedChooser, exe), nil
 		}
+		if requiresSystem7z(filename, extractArchive) {
+			return nil, fmt.Errorf("system 7z is required to extract files from %s", filename)
+		}
 	}
 	if s.ExtractorFactory == nil {
 		return nil, fmt.Errorf("extractor factories are required")
 	}
 	return s.ExtractorFactory(filename, tool, chooser), nil
+}
+
+func requiresSystem7z(filename string, extractArchive bool) bool {
+	name := strings.ToLower(path.Base(filename))
+	return strings.HasSuffix(name, ".exe") && extractArchive
 }
 
 func NormalizeRepoTarget(target string) (string, error) {

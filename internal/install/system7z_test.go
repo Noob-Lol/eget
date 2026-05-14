@@ -29,17 +29,17 @@ func TestResolveSystem7zPathFallsBackWhenConfiguredPathMissing(t *testing.T) {
 
 func TestShouldUseSystem7zForPreferredFormats(t *testing.T) {
 	cases := []struct {
-		name     string
-		filename string
-		all      bool
-		want     bool
+		name           string
+		filename       string
+		extractArchive bool
+		want           bool
 	}{
 		{name: "7z", filename: "tool.7z", want: true},
 		{name: "rar", filename: "tool.rar", want: true},
 		{name: "msi", filename: "setup.msi", want: true},
 		{name: "cab", filename: "driver.cab", want: true},
 		{name: "iso", filename: "image.iso", want: true},
-		{name: "exe all", filename: "setup.exe", all: true, want: true},
+		{name: "exe extract archive", filename: "setup.exe", extractArchive: true, want: true},
 		{name: "exe single", filename: "setup.exe", want: false},
 		{name: "zip stays go", filename: "tool.zip", want: false},
 		{name: "tar gz stays go", filename: "tool.tar.gz", want: false},
@@ -54,7 +54,7 @@ func TestShouldUseSystem7zForPreferredFormats(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Eq(t, tt.want, shouldUseSystem7z(tt.filename, tt.all))
+			assert.Eq(t, tt.want, shouldUseSystem7z(tt.filename, tt.extractArchive))
 		})
 	}
 }

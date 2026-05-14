@@ -227,7 +227,7 @@ The target argument accepted by `install` and `download` can be:
 - `--tag`: Select a release tag; defaults to `latest` when omitted.
 - `--system`: Override the target OS/arch, for example `windows/amd64` or `linux/arm64`.
 - `--to`: Set the install or download output path; accepts either a directory or a full file path.
-- `--file`: Select file(s) to extract from an archive; supports comma-separated file names or glob patterns such as `README.md,LICENSE`.
+- `--file`: Select file(s) to extract from an archive; supports comma-separated file names or glob patterns such as `README.md,LICENSE`. For 7z-readable `.exe` installers, system 7z is required.
 - `--asset`: Filter release assets by keyword; multiple filters can be separated by commas. Regex is also supported with the `REG:` prefix, for example `REG:\\.deb$`, and exclusions can use `^REG:...`.
 - `--source`: Download the source archive instead of a prebuilt binary release.
 - `--extract-all`, `--ea`: Extract all files from the archive instead of selecting a single target file.

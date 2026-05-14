@@ -245,7 +245,7 @@ CLI > package > repo > global > default
 - `--tag`
 - `--system`
 - `--to`
-- `--file`
+- `--file`（可选择归档内文件；对 7z 可读取的 `.exe` 安装包使用时需要系统 7z）
 - `--asset`
 - `--source`
 - `--chunk`

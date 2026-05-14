@@ -227,7 +227,7 @@ eget config set global.target ~/.local/bin
 - `--tag`: 指定发布版本标签；未提供时默认使用 `latest`。
 - `--system`: 指定目标系统与架构，例如 `windows/amd64`、`linux/arm64`。
 - `--to`: 指定安装或下载输出路径；可传目录，也可传完整文件路径。
-- `--file`: 指定归档内要提取的文件；支持逗号分隔多个文件或 glob 模式，例如 `README.md,LICENSE`。
+- `--file`: 指定归档内要提取的文件；支持逗号分隔多个文件或 glob 模式，例如 `README.md,LICENSE`。对 7z 可读取的 `.exe` 安装包使用时，需要系统 7z。
 - `--asset`: 指定资源过滤关键词；可用逗号分隔多个过滤条件，也支持 `REG:` 前缀正则，例如 `REG:\\.deb$`，排除可用 `^REG:...`。
 - `--source`: 下载源码归档而不是预构建二进制。
 - `--extract-all`, `--ea`: 提取归档中的全部文件，而不是只选择一个目标文件。

@@ -394,7 +394,7 @@ func (f *fakeDirectAllExtractor) ExtractAllTo([]byte, string) ([]string, error) 
 }
 
 func TestRunExtractAllUsesDirectExtractorWithoutListing(t *testing.T) {
-	assetURL := "https://example.com/setup.exe"
+	assetURL := "https://example.com/tool.7z"
 	outputDir := t.TempDir()
 	direct := &fakeDirectAllExtractor{
 		files: []string{filepath.Join(outputDir, "$PLUGINSDIR", "nsDialogs.dll")},

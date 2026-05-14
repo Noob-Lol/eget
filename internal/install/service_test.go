@@ -646,20 +646,37 @@ func TestSelectExtractorTreatsDownloadWithAllAsArchiveExtraction(t *testing.T) {
 	}
 }
 
-func TestSelectExtractorTreatsExeWithExtractAllAsSevenZipArchive(t *testing.T) {
+func TestSelectExtractorRequiresSystem7zForExeExtractAll(t *testing.T) {
 	svc := NewDefaultService(nil, nil)
 	svc.System7zPathResolver = func(configured string) string {
 		return ""
 	}
 
-	extractor, err := SelectExtractorAs[Extractor](svc, "https://example.com/qbittorrent_5.2.0_x64_setup.exe", "qbittorrent", &Options{
+	_, err := SelectExtractorAs[Extractor](svc, "https://example.com/qbittorrent_5.2.0_x64_setup.exe", "qbittorrent", &Options{
 		All: true,
 	})
-	if err != nil {
-		t.Fatalf("SelectExtractor(exe with extract-all): %v", err)
+	if err == nil {
+		t.Fatal("expected exe extract-all without system 7z to fail")
 	}
-	if _, ok := extractor.(*ArchiveExtractor); !ok {
-		t.Fatalf("expected exe with extract-all to use archive extractor, got %T", extractor)
+	if !strings.Contains(err.Error(), "system 7z is required") {
+		t.Fatalf("expected missing system 7z error, got %v", err)
+	}
+}
+
+func TestSelectExtractorRequiresSystem7zForExeFilePattern(t *testing.T) {
+	svc := NewDefaultService(nil, nil)
+	svc.System7zPathResolver = func(configured string) string {
+		return ""
+	}
+
+	_, err := SelectExtractorAs[Extractor](svc, "https://example.com/qbittorrent_5.2.0_x64_setup.exe", "qbittorrent", &Options{
+		ExtractFile: "qbittorrent.exe,*.dll",
+	})
+	if err == nil {
+		t.Fatal("expected exe file pattern without system 7z to fail")
+	}
+	if !strings.Contains(err.Error(), "system 7z is required") {
+		t.Fatalf("expected missing system 7z error, got %v", err)
 	}
 }
 
@@ -681,6 +698,30 @@ func TestSelectExtractorUsesSystem7zForExeExtractAll(t *testing.T) {
 	extractor, err := svc.SelectExtractor("https://example.com/setup.exe", "setup", &Options{All: true})
 	if err != nil {
 		t.Fatalf("SelectExtractor(exe extract-all): %v", err)
+	}
+	if got := extractor.(*fakeExtractor).name; got != "system7z:setup.exe" {
+		t.Fatalf("expected system 7z extractor, got %q", got)
+	}
+}
+
+func TestSelectExtractorUsesSystem7zForExeFilePattern(t *testing.T) {
+	svc := NewService()
+	svc.GlobChooserFactory = func(pattern string) (any, error) {
+		return NewFileChooser(pattern)
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return &fakeExtractor{name: "go:" + filename}
+	}
+	svc.System7zPathResolver = func(configured string) string {
+		return "C:/Tools/7z.exe"
+	}
+	svc.System7zExtractorFactory = func(filename, tool string, chooser Chooser, exe string) Extractor {
+		return &fakeExtractor{name: "system7z:" + filepath.Base(filename)}
+	}
+
+	extractor, err := svc.SelectExtractor("https://example.com/setup.exe", "setup", &Options{ExtractFile: "bin/*.exe"})
+	if err != nil {
+		t.Fatalf("SelectExtractor(exe file pattern): %v", err)
 	}
 	if got := extractor.(*fakeExtractor).name; got != "system7z:setup.exe" {
 		t.Fatalf("expected system 7z extractor, got %q", got)
