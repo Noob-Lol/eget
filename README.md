@@ -17,6 +17,7 @@
 - Multi-source installs: install or download binaries from GitHub, GitLab, Gitea/Forgejo, SourceForge, direct download URLs, and local files.
 - Automatic selection and extraction: filter release assets by OS/arch, keyword, or regex, with SHA-256 verification and common archive extraction.
 - Managed package workflow: use `add`, `list`, `update`, and `uninstall` to manage frequently used tools, record install state, and check batch updates.
+- Concurrent downloads: automatically split large files into HTTP Range chunks for parallel download, and run package downloads concurrently when installing or updating all packages.
 - Query and search: query GitHub release info, query SourceForge latest/assets, and search repositories with native GitHub search qualifiers.
 - Cache and proxy support: use download cache, API response cache, `proxy_url`, and `ghproxy` for restricted networks or repeated installs.
 - Config-driven usage: configure global defaults, repo-level options, and `packages.<name>` managed packages; config and installed store default to `~/.config/eget/`.
