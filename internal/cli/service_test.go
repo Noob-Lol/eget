@@ -1340,6 +1340,30 @@ func TestPrintQueryResultReleasesUsesCompactTime(t *testing.T) {
 	}
 }
 
+func TestPrintQueryResultSourceForgeReleasesShowsUnknownAssetsCount(t *testing.T) {
+	result := app.QueryResult{
+		Action: "releases",
+		Repo:   "sourceforge:project/path",
+		Releases: []app.QueryRelease{{
+			Tag:  "tool-1.2.3",
+			Name: "1.2.3",
+		}},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	printQueryResult(result)
+	got := out.String()
+	if !strings.Contains(got, "Assets Count") || !strings.Contains(got, " - ") {
+		t.Fatalf("expected unknown assets count marker in sourceforge releases output, got %q", got)
+	}
+	if strings.Contains(got, " 0 ") {
+		t.Fatalf("expected sourceforge releases output to hide zero assets count, got %q", got)
+	}
+}
+
 func TestPrintQueryResultInfoUsesCompactTime(t *testing.T) {
 	result := app.QueryResult{
 		Action: "info",

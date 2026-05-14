@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gookit/cliui/show"
@@ -252,7 +253,7 @@ func printQueryResult(result app.QueryResult) {
 				item.Name,
 				compactTime(item.PublishedAt),
 				item.Prerelease,
-				item.AssetsCount,
+				releaseAssetsCount(result.Repo, item),
 			})
 		}
 		ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
@@ -270,6 +271,13 @@ func printQueryResult(result app.QueryResult) {
 		}
 		ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 	}
+}
+
+func releaseAssetsCount(repo string, item app.QueryRelease) any {
+	if strings.HasPrefix(repo, "sourceforge:") && item.AssetsCount == 0 {
+		return "-"
+	}
+	return item.AssetsCount
 }
 
 func printSearchResult(result app.SearchResult) {

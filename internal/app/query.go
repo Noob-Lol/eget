@@ -174,7 +174,6 @@ func (s QueryService) querySourceForge(opts QueryOptions, action string) (QueryR
 				Name:        info.Version,
 				PublishedAt: info.PublishedAt,
 				Prerelease:  info.Prerelease,
-				AssetsCount: info.AssetsCount,
 			})
 		}
 		return QueryResult{Action: action, Repo: repo, Releases: releases}, nil

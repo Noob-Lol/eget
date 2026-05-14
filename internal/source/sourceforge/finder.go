@@ -159,11 +159,7 @@ func ListReleases(project, sourcePath string, limit int, includePrerelease bool,
 		if !includePrerelease && isPrereleaseVersion(version) {
 			continue
 		}
-		info, err := releaseInfo(finder, version)
-		if err != nil {
-			return nil, err
-		}
-		releases = append(releases, info)
+		releases = append(releases, releaseInfoFromVersionFile(version))
 	}
 	return releases, nil
 }
@@ -201,6 +197,16 @@ func releaseInfo(finder Finder, versionFile File) (LatestInfo, error) {
 		Prerelease:  isPrereleaseVersion(versionFile),
 		AssetsCount: len(downloadableURLs(assets)),
 	}, nil
+}
+
+func releaseInfoFromVersionFile(versionFile File) LatestInfo {
+	return LatestInfo{
+		Tag:         sourceForgeReleaseTag(versionFile),
+		Version:     fileVersion(versionFile),
+		Path:        versionFile.FullPath,
+		PublishedAt: versionFile.PublishedAt,
+		Prerelease:  isPrereleaseVersion(versionFile),
+	}
 }
 
 func sourceForgeReleaseTag(file File) string {

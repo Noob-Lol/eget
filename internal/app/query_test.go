@@ -142,7 +142,7 @@ func TestQueryServiceSourceForgeReleases(t *testing.T) {
 	assert.Eq(t, "1.2.3", result.Releases[0].Name)
 	assert.Eq(t, time.Date(2026, 2, 3, 9, 21, 40, 0, time.UTC), result.Releases[0].PublishedAt)
 	assert.True(t, result.Releases[0].Prerelease)
-	assert.Eq(t, 2, result.Releases[0].AssetsCount)
+	assert.Eq(t, 0, result.Releases[0].AssetsCount)
 }
 
 func TestQueryServiceSourceForgeRejectsUnsupportedActions(t *testing.T) {
