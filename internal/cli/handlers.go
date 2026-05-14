@@ -28,7 +28,7 @@ func (s *cliService) handle(name string, options any) error {
 		opts := options.(*InstallOptions)
 		cliInstallOpts := installOptionsFromInstall(opts)
 		if opts.InstallAll {
-			if opts.Target != "" {
+			if len(opts.Targets) > 0 {
 				return fmt.Errorf("install --all cannot be used with target")
 			}
 			if opts.Add {
@@ -41,29 +41,37 @@ func (s *cliService) handle(name string, options any) error {
 		if opts.BatchConcurrency > 0 {
 			return fmt.Errorf("--batch can only be used with --all")
 		}
-		if opts.Target == "" {
+		if len(opts.Targets) == 0 {
 			return fmt.Errorf("install target is required")
 		}
+		if len(opts.Targets) > 1 && opts.Name != "" {
+			return fmt.Errorf("install --name cannot be used with multiple targets")
+		}
 		s.warnIfSudoUserConfigLooksSkipped(opts.Quiet)
-		_, err := s.appService.InstallTarget(opts.Target, cliInstallOpts, app.InstallExtras{
-			AddToConfig: opts.Add,
-			PackageName: opts.Name,
-			PackageOpts: cliInstallOpts,
-		})
-		if err == nil && opts.Add {
-			pkgName := opts.Name
-			if pkgName == "" {
-				if repo, repoErr := install.NormalizeRepoTarget(opts.Target); repoErr == nil {
-					if _, name, found := strings.Cut(repo, "/"); found {
-						pkgName = name
+		for _, target := range opts.Targets {
+			_, err := s.appService.InstallTarget(target, cliInstallOpts, app.InstallExtras{
+				AddToConfig: opts.Add,
+				PackageName: opts.Name,
+				PackageOpts: cliInstallOpts,
+			})
+			if err != nil {
+				return err
+			}
+			if opts.Add {
+				pkgName := opts.Name
+				if pkgName == "" {
+					if repo, repoErr := install.NormalizeRepoTarget(target); repoErr == nil {
+						if _, name, found := strings.Cut(repo, "/"); found {
+							pkgName = name
+						}
 					}
 				}
-			}
-			if pkgName != "" {
-				fmt.Printf("Added package config: %s -> %s\n", pkgName, opts.Target)
+				if pkgName != "" {
+					fmt.Printf("Added package config: %s -> %s\n", pkgName, target)
+				}
 			}
 		}
-		return err
+		return nil
 	case "download":
 		opts := options.(*DownloadOptions)
 		_, err := s.appService.DownloadTarget(opts.Target, installOptionsFromDownload(opts))
@@ -530,11 +538,28 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 	if opts.BatchConcurrency > 0 {
 		return fmt.Errorf("--batch can only be used with --all")
 	}
-	if opts.Target == "" {
+	if len(opts.Targets) == 0 {
 		return fmt.Errorf("update target is required")
 	}
-	_, err := s.updService.UpdatePackage(opts.Target, installOpts)
-	return err
+	for _, target := range opts.Targets {
+		if _, err := s.updService.UpdatePackage(target, installOpts); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func splitTargets(args []string) []string {
+	var targets []string
+	for _, arg := range args {
+		for _, part := range strings.Split(arg, ",") {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				targets = append(targets, part)
+			}
+		}
+	}
+	return targets
 }
 
 func (s *cliService) handleQuery(opts *QueryOptions) error {

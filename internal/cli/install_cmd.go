@@ -18,17 +18,22 @@ type InstallOptions struct {
 	FallbackVersions int
 	ChunkConcurrency int
 	BatchConcurrency int
-	Target           string
+	Targets          []string
 }
 
 func newInstallCmd(handler CommandHandler) (*capp.Cmd, func()) {
 	opts := &InstallOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
-	cmd := capp.NewCmd("install", "Install a target", func(cmd *capp.Cmd) error {
-		opts.Target = cmd.Arg("target").String()
+	cmd := capp.NewCmd("install", "Install one or more targets", func(cmd *capp.Cmd) error {
+		targetArgs := cmd.Arg("target").Strings()
+		if err := validateNoFlagArgs(targetArgs); err != nil {
+			return err
+		}
+		opts.Targets = splitTargets(targetArgs)
 		if err := validateNoTrailingFlags(cmd); err != nil {
 			return err
 		}
 		snapshot := *opts
+		snapshot.Targets = append([]string(nil), opts.Targets...)
 		return handler(cmd.Name, &snapshot)
 	})
 	cmd.Aliases = []string{"i", "ins"}
@@ -48,7 +53,7 @@ func newInstallCmd(handler CommandHandler) (*capp.Cmd, func()) {
 	cmd.IntVar(&opts.FallbackVersions, "fallback-versions", 0, "Search older SourceForge version folders when asset is missing")
 	cmd.IntVar(&opts.ChunkConcurrency, "chunk", -1, "HTTP Range chunk concurrency: 0 auto, 1 single connection")
 	cmd.IntVar(&opts.BatchConcurrency, "batch", -1, "Concurrent package tasks for --all: 0 auto, 1 serial")
-	cmd.AddArg("target", "Installation target", false, nil)
+	cmd.AddArg("target", "Installation target(s)", false, nil, true)
 	return cmd, func() {
 		*opts = InstallOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 	}

@@ -16,21 +16,22 @@ type UpdateOptions struct {
 	Quiet            bool
 	ChunkConcurrency int
 	BatchConcurrency int
-	Target           string
+	Targets          []string
 }
 
 func newUpdateCmd(handler CommandHandler) (*capp.Cmd, func()) {
 	opts := &UpdateOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 	cmd := capp.NewCmd("update", "Update installed targets", func(cmd *capp.Cmd) error {
-		if len(cmd.Args()) > 0 {
-			opts.Target = cmd.Arg("target").String()
-		} else {
-			opts.Target = ""
+		targetArgs := cmd.Arg("target").Strings()
+		if err := validateNoFlagArgs(targetArgs); err != nil {
+			return err
 		}
+		opts.Targets = splitTargets(targetArgs)
 		if err := validateNoTrailingFlags(cmd); err != nil {
 			return err
 		}
 		snapshot := *opts
+		snapshot.Targets = append([]string(nil), opts.Targets...)
 		return handler(cmd.Name, &snapshot)
 	})
 	cmd.Aliases = []string{"up"}
@@ -48,7 +49,7 @@ func newUpdateCmd(handler CommandHandler) (*capp.Cmd, func()) {
 	cmd.BoolVar(&opts.Quiet, "quiet", false, "Quiet output")
 	cmd.IntVar(&opts.ChunkConcurrency, "chunk", -1, "HTTP Range chunk concurrency: 0 auto, 1 single connection")
 	cmd.IntVar(&opts.BatchConcurrency, "batch", -1, "Concurrent package tasks for --all: 0 auto, 1 serial")
-	cmd.AddArg("target", "Target to update", false, nil)
+	cmd.AddArg("target", "Target(s) to update", false, nil, true)
 	return cmd, func() {
 		*opts = UpdateOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 	}

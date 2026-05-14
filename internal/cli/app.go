@@ -133,7 +133,11 @@ func printVersion() {
 }
 
 func validateNoTrailingFlags(cmd *capp.Cmd) error {
-	for _, arg := range cmd.RemainArgs() {
+	return validateNoFlagArgs(cmd.RemainArgs())
+}
+
+func validateNoFlagArgs(args []string) error {
+	for _, arg := range args {
 		if len(arg) > 0 && arg[0] == '-' {
 			return fmt.Errorf("flags must appear before arguments: %s", arg)
 		}

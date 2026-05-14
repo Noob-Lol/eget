@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 type commandCall struct {
@@ -57,8 +59,68 @@ func TestMain_InstallStandardOrderRoutesAndBindsOptions(t *testing.T) {
 	if opts.Tag != "nightly" {
 		t.Fatalf("expected tag nightly, got %q", opts.Tag)
 	}
-	if opts.Target != "inhere/markview" {
-		t.Fatalf("expected target inhere/markview, got %q", opts.Target)
+	if len(opts.Targets) != 1 || opts.Targets[0] != "inhere/markview" {
+		t.Fatalf("expected target inhere/markview, got %#v", opts.Targets)
+	}
+}
+
+func TestMain_InstallBindsMultipleTargets(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{"space separated", []string{"install", "fzf", "rg"}, []string{"fzf", "rg"}},
+		{"comma separated", []string{"install", "fzf,rg,fd"}, []string{"fzf", "rg", "fd"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]commandCall, 0, 1)
+			handler := func(name string, options any) error {
+				calls = append(calls, commandCall{name: name, options: options})
+				return nil
+			}
+
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			err := newApp(handler, &stdout, &stderr).RunWithArgs(tt.args)
+			assert.NoErr(t, err)
+			assert.Eq(t, 1, len(calls))
+			opts, ok := calls[0].options.(*InstallOptions)
+			assert.True(t, ok)
+			assert.Eq(t, tt.want, opts.Targets)
+		})
+	}
+}
+
+func TestMain_UpdateBindsMultipleTargets(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{"space separated", []string{"update", "fzf", "rg"}, []string{"fzf", "rg"}},
+		{"comma separated", []string{"update", "fzf,rg,fd"}, []string{"fzf", "rg", "fd"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]commandCall, 0, 1)
+			handler := func(name string, options any) error {
+				calls = append(calls, commandCall{name: name, options: options})
+				return nil
+			}
+
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			err := newApp(handler, &stdout, &stderr).RunWithArgs(tt.args)
+			assert.NoErr(t, err)
+			assert.Eq(t, 1, len(calls))
+			opts, ok := calls[0].options.(*UpdateOptions)
+			assert.True(t, ok)
+			assert.Eq(t, tt.want, opts.Targets)
+		})
 	}
 }
 
@@ -292,8 +354,8 @@ func TestMain_InstallAllFlagBindsWithoutTarget(t *testing.T) {
 	if !opts.InstallAll {
 		t.Fatalf("expected install all flag to be true")
 	}
-	if opts.Target != "" {
-		t.Fatalf("expected install --all to omit target, got %q", opts.Target)
+	if len(opts.Targets) != 0 {
+		t.Fatalf("expected install --all to omit target, got %#v", opts.Targets)
 	}
 }
 
@@ -675,11 +737,11 @@ func TestApp_RunWithArgsDoesNotLeakCommandStateAcrossRuns(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected second update options, got %T", calls[1].options)
 	}
-	if updateFirst.Target != "foo" {
-		t.Fatalf("expected first update target foo, got %q", updateFirst.Target)
+	if len(updateFirst.Targets) != 1 || updateFirst.Targets[0] != "foo" {
+		t.Fatalf("expected first update target foo, got %#v", updateFirst.Targets)
 	}
-	if updateSecond.Target != "" {
-		t.Fatalf("expected second update target to reset, got %q", updateSecond.Target)
+	if len(updateSecond.Targets) != 0 {
+		t.Fatalf("expected second update target to reset, got %#v", updateSecond.Targets)
 	}
 
 	installFirst, ok := calls[2].options.(*InstallOptions)

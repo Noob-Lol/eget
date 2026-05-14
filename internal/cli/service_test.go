@@ -244,9 +244,9 @@ func TestHandleInstallPrintsAddedPackageMessage(t *testing.T) {
 	}
 
 	err = svc.handle("install", &InstallOptions{
-		Target: "gookit/gitw",
-		Add:    true,
-		Name:   "chlog",
+		Targets: []string{"gookit/gitw"},
+		Add:     true,
+		Name:    "chlog",
 	})
 	if err != nil {
 		t.Fatalf("handle install: %v", err)
@@ -319,10 +319,60 @@ func TestHandleInstallAcceptsManagedPackageName(t *testing.T) {
 	}
 
 	err := svc.handle("install", &InstallOptions{
-		Target: "picoclaw",
+		Targets: []string{"picoclaw"},
 	})
 	if err != nil {
 		t.Fatalf("handle install: %v", err)
+	}
+}
+
+func TestHandleInstallInstallsMultipleTargets(t *testing.T) {
+	runner := &fakeRunnerForCLI{
+		result: app.RunResult{
+			URL:            "https://github.com/example/repo/releases/download/v1.0.0/tool.tar.gz",
+			Tool:           "tool",
+			ExtractedFiles: []string{"./tool"},
+		},
+	}
+	svc := &cliService{
+		appService: app.Service{
+			Runner: runner,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+				cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+				return cfg, nil
+			},
+		},
+	}
+
+	err := svc.handle("install", &InstallOptions{Targets: []string{"fzf", "rg"}, Quiet: true})
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"junegunn/fzf", "BurntSushi/ripgrep"}, runner.targets)
+	if !runner.optsByTarget["junegunn/fzf"].Quiet || !runner.optsByTarget["BurntSushi/ripgrep"].Quiet {
+		t.Fatalf("expected cli install options to propagate, got %#v", runner.optsByTarget)
+	}
+}
+
+func TestHandleUpdateUpdatesMultipleTargets(t *testing.T) {
+	installer := &fakeUpdateInstallerForCLI{}
+	svc := &cliService{
+		updService: app.UpdateService{
+			Install: installer,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+				cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+				return cfg, nil
+			},
+		},
+	}
+
+	err := svc.handle("update", &UpdateOptions{Targets: []string{"fzf", "rg"}, Quiet: true})
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"fzf", "rg"}, installer.targets)
+	if len(installer.options) != 2 || !installer.options[0].Quiet || !installer.options[1].Quiet {
+		t.Fatalf("expected cli update options to propagate, got %#v", installer.options)
 	}
 }
 
@@ -372,12 +422,12 @@ func TestHandleInstallRejectsMissingTargetWithoutAll(t *testing.T) {
 func TestHandleRejectsBatchWithoutAll(t *testing.T) {
 	svc := &cliService{}
 
-	err := svc.handle("install", &InstallOptions{Target: "owner/repo", BatchConcurrency: 2})
+	err := svc.handle("install", &InstallOptions{Targets: []string{"owner/repo"}, BatchConcurrency: 2})
 	if err == nil || !strings.Contains(err.Error(), "--batch can only be used with --all") {
 		t.Fatalf("expected install --batch without --all to fail, got %v", err)
 	}
 
-	err = svc.handle("update", &UpdateOptions{Target: "fd", BatchConcurrency: 2})
+	err = svc.handle("update", &UpdateOptions{Targets: []string{"fd"}, BatchConcurrency: 2})
 	if err == nil || !strings.Contains(err.Error(), "--batch can only be used with --all") {
 		t.Fatalf("expected update --batch without --all to fail, got %v", err)
 	}
@@ -414,7 +464,7 @@ func TestInstallOptionsFromCommandsPropagateConcurrency(t *testing.T) {
 func TestHandleInstallAllRejectsTarget(t *testing.T) {
 	svc := &cliService{}
 
-	err := svc.handle("install", &InstallOptions{InstallAll: true, Target: "junegunn/fzf"})
+	err := svc.handle("install", &InstallOptions{InstallAll: true, Targets: []string{"junegunn/fzf"}})
 	if err == nil {
 		t.Fatal("expected install --all with target to fail")
 	}
@@ -456,7 +506,7 @@ func TestHandleInstallWarnsWhenSudoUserConfigExistsButCurrentConfigMissing(t *te
 		},
 	}
 
-	err := svc.handle("install", &InstallOptions{Target: "babarot/gomi"})
+	err := svc.handle("install", &InstallOptions{Targets: []string{"babarot/gomi"}})
 	if err != nil {
 		t.Fatalf("handle install: %v", err)
 	}
@@ -497,7 +547,7 @@ func TestHandleInstallDoesNotWarnWhenQuiet(t *testing.T) {
 		},
 	}
 
-	err := svc.handle("install", &InstallOptions{Target: "babarot/gomi", Quiet: true})
+	err := svc.handle("install", &InstallOptions{Targets: []string{"babarot/gomi"}, Quiet: true})
 	if err != nil {
 		t.Fatalf("handle install: %v", err)
 	}
@@ -537,7 +587,7 @@ func TestHandleInstallDoesNotWarnWhenEGETConfigIsExplicit(t *testing.T) {
 		},
 	}
 
-	err := svc.handle("install", &InstallOptions{Target: "babarot/gomi"})
+	err := svc.handle("install", &InstallOptions{Targets: []string{"babarot/gomi"}})
 	if err != nil {
 		t.Fatalf("handle install: %v", err)
 	}
@@ -951,12 +1001,12 @@ func TestHandleListRejectsOutdatedWithInfo(t *testing.T) {
 func TestHandleUpdateRejectsUnimplementedDryRunAndInteractive(t *testing.T) {
 	svc := &cliService{}
 
-	err := svc.handleUpdate(&UpdateOptions{DryRun: true, Target: "junegunn/fzf"})
+	err := svc.handleUpdate(&UpdateOptions{DryRun: true, Targets: []string{"junegunn/fzf"}})
 	if err == nil || !strings.Contains(err.Error(), "update --dry-run is not implemented") {
 		t.Fatalf("expected dry-run unsupported error, got %v", err)
 	}
 
-	err = svc.handleUpdate(&UpdateOptions{Interactive: true, Target: "junegunn/fzf"})
+	err = svc.handleUpdate(&UpdateOptions{Interactive: true, Targets: []string{"junegunn/fzf"}})
 	if err == nil || !strings.Contains(err.Error(), "update --interactive is not implemented") {
 		t.Fatalf("expected interactive unsupported error, got %v", err)
 	}
@@ -1408,10 +1458,12 @@ func (f *fakeRunnerForCLI) Run(target string, opts install.Options) (app.RunResu
 
 type fakeUpdateInstallerForCLI struct {
 	targets []string
+	options []install.Options
 }
 
 func (f *fakeUpdateInstallerForCLI) InstallTarget(target string, opts install.Options, extras ...app.InstallExtras) (app.RunResult, error) {
 	f.targets = append(f.targets, target)
+	f.options = append(f.options, opts)
 	return app.RunResult{}, nil
 }
 

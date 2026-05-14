@@ -30,6 +30,8 @@
 - [ ] 新增 global.group_packages 用于配置 package 分组（详情见下面）
 - [ ] 全局配置 新增 global.ignore_update_packages 用于配置忽略检查/更新的 packages
 - [ ] 新增支持 sdk 下载安装，需要支持多版本。例如 go, node, python 等 sdk（详情见下面）
+- [x] 增强 install/update 的 target 参数支持多个目标。eg: `install name1 name2 ...`
+  - 只输入一个参数时，也支持使用逗号分隔，例如: `install name1,name2,name3`
 
 ## search 结果展示 ✅
 
@@ -83,8 +85,11 @@ sdk_download_ext = {
 aliases = ["golang"]
 # 如果是相对路径，则是基于 global.sdk_target 目录
 target = "gosdk/go{version}"
+# mirror https://mirrors.aliyun.com/golang/
+# eg: https://mirrors.aliyun.com/golang/go1.21.1.windows-amd64.zip
+url_template = "https://mirrors.aliyun.com/golang/go{version}.{os}-{arch}.{download_ext}"
 # eg: https://golang.org/dl/go1.21.1.windows-amd64.zip
-url_template = "https://golang.org/dl/go{version}.{os}-{arch}.{download_ext}"
+# url_template = "https://golang.org/dl/go{version}.{os}-{arch}.{download_ext}"
 
 [sdk.node]
 # index_url 用于指定 nodejs 版本/下载地址的索引页面（html,json 格式都支持）
