@@ -133,7 +133,7 @@ func (d *systemDetector) Detect(assets []string) (string, []string, error) {
 	var candidates []string
 	all := make([]string, 0, len(assets))
 	for _, a := range assets {
-		if strings.HasSuffix(a, ".sha256") || strings.HasSuffix(a, ".sha256sum") {
+		if isReleaseMetadataAsset(a) {
 			continue
 		}
 		osMatch, extra := d.Os.Match(a)
@@ -171,6 +171,13 @@ func (d *systemDetector) Detect(assets []string) (string, []string, error) {
 		return all[0], nil, nil
 	}
 	return "", all, fmt.Errorf("no candidates found")
+}
+
+func isReleaseMetadataAsset(asset string) bool {
+	name := strings.ToLower(path.Base(asset))
+	return strings.HasSuffix(name, ".sha256") ||
+		strings.HasSuffix(name, ".sha256sum") ||
+		strings.HasSuffix(name, ".sbom.json")
 }
 
 var (
