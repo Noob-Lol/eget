@@ -71,8 +71,9 @@ func TestDownloadBodyUsesCacheWhenAvailable(t *testing.T) {
 		}, nil
 	}
 
+	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	runner := &InstallRunner{Stderr: &stderr}
+	runner := &InstallRunner{Stdout: &stdout, Stderr: &stderr}
 	body, err := runner.downloadBody(url, Options{CacheDir: cacheDir})
 	if err != nil {
 		t.Fatalf("download body: %v", err)
@@ -84,8 +85,11 @@ func TestDownloadBodyUsesCacheWhenAvailable(t *testing.T) {
 	if calls != 0 {
 		t.Fatalf("expected no network calls, got %d", calls)
 	}
-	if got := stderr.String(); !strings.Contains(got, "Using cached file") {
+	if got := stdout.String(); !strings.Contains(got, "Using cached file") {
 		t.Fatalf("expected cached-file notice, got %q", got)
+	}
+	if got := stderr.String(); got != "" {
+		t.Fatalf("expected cached-file notice stderr to be empty, got %q", got)
 	}
 }
 
@@ -468,6 +472,34 @@ func TestRunQuietSuppressesInstallNotice(t *testing.T) {
 	}
 	if got := globalOut.String(); got != "" {
 		t.Fatalf("expected quiet global output to be empty, got %q", got)
+	}
+}
+
+func TestRunWritesSuccessfulInstallOutputToStdout(t *testing.T) {
+	tmpDir := t.TempDir()
+	source := filepath.Join(tmpDir, "tool.exe")
+	if err := os.WriteFile(source, []byte("tool"), 0o755); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	outputDir := filepath.Join(tmpDir, "bin")
+	if err := os.Mkdir(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	runner := NewRunner(NewDefaultService(nil, nil))
+	runner.Stdout = &stdout
+	runner.Stderr = &stderr
+
+	if _, err := runner.Run(source, Options{DownloadOnly: true, Output: outputDir}); err != nil {
+		t.Fatalf("run install: %v", err)
+	}
+	if got := stdout.String(); !strings.Contains(got, "Install") || !strings.Contains(got, "Asset") {
+		t.Fatalf("expected successful install output on stdout, got %q", got)
+	}
+	if got := stderr.String(); got != "" {
+		t.Fatalf("expected successful install stderr to be empty, got %q", got)
 	}
 }
 

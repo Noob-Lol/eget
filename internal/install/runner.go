@@ -60,7 +60,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 		return RunResult{}, fmt.Errorf("install service is required")
 	}
 
-	output := r.Stderr
+	output := r.Stdout
 	if output == nil {
 		output = io.Discard
 	}
@@ -400,7 +400,7 @@ func installerMaterializePath(opts Options, file ExtractedFile) string {
 
 func (r *InstallRunner) downloadBody(url string, opts Options) ([]byte, error) {
 	cachePath := CacheFilePathWithMeta(opts.CacheDir, url, CacheMeta{Name: opts.CacheName, Version: opts.CacheVersion})
-	output := r.Stderr
+	output := r.Stdout
 	if output == nil || opts.Quiet {
 		output = io.Discard
 	}
@@ -413,7 +413,7 @@ func (r *InstallRunner) downloadBody(url string, opts Options) ([]byte, error) {
 
 	buf := &bytes.Buffer{}
 	err := Download(url, buf, func(size int64) io.Writer {
-		pbout := r.Stderr
+		pbout := r.Stdout
 		if pbout == nil || opts.Quiet {
 			pbout = io.Discard
 		}
