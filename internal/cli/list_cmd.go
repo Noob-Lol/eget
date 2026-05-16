@@ -1,6 +1,6 @@
 package cli
 
-import "github.com/gookit/goutil/cflag/capp"
+import "github.com/gookit/gcli/v3"
 
 type ListOptions struct {
 	Outdated bool
@@ -9,20 +9,23 @@ type ListOptions struct {
 	Info     string
 }
 
-func newListCmd(handler CommandHandler) (*capp.Cmd, func()) {
+func newListCmd(handler CommandHandler) (*gcli.Command, func()) {
 	opts := &ListOptions{}
-	cmd := capp.NewCmd("list", "List managed packages", func(cmd *capp.Cmd) error {
-		if err := validateNoTrailingFlags(cmd); err != nil {
+	cmd := gcli.NewCommand("list", "List managed packages")
+	cmd.Aliases = []string{"ls"}
+	cmd.Config = func(c *gcli.Command) {
+		c.BoolOpt(&opts.Outdated, "outdated", "old", false, "Check and list outdated installed packages")
+		c.BoolOpt(&opts.All, "all", "a", false, "List all managed and installed packages")
+		c.BoolOpt(&opts.GUI, "gui", "", false, "List GUI applications")
+		c.StrOpt(&opts.Info, "info", "i", "", "Show detailed info for a package")
+	}
+	cmd.Func = func(_ *gcli.Command, args []string) error {
+		if err := validateNoFlagArgs(args); err != nil {
 			return err
 		}
 		snapshot := *opts
-		return handler(cmd.Name, &snapshot)
-	})
-	cmd.Aliases = []string{"ls"}
-	cmd.BoolVar(&opts.Outdated, "outdated", false, "Check and list outdated installed packages;;old")
-	cmd.BoolVar(&opts.All, "all", false, "List all managed and installed packages;false;a")
-	cmd.BoolVar(&opts.GUI, "gui", false, "List GUI applications")
-	cmd.StringVar(&opts.Info, "info", "", "Show detailed info for a package;;i")
+		return handler("list", &snapshot)
+	}
 	return cmd, func() {
 		*opts = ListOptions{}
 	}

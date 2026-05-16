@@ -24,7 +24,8 @@ func TestMain_NoSubcommandReturnsErrorAndHelp(t *testing.T) {
 	if stdout.Len() == 0 {
 		t.Fatalf("expected help output on stdout")
 	}
-	if !strings.Contains(stdout.String(), "Usage:") {
+	help := stdout.String()
+	if !strings.Contains(help, "Usage") && !strings.Contains(help, "Commands") {
 		t.Fatalf("expected help output to contain usage, got %q", stdout.String())
 	}
 	if stderr.Len() != 0 {
@@ -49,6 +50,21 @@ func TestSetBuildInfoCompactsBuildTime(t *testing.T) {
 			assert.Eq(t, tt.want, buildTime)
 		})
 	}
+}
+
+func TestMain_VersionUsesBuildInfo(t *testing.T) {
+	SetBuildInfo("v1.2.3", "abc123", "2026-05-16T10:11:12+08:00")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	err := newApp(func(string, any) error {
+		t.Fatalf("handler should not run for version")
+		return nil
+	}, &stdout, &stderr).RunWithArgs([]string{"--version"})
+
+	assert.NoErr(t, err)
+	out := stdout.String() + stderr.String()
+	assert.Contains(t, out, "v1.2.3")
 }
 
 func TestMain_InstallStandardOrderRoutesAndBindsOptions(t *testing.T) {

@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
-	"github.com/gookit/goutil/cflag/capp"
-	"github.com/gookit/goutil/x/ccolor"
+	"github.com/gookit/color"
+	"github.com/gookit/gcli/v3"
 )
 
 var (
@@ -23,9 +24,12 @@ var (
 type CommandHandler func(name string, options any) error
 
 type App struct {
-	inner     *capp.App
+	inner     *gcli.App
+	commands  []*gcli.Command
 	resetters []func()
 	verbose   *bool
+	lastErr   error
+	stdout    io.Writer
 }
 
 // SetBuildInfo sets the build information for the application.
@@ -86,29 +90,24 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 		}
 	}
 
-	inner := capp.NewApp()
+	inner := gcli.NewApp(gcli.NotExitOnEnd())
 	inner.Name = "eget"
 	inner.Desc = fmt.Sprintf(
 		"Easy install and download tools from GitHub\n  (%s, %s)",
 		gitHash, buildTime,
 	)
-	inner.Version = version
-	inner.HelpWriter = stdout
-	inner.SetOutput(stderr)
+	inner.Version = buildVersionString()
 	verbose := false
-	inner.BoolVar(&verbose, "verbose", false, "Show verbose execution details;;v")
-	var showVersion bool
-	inner.BoolVar(&showVersion, "version", false, "Show version information;;V")
-
-	inner.OnAppFlagParsed = func(_ *capp.App) bool {
-		if showVersion {
-			printVersion()
-			return false
+	app := &App{inner: inner, verbose: &verbose, stdout: stdout}
+	cliApp = app
+	inner.On(gcli.EvtAppRunError, func(ctx *gcli.HookCtx) bool {
+		if errV := ctx.Get("err"); errV != nil {
+			if err, ok := errV.(error); ok {
+				app.lastErr = err
+			}
 		}
 		return true
-	}
-
-	app := &App{inner: inner, verbose: &verbose}
+	})
 	app.add(newInstallCmd(handler))
 	app.add(newDownloadCmd(handler))
 	app.add(newAddCmd(handler))
@@ -121,34 +120,61 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 	return app
 }
 
-func (a *App) add(cmd *capp.Cmd, reset func()) {
+func (a *App) add(cmd *gcli.Command, reset func()) {
 	a.inner.Add(cmd)
+	a.commands = append(a.commands, cmd)
 	a.resetters = append(a.resetters, reset)
 }
 
 func (a *App) RunWithArgs(args []string) error {
+	a.lastErr = nil
 	for _, reset := range a.resetters {
 		reset()
 	}
-	if a.verbose != nil {
-		*a.verbose = false
+	for _, cmd := range a.commands {
+		for _, arg := range cmd.Args() {
+			arg.Reset()
+		}
 	}
-	return a.inner.RunWithArgs(args)
+	args = a.consumeVerboseArgs(args)
+	if err := validateKnownFlags(args); err != nil {
+		return err
+	}
+	color.SetOutput(a.stdout)
+	defer color.ResetOutput()
+	a.inner.Run(args)
+	return a.lastErr
 }
 
 func (a *App) Verbose() bool {
 	return a.verbose != nil && *a.verbose
 }
 
-// printVersion prints version information
-func printVersion() {
-	ccolor.Printf("Version <green>%s</>\n\n", version)
-	ccolor.Printf("Commit ID : <green>%s</>\n", gitHash)
-	ccolor.Printf("Build Date: <green>%s</>\n", buildTime)
+func (a *App) consumeVerboseArgs(args []string) []string {
+	if a.verbose != nil {
+		*a.verbose = false
+	}
+	if len(args) == 0 {
+		return args
+	}
+	cleaned := make([]string, 0, len(args))
+	for _, arg := range args {
+		if arg == "-v" || arg == "--verbose" {
+			if a.verbose != nil {
+				*a.verbose = true
+			}
+			continue
+		}
+		cleaned = append(cleaned, arg)
+	}
+	return cleaned
 }
 
-func validateNoTrailingFlags(cmd *capp.Cmd) error {
-	return validateNoFlagArgs(cmd.RemainArgs())
+func buildVersionString() string {
+	if gitHash == "" && buildTime == "" {
+		return version
+	}
+	return fmt.Sprintf("%s (%s, %s)", version, gitHash, buildTime)
 }
 
 func validateNoFlagArgs(args []string) error {
@@ -158,4 +184,115 @@ func validateNoFlagArgs(args []string) error {
 		}
 	}
 	return nil
+}
+
+type flagSpec struct {
+	bools  map[string]bool
+	values map[string]bool
+}
+
+var commandAliases = map[string]string{
+	"i":   "install",
+	"ins": "install",
+	"dl":  "download",
+	"uni": "uninstall",
+	"rm":  "uninstall",
+	"ls":  "list",
+	"up":  "update",
+	"cfg": "config",
+	"q":   "query",
+}
+
+var commandFlagSpecs = map[string]flagSpec{
+	"install": {
+		bools:  setOf("source", "extract-all", "ea", "all", "gui", "quiet", "add"),
+		values: setOf("tag", "system", "to", "file", "asset", "a", "name", "fallback-versions", "chunk", "batch"),
+	},
+	"download": {
+		bools:  setOf("source", "extract-all", "ea", "quiet"),
+		values: setOf("tag", "system", "to", "file", "asset", "a", "fallback-versions", "chunk"),
+	},
+	"add": {
+		bools:  setOf("source", "extract-all", "ea", "gui", "quiet"),
+		values: setOf("name", "tag", "system", "to", "file", "asset", "source", "chunk"),
+	},
+	"list": {
+		bools:  setOf("outdated", "old", "all", "a", "gui"),
+		values: setOf("info", "i"),
+	},
+	"update": {
+		bools:  setOf("all", "A", "check", "dry-run", "interactive", "source", "quiet"),
+		values: setOf("tag", "system", "to", "file", "asset", "a", "chunk", "batch"),
+	},
+	"query": {
+		bools:  setOf("json", "j", "prerelease", "p"),
+		values: setOf("action", "a", "tag", "t", "limit", "l"),
+	},
+	"search": {
+		bools:  setOf("json", "j"),
+		values: setOf("sort", "order", "limit", "l"),
+	},
+	"uninstall": {},
+	"config":    {},
+}
+
+func setOf(names ...string) map[string]bool {
+	set := make(map[string]bool, len(names))
+	for _, name := range names {
+		set[name] = true
+	}
+	return set
+}
+
+func validateKnownFlags(args []string) error {
+	cmdName, start := findCommandArg(args)
+	if cmdName == "" {
+		return nil
+	}
+	spec, ok := commandFlagSpecs[cmdName]
+	if !ok {
+		return nil
+	}
+	for i := start; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" {
+			return nil
+		}
+		if !strings.HasPrefix(arg, "-") || arg == "-" {
+			return nil
+		}
+		name := strings.TrimLeft(arg, "-")
+		if eq := strings.IndexByte(name, '='); eq >= 0 {
+			name = name[:eq]
+		}
+		if spec.bools[name] {
+			continue
+		}
+		if spec.values[name] {
+			if !strings.Contains(arg, "=") {
+				i++
+			}
+			continue
+		}
+		return fmt.Errorf("option provided but not defined: %s", arg)
+	}
+	return nil
+}
+
+func findCommandArg(args []string) (string, int) {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "-v", "--verbose", "-V", "--version", "-h", "--help":
+			continue
+		}
+		if strings.HasPrefix(arg, "-") {
+			continue
+		}
+		if real, ok := commandAliases[arg]; ok {
+			arg = real
+		}
+		return arg, i + 1
+	}
+	return "", 0
 }

@@ -133,7 +133,7 @@ git commit -m "chore(cli): add gcli dependency"
 - 修改：`internal/cli/app.go`
 - 测试：`internal/cli/app_test.go`
 
-- [ ] **步骤 1：更新 import 和 App 类型**
+- [x] **步骤 1：更新 import 和 App 类型**
 
 将 `internal/cli/app.go` 的 import 从：
 
@@ -183,7 +183,7 @@ type App struct {
 }
 ```
 
-- [ ] **步骤 2：替换 app 构造逻辑**
+- [x] **步骤 2：替换 app 构造逻辑**
 
 重写 `newApp`，使用 `gcli.NewApp()` 或 `gcli v3.3.1` 中等价的 app 构造方式。
 
@@ -211,7 +211,7 @@ buildTime
 <version> (<gitHash>, <buildTime>)
 ```
 
-- [ ] **步骤 3：重新绑定 verbose**
+- [x] **步骤 3：重新绑定 verbose**
 
 注册 `--verbose` 和 `-v` bool option，写入现有 `verbose` 变量。
 
@@ -223,7 +223,7 @@ func (a *App) Verbose() bool {
 }
 ```
 
-- [ ] **步骤 4：更新 add 和 RunWithArgs**
+- [x] **步骤 4：更新 add 和 RunWithArgs**
 
 将：
 
@@ -257,7 +257,7 @@ return a.inner.RunWithArgs(args)
 
 如果 `gcli.App` 使用 `Run(args)` 而不是 `RunWithArgs(args)`，就在 `App.RunWithArgs` 内部做一层适配，让外部测试继续使用当前方法。
 
-- [ ] **步骤 5：移除 capp 专用校验签名**
+- [x] **步骤 5：移除 capp 专用校验签名**
 
 删除：
 
@@ -280,7 +280,7 @@ func validateNoFlagArgs(args []string) error {
 
 后续命令文件直接对位置参数调用 `validateNoFlagArgs`。
 
-- [ ] **步骤 6：运行 App 壳测试**
+- [x] **步骤 6：运行 App 壳测试**
 
 运行：
 
@@ -303,7 +303,7 @@ if !strings.Contains(help, "Usage:") && !strings.Contains(help, "Commands") {
 }
 ```
 
-- [ ] **步骤 7：提交 App 壳迁移**
+- [x] **步骤 7：提交 App 壳迁移**
 
 运行：
 
@@ -328,7 +328,7 @@ git commit -m "refactor(cli): migrate app shell to gcli"
 - 修改：`internal/cli/query_cmd.go`
 - 测试：`internal/cli/app_test.go`
 
-- [ ] **步骤 1：迁移 `list` 命令**
+- [x] **步骤 1：迁移 `list` 命令**
 
 将 `capp` import 替换为：
 
@@ -368,7 +368,7 @@ return handler("list", &snapshot)
 
 不要依赖 `c.Name` 是否为别名；固定传 `"list"` 更稳定。
 
-- [ ] **步骤 2：迁移 `uninstall` 命令**
+- [x] **步骤 2：迁移 `uninstall` 命令**
 
 修改签名：
 
@@ -393,7 +393,7 @@ snapshot := *opts
 return handler("uninstall", &snapshot)
 ```
 
-- [ ] **步骤 3：迁移 `config` 命令**
+- [x] **步骤 3：迁移 `config` 命令**
 
 修改签名：
 
@@ -419,7 +419,7 @@ eget config get global.cache_dir
 eget config set global.cache_dir ~/.cache/eget
 ```
 
-- [ ] **步骤 4：迁移 `query` 命令**
+- [x] **步骤 4：迁移 `query` 命令**
 
 修改签名：
 
@@ -444,7 +444,7 @@ target required
 q
 ```
 
-- [ ] **步骤 5：运行定向测试**
+- [x] **步骤 5：运行定向测试**
 
 运行：
 
@@ -464,7 +464,7 @@ ok   github.com/inherelab/eget/internal/cli
 go test ./internal/cli
 ```
 
-- [ ] **步骤 6：提交简单命令迁移**
+- [x] **步骤 6：提交简单命令迁移**
 
 运行：
 
@@ -487,7 +487,7 @@ git commit -m "refactor(cli): migrate simple commands to gcli"
 - 修改：`internal/cli/search_cmd_test.go`
 - 测试：`internal/cli/app_test.go`
 
-- [ ] **步骤 1：迁移命令构造**
+- [x] **步骤 1：迁移命令构造**
 
 修改签名：
 
@@ -518,7 +518,7 @@ return handler("search", &snapshot)
 
 如果 `gcli` 把剩余参数暴露为另一套 API，就用该 API 保持 `search keyword language:go stars:>10` 的行为。
 
-- [ ] **步骤 2：保持状态 reset**
+- [x] **步骤 2：保持状态 reset**
 
 reset 函数必须恢复：
 
@@ -528,7 +528,7 @@ reset 函数必须恢复：
 
 这用于保证 `TestApp_RunWithArgsDoesNotLeakSearchStateAcrossRuns` 继续通过。
 
-- [ ] **步骤 3：运行 search 测试**
+- [x] **步骤 3：运行 search 测试**
 
 运行：
 
@@ -542,7 +542,7 @@ go test ./internal/cli -run "Search|RunWithArgsDoesNotLeakSearchState"
 ok   github.com/inherelab/eget/internal/cli
 ```
 
-- [ ] **步骤 4：提交 search 迁移**
+- [x] **步骤 4：提交 search 迁移**
 
 运行：
 
@@ -566,7 +566,7 @@ git commit -m "refactor(cli): migrate search command to gcli"
 - 修改：`internal/cli/add_cmd.go`
 - 测试：`internal/cli/app_test.go`
 
-- [ ] **步骤 1：迁移 `download` 命令**
+- [x] **步骤 1：迁移 `download` 命令**
 
 修改签名：
 
@@ -598,7 +598,7 @@ reset：
 
 在 `Func` 中对 target 位置参数调用 `validateNoFlagArgs`。
 
-- [ ] **步骤 2：迁移 `add` 命令**
+- [x] **步骤 2：迁移 `add` 命令**
 
 修改签名：
 
@@ -629,7 +629,7 @@ reset：
 *opts = AddOptions{ChunkConcurrency: -1}
 ```
 
-- [ ] **步骤 3：迁移 `install` 命令**
+- [x] **步骤 3：迁移 `install` 命令**
 
 修改签名：
 
@@ -677,7 +677,7 @@ reset：
 *opts = InstallOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 ```
 
-- [ ] **步骤 4：运行 install-like 测试**
+- [x] **步骤 4：运行 install-like 测试**
 
 运行：
 
@@ -691,7 +691,7 @@ go test ./internal/cli -run "Install|Download|Add|ExtractAll|GUI|Chunk|Batch|Tra
 ok   github.com/inherelab/eget/internal/cli
 ```
 
-- [ ] **步骤 5：提交 install-like 迁移**
+- [x] **步骤 5：提交 install-like 迁移**
 
 运行：
 
@@ -713,7 +713,7 @@ git commit -m "refactor(cli): migrate install commands to gcli"
 - 修改：`internal/cli/update_cmd.go`
 - 测试：`internal/cli/app_test.go`
 
-- [ ] **步骤 1：迁移命令构造**
+- [x] **步骤 1：迁移命令构造**
 
 修改签名：
 
@@ -742,7 +742,7 @@ target optional multi
 
 保留当前 `update_cmd.go` 中已有别名。
 
-- [ ] **步骤 2：保留 target 拆分和 reset**
+- [x] **步骤 2：保留 target 拆分和 reset**
 
 在 `Func` 中：
 
@@ -763,7 +763,7 @@ reset：
 *opts = UpdateOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 ```
 
-- [ ] **步骤 3：运行 update 测试**
+- [x] **步骤 3：运行 update 测试**
 
 运行：
 
@@ -777,7 +777,7 @@ go test ./internal/cli -run "Update|RunWithArgsDoesNotLeakCommandState"
 ok   github.com/inherelab/eget/internal/cli
 ```
 
-- [ ] **步骤 4：提交 update 迁移**
+- [x] **步骤 4：提交 update 迁移**
 
 运行：
 
@@ -799,7 +799,7 @@ git commit -m "refactor(cli): migrate update command to gcli"
 - 修改：`internal/cli/app_test.go`
 - 修改：`internal/cli/search_cmd_test.go`
 
-- [ ] **步骤 1：放宽 help 输出断言**
+- [x] **步骤 1：放宽 help 输出断言**
 
 如果测试依赖精确 help 文案，或只接受 `Usage:`，改为：
 
@@ -817,7 +817,7 @@ if !strings.Contains(help, "Usage") && !strings.Contains(help, "Commands") {
 无子命令时 stderr 为空
 ```
 
-- [ ] **步骤 2：新增或更新 gcli 内置 version 测试**
+- [x] **步骤 2：新增或更新 gcli 内置 version 测试**
 
 在 `internal/cli/app_test.go` 中新增或更新：
 
@@ -840,7 +840,7 @@ func TestMain_VersionUsesBuildInfo(t *testing.T) {
 
 如果 `gcli` 把 version 写到 stderr，该测试允许 stdout + stderr 组合检查。不要要求精确格式。
 
-- [ ] **步骤 3：运行全部 CLI 测试**
+- [x] **步骤 3：运行全部 CLI 测试**
 
 运行：
 
@@ -854,7 +854,7 @@ go test ./internal/cli
 ok   github.com/inherelab/eget/internal/cli
 ```
 
-- [ ] **步骤 4：提交测试调整**
+- [x] **步骤 4：提交测试调整**
 
 运行：
 
