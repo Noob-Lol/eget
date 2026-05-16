@@ -32,6 +32,8 @@
 - [ ] 新增支持 sdk 下载安装，需要支持多版本。例如 go, node, python 等 sdk（详情见下面）
 - [x] 增强 install/update 的 target 参数支持多个目标。eg: `install name1 name2 ...`
   - 只输入一个参数时，也支持使用逗号分隔，例如: `install name1,name2,name3`
+- [ ] package config 新增 desc 字段用于指定 package 的描述，可以手动设置，为空时默认从 repository 中获取
+  - 没有在config, 但是 installed 里的 package 也会记录描述信息，方便查看
 
 ## search 结果展示 ✅
 
