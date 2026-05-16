@@ -75,7 +75,7 @@ internal/config/*
 
 - Modify: `internal/cli/app_test.go`
 
-- [ ] **Step 1: Replace the old config action test with subcommand route tests**
+- [x] **Step 1: Replace the old config action test with subcommand route tests**
 
 In `internal/cli/app_test.go`, replace `TestMain_ConfigActionRoutesToConfigCommand` with:
 
@@ -150,7 +150,7 @@ func TestMain_ConfigSubcommandsRouteToConfigCommand(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Add a help behavior test for bare config**
+- [x] **Step 2: Add a help behavior test for bare config**
 
 In `internal/cli/app_test.go`, add this test near the config tests:
 
@@ -178,7 +178,7 @@ func TestMain_ConfigWithoutSubcommandShowsHelp(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run config tests and verify RED**
+- [x] **Step 3: Run config tests and verify RED**
 
 Run:
 
@@ -212,7 +212,7 @@ If the test fails because of a typo, missing import, or compile error unrelated 
 
 - Modify: `internal/cli/config_cmd.go`
 
-- [ ] **Step 1: Replace action argument binding with subcommand registration**
+- [x] **Step 1: Replace action argument binding with subcommand registration**
 
 Rewrite `newConfigCmd` in `internal/cli/config_cmd.go` to this structure:
 
@@ -245,7 +245,7 @@ func newConfigCmd(handler CommandHandler) (*gcli.Command, func()) {
 }
 ```
 
-- [ ] **Step 2: Add a shared helper for no-argument config actions**
+- [x] **Step 2: Add a shared helper for no-argument config actions**
 
 Add this helper below `newConfigCmd` in `internal/cli/config_cmd.go`:
 
@@ -267,7 +267,7 @@ func newConfigActionCmd(action string, aliases []string, opts *ConfigOptions, ha
 
 Note: for `list`, this helper sets `Action: "list"` even when invoked as `config ls`, because `ls` is an alias of the `list` subcommand.
 
-- [ ] **Step 3: Add the get subcommand helper**
+- [x] **Step 3: Add the get subcommand helper**
 
 Add this helper below `newConfigActionCmd`:
 
@@ -290,7 +290,7 @@ func newConfigGetCmd(opts *ConfigOptions, handler CommandHandler) *gcli.Command 
 }
 ```
 
-- [ ] **Step 4: Add the set subcommand helper**
+- [x] **Step 4: Add the set subcommand helper**
 
 Add this helper below `newConfigGetCmd`:
 
@@ -315,7 +315,7 @@ func newConfigSetCmd(opts *ConfigOptions, handler CommandHandler) *gcli.Command 
 }
 ```
 
-- [ ] **Step 5: Run config tests and verify GREEN for subcommands**
+- [x] **Step 5: Run config tests and verify GREEN for subcommands**
 
 Run:
 
@@ -338,7 +338,7 @@ If `TestMain_ConfigWithoutSubcommandShowsHelp` fails because `gcli` writes comma
 - Modify: `internal/cli/app.go`
 - Test: `internal/cli/app_test.go`
 
-- [ ] **Step 1: Add a failing test for unknown config subcommand flags**
+- [x] **Step 1: Add a failing test for unknown config subcommand flags**
 
 Add this test near other config tests in `internal/cli/app_test.go`:
 
@@ -357,7 +357,7 @@ func TestMain_ConfigSubcommandRejectsUnknownFlag(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the new test and verify RED if current prevalidation misses it**
+- [x] **Step 2: Run the new test and verify RED if current prevalidation misses it**
 
 Run:
 
@@ -379,7 +379,7 @@ err == nil
 
 If it already fails with an error mentioning `bad`, keep the test and continue to Step 3; the production change may only need cleanup of config flag specs.
 
-- [ ] **Step 3: Add config subcommand flag specs**
+- [x] **Step 3: Add config subcommand flag specs**
 
 In `internal/cli/app.go`, replace the current empty config entry:
 
@@ -420,7 +420,7 @@ type flagSpec struct {
 }
 ```
 
-- [ ] **Step 4: Teach validateKnownFlags to descend into subcommands**
+- [x] **Step 4: Teach validateKnownFlags to descend into subcommands**
 
 In `internal/cli/app.go`, update `validateKnownFlags` so after it resolves the top-level command spec, it consumes one subcommand token when the current spec has `subs`.
 
@@ -474,7 +474,7 @@ func validateKnownFlags(args []string) error {
 
 This keeps the existing trailing-flag rule: once a non-flag positional argument appears after the command/subcommand, prevalidation stops and command-specific `validateNoFlagArgs` catches trailing flags.
 
-- [ ] **Step 5: Run config prevalidation tests and verify GREEN**
+- [x] **Step 5: Run config prevalidation tests and verify GREEN**
 
 Run:
 
@@ -496,7 +496,7 @@ ok   github.com/inherelab/eget/internal/cli
 - Modify: `internal/cli/app.go`
 - Modify: `internal/cli/app_test.go`
 
-- [ ] **Step 1: Run focused CLI tests**
+- [x] **Step 1: Run focused CLI tests**
 
 Run:
 
@@ -510,7 +510,7 @@ Expected:
 ok   github.com/inherelab/eget/internal/cli
 ```
 
-- [ ] **Step 2: Run full test suite**
+- [x] **Step 2: Run full test suite**
 
 Run:
 
@@ -524,7 +524,7 @@ Expected:
 所有 package 通过
 ```
 
-- [ ] **Step 3: Run manual config parse checks**
+- [x] **Step 3: Run manual config parse checks**
 
 Run:
 
@@ -545,7 +545,7 @@ config get global.target 能进入业务层
 
 If a command fails because local config does not exist or a config key is missing, that is acceptable only if the failure happens after CLI parsing and the error does not mention command/flag parsing.
 
-- [ ] **Step 4: Commit implementation**
+- [x] **Step 4: Commit implementation**
 
 Run:
 
@@ -566,7 +566,7 @@ Expected:
 
 - Modify: `docs/superpowers/plans/2026-05-16-config-subcommands.md`
 
-- [ ] **Step 1: Mark completed checkboxes**
+- [x] **Step 1: Mark completed checkboxes**
 
 After Task 1 through Task 4 pass, update every completed checkbox in this plan from:
 
@@ -580,7 +580,7 @@ to:
 - [x] **Step ...**
 ```
 
-- [ ] **Step 2: Commit plan progress**
+- [x] **Step 2: Commit plan progress**
 
 Run:
 
