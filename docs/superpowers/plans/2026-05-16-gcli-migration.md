@@ -877,7 +877,7 @@ git commit -m "test(cli): normalize assertions for gcli"
 - 修改：`go.sum`
 - 修改：任何仍 import `capp` 的 `internal/cli/*.go`
 
-- [ ] **步骤 1：查找残留 import**
+- [x] **步骤 1：查找残留 import**
 
 运行：
 
@@ -893,7 +893,7 @@ rg "cflag|capp" internal cmd
 
 删除所有 `github.com/gookit/goutil/cflag/capp` import 和 `capp.` 类型引用。
 
-- [ ] **步骤 2：整理模块依赖**
+- [x] **步骤 2：整理模块依赖**
 
 运行：
 
@@ -908,7 +908,7 @@ go mod tidy
 go.mod 不再因为 cflag/capp 保留额外依赖
 ```
 
-- [ ] **步骤 3：确认源码中没有 cflag/capp**
+- [x] **步骤 3：确认源码中没有 cflag/capp**
 
 运行：
 
@@ -922,7 +922,7 @@ rg "cflag|capp" internal cmd
 无输出
 ```
 
-- [ ] **步骤 4：运行全量测试**
+- [x] **步骤 4：运行全量测试**
 
 运行：
 
@@ -936,7 +936,7 @@ go test ./...
 所有 package 通过
 ```
 
-- [ ] **步骤 5：提交清理**
+- [x] **步骤 5：提交清理**
 
 运行：
 
