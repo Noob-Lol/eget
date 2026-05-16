@@ -82,7 +82,7 @@ service 和业务行为必须保持不变。
 - 修改：`go.mod`
 - 修改：`go.sum`
 
-- [ ] **步骤 1：添加依赖**
+- [x] **步骤 1：添加依赖**
 
 运行：
 
@@ -97,7 +97,7 @@ go.mod 包含 github.com/gookit/gcli/v3 v3.3.1
 go.sum 包含 gcli 校验信息
 ```
 
-- [ ] **步骤 2：迁移代码前确认现有测试仍通过**
+- [x] **步骤 2：迁移代码前确认现有测试仍通过**
 
 运行：
 
@@ -111,7 +111,7 @@ go test ./internal/cli
 ok   github.com/inherelab/eget/internal/cli
 ```
 
-- [ ] **步骤 3：提交依赖变更**
+- [x] **步骤 3：提交依赖变更**
 
 运行：
 
