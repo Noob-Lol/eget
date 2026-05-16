@@ -958,7 +958,7 @@ git commit -m "chore(cli): remove cflag usage"
 - 仅必要时修改：`docs/superpowers/specs/2026-05-14-sdk-download-design.md`
 - 仅必要时修改：`docs/superpowers/specs/2026-05-15-gcli-migration-design.md`
 
-- [ ] **步骤 1：手动运行命令矩阵**
+- [x] **步骤 1：手动运行命令矩阵**
 
 运行：
 
@@ -979,7 +979,7 @@ go run ./cmd/eget search --limit 2 ripgrep language:go
 
 对于依赖网络的命令，provider/network 错误可以接受；flag 或参数解析回归不可接受。
 
-- [ ] **步骤 2：确认 SDK 设计仍引用 gcli 前置条件**
+- [x] **步骤 2：确认 SDK 设计仍引用 gcli 前置条件**
 
 运行：
 
@@ -993,7 +993,7 @@ rg -n "gcli|cflag|sdk install" docs/superpowers/specs/2026-05-14-sdk-download-de
 SDK 设计文档说明 gcli 迁移是前置条件，并禁止在 cflag 下硬编码解析嵌套命令
 ```
 
-- [ ] **步骤 3：运行最终测试**
+- [x] **步骤 3：运行最终测试**
 
 运行：
 
@@ -1007,7 +1007,7 @@ go test ./...
 所有 package 通过
 ```
 
-- [ ] **步骤 4：如文档有变更则提交**
+- [x] **步骤 4：如文档有变更则提交**
 
 如果步骤 2 需要修改文档，运行：
 
