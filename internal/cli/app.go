@@ -189,6 +189,7 @@ func validateNoFlagArgs(args []string) error {
 type flagSpec struct {
 	bools  map[string]bool
 	values map[string]bool
+	subs   map[string]flagSpec
 }
 
 var commandAliases = map[string]string{
@@ -233,7 +234,15 @@ var commandFlagSpecs = map[string]flagSpec{
 		values: setOf("sort", "order", "limit", "l"),
 	},
 	"uninstall": {},
-	"config":    {},
+	"config": {
+		subs: map[string]flagSpec{
+			"init": {},
+			"list": {},
+			"ls":   {},
+			"get":  {},
+			"set":  {},
+		},
+	},
 }
 
 func setOf(names ...string) map[string]bool {
@@ -253,6 +262,15 @@ func validateKnownFlags(args []string) error {
 	if !ok {
 		return nil
 	}
+	if len(spec.subs) > 0 && start < len(args) {
+		subName := args[start]
+		if !strings.HasPrefix(subName, "-") {
+			if subSpec, ok := spec.subs[subName]; ok {
+				spec = subSpec
+				start++
+			}
+		}
+	}
 	for i := start; i < len(args); i++ {
 		arg := args[i]
 		if arg == "--" {
@@ -264,6 +282,9 @@ func validateKnownFlags(args []string) error {
 		name := strings.TrimLeft(arg, "-")
 		if eq := strings.IndexByte(name, '='); eq >= 0 {
 			name = name[:eq]
+		}
+		if name == "help" || name == "h" {
+			continue
 		}
 		if spec.bools[name] {
 			continue
