@@ -582,7 +582,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 8: 提交**
+- [x] **Step 8: 提交**
 
 Run:
 
@@ -1570,7 +1570,7 @@ git commit -m "test(sdk): cover sdk install workflow"
 - Modify: `docs/TODO.md`
 - Optional Modify: `docs/superpowers/specs/2026-05-14-sdk-download-design.md`
 
-- [ ] **Step 1: 更新 README**
+- [x] **Step 1: 更新 README**
 
 添加简短章节：
 
@@ -1590,7 +1590,7 @@ eget sdk 只负责下载和安装，不负责 use/env/PATH。
 如需环境切换，配合 kite xenv tools index 和 xenv use。
 ```
 
-- [ ] **Step 2: 更新中文 README**
+- [x] **Step 2: 更新中文 README**
 
 同步中文说明，特别强调：
 
@@ -1600,26 +1600,26 @@ eget sdk 只负责下载和安装，不负责 use/env/PATH。
 安装后可运行 kite xenv tools index
 ```
 
-- [ ] **Step 3: 更新 docs/DOCS.md**
+- [x] **Step 3: 更新 docs/DOCS.md**
 
 补充完整配置字段和命令说明。
 
-- [ ] **Step 4: 更新 example config**
+- [x] **Step 4: 更新 example config**
 
 确认 `docs/example.eget.toml` 中 SDK 示例与真实实现字段一致。
 
-- [ ] **Step 5: 更新 TODO checkbox**
+- [x] **Step 5: 更新 TODO checkbox**
 
 在 `docs/TODO.md` 将 SDK 下载功能对应项标记为完成或拆分成已完成/后续项。
 
 如果仍有后续项，例如 `pkg/sdk`、checksum、更多 SDK provider，新增明确后续 TODO，不要把半成品描述为完成。
 
-- [ ] **Step 6: 运行文档相关检查**
+- [x] **Step 6: 运行文档相关检查**
 
 Run:
 
 ```bash
-rg -n "sdk_download_ext|download_ext" README.md README.zh-CN.md docs docs/example.eget.toml
+rg -n "sdk_download_ext|download_ext" README.md README.zh-CN.md docs/DOCS.md docs/TODO.md docs/example.eget.toml
 rg -n "go 1\\.21\\.1" README.md README.zh-CN.md docs/DOCS.md docs/example.eget.toml
 ```
 
@@ -1629,7 +1629,7 @@ Expected:
 不再出现旧字段 sdk_download_ext/download_ext；用户文档不把 go 1.21.1 描述为支持格式
 ```
 
-- [ ] **Step 7: 全量测试**
+- [x] **Step 7: 全量测试**
 
 Run:
 
@@ -1691,7 +1691,7 @@ Expected:
 Run:
 
 ```bash
-rg -n "sdk_download_ext|download_ext" internal docs README.md README.zh-CN.md
+rg -n "sdk_download_ext|download_ext" internal README.md README.zh-CN.md docs/DOCS.md docs/TODO.md docs/example.eget.toml
 rg -n "go 1\\.21\\.1" README.md README.zh-CN.md docs/DOCS.md docs/example.eget.toml
 ```
 

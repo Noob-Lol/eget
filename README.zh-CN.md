@@ -17,6 +17,7 @@
 - 多来源安装：支持从 GitHub、GitLab、Gitea/Forgejo、SourceForge、直接下载 URL 和本地文件安装或下载二进制资源。
 - 自动选择与提取：按系统架构、资源关键词或正则筛选 release asset，支持 SHA-256 校验和常见归档格式提取。
 - 托管包管理：通过 `add`、`list`、`update`、`uninstall` 管理常用工具，记录安装状态并支持批量检查更新。
+- SDK 下载：支持 Go、Node 等多版本 SDK 归档下载，带索引缓存、断点续传和独立 SDK 安装记录。
 - 并发下载：大文件会自动使用 HTTP Range 分片并发下载，安装或更新全部包时会自动批量并发下载。
 - 查询与搜索：支持查询 GitHub release 信息、SourceForge 最新版本和 assets，并使用 GitHub 搜索语法查找仓库。
 - 缓存与代理：支持下载缓存、API 响应缓存、`proxy_url` 和 `ghproxy`，适合网络受限或重复安装场景。
@@ -106,6 +107,21 @@ eget download --file "*.txt" owner/repo
 eget download --file "bin/*" owner/repo
 eget download --extract-all --to ./dist windirstat/windirstat
 ```
+
+### SDK 命令示例
+
+```bash
+eget sdk install go@1.22.0
+eget sdk install go:1.22 node:20.11.1
+eget sdk install --force go@1.22.0
+eget sdk list
+eget sdk list --json
+eget sdk remove go@1.22.0
+eget sdk index refresh go
+eget sdk index show go
+```
+
+`eget sdk` 只负责下载和解压安装 SDK，不会修改 `PATH`、不会写 shell hook、不会管理当前激活版本，也不会写 `.xenv.toml`。如需环境切换，可在安装后配合 `kite xenv tools index` 和 `kite xenv use`。
 
 ### 查询命令示例
 
@@ -217,6 +233,16 @@ eget config set global.target ~/.local/bin
 
 - 先检查目标是否有新版本，再更新已配置或已安装的目标；也可通过 `--all` 更新全部托管包。
 
+`sdk`
+
+- 下载并安装多版本 SDK 到 `global.sdk_target`，支持 `.part` 断点续传，并用独立的 `sdk.installed.json` 记录安装状态。
+- 支持的安装目标格式为 `name`、`name@latest`、`name:latest`、`name@1.22`、`name:1.22`、`name@1.22.0`、`name:1.22.0`。刻意不支持 `go 1.22.0` 这种空格版本格式。
+- `sdk install` 支持一次传入多个 SDK target，首版按顺序串行安装。
+- `sdk list` 读取 SDK 安装记录，可加 `--json` 输出 JSON。
+- `sdk remove <name@version>` 只删除 SDK 安装记录中存在、且通过 SDK 根目录安全校验的目录。
+- `sdk index list/show/refresh/clear` 管理规范化后的 SDK 索引缓存 JSON。
+- 首版内置示例覆盖 Go 和 Node。其它 SDK 只要归档命名能用 `url_template`、`filename_pattern`、`os_map`、`arch_map`、`ext_map` 和可选 HTML/JSON index 描述，也可以通过配置使用。
+
 `config`(alias: `cfg`)
 
 - 支持 `init`、`list` / `ls`、`get KEY`、`set KEY VALUE`。
@@ -274,6 +300,14 @@ SourceForge 查询目标使用 `sourceforge:<project>` 或 `sourceforge:<project
 - `--order`: 指定排序方向，支持 `desc`、`asc`。
 - `--json`, `-j`: 使用 JSON 输出结果，方便脚本处理。
 
+`sdk` 支持选项：
+
+- `sdk install --force`: 安全删除已有 SDK 目标目录后重新安装。
+- `sdk list --json`: 用 JSON 输出 SDK 安装记录。
+- `sdk index list --json`: 用 JSON 输出 SDK 索引缓存摘要。
+- `sdk index refresh --all`: 刷新所有配置了 `index_url` 的 SDK 索引。
+- `sdk index clear --all`: 删除全部 SDK 索引缓存 JSON。
+
 全局选项：
 
 - `-v`, `--verbose`: 输出更详细的调试信息，例如请求的 API、响应摘要、asset 选择、缓存命中和关键流程节点。
@@ -284,8 +318,9 @@ SourceForge 查询目标使用 `sourceforge:<project>` 或 `sourceforge:<project
 - `install --add` 仅对 repo 目标生效，并在安装成功后追加托管包配置。
 - `global.gui_target` 只用于免安装 GUI 应用。`.msi`、`setup.exe` 等 GUI 安装器会被启动，但不会记录最终安装目录。
 - `download` 默认保存原始下载文件；只有设置了 `--file` 或 `--extract-all` 才会自动提取归档内容。
+- `sdk` 使用 `global.sdk_target` 作为安装根目录，使用 `{cache_dir}/sdk-downloads` 保存 SDK 归档下载缓存；断点续传状态由 `.part` 和 `.meta.json` 维护。
 - 归档提取当前支持 `zip`、`tar.*` 以及 `7z`。当 `global.sys7z_path` 或 `PATH` 提供 `7z`、`7zz`、`7za` 时，`.7z`、`.rar`、`.msi`、`.cab`、`.iso` 以及 `--extract-all` 的 `.exe` 会优先使用系统 7z；`tar.*` 归档继续使用内置 Go 解压流程。
-- 参数顺序遵循 `cflag/capp` 约束，必须是 `CMD --OPTIONS... ARGUMENTS...`。
+- 参数顺序遵循 CLI 解析器约束，必须是 `CMD --OPTIONS... ARGUMENTS...`。
 
 ## 配置
 
@@ -301,6 +336,7 @@ SourceForge 查询目标使用 `sourceforge:<project>` 或 `sourceforge:<project
 - `[global]`
 - `["owner/repo"]`
 - `[packages.<name>]`
+- `[sdk.<name>]`
 
 示例：
 
@@ -314,6 +350,8 @@ sys7z_path = ""
 chunk_concurrency = 0
 batch_concurrency = 0
 ignore_update_packages = []
+sdk_target = "~/sdks"
+sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
 [api_cache]
 enable = false
@@ -344,6 +382,29 @@ asset_filters = ["x64", "PerUser", "setup"]
 repo = "gitea:codeberg.org/forgejo/forgejo"
 system = "linux/amd64"
 asset_filters = ["linux", "amd64"]
+
+[sdk.go]
+aliases = ["golang"]
+target = "gosdk/go{version}"
+url_template = "https://mirrors.aliyun.com/golang/go{version}.{os}-{arch}.{ext}"
+index_url = "https://mirrors.aliyun.com/golang/"
+index_format = "html"
+filename_pattern = "go{version}.{os}-{arch}.{ext}"
+strip_components = 1
+ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
+
+[sdk.node]
+aliases = ["nodejs"]
+target = "nodejs/node{version}"
+url_template = "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{ext}"
+index_url = "https://registry.npmmirror.com/binary.html"
+index_format = "html"
+index_path_prefix = "/binaries/node/"
+filename_pattern = "node-v{version}-{os}-{arch}.{ext}"
+strip_components = 1
+os_map = { windows = "win", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64", 386 = "x86" }
+ext_map = { windows = "zip", linux = "tar.xz", darwin = "tar.gz" }
 ```
 
 常见字段：
@@ -355,6 +416,8 @@ asset_filters = ["linux", "amd64"]
 - `sys7z_path`
 - `chunk_concurrency`
 - `batch_concurrency`
+- `sdk_target`
+- `sdk_ext_map`
 - `api_cache.enable`
 - `api_cache.cache_time`
 - `ghproxy.enable`
@@ -371,6 +434,18 @@ asset_filters = ["linux", "amd64"]
 - `is_gui`
 - `quiet`
 - `upgrade_only`
+- `sdk.<name>.aliases`
+- `sdk.<name>.target`
+- `sdk.<name>.url_template`
+- `sdk.<name>.index_url`
+- `sdk.<name>.index_format`
+- `sdk.<name>.index_parser`
+- `sdk.<name>.index_path_prefix`
+- `sdk.<name>.filename_pattern`
+- `sdk.<name>.strip_components`
+- `sdk.<name>.os_map`
+- `sdk.<name>.arch_map`
+- `sdk.<name>.ext_map`
 
 默认初始化配置：
 
@@ -409,8 +484,17 @@ eget config init
 - `download` 在未指定 `--to` 时默认使用 `cache_dir`
 - `install`/`download` 对远程 URL 的原始下载内容会优先复用 `cache_dir` 中的缓存文件
 - `ignore_update_packages` 用于在 `list --outdated`、`update --check` 和 `update --all` 中跳过指定 package 名称
+- `sdk_target` 是 SDK 安装根目录。SDK 配置里的相对 `target` 会基于该目录解析
+- `sdk_ext_map` 是按 Go OS 名称配置的默认 SDK 归档扩展名；SDK 级别 `ext_map` 会覆盖它
+- `sdk.<name>.target` 是安装目录模板，支持 `{name}`、`{version}`、`{os}`、`{arch}`、`{ext}`
+- `sdk.<name>.url_template` 是精确版本安装时使用的归档 URL 模板
+- `sdk.<name>.index_url` 指向 HTML 或 JSON 索引，用于 `latest` 和 `go:1.22` 这种前缀版本解析
+- `sdk.<name>.index_format = "html"` 会解析页面里的 `<a href>` 链接。JSON 索引需要配置受支持的 `index_parser`，当前为 `go-json` 或 `node-json`
+- `sdk.<name>.filename_pattern` 用于从 HTML index 解析归档文件名
+- `sdk.<name>.strip_components` 用于解压时剥离归档内路径前缀，例如去掉顶层 `go/` 或 `node-v.../` 目录
 
 安装记录 store 默认也会写入 `~/.config/eget/installed.toml`。
+SDK 安装记录 store 默认写入 `~/.config/eget/sdk.installed.json`。
 
 ## 构建与测试
 
@@ -424,11 +508,12 @@ make test
 当前版本已经重构为显式子命令 CLI，入口在 `cmd/eget/main.go`，业务逻辑集中在 `internal/`。
 
 - `cmd/eget`: 命令入口
-- `internal/cli`: `capp` 命令注册与参数绑定
+- `internal/cli`: `gcli` 命令注册与参数绑定
 - `internal/app`: install/add/list/update/config 用例编排
 - `internal/install`: 查找、下载、校验、提取执行链路
 - `internal/config`: 配置加载、合并、写回
 - `internal/installed`: 安装记录存储
+- `internal/sdk`: SDK target 解析、索引缓存、断点续传、解压安装和 SDK 安装记录
 - `internal/source/github`: GitHub 资源查找
 - `internal/source/forge`: GitLab/Gitea/Forgejo 资源查找
 

@@ -29,7 +29,7 @@
   - `--extract-all` 使用 Go 内置解压时单次遍历并流式写出，避免先缓存所有文件内容
 - [ ] 新增 global.group_packages 用于配置 package 分组（详情见下面）
 - [x] 全局配置 新增 global.ignore_update_packages 用于配置忽略检查/更新的 packages
-- [ ] 新增支持 sdk 下载安装，需要支持多版本。例如 go, node, python 等 sdk（详情见下面）
+- [x] 新增支持 sdk 下载安装，需要支持多版本。例如 go, node 等 sdk（详情见下面）
 - [x] 增强 install/update 的 target 参数支持多个目标。eg: `install name1 name2 ...`
   - 只输入一个参数时，也支持使用逗号分隔，例如: `install name1,name2,name3`
 - [ ] package config 新增 desc 字段用于指定 package 的描述，可以手动设置，为空时默认从 repository 中获取
@@ -64,58 +64,59 @@ optional = ["optional1", "optional2"]
 dev = ["dev1", "dev2"]
 ```
 
-## 新增支持 sdk 下载安装，需要支持多版本 ⏳
+## 新增支持 sdk 下载安装，需要支持多版本 ✅
 
-新增支持 sdk 下载安装，需要支持多版本。例如 go, node, python 等 sdk（详情见下面）
-- 支持指定版本安装, 安装到每个sdk的目录下
-- 支持自动检测并安装最新版本
+已新增 `eget sdk` 命令，首版支持 SDK 多版本下载、HTML/JSON index 缓存、断点续传、解压安装和独立 `sdk.installed.json`。
 
-设想是通过配置 url template 来指定 sdk 下载地址，例如：`https://go.dev/dl/go1.21.1.windows-amd64.zip` 来指定 go 下载地址
+已支持：
+
+- `sdk install <target...>`：串行安装一个或多个 SDK target。
+- `sdk list [name]` / `sdk list --json`：查看 SDK 安装记录。
+- `sdk remove <name@version>`：按安装记录和路径安全校验删除指定版本。
+- `sdk index list/show/refresh/clear`：管理解析后的索引缓存 JSON。
+- 目标格式：`go`、`go@latest`、`go:latest`、`go@1.22`、`go:1.22`、`go@1.22.0`、`go:1.22.0`。
+- 不支持 `go 1.22.0` 这种空格版本格式，为后续支持多个 SDK 同时下载保留参数位置。
+- 首版默认示例覆盖 Go 和 Node。其它 SDK 只要能用配置描述归档文件名和索引，也可以使用同一套能力。
+- `eget sdk` 只负责下载和安装，不负责 `use/env/PATH/shell hook`，环境切换交给 `kite xenv` 等专用工具。
+
+配置示例：
 
 ```toml
 [global]
-sdk_target = "path/to/sdk"
-# 从远程下载的 sdk 工具包默认格式
-sdk_download_ext = {
-  windows = "zip",
-  linux = "tar.gz",
-  darwin = "tar.gz"
-}
+sdk_target = "~/sdks"
+sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
-[sdk]
 [sdk.go]
 aliases = ["golang"]
 # 如果是相对路径，则是基于 global.sdk_target 目录
 target = "gosdk/go{version}"
-# mirror https://mirrors.aliyun.com/golang/
-# eg: https://mirrors.aliyun.com/golang/go1.21.1.windows-amd64.zip
-url_template = "https://mirrors.aliyun.com/golang/go{version}.{os}-{arch}.{download_ext}"
-# eg: https://golang.org/dl/go1.21.1.windows-amd64.zip
-# url_template = "https://golang.org/dl/go{version}.{os}-{arch}.{download_ext}"
+url_template = "https://mirrors.aliyun.com/golang/go{version}.{os}-{arch}.{ext}"
+index_url = "https://mirrors.aliyun.com/golang/"
+index_format = "html"
+filename_pattern = "go{version}.{os}-{arch}.{ext}"
+strip_components = 1
+ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
 [sdk.node]
-# index_url 用于指定 nodejs 版本/下载地址的索引页面（html,json 格式都支持）
-# 配置了 index_url 时
-#  1. 支持版本搜索
-#  2. 会从 index_url 中获取 nodejs 下载地址, 而不是从 url_template 构建下载地址
-# 无 index_url 时, 必须指定完整的 {version} 版本号才能下载
-index_url = "https://registry.npmmirror.com/binary.html"
 aliases = ["nodejs"]
-# 如果是相对路径，则是基于 global.sdk_target 目录
 target = "nodejs/node{version}"
-download_ext = {windows = "zip", linux = "tar.gz"}
-
-# mirror, see https://registry.npmmirror.com/binary.html 查看二进制文件列表 node,python,bun,deno
-url_template = "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{download_ext}"
-# eg: https://nodejs.org/dist/v18.16.0/node-v18.16.0-x64.msi
-# url_template = "https://nodejs.org/dist/v{version}/node-v{version}-{os}-{arch}.{download_ext}"
+url_template = "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{ext}"
+index_url = "https://registry.npmmirror.com/binary.html"
+index_format = "html"
+index_path_prefix = "/binaries/node/"
+filename_pattern = "node-v{version}-{os}-{arch}.{ext}"
+strip_components = 1
+os_map = { windows = "win", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64", 386 = "x86" }
+ext_map = { windows = "zip", linux = "tar.xz", darwin = "tar.gz" }
 ```
 
 url template 中的占位符有
+- `{name}`
 - `{version}`
 - `{os}`
 - `{arch}`
-- `{download_ext}`
+- `{ext}`
 
 target 目标目录结构示例：
 
@@ -124,3 +125,10 @@ target 目标目录结构示例：
 |- gosdk/go{version}
 |- nodejs/node{version}
 ```
+
+后续可增强：
+
+- [ ] 按稳定后的 `internal/sdk` 模型新增 `pkg/sdk` 导出包，便于 `kite xenv` 等外部库复用下载、索引和安装能力。
+- [ ] 增加 checksum 校验。
+- [ ] 扩展更多内置 JSON index parser 或 SDK provider 示例。
+- [ ] 视实际使用情况为 `sdk.installed.json` 增加文件锁。
