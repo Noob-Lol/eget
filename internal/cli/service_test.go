@@ -819,6 +819,20 @@ func TestHandleSDKIndexActions(t *testing.T) {
 	defer ccolor.SetOutput(os.Stdout)
 	assert.NoErr(t, svc.handle("sdk.index.list", &SDKIndexOptions{Action: "list"}))
 	assert.Contains(t, out.String(), "go")
+
+	origStdout := os.Stdout
+	r, w, err := os.Pipe()
+	assert.NoErr(t, err)
+	defer r.Close()
+	defer w.Close()
+	os.Stdout = w
+	defer func() { os.Stdout = origStdout }()
+	assert.NoErr(t, svc.handle("sdk.index.show", &SDKIndexOptions{Action: "show", Name: "go"}))
+	_ = w.Close()
+	var jsonOut bytes.Buffer
+	_, err = io.Copy(&jsonOut, r)
+	assert.NoErr(t, err)
+	assert.Contains(t, jsonOut.String(), `"sdk": "go"`)
 }
 
 func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {

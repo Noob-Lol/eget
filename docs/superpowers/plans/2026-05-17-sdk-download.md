@@ -1490,7 +1490,7 @@ git commit -m "feat(sdk): add sdk cli commands"
 - Modify: `internal/cli/service_test.go`
 - Optional Create: `internal/sdk/testdata/*`
 
-- [ ] **Step 1: 写本地 HTTP server 集成测试**
+- [x] **Step 1: 写本地 HTTP server 集成测试**
 
 在 `internal/sdk/service_test.go` 新增：
 
@@ -1504,7 +1504,7 @@ service Install go@1.21.1
 
 测试 archive 可用 zip 简化；不要依赖真实外网。
 
-- [ ] **Step 2: 写断点续传集成测试**
+- [x] **Step 2: 写断点续传集成测试**
 
 模拟：
 
@@ -1522,7 +1522,7 @@ GET 请求包含 Range
 完整 archive 解压成功
 ```
 
-- [ ] **Step 3: 写 CLI 级 smoke 测试**
+- [x] **Step 3: 写 CLI 级 smoke 测试**
 
 使用临时配置和 fake service，确认：
 
@@ -1534,7 +1534,7 @@ eget sdk index show go
 
 至少覆盖 CLI 到 handler 的数据流，不需要真实下载。
 
-- [ ] **Step 4: 运行全量测试**
+- [x] **Step 4: 运行全量测试**
 
 Run:
 
@@ -1548,7 +1548,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 Run:
 

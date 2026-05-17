@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -272,6 +273,127 @@ func TestServiceRefreshAllIndexes(t *testing.T) {
 	assert.Eq(t, 0, len(infos))
 }
 
+func TestServiceInstallFromLocalHTTPServer(t *testing.T) {
+	root := t.TempDir()
+	archive := sdkZipBytes(t, map[string]string{"go/bin/go": "go"})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/golang/":
+			_, _ = io.WriteString(w, `<a href="go1.21.1.linux-amd64.zip">go</a>`)
+		case "/golang/go1.21.1.linux-amd64.zip":
+			w.Header().Set("Content-Length", stringLen(archive))
+			_, _ = w.Write(archive)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	cfg := testSDKConfig(root)
+	goSDK := cfg.SDK["go"]
+	goSDK.URLTemplate = stringPtr(server.URL + "/golang/go{version}.{os}-{arch}.{ext}")
+	goSDK.IndexURL = stringPtr(server.URL + "/golang/")
+	cfg.SDK["go"] = goSDK
+	store := Store{Path: filepath.Join(root, "sdk.installed.json")}
+	svc := Service{
+		Config:     cfg,
+		Store:      store,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "cache", "sdk-index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+		Now:        func() time.Time { return time.Date(2026, 5, 17, 16, 0, 0, 0, time.UTC) },
+	}
+
+	result, err := svc.Install(context.Background(), "go@1.21.1", InstallOptions{})
+	assert.NoErr(t, err)
+	assert.Eq(t, "1.21.1", result.Version)
+
+	data, err := os.ReadFile(filepath.Join(result.Path, "bin", "go"))
+	assert.NoErr(t, err)
+	assert.Eq(t, "go", string(data))
+	entries, err := store.List("go")
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(entries))
+	assert.Eq(t, result.Path, entries[0].Path)
+}
+
+func TestServiceInstallResumesArchiveDownload(t *testing.T) {
+	root := t.TempDir()
+	archive := sdkZipBytes(t, map[string]string{"go/bin/go": "go"})
+	var downloadURL string
+	var rangeHeader string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			w.Header().Set("Accept-Ranges", "bytes")
+			w.Header().Set("ETag", `"sdk-zip"`)
+			w.Header().Set("Content-Length", stringLen(archive))
+			return
+		}
+		if r.URL.Path != "/golang/go1.21.1.linux-amd64.zip" {
+			http.NotFound(w, r)
+			return
+		}
+		rangeHeader = r.Header.Get("Range")
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("ETag", `"sdk-zip"`)
+		if rangeHeader == "" {
+			w.Header().Set("Content-Length", stringLen(archive))
+			_, _ = w.Write(archive)
+			return
+		}
+		start := len(archive) / 2
+		w.Header().Set("Content-Length", stringLen(archive[start:]))
+		w.Header().Set("Content-Range", "bytes "+intString(start)+"-"+intString(len(archive)-1)+"/"+intString(len(archive)))
+		w.WriteHeader(http.StatusPartialContent)
+		_, _ = w.Write(archive[start:])
+	}))
+	defer server.Close()
+	downloadURL = server.URL + "/golang/go1.21.1.linux-amd64.zip"
+
+	cfg := testSDKConfig(root)
+	goSDK := cfg.SDK["go"]
+	goSDK.URLTemplate = stringPtr(server.URL + "/golang/go{version}.{os}-{arch}.{ext}")
+	cfg.SDK["go"] = goSDK
+	svc := Service{
+		Config:     cfg,
+		Store:      Store{Path: filepath.Join(root, "sdk.installed.json")},
+		IndexCache: IndexCache{Dir: filepath.Join(root, "cache", "sdk-index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+	}
+	req := DownloadRequest{
+		URL:      downloadURL,
+		CacheDir: svc.cacheDir(),
+		SDK:      "go",
+		Version:  "1.21.1",
+		Filename: "go1.21.1.linux-amd64.zip",
+	}
+	partPath := sdkDownloadPartPath(req)
+	if err := os.MkdirAll(filepath.Dir(partPath), 0o755); err != nil {
+		t.Fatalf("mkdir part dir: %v", err)
+	}
+	if err := os.WriteFile(partPath, archive[:len(archive)/2], 0o644); err != nil {
+		t.Fatalf("write part: %v", err)
+	}
+	if err := saveDownloadMeta(sdkDownloadMetaPath(req), downloadMeta{
+		Schema:   1,
+		URL:      req.URL,
+		Filename: req.Filename,
+		Size:     int64(len(archive)),
+		ETag:     `"sdk-zip"`,
+	}); err != nil {
+		t.Fatalf("save download meta: %v", err)
+	}
+
+	result, err := svc.Install(context.Background(), "go@1.21.1", InstallOptions{})
+	assert.NoErr(t, err)
+	assert.True(t, result.Resumed)
+	assert.Eq(t, "bytes="+intString(len(archive)/2)+"-", rangeHeader)
+	data, err := os.ReadFile(filepath.Join(result.Path, "bin", "go"))
+	assert.NoErr(t, err)
+	assert.Eq(t, "go", string(data))
+}
+
 func testSDKConfig(root string) *cfgpkg.File {
 	cfg := cfgpkg.NewFile()
 	cfg.Global.SDKTarget = stringPtr(filepath.Join(root, "sdks"))
@@ -289,6 +411,13 @@ func testSDKConfig(root string) *cfgpkg.File {
 
 func writeSDKZip(t *testing.T, path string, files map[string]string) {
 	t.Helper()
+	if err := os.WriteFile(path, sdkZipBytes(t, files), 0o644); err != nil {
+		t.Fatalf("write zip: %v", err)
+	}
+}
+
+func sdkZipBytes(t *testing.T, files map[string]string) []byte {
+	t.Helper()
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 	for name, content := range files {
@@ -303,7 +432,13 @@ func writeSDKZip(t *testing.T, path string, files map[string]string) {
 	if err := zw.Close(); err != nil {
 		t.Fatalf("close zip: %v", err)
 	}
-	if err := os.WriteFile(path, buf.Bytes(), 0o644); err != nil {
-		t.Fatalf("write zip: %v", err)
-	}
+	return buf.Bytes()
+}
+
+func stringLen(data []byte) string {
+	return intString(len(data))
+}
+
+func intString(value int) string {
+	return strconv.Itoa(value)
 }
