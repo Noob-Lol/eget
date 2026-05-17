@@ -9,7 +9,7 @@ type UninstallOptions struct {
 func newUninstallCmd(handler CommandHandler) (*gcli.Command, func()) {
 	opts := &UninstallOptions{}
 	cmd := gcli.NewCommand("uninstall", "Uninstall a managed package or repo")
-	cmd.Aliases = []string{"uni", "rm"}
+	cmd.Aliases = []string{"uni", "rm", "remove"}
 	cmd.Config = func(c *gcli.Command) {
 		c.AddArg("target", "Package name or repo to uninstall", true)
 	}

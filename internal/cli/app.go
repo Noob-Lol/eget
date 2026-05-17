@@ -93,7 +93,7 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 	inner := gcli.NewApp(gcli.NotExitOnEnd())
 	inner.Name = "eget"
 	inner.Desc = fmt.Sprintf(
-		"Easy install and download tools from GitHub\n  (%s, %s)",
+		"Easy install and download tools from GitHub, SourceForge and more\n  (%s, %s)",
 		gitHash, buildTime,
 	)
 	inner.Version = buildVersionString()

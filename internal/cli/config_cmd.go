@@ -12,11 +12,8 @@ func newConfigCmd(handler CommandHandler) (*gcli.Command, func()) {
 	opts := &ConfigOptions{}
 	cmd := gcli.NewCommand("config", "Manage configuration")
 	cmd.Aliases = []string{"cfg"}
-	cmd.Help = `<info>Config actions</>:
-  init                Initialize the config file with default values
+	cmd.Help = `  init                Initialize the config file with default values
   list | ls           Print current config values and file status
-  get KEY             Print one config value
-  set KEY VALUE       Update one config value
 
 <info>Examples</>:
   eget config init
