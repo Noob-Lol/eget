@@ -253,11 +253,33 @@ func (s Service) resolveInstallRequestWithConfig(cfg *cfgpkg.File, target string
 		return repo, opts, nil
 	}
 
-	opts, err := s.resolveInstallOptionsWithConfig(cfg, target, cfgpkg.Section{}, cli, preferCacheDir)
+	pkg := packageSectionForRepoTarget(cfg, target)
+	opts, err := s.resolveInstallOptionsWithConfig(cfg, target, pkg, cli, preferCacheDir)
 	if err != nil {
 		return "", install.Options{}, err
 	}
 	return target, opts, nil
+}
+
+func packageSectionForRepoTarget(cfg *cfgpkg.File, target string) cfgpkg.Section {
+	targetRepo, err := install.NormalizeRepoTarget(target)
+	if err != nil {
+		return cfgpkg.Section{}
+	}
+	for _, pkg := range cfg.Packages {
+		repo := util.DerefString(pkg.Repo)
+		if repo == "" {
+			continue
+		}
+		normalized, err := install.NormalizeRepoTarget(repo)
+		if err != nil {
+			continue
+		}
+		if normalized == targetRepo {
+			return pkg
+		}
+	}
+	return cfgpkg.Section{}
 }
 
 func (s Service) installResolvedTarget(runTarget string, opts install.Options) (RunResult, error) {
@@ -427,6 +449,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		DownloadOnly:     boolOpt(cli.DownloadOnly),
 		File:             stringOpt(cli.ExtractFile),
 		IsGUI:            boolOpt(cli.IsGUI),
+		Name:             stringOpt(cli.Name),
 		Quiet:            boolOpt(cli.Quiet),
 		ShowHash:         boolOpt(cli.Hash),
 		Source:           boolOpt(cli.Source),
@@ -492,7 +515,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 
 	return install.Options{
 		Tag:                 merged.Tag,
-		Name:                cli.Name,
+		Name:                merged.Name,
 		Source:              merged.Source,
 		SourcePath:          merged.SourcePath,
 		Sys7zPath:           sys7zPath,

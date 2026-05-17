@@ -614,6 +614,76 @@ asset_filters = ["windows"]
 	}
 }
 
+func TestInstallTargetAppliesManagedPackageOptionsWhenTargetIsRepo(t *testing.T) {
+	cfg := mustLoadFromString(t, `
+[packages.erd]
+repo = "solidiquis/erdtree"
+name = "erd"
+file = "erd"
+asset_filters = ["musl"]
+`)
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:            "https://github.com/solidiquis/erdtree/releases/download/v3.1.2/erdtree.tar.gz",
+			ExtractedFiles: []string{"./erd"},
+		},
+	}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("solidiquis/erdtree", install.Options{})
+	if err != nil {
+		t.Fatalf("install target: %v", err)
+	}
+
+	if runner.target != "solidiquis/erdtree" {
+		t.Fatalf("expected repo target to be installed, got %q", runner.target)
+	}
+	if runner.opts.Name != "erd" {
+		t.Fatalf("expected package name to be merged, got %q", runner.opts.Name)
+	}
+	if runner.opts.ExtractFile != "erd" {
+		t.Fatalf("expected package file to be merged, got %q", runner.opts.ExtractFile)
+	}
+	if len(runner.opts.Asset) != 1 || runner.opts.Asset[0] != "musl" {
+		t.Fatalf("expected package asset filter to be merged, got %#v", runner.opts.Asset)
+	}
+}
+
+func TestInstallTargetAllowsCLINameToOverrideManagedPackageName(t *testing.T) {
+	cfg := mustLoadFromString(t, `
+[packages.erd]
+repo = "solidiquis/erdtree"
+name = "erd"
+file = "erd"
+`)
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:            "https://github.com/solidiquis/erdtree/releases/download/v3.1.2/erdtree.tar.gz",
+			ExtractedFiles: []string{"./erd"},
+		},
+	}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("solidiquis/erdtree", install.Options{Name: "custom-erd"})
+	if err != nil {
+		t.Fatalf("install target: %v", err)
+	}
+
+	if runner.opts.Name != "custom-erd" {
+		t.Fatalf("expected CLI name to override package name, got %q", runner.opts.Name)
+	}
+}
+
 func TestInstallTargetRejectsManagedPackageWithoutRepo(t *testing.T) {
 	cfg := mustLoadFromString(t, `
 [packages.picoclaw]
