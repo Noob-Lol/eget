@@ -870,7 +870,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 Run:
 
@@ -1261,7 +1261,7 @@ git commit -m "feat(sdk): install and manage sdk versions"
 - Modify: `internal/cli/wiring.go`
 - Modify: `internal/cli/service.go`
 
-- [ ] **Step 1: 写 app service 测试**
+- [x] **Step 1: 写 app service 测试**
 
 `internal/app/sdk_test.go` 覆盖：
 
@@ -1272,7 +1272,7 @@ NewSDKService 使用 cfgpkg.Load 结果
 网络配置复用 global proxy/cache/disable_ssl/chunk_concurrency
 ```
 
-- [ ] **Step 2: 实现 app SDK service**
+- [x] **Step 2: 实现 app SDK service**
 
 `internal/app/sdk.go`：
 
@@ -1295,7 +1295,7 @@ func NewDefaultSDKService(cfg *config.File) (sdk.Service, error)
 - 复用 `applyGlobalNetworkConfig` 等价逻辑；如果该函数在 `internal/cli` 中，不要反向依赖 CLI，可在 app/sdk 中独立映射。
 - 不直接依赖 `kite xenv`。
 
-- [ ] **Step 3: 接入 cliService**
+- [x] **Step 3: 接入 cliService**
 
 `internal/cli/service.go`：
 
@@ -1308,7 +1308,7 @@ type cliService struct {
 
 `internal/cli/wiring.go` 中初始化。
 
-- [ ] **Step 4: 运行 app 和 cli 测试**
+- [x] **Step 4: 运行 app 和 cli 测试**
 
 Run:
 

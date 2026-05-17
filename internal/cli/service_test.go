@@ -626,6 +626,15 @@ func TestNewCLIServiceWiresReleaseInfo(t *testing.T) {
 	if svc.appService.ReleaseInfo == nil {
 		t.Fatal("expected ReleaseInfo to be configured")
 	}
+	if svc.sdkService.Config == nil {
+		t.Fatal("expected sdk service config to be configured")
+	}
+	if svc.sdkService.Store.Path == "" {
+		t.Fatal("expected sdk installed store path to be configured")
+	}
+	if svc.sdkService.IndexCache.Dir == "" {
+		t.Fatal("expected sdk index cache dir to be configured")
+	}
 }
 
 func TestConfigureVerboseUpdatesVerboseLoggers(t *testing.T) {

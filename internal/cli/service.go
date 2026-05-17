@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/inherelab/eget/internal/app"
+	"github.com/inherelab/eget/internal/sdk"
 )
 
 type cliService struct {
@@ -15,6 +16,7 @@ type cliService struct {
 	searchService    app.SearchService
 	uninstallService app.UninstallService
 	updService       app.UpdateService
+	sdkService       sdk.Service
 
 	stderr             io.Writer
 	configPathResolver func() (string, error)

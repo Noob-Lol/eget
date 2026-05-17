@@ -127,6 +127,10 @@ func newCLIService() (*cliService, error) {
 		Install:    &appService,
 		LatestInfo: latestInfo,
 	}
+	sdkService, err := app.NewDefaultSDKService(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &cliService{
 		appService:       appService,
 		cfgService:       cfgService,
@@ -135,6 +139,7 @@ func newCLIService() (*cliService, error) {
 		searchService:    searchService,
 		uninstallService: uninstallService,
 		updService:       updService,
+		sdkService:       sdkService,
 		stderr:           os.Stderr,
 		proxyURL:         defaultOpts.ProxyURL,
 	}, nil
