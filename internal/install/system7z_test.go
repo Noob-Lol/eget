@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 )
@@ -289,4 +290,37 @@ func TestSystem7zExtractorExtractAllToSkipsListAndRunsSevenZipOnce(t *testing.T)
 		t.Fatalf("read extracted file: %v", err)
 	}
 	assert.Eq(t, "bmp", string(data))
+}
+
+func TestCopyExtractedPathPreservesDirectoryTimestampAfterChildren(t *testing.T) {
+	root := t.TempDir()
+	src := filepath.Join(root, "src")
+	dirTime := time.Date(2024, 6, 7, 8, 9, 10, 0, time.UTC)
+	fileTime := time.Date(2024, 7, 8, 9, 10, 12, 0, time.UTC)
+	file := filepath.Join(src, "resource.txt")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatalf("create source dir: %v", err)
+	}
+	if err := os.WriteFile(file, []byte("resource"), 0o644); err != nil {
+		t.Fatalf("write source file: %v", err)
+	}
+	if err := os.Chtimes(file, fileTime, fileTime); err != nil {
+		t.Fatalf("set source file time: %v", err)
+	}
+	if err := os.Chtimes(src, dirTime, dirTime); err != nil {
+		t.Fatalf("set source dir time: %v", err)
+	}
+
+	dst := filepath.Join(root, "dst")
+	if err := copyExtractedPath(src, dst, 0o755); err != nil {
+		t.Fatalf("copy extracted path: %v", err)
+	}
+
+	info, err := os.Stat(dst)
+	if err != nil {
+		t.Fatalf("stat copied dir: %v", err)
+	}
+	if !info.ModTime().Equal(dirTime) {
+		t.Fatalf("expected copied dir mtime %s, got %s", dirTime, info.ModTime())
+	}
 }

@@ -102,6 +102,7 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 						newname, oldname string
 						sym              bool
 					}
+					var extractedDirs []File
 					var links []link
 					for {
 						subf, err := subAr.Next()
@@ -117,7 +118,10 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 						}
 						if rel == "" {
 							if subf.Dir() {
-								os.MkdirAll(to, 0o755)
+								if err := os.MkdirAll(to, 0o755); err != nil {
+									return fmt.Errorf("extract: %w", err)
+								}
+								extractedDirs = append(extractedDirs, File{Name: to, ModTime: subf.ModTime})
 							}
 							continue
 						}
@@ -126,7 +130,10 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 							if err != nil {
 								return fmt.Errorf("extract: %w", err)
 							}
-							os.MkdirAll(dir, 0o755)
+							if err := os.MkdirAll(dir, 0o755); err != nil {
+								return fmt.Errorf("extract: %w", err)
+							}
+							extractedDirs = append(extractedDirs, File{Name: dir, ModTime: subf.ModTime})
 							continue
 						}
 						if subf.Type == TypeLink || subf.Type == TypeSymlink {
@@ -170,6 +177,11 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 							err = os.Link(oldname, l.newname)
 						}
 						if err != nil && err != os.ErrExist {
+							return fmt.Errorf("extract: %w", err)
+						}
+					}
+					for i := len(extractedDirs) - 1; i >= 0; i-- {
+						if err := applyModTime(extractedDirs[i].Name, extractedDirs[i].ModTime); err != nil {
 							return fmt.Errorf("extract: %w", err)
 						}
 					}

@@ -206,6 +206,55 @@ func TestArchiveExtractorExtractPreservesFileTimestamp(t *testing.T) {
 	}
 }
 
+func TestArchiveExtractorExtractPreservesSelectedDirectoryTimestamp(t *testing.T) {
+	dirTime := time.Date(2024, 4, 5, 6, 7, 8, 0, time.UTC)
+	fileTime := time.Date(2024, 5, 6, 7, 8, 10, 0, time.UTC)
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	dirHeader := &zip.FileHeader{Name: "CdmResource/", Method: zip.Store, Modified: dirTime}
+	dirHeader.SetMode(0o755 | os.ModeDir)
+	if _, err := zw.CreateHeader(dirHeader); err != nil {
+		t.Fatalf("create zip dir: %v", err)
+	}
+	fileHeader := &zip.FileHeader{Name: "CdmResource/resource.txt", Method: zip.Store, Modified: fileTime}
+	fileHeader.SetMode(0o644)
+	w, err := zw.CreateHeader(fileHeader)
+	if err != nil {
+		t.Fatalf("create zip file: %v", err)
+	}
+	if _, err := w.Write([]byte("resource")); err != nil {
+		t.Fatalf("write zip file: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+
+	chooser, err := NewFileChooser("CdmResource")
+	if err != nil {
+		t.Fatalf("NewFileChooser: %v", err)
+	}
+	extractor := NewArchiveExtractor(chooser, NewZipArchive, nil)
+	file, candidates, err := extractor.Extract(buf.Bytes(), true)
+	if err != nil {
+		t.Fatalf("extract candidate: %v", err)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("expected one selected directory, got candidates %#v", candidates)
+	}
+	target := filepath.Join(t.TempDir(), "CdmResource")
+	if err := file.Extract(target); err != nil {
+		t.Fatalf("extract selected directory: %v", err)
+	}
+
+	info, err := os.Stat(target)
+	if err != nil {
+		t.Fatalf("stat selected directory: %v", err)
+	}
+	if !info.ModTime().Equal(dirTime) {
+		t.Fatalf("expected CdmResource mtime %s, got %s", dirTime, info.ModTime())
+	}
+}
+
 type streamArchiveEntry struct {
 	file    File
 	content string

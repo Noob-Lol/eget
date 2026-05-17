@@ -327,7 +327,8 @@ func copyExtractedPath(src, dst string, mode fs.FileMode) error {
 		return err
 	}
 	if info.IsDir() {
-		return filepath.WalkDir(src, func(path string, entry fs.DirEntry, err error) error {
+		var dirs []File
+		err := filepath.WalkDir(src, func(path string, entry fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
@@ -347,7 +348,8 @@ func copyExtractedPath(src, dst string, mode fs.FileMode) error {
 				if err != nil {
 					return err
 				}
-				return applyModTime(target, entryInfo.ModTime())
+				dirs = append(dirs, File{Name: target, ModTime: entryInfo.ModTime()})
+				return nil
 			}
 			entryInfo, err := entry.Info()
 			if err != nil {
@@ -355,6 +357,15 @@ func copyExtractedPath(src, dst string, mode fs.FileMode) error {
 			}
 			return copyFile(path, target, modeFrom(target, entryInfo.Mode()), entryInfo.ModTime())
 		})
+		if err != nil {
+			return err
+		}
+		for i := len(dirs) - 1; i >= 0; i-- {
+			if err := applyModTime(dirs[i].Name, dirs[i].ModTime); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	return copyFile(src, dst, modeFrom(dst, mode), info.ModTime())
 }
