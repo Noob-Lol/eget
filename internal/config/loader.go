@@ -36,6 +36,7 @@ func NewFile() *File {
 	cfg := &File{}
 	cfg.Repos = make(map[string]Section)
 	cfg.Packages = make(map[string]Section)
+	cfg.SDK = make(map[string]SDKSection)
 	return cfg
 }
 

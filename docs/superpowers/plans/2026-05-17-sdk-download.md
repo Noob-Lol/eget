@@ -244,7 +244,7 @@ Expected:
 - Modify: `internal/config/gookit_test.go`
 - Modify: `docs/example.eget.toml`
 
-- [ ] **Step 1: 写失败测试，验证 SDK 配置可加载**
+- [x] **Step 1: 写失败测试，验证 SDK 配置可加载**
 
 在 `internal/config/loader_test.go` 新增测试：
 
@@ -285,7 +285,7 @@ ext_map = { windows = "zip", linux = "tar.gz" }
 
 需要新增或复用 test helper；如果 `util.DerefInt` 不存在，测试中直接判断指针。
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -299,7 +299,7 @@ Expected:
 FAIL，File/Section 中没有 SDK 相关字段
 ```
 
-- [ ] **Step 3: 增加配置模型**
+- [x] **Step 3: 增加配置模型**
 
 在 `internal/config/model.go` 中：
 
@@ -337,7 +337,7 @@ type File struct {
 cfg.SDK = make(map[string]SDKSection)
 ```
 
-- [ ] **Step 4: 更新 decode/encode reserved keys**
+- [x] **Step 4: 更新 decode/encode reserved keys**
 
 在 `internal/config/gookit.go`：
 
@@ -357,7 +357,7 @@ cfg.MapOnExists("sdk", &conf.SDK)
 
 `normalizePathValue()` 对 map 字段不需要从 CLI set 支持复杂 map；首版只保证 TOML load/save。
 
-- [ ] **Step 5: 写 round-trip 测试**
+- [x] **Step 5: 写 round-trip 测试**
 
 在 `internal/config/gookit_test.go` 增加 save/load round-trip 测试，覆盖：
 
@@ -369,7 +369,7 @@ sdk.go.ext_map
 sdk.go.strip_components
 ```
 
-- [ ] **Step 6: 运行配置测试**
+- [x] **Step 6: 运行配置测试**
 
 Run:
 
@@ -383,7 +383,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 7: 更新示例配置**
+- [x] **Step 7: 更新示例配置**
 
 在 `docs/example.eget.toml` 增加注释掉的 SDK 配置示例，先放在文件末尾，避免影响现有用户默认配置。
 

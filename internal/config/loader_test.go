@@ -373,6 +373,54 @@ ignore_update_packages = ["fzf", "rg"]
 	assert.Eq(t, []string{"fzf", "rg"}, cfg.Global.IgnoreUpdatePackages)
 }
 
+func TestLoadFileReadsSDKSections(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+
+	writeTestFile(t, configPath, `
+[global]
+sdk_target = "~/sdks"
+sdk_ext_map = { windows = "zip", linux = "tar.gz" }
+
+[sdk.go]
+aliases = ["golang"]
+target = "gosdk/go{version}"
+url_template = "https://example.com/go{version}.{os}-{arch}.{ext}"
+index_url = "https://example.com/golang/"
+index_format = "html"
+index_parser = "go-json"
+index_path_prefix = "/golang/"
+filename_pattern = "go{version}.{os}-{arch}.{ext}"
+strip_components = 1
+os_map = { windows = "windows", linux = "linux" }
+arch_map = { amd64 = "amd64", arm64 = "arm64" }
+ext_map = { windows = "zip", linux = "tar.gz" }
+`)
+
+	cfg, err := LoadFile(configPath)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+
+	if cfg.Global.SDKTarget == nil || *cfg.Global.SDKTarget != "~/sdks" {
+		t.Fatalf("expected global.sdk_target, got %#v", cfg.Global.SDKTarget)
+	}
+	assert.Eq(t, "tar.gz", cfg.Global.SDKExtMap["linux"])
+	got := cfg.SDK["go"]
+	assert.Eq(t, []string{"golang"}, got.Aliases)
+	assert.Eq(t, "gosdk/go{version}", *got.Target)
+	assert.Eq(t, "https://example.com/go{version}.{os}-{arch}.{ext}", *got.URLTemplate)
+	assert.Eq(t, "https://example.com/golang/", *got.IndexURL)
+	assert.Eq(t, "html", *got.IndexFormat)
+	assert.Eq(t, "go-json", *got.IndexParser)
+	assert.Eq(t, "/golang/", *got.IndexPathPrefix)
+	assert.Eq(t, "go{version}.{os}-{arch}.{ext}", *got.FilenamePattern)
+	assert.Eq(t, 1, *got.StripComponents)
+	assert.Eq(t, "linux", got.OSMap["linux"])
+	assert.Eq(t, "arm64", got.ArchMap["arm64"])
+	assert.Eq(t, "zip", got.ExtMap["windows"])
+}
+
 func writeTestFile(t *testing.T, path, content string) {
 	t.Helper()
 

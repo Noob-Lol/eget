@@ -36,6 +36,9 @@ func decodeConfigFile(cfg *configutil.Manager) (*File, error) {
 	if err := cfg.MapOnExists("packages", &conf.Packages); err != nil {
 		return nil, err
 	}
+	if err := cfg.MapOnExists("sdk", &conf.SDK); err != nil {
+		return nil, err
+	}
 
 	rootData := cfg.Data()
 	for _, key := range sortedAnyKeys(rootData) {
@@ -65,9 +68,13 @@ func encodeConfigFile(file *File) *configutil.Manager {
 		"api_cache": apiCacheToMap(file.ApiCache),
 		"ghproxy":   ghproxyToMap(file.Ghproxy),
 		"packages":  map[string]any{},
+		"sdk":       map[string]any{},
 	}
 	for name, section := range file.Packages {
 		data["packages"].(map[string]any)[name] = sectionToMap(section)
+	}
+	for name, section := range file.SDK {
+		data["sdk"].(map[string]any)[name] = sdkSectionToMap(section)
 	}
 	cfg.SetData(data)
 	for name, section := range file.Repos {
@@ -140,7 +147,7 @@ func sortedAnyKeys(items map[string]any) []string {
 
 func isReservedConfigRootKey(key string) bool {
 	switch key {
-	case "global", "api_cache", "ghproxy", "packages":
+	case "global", "api_cache", "ghproxy", "packages", "sdk":
 		return true
 	default:
 		return false
@@ -250,6 +257,12 @@ func sectionToMap(section Section) map[string]any {
 	if section.Sys7zPath != nil {
 		data["sys7z_path"] = *section.Sys7zPath
 	}
+	if section.SDKTarget != nil {
+		data["sdk_target"] = *section.SDKTarget
+	}
+	if len(section.SDKExtMap) > 0 {
+		data["sdk_ext_map"] = cloneStringMap(section.SDKExtMap)
+	}
 	if section.System != nil {
 		data["system"] = *section.System
 	}
@@ -275,6 +288,55 @@ func sectionToMap(section Section) map[string]any {
 		data["batch_concurrency"] = *section.BatchConcurrency
 	}
 	return data
+}
+
+func sdkSectionToMap(section SDKSection) map[string]any {
+	data := map[string]any{}
+	if len(section.Aliases) > 0 {
+		data["aliases"] = append([]string(nil), section.Aliases...)
+	}
+	if section.Target != nil {
+		data["target"] = *section.Target
+	}
+	if section.URLTemplate != nil {
+		data["url_template"] = *section.URLTemplate
+	}
+	if section.IndexURL != nil {
+		data["index_url"] = *section.IndexURL
+	}
+	if section.IndexFormat != nil {
+		data["index_format"] = *section.IndexFormat
+	}
+	if section.IndexParser != nil {
+		data["index_parser"] = *section.IndexParser
+	}
+	if section.IndexPathPrefix != nil {
+		data["index_path_prefix"] = *section.IndexPathPrefix
+	}
+	if section.FilenamePattern != nil {
+		data["filename_pattern"] = *section.FilenamePattern
+	}
+	if section.StripComponents != nil {
+		data["strip_components"] = *section.StripComponents
+	}
+	if len(section.OSMap) > 0 {
+		data["os_map"] = cloneStringMap(section.OSMap)
+	}
+	if len(section.ArchMap) > 0 {
+		data["arch_map"] = cloneStringMap(section.ArchMap)
+	}
+	if len(section.ExtMap) > 0 {
+		data["ext_map"] = cloneStringMap(section.ExtMap)
+	}
+	return data
+}
+
+func cloneStringMap(items map[string]string) map[string]string {
+	cloned := make(map[string]string, len(items))
+	for key, value := range items {
+		cloned[key] = value
+	}
+	return cloned
 }
 
 func apiCacheToMap(section APICacheSection) map[string]any {

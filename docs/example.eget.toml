@@ -7,6 +7,9 @@ gui_target = "~/Applications"
 sys7z_path = ""
 chunk_concurrency = 0
 batch_concurrency = 0
+# SDK install root and default archive extensions by Go OS name.
+sdk_target = "~/sdks"
+sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
 # 配置 provider 元数据请求缓存策略
 [api_cache]
@@ -46,3 +49,28 @@ name = "forgejo"
 repo = "gitea:codeberg.org/forgejo/forgejo"
 system = "linux/amd64"
 asset_filters = ["linux", "amd64"]
+
+# SDK download examples. `eget sdk` only downloads and installs SDKs;
+# environment activation remains the responsibility of tools like kite xenv.
+[sdk.go]
+aliases = ["golang"]
+target = "gosdk/go{version}"
+url_template = "https://mirrors.aliyun.com/golang/go{version}.{os}-{arch}.{ext}"
+index_url = "https://mirrors.aliyun.com/golang/"
+index_format = "html"
+filename_pattern = "go{version}.{os}-{arch}.{ext}"
+strip_components = 1
+ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
+
+[sdk.node]
+aliases = ["nodejs"]
+target = "nodejs/node{version}"
+url_template = "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{ext}"
+index_url = "https://registry.npmmirror.com/binary.html"
+index_format = "html"
+index_path_prefix = "/binaries/node/"
+filename_pattern = "node-v{version}-{os}-{arch}.{ext}"
+strip_components = 1
+os_map = { windows = "win", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64", 386 = "x86" }
+ext_map = { windows = "zip", linux = "tar.xz", darwin = "tar.gz" }

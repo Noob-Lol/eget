@@ -270,13 +270,31 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 
 	cfg := NewFile()
 	target := "~/.local/bin"
+	sdkTarget := "~/sdks"
 	quiet := true
 	cacheTime := 300
 	repo := "junegunn/fzf"
+	sdkStrip := 1
 	cfg.Global.Target = &target
+	cfg.Global.SDKTarget = &sdkTarget
+	cfg.Global.SDKExtMap = map[string]string{"windows": "zip", "linux": "tar.gz"}
 	cfg.Global.Quiet = &quiet
 	cfg.ApiCache.CacheTime = &cacheTime
 	cfg.Packages["fzf"] = Section{Repo: &repo}
+	cfg.SDK["go"] = SDKSection{
+		Aliases:         []string{"golang"},
+		Target:          stringPtr("gosdk/go{version}"),
+		URLTemplate:     stringPtr("https://example.com/go{version}.{os}-{arch}.{ext}"),
+		IndexURL:        stringPtr("https://example.com/golang/"),
+		IndexFormat:     stringPtr("html"),
+		IndexParser:     stringPtr("go-json"),
+		IndexPathPrefix: stringPtr("/golang/"),
+		FilenamePattern: stringPtr("go{version}.{os}-{arch}.{ext}"),
+		StripComponents: &sdkStrip,
+		OSMap:           map[string]string{"linux": "linux"},
+		ArchMap:         map[string]string{"amd64": "amd64"},
+		ExtMap:          map[string]string{"linux": "tar.gz"},
+	}
 
 	if err := Save(configPath, cfg); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -289,6 +307,10 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	if loaded.Global.Target == nil || *loaded.Global.Target != "~/.local/bin" {
 		t.Fatalf("expected round-trip global.target, got %#v", loaded.Global.Target)
 	}
+	if loaded.Global.SDKTarget == nil || *loaded.Global.SDKTarget != "~/sdks" {
+		t.Fatalf("expected round-trip global.sdk_target, got %#v", loaded.Global.SDKTarget)
+	}
+	assert.Eq(t, "tar.gz", loaded.Global.SDKExtMap["linux"])
 	if loaded.Global.Quiet == nil || !*loaded.Global.Quiet {
 		t.Fatalf("expected round-trip global.quiet, got %#v", loaded.Global.Quiet)
 	}
@@ -298,4 +320,11 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	if loaded.Packages["fzf"].Repo == nil || *loaded.Packages["fzf"].Repo != "junegunn/fzf" {
 		t.Fatalf("expected round-trip packages.fzf.repo, got %#v", loaded.Packages["fzf"].Repo)
 	}
+	sdk := loaded.SDK["go"]
+	assert.Eq(t, []string{"golang"}, sdk.Aliases)
+	assert.Eq(t, "gosdk/go{version}", *sdk.Target)
+	assert.Eq(t, "go-json", *sdk.IndexParser)
+	assert.Eq(t, "go{version}.{os}-{arch}.{ext}", *sdk.FilenamePattern)
+	assert.Eq(t, 1, *sdk.StripComponents)
+	assert.Eq(t, "tar.gz", sdk.ExtMap["linux"])
 }
