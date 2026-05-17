@@ -110,6 +110,7 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 	})
 	app.add(newInstallCmd(handler))
 	app.add(newDownloadCmd(handler))
+	app.add(newSDKCmd(handler))
 	app.add(newAddCmd(handler))
 	app.add(newUninstallCmd(handler))
 	app.add(newListCmd(handler))
@@ -229,6 +230,31 @@ var commandFlagSpecs = map[string]flagSpec{
 		bools:  setOf("json", "j", "prerelease", "p"),
 		values: setOf("action", "a", "tag", "t", "limit", "l"),
 	},
+	"sdk": {
+		subs: map[string]flagSpec{
+			"install": {
+				bools: setOf("force", "f"),
+			},
+			"list": {
+				bools: setOf("json", "j"),
+			},
+			"remove": {},
+			"index": {
+				subs: map[string]flagSpec{
+					"list": {
+						bools: setOf("json", "j"),
+					},
+					"show": {},
+					"refresh": {
+						bools: setOf("all", "a"),
+					},
+					"clear": {
+						bools: setOf("all", "a"),
+					},
+				},
+			},
+		},
+	},
 	"search": {
 		bools:  setOf("json", "j"),
 		values: setOf("sort", "order", "limit", "l"),
@@ -261,6 +287,15 @@ func validateKnownFlags(args []string) error {
 	spec, ok := commandFlagSpecs[cmdName]
 	if !ok {
 		return nil
+	}
+	if len(spec.subs) > 0 && start < len(args) {
+		subName := args[start]
+		if !strings.HasPrefix(subName, "-") {
+			if subSpec, ok := spec.subs[subName]; ok {
+				spec = subSpec
+				start++
+			}
+		}
 	}
 	if len(spec.subs) > 0 && start < len(args) {
 		subName := args[start]

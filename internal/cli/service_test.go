@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -17,11 +18,75 @@ import (
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 	storepkg "github.com/inherelab/eget/internal/installed"
+	"github.com/inherelab/eget/internal/sdk"
 	forge "github.com/inherelab/eget/internal/source/forge"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
 	"github.com/inherelab/eget/internal/util"
 )
+
+type fakeSDKService struct {
+	installTargets []string
+	installOpts    sdk.InstallOptions
+	installResults []sdk.InstallResult
+	listName       string
+	listEntries    []sdk.InstalledEntry
+	removeTarget   string
+	removeResult   sdk.RemoveResult
+	indexName      string
+	indexAll       bool
+	index          sdk.Index
+	indexes        []sdk.Index
+	cachedIndexes  []sdk.CachedIndexInfo
+	clearName      string
+	clearAll       bool
+	err            error
+}
+
+func (f *fakeSDKService) InstallMany(_ context.Context, targets []string, opts sdk.InstallOptions) ([]sdk.InstallResult, error) {
+	f.installTargets = append([]string(nil), targets...)
+	f.installOpts = opts
+	return f.installResults, f.err
+}
+
+func (f *fakeSDKService) List(name string) ([]sdk.InstalledEntry, error) {
+	f.listName = name
+	return f.listEntries, f.err
+}
+
+func (f *fakeSDKService) Remove(target string) (sdk.RemoveResult, error) {
+	f.removeTarget = target
+	return f.removeResult, f.err
+}
+
+func (f *fakeSDKService) RefreshIndex(_ context.Context, name string) (sdk.Index, error) {
+	f.indexName = name
+	return f.index, f.err
+}
+
+func (f *fakeSDKService) RefreshAllIndexes(_ context.Context) ([]sdk.Index, error) {
+	f.indexAll = true
+	return f.indexes, f.err
+}
+
+func (f *fakeSDKService) ShowIndex(name string) (sdk.Index, error) {
+	f.indexName = name
+	return f.index, f.err
+}
+
+func (f *fakeSDKService) ListIndexes() ([]sdk.CachedIndexInfo, error) {
+	return f.cachedIndexes, f.err
+}
+
+func (f *fakeSDKService) ClearIndex(name string) error {
+	f.clearName = name
+	return f.err
+}
+
+func (f *fakeSDKService) ClearAllIndexes() error {
+	f.clearAll = true
+	return f.err
+}
 
 func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	installOpts := installOptionsFromInstall(&InstallOptions{
@@ -626,13 +691,17 @@ func TestNewCLIServiceWiresReleaseInfo(t *testing.T) {
 	if svc.appService.ReleaseInfo == nil {
 		t.Fatal("expected ReleaseInfo to be configured")
 	}
-	if svc.sdkService.Config == nil {
+	sdkService, ok := svc.sdkService.(sdk.Service)
+	if !ok {
+		t.Fatalf("expected sdk.Service, got %T", svc.sdkService)
+	}
+	if sdkService.Config == nil {
 		t.Fatal("expected sdk service config to be configured")
 	}
-	if svc.sdkService.Store.Path == "" {
+	if sdkService.Store.Path == "" {
 		t.Fatal("expected sdk installed store path to be configured")
 	}
-	if svc.sdkService.IndexCache.Dir == "" {
+	if sdkService.IndexCache.Dir == "" {
 		t.Fatal("expected sdk index cache dir to be configured")
 	}
 }
@@ -653,6 +722,103 @@ func TestConfigureVerboseUpdatesVerboseLoggers(t *testing.T) {
 		t.Fatalf("expected forge verbose to be enabled")
 	}
 	configureVerbose(false, &out)
+}
+
+func TestHandleSDKInstallPrintsResults(t *testing.T) {
+	fake := &fakeSDKService{
+		installResults: []sdk.InstallResult{{
+			Name: "go", Version: "1.21.1", Path: "/sdks/go1.21.1", Cached: true, Resumed: true,
+		}},
+	}
+	svc := &cliService{sdkService: fake}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handle("sdk.install", &SDKInstallOptions{Targets: []string{"go@1.21.1"}, Force: true})
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"go@1.21.1"}, fake.installTargets)
+	assert.True(t, fake.installOpts.Force)
+	got := out.String()
+	assert.Contains(t, got, "go@1.21.1")
+	assert.Contains(t, got, "/sdks/go1.21.1")
+	assert.Contains(t, got, "cached")
+	assert.Contains(t, got, "resumed")
+}
+
+func TestHandleSDKListJSONOutput(t *testing.T) {
+	fake := &fakeSDKService{
+		listEntries: []sdk.InstalledEntry{{
+			Name: "go", Version: "1.21.1", Path: "/sdks/go1.21.1", InstalledAt: time.Date(2026, 5, 17, 9, 0, 0, 0, time.UTC),
+		}},
+	}
+	svc := &cliService{sdkService: fake}
+
+	origStdout := os.Stdout
+	r, w, err := os.Pipe()
+	assert.NoErr(t, err)
+	defer r.Close()
+	defer w.Close()
+	os.Stdout = w
+	defer func() { os.Stdout = origStdout }()
+
+	err = svc.handle("sdk.list", &SDKListOptions{Name: "go", JSON: true})
+	assert.NoErr(t, err)
+	assert.Eq(t, "go", fake.listName)
+
+	_ = w.Close()
+	var out bytes.Buffer
+	_, err = io.Copy(&out, r)
+	assert.NoErr(t, err)
+	got := out.String()
+	assert.Contains(t, got, `"name": "go"`)
+	assert.Contains(t, got, `"installed_at": "2026-05-17T09:00:00"`)
+}
+
+func TestHandleSDKRemovePrintsResult(t *testing.T) {
+	fake := &fakeSDKService{
+		removeResult: sdk.RemoveResult{Name: "go", Version: "1.21.1", Path: "/sdks/go1.21.1", Missing: true},
+	}
+	svc := &cliService{sdkService: fake}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handle("sdk.remove", &SDKRemoveOptions{Target: "go@1.21.1"})
+	assert.NoErr(t, err)
+	assert.Eq(t, "go@1.21.1", fake.removeTarget)
+	assert.Contains(t, out.String(), "already missing")
+}
+
+func TestHandleSDKIndexActions(t *testing.T) {
+	now := time.Date(2026, 5, 17, 9, 0, 0, 0, time.UTC)
+	fake := &fakeSDKService{
+		index: sdk.Index{Schema: 1, SDK: "go", SourceURL: "https://example.com/go", FetchedAt: now},
+		indexes: []sdk.Index{
+			{Schema: 1, SDK: "go", SourceURL: "https://example.com/go", FetchedAt: now},
+		},
+		cachedIndexes: []sdk.CachedIndexInfo{
+			{SDK: "go", Versions: 3, SourceURL: "https://example.com/go", FetchedAt: now},
+		},
+	}
+	svc := &cliService{sdkService: fake}
+
+	assert.NoErr(t, svc.handle("sdk.index.refresh", &SDKIndexOptions{Action: "refresh", Name: "go"}))
+	assert.Eq(t, "go", fake.indexName)
+	assert.NoErr(t, svc.handle("sdk.index.refresh", &SDKIndexOptions{Action: "refresh", All: true}))
+	assert.True(t, fake.indexAll)
+	assert.NoErr(t, svc.handle("sdk.index.clear", &SDKIndexOptions{Action: "clear", Name: "go"}))
+	assert.Eq(t, "go", fake.clearName)
+	assert.NoErr(t, svc.handle("sdk.index.clear", &SDKIndexOptions{Action: "clear", All: true}))
+	assert.True(t, fake.clearAll)
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+	assert.NoErr(t, svc.handle("sdk.index.list", &SDKIndexOptions{Action: "list"}))
+	assert.Contains(t, out.String(), "go")
 }
 
 func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {

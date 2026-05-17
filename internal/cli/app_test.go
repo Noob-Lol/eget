@@ -570,6 +570,149 @@ func TestMain_ConfigSubcommandRejectsUnknownFlag(t *testing.T) {
 	}
 }
 
+func TestMain_SDKWithoutSubcommandShowsHelp(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 0, len(calls))
+
+	help := stdout.String()
+	if !strings.Contains(help, "install") || !strings.Contains(help, "index") {
+		t.Fatalf("expected sdk help output, got %q", help)
+	}
+}
+
+func TestMain_SDKRoutesAndBindsOptions(t *testing.T) {
+	tests := []struct {
+		name       string
+		args       []string
+		wantCmd    string
+		assertOpts func(*testing.T, any)
+	}{
+		{
+			name:    "install exact",
+			args:    []string{"sdk", "install", "go@1.21.1"},
+			wantCmd: "sdk.install",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKInstallOptions)
+				assert.True(t, ok)
+				assert.Eq(t, []string{"go@1.21.1"}, opts.Targets)
+				assert.False(t, opts.Force)
+			},
+		},
+		{
+			name:    "install force multiple",
+			args:    []string{"sdk", "install", "--force", "go@1.21.1", "node:20.11.1"},
+			wantCmd: "sdk.install",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKInstallOptions)
+				assert.True(t, ok)
+				assert.Eq(t, []string{"go@1.21.1", "node:20.11.1"}, opts.Targets)
+				assert.True(t, opts.Force)
+			},
+		},
+		{
+			name:    "list all",
+			args:    []string{"sdk", "list"},
+			wantCmd: "sdk.list",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKListOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "", opts.Name)
+				assert.False(t, opts.JSON)
+			},
+		},
+		{
+			name:    "list json name",
+			args:    []string{"sdk", "list", "--json", "go"},
+			wantCmd: "sdk.list",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKListOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "go", opts.Name)
+				assert.True(t, opts.JSON)
+			},
+		},
+		{
+			name:    "remove",
+			args:    []string{"sdk", "remove", "go@1.21.1"},
+			wantCmd: "sdk.remove",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKRemoveOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "go@1.21.1", opts.Target)
+			},
+		},
+		{
+			name:    "index refresh name",
+			args:    []string{"sdk", "index", "refresh", "go"},
+			wantCmd: "sdk.index.refresh",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKIndexOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "refresh", opts.Action)
+				assert.Eq(t, "go", opts.Name)
+			},
+		},
+		{
+			name:    "index refresh all",
+			args:    []string{"sdk", "index", "refresh", "--all"},
+			wantCmd: "sdk.index.refresh",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKIndexOptions)
+				assert.True(t, ok)
+				assert.True(t, opts.All)
+			},
+		},
+		{
+			name:    "index clear all",
+			args:    []string{"sdk", "index", "clear", "--all"},
+			wantCmd: "sdk.index.clear",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKIndexOptions)
+				assert.True(t, ok)
+				assert.True(t, opts.All)
+			},
+		},
+		{
+			name:    "index show name",
+			args:    []string{"sdk", "index", "show", "go"},
+			wantCmd: "sdk.index.show",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKIndexOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "show", opts.Action)
+				assert.Eq(t, "go", opts.Name)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]commandCall, 0, 1)
+			handler := func(name string, options any) error {
+				calls = append(calls, commandCall{name: name, options: options})
+				return nil
+			}
+
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			err := newApp(handler, &stdout, &stderr).RunWithArgs(tt.args)
+			assert.NoErr(t, err)
+			assert.Eq(t, 1, len(calls))
+			assert.Eq(t, tt.wantCmd, calls[0].name)
+			tt.assertOpts(t, calls[0].options)
+		})
+	}
+}
+
 func TestMain_GlobalVerboseFlagParsesBeforeCommand(t *testing.T) {
 	calls := make([]commandCall, 0, 1)
 	handler := func(name string, options any) error {

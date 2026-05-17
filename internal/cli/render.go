@@ -11,6 +11,7 @@ import (
 	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
+	"github.com/inherelab/eget/internal/sdk"
 )
 
 const compactTimeLayout = "2006-01-02T15:04:05"
@@ -87,6 +88,27 @@ type searchResultDisplay struct {
 	Query      string              `json:"query"`
 	TotalCount int                 `json:"total_count"`
 	Items      []searchRepoDisplay `json:"items,omitempty"`
+}
+
+type sdkInstalledEntryDisplay struct {
+	Name            string `json:"name"`
+	Version         string `json:"version"`
+	Path            string `json:"path"`
+	URL             string `json:"url,omitempty"`
+	Filename        string `json:"filename,omitempty"`
+	OS              string `json:"os,omitempty"`
+	Arch            string `json:"arch,omitempty"`
+	Ext             string `json:"ext,omitempty"`
+	InstalledAt     string `json:"installed_at,omitempty"`
+	StripComponents int    `json:"strip_components,omitempty"`
+}
+
+type sdkCachedIndexDisplay struct {
+	SDK       string `json:"sdk"`
+	Versions  int    `json:"versions"`
+	SourceURL string `json:"source_url,omitempty"`
+	FetchedAt string `json:"fetched_at,omitempty"`
+	Path      string `json:"path,omitempty"`
 }
 
 func compactTime(value time.Time) string {
@@ -223,6 +245,59 @@ func searchResultJSON(result app.SearchResult) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func sdkResultNotes(cached, resumed bool) string {
+	var notes []string
+	if cached {
+		notes = append(notes, "cached")
+	}
+	if resumed {
+		notes = append(notes, "resumed")
+	}
+	return strings.Join(notes, ", ")
+}
+
+func sdkEntriesToDisplay(entries []sdk.InstalledEntry) []sdkInstalledEntryDisplay {
+	items := make([]sdkInstalledEntryDisplay, 0, len(entries))
+	for _, entry := range entries {
+		items = append(items, sdkInstalledEntryDisplay{
+			Name:            entry.Name,
+			Version:         entry.Version,
+			Path:            entry.Path,
+			URL:             entry.URL,
+			Filename:        entry.Filename,
+			OS:              entry.OS,
+			Arch:            entry.Arch,
+			Ext:             entry.Ext,
+			InstalledAt:     compactTimeOmit(entry.InstalledAt),
+			StripComponents: entry.StripComponents,
+		})
+	}
+	return items
+}
+
+func sdkCachedIndexesToDisplay(infos []sdk.CachedIndexInfo) []sdkCachedIndexDisplay {
+	items := make([]sdkCachedIndexDisplay, 0, len(infos))
+	for _, info := range infos {
+		items = append(items, sdkCachedIndexDisplay{
+			SDK:       info.SDK,
+			Versions:  info.Versions,
+			SourceURL: info.SourceURL,
+			FetchedAt: compactTimeOmit(info.FetchedAt),
+			Path:      info.Path,
+		})
+	}
+	return items
+}
+
+func printJSON(value any) error {
+	data, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(data))
+	return nil
 }
 
 func printQueryResult(result app.QueryResult) {

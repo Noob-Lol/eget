@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"github.com/inherelab/eget/internal/client"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
+	"github.com/inherelab/eget/internal/sdk"
 )
 
 func (s *cliService) handle(name string, options any) error {
@@ -106,6 +108,18 @@ func (s *cliService) handle(name string, options any) error {
 	case "update":
 		opts := options.(*UpdateOptions)
 		return s.handleUpdate(opts)
+	case "sdk.install":
+		opts := options.(*SDKInstallOptions)
+		return s.handleSDKInstall(opts)
+	case "sdk.list":
+		opts := options.(*SDKListOptions)
+		return s.handleSDKList(opts)
+	case "sdk.remove":
+		opts := options.(*SDKRemoveOptions)
+		return s.handleSDKRemove(opts)
+	case "sdk.index.list", "sdk.index.show", "sdk.index.refresh", "sdk.index.clear":
+		opts := options.(*SDKIndexOptions)
+		return s.handleSDKIndex(opts)
 	default:
 		return ErrNotImplemented
 	}
@@ -547,6 +561,133 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		}
 	}
 	return nil
+}
+
+func (s *cliService) handleSDKInstall(opts *SDKInstallOptions) error {
+	if opts == nil || len(opts.Targets) == 0 {
+		return fmt.Errorf("sdk install target is required")
+	}
+	results, err := s.sdkService.InstallMany(context.Background(), opts.Targets, sdk.InstallOptions{Force: opts.Force})
+	if err != nil {
+		return err
+	}
+	for _, result := range results {
+		notes := sdkResultNotes(result.Cached, result.Resumed)
+		if notes != "" {
+			ccolor.Successf("✓ Installed %s@%s -> %s (%s)\n", result.Name, result.Version, result.Path, notes)
+			continue
+		}
+		ccolor.Successf("✓ Installed %s@%s -> %s\n", result.Name, result.Version, result.Path)
+	}
+	return nil
+}
+
+func (s *cliService) handleSDKList(opts *SDKListOptions) error {
+	name := ""
+	jsonOutput := false
+	if opts != nil {
+		name = opts.Name
+		jsonOutput = opts.JSON
+	}
+	entries, err := s.sdkService.List(name)
+	if err != nil {
+		return err
+	}
+	if jsonOutput {
+		return printJSON(sdkEntriesToDisplay(entries))
+	}
+	if len(entries) == 0 {
+		ccolor.Infoln("no SDK versions installed")
+		return nil
+	}
+	cols := []string{"Name", "Version", "Path", "Installed At"}
+	rows := make([][]any, 0, len(entries))
+	for _, entry := range entries {
+		rows = append(rows, []any{entry.Name, entry.Version, entry.Path, compactTime(entry.InstalledAt)})
+	}
+	ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
+	return nil
+}
+
+func (s *cliService) handleSDKRemove(opts *SDKRemoveOptions) error {
+	if opts == nil || opts.Target == "" {
+		return fmt.Errorf("sdk remove target is required")
+	}
+	result, err := s.sdkService.Remove(opts.Target)
+	if err != nil {
+		return err
+	}
+	if result.Missing {
+		ccolor.Warnf("SDK directory already missing: %s\n", result.Path)
+		return nil
+	}
+	ccolor.Successf("✓ Removed %s@%s -> %s\n", result.Name, result.Version, result.Path)
+	return nil
+}
+
+func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
+	if opts == nil {
+		return fmt.Errorf("sdk index action is required")
+	}
+	switch opts.Action {
+	case "list":
+		infos, err := s.sdkService.ListIndexes()
+		if err != nil {
+			return err
+		}
+		if opts.JSON {
+			return printJSON(sdkCachedIndexesToDisplay(infos))
+		}
+		if len(infos) == 0 {
+			ccolor.Infoln("no SDK index cache found")
+			return nil
+		}
+		cols := []string{"Name", "Versions", "Source", "Updated At"}
+		rows := make([][]any, 0, len(infos))
+		for _, info := range infos {
+			rows = append(rows, []any{info.SDK, info.Versions, info.SourceURL, compactTime(info.FetchedAt)})
+		}
+		ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
+		return nil
+	case "show":
+		index, err := s.sdkService.ShowIndex(opts.Name)
+		if err != nil {
+			return err
+		}
+		return printJSON(index)
+	case "refresh":
+		if opts.All {
+			indexes, err := s.sdkService.RefreshAllIndexes(context.Background())
+			if err != nil {
+				return err
+			}
+			for _, index := range indexes {
+				ccolor.Successf("✓ Refreshed SDK index: %s (%d versions)\n", index.SDK, len(index.Items))
+			}
+			return nil
+		}
+		index, err := s.sdkService.RefreshIndex(context.Background(), opts.Name)
+		if err != nil {
+			return err
+		}
+		ccolor.Successf("✓ Refreshed SDK index: %s (%d versions)\n", index.SDK, len(index.Items))
+		return nil
+	case "clear":
+		if opts.All {
+			if err := s.sdkService.ClearAllIndexes(); err != nil {
+				return err
+			}
+			ccolor.Successln("✓ Cleared all SDK indexes")
+			return nil
+		}
+		if err := s.sdkService.ClearIndex(opts.Name); err != nil {
+			return err
+		}
+		ccolor.Successf("✓ Cleared SDK index: %s\n", opts.Name)
+		return nil
+	default:
+		return fmt.Errorf("sdk index action is required")
+	}
 }
 
 func splitTargets(args []string) []string {

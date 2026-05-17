@@ -387,7 +387,7 @@ PASS
 
 在 `docs/example.eget.toml` 增加注释掉的 SDK 配置示例，先放在文件末尾，避免影响现有用户默认配置。
 
-- [ ] **Step 8: 提交**
+- [x] **Step 8: 提交**
 
 Run:
 
@@ -1341,7 +1341,7 @@ git commit -m "feat(sdk): wire sdk service"
 - Modify: `internal/cli/app_test.go`
 - Modify: `internal/cli/service_test.go`
 
-- [ ] **Step 1: 写 CLI 路由失败测试**
+- [x] **Step 1: 写 CLI 路由失败测试**
 
 在 `internal/cli/app_test.go` 新增：
 
@@ -1358,7 +1358,7 @@ sdk index clear --all 设置 All=true
 sdk index show go 设置 Name=go
 ```
 
-- [ ] **Step 2: 定义 CLI options**
+- [x] **Step 2: 定义 CLI options**
 
 `internal/cli/sdk_cmd.go`：
 
@@ -1385,7 +1385,7 @@ type SDKIndexOptions struct {
 }
 ```
 
-- [ ] **Step 3: 实现 gcli 子命令**
+- [x] **Step 3: 实现 gcli 子命令**
 
 `newSDKCmd(handler CommandHandler) (*gcli.Command, func())`：
 
@@ -1408,7 +1408,7 @@ sdk
 - `sdk index clear` 需要 `<name>` 或 `--all` 二选一。
 - `sdk index show` 必须有 `<name>`。
 
-- [ ] **Step 4: 注册命令**
+- [x] **Step 4: 注册命令**
 
 在 `internal/cli/app.go` 注册：
 
@@ -1418,7 +1418,7 @@ app.add(newSDKCmd(handler))
 
 保留现有命令顺序；建议放在 `install/download` 附近或 `config` 前。
 
-- [ ] **Step 5: 实现 handlers**
+- [x] **Step 5: 实现 handlers**
 
 `internal/cli/handlers.go`：
 
@@ -1444,7 +1444,7 @@ case "sdk.index.clear":
 - `index show`：输出规范化 JSON。
 - `index list`：表格输出 `Name Versions Source Updated At`。
 
-- [ ] **Step 6: 写 handler/service 测试**
+- [x] **Step 6: 写 handler/service 测试**
 
 在 `internal/cli/service_test.go` 使用 fake sdk service 或可注入函数，覆盖输出格式和错误路径。
 
@@ -1459,7 +1459,7 @@ type sdkService interface {
 }
 ```
 
-- [ ] **Step 7: 运行 CLI 测试**
+- [x] **Step 7: 运行 CLI 测试**
 
 Run:
 
