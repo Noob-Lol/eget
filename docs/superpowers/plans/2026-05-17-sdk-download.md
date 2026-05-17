@@ -603,7 +603,7 @@ git commit -m "feat(sdk): parse targets and resolve templates"
 - Create: `internal/sdk/index.go`
 - Create: `internal/sdk/index_test.go`
 
-- [ ] **Step 1: 定义规范索引模型**
+- [x] **Step 1: 定义规范索引模型**
 
 在 `internal/sdk/model.go` 增加：
 
@@ -631,7 +631,7 @@ type IndexFile struct {
 }
 ```
 
-- [ ] **Step 2: 写 HTML parser 失败测试**
+- [x] **Step 2: 写 HTML parser 失败测试**
 
 `internal/sdk/html_index_test.go` 使用 fixture 字符串覆盖：
 
@@ -652,7 +652,7 @@ Node 文件名解析 version/os/arch/ext
 index_path_prefix 过滤无关链接
 ```
 
-- [ ] **Step 3: 实现 HTML parser**
+- [x] **Step 3: 实现 HTML parser**
 
 `internal/sdk/html_index.go`：
 
@@ -678,7 +678,7 @@ func ParseHTMLIndex(body io.Reader, opts HTMLParseOptions) (Index, error)
 - 忽略无法识别的链接，不报错。
 - 如果没有任何有效文件，返回清晰错误。
 
-- [ ] **Step 4: 写 JSON parser 失败测试**
+- [x] **Step 4: 写 JSON parser 失败测试**
 
 `internal/sdk/json_index_test.go` 覆盖：
 
@@ -688,7 +688,7 @@ node-json: nodejs.org/dist/index.json 格式
 非支持 parser 返回错误
 ```
 
-- [ ] **Step 5: 实现 JSON parser**
+- [x] **Step 5: 实现 JSON parser**
 
 `internal/sdk/json_index.go`：
 
@@ -703,7 +703,7 @@ go-json
 node-json
 ```
 
-- [ ] **Step 6: 写 index cache 和版本选择测试**
+- [x] **Step 6: 写 index cache 和版本选择测试**
 
 `internal/sdk/index_test.go` 覆盖：
 
@@ -716,7 +716,7 @@ SelectVersion exact 找不到时报错
 SelectFile 匹配 os/arch/ext
 ```
 
-- [ ] **Step 7: 实现 index cache**
+- [x] **Step 7: 实现 index cache**
 
 `internal/sdk/index.go`：
 
@@ -741,7 +741,7 @@ func SelectFile(item IndexItem, osName, arch, ext string) (IndexFile, error)
 - 过滤 prerelease：包含 `-` 的版本视为 unstable。
 - `latest` 和 prefix 默认只选 stable。
 
-- [ ] **Step 8: 运行测试**
+- [x] **Step 8: 运行测试**
 
 Run:
 
