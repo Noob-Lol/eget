@@ -886,7 +886,7 @@ git commit -m "feat(sdk): support archive strip components"
 - Create: `internal/sdk/download.go`
 - Create: `internal/sdk/download_test.go`
 
-- [ ] **Step 1: 写 downloader 缓存复用测试**
+- [x] **Step 1: 写 downloader 缓存复用测试**
 
 `internal/sdk/download_test.go`：
 
@@ -896,7 +896,7 @@ git commit -m "feat(sdk): support archive strip components"
 
 使用 `httptest.Server` 或 fake getter 计数。
 
-- [ ] **Step 2: 写 Range 续传失败测试**
+- [x] **Step 2: 写 Range 续传失败测试**
 
 覆盖：
 
@@ -910,7 +910,7 @@ GET 带 Range: bytes={partSize}-
 .part 被 rename 为最终文件
 ```
 
-- [ ] **Step 3: 写重下载测试**
+- [x] **Step 3: 写重下载测试**
 
 覆盖：
 
@@ -921,7 +921,7 @@ Range 请求返回 200 OK 时重建 .part 后完整下载
 下载后 Content-Length 不匹配时报错并删除 .part
 ```
 
-- [ ] **Step 4: 实现模型和入口**
+- [x] **Step 4: 实现模型和入口**
 
 `internal/sdk/download.go`：
 
@@ -956,7 +956,7 @@ func DownloadArchive(ctx context.Context, req DownloadRequest) (DownloadResult, 
 {cache_dir}/sdk-downloads/{sdk}/{version}/{filename}.meta.json
 ```
 
-- [ ] **Step 5: 实现 HEAD 探测和 meta**
+- [x] **Step 5: 实现 HEAD 探测和 meta**
 
 ```go
 type downloadMeta struct {
@@ -972,7 +972,7 @@ type downloadMeta struct {
 
 用 `client.NewHTTPGetter(req.ClientOpts)` 或 `client.GetWithOptions` 发请求，保持代理、SSL、ghproxy 等现有选项一致。
 
-- [ ] **Step 6: 实现续传和完整下载**
+- [x] **Step 6: 实现续传和完整下载**
 
 要求：
 
@@ -982,7 +982,7 @@ type downloadMeta struct {
 - 下载完成后先校验大小，再 rename。
 - Windows 下 rename 目标已存在时先安全删除目标文件。
 
-- [ ] **Step 7: 运行 downloader 测试**
+- [x] **Step 7: 运行 downloader 测试**
 
 Run:
 
