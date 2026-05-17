@@ -408,7 +408,7 @@ git commit -m "feat(sdk): load sdk configuration"
 - Create: `internal/sdk/template.go`
 - Create: `internal/sdk/template_test.go`
 
-- [ ] **Step 1: 写 target parser 失败测试**
+- [x] **Step 1: 写 target parser 失败测试**
 
 在 `internal/sdk/target_test.go`：
 
@@ -449,7 +449,7 @@ func TestParseTargetRejectsInvalidInput(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -463,7 +463,7 @@ Expected:
 FAIL，internal/sdk package 或 ParseTarget 不存在
 ```
 
-- [ ] **Step 3: 实现 model 和 parser**
+- [x] **Step 3: 实现 model 和 parser**
 
 `internal/sdk/model.go`：
 
@@ -499,7 +499,7 @@ func ParseTarget(input string) (Target, error)
 - 其他非空版本 -> `VersionExact`。
 - name 不能为空，不能包含空白。
 
-- [ ] **Step 4: 写配置合并失败测试**
+- [x] **Step 4: 写配置合并失败测试**
 
 在 `internal/sdk/config_test.go` 覆盖：
 
@@ -512,7 +512,7 @@ target 相对路径基于 global.sdk_target
 缺少 ext 映射报错
 ```
 
-- [ ] **Step 5: 实现 resolved config**
+- [x] **Step 5: 实现 resolved config**
 
 `internal/sdk/config.go` 定义：
 
@@ -543,7 +543,7 @@ func ResolveConfig(file *config.File, name string, opts ResolveConfigOptions) (C
 
 只解析配置，不访问网络，不创建目录。
 
-- [ ] **Step 6: 写模板测试并实现**
+- [x] **Step 6: 写模板测试并实现**
 
 `internal/sdk/template_test.go` 覆盖：
 
@@ -568,7 +568,7 @@ type TemplateVars struct {
 func RenderTemplate(pattern string, vars TemplateVars) (string, error)
 ```
 
-- [ ] **Step 7: 运行 SDK 基础测试**
+- [x] **Step 7: 运行 SDK 基础测试**
 
 Run:
 
