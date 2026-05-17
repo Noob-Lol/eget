@@ -16,6 +16,8 @@
 
 <!-- PROCESSING WORKS:START -->
 
+- [ ] SDK 下载功能实现计划与开发：`docs/superpowers/plans/2026-05-17-sdk-download.md`
+
 <!-- PROCESSING WORKS:END -->
 
 ## 核心原则
@@ -105,4 +107,3 @@ assert.Eq(t, expected, actual)
 ```
 
 ## 项目核心记忆
-
