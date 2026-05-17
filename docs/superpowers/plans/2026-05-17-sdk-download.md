@@ -1014,7 +1014,7 @@ git commit -m "feat(sdk): add resumable archive downloads"
 - Create: `internal/sdk/store.go`
 - Create: `internal/sdk/store_test.go`
 
-- [ ] **Step 1: 写 store 失败测试**
+- [x] **Step 1: 写 store 失败测试**
 
 覆盖：
 
@@ -1027,7 +1027,7 @@ List 按 name/version 稳定排序
 损坏 JSON 返回错误
 ```
 
-- [ ] **Step 2: 实现 store 模型**
+- [x] **Step 2: 实现 store 模型**
 
 `internal/sdk/model.go`：
 
@@ -1055,7 +1055,7 @@ type InstalledEntry struct {
 }
 ```
 
-- [ ] **Step 3: 实现 store**
+- [x] **Step 3: 实现 store**
 
 `internal/sdk/store.go`：
 
@@ -1077,7 +1077,7 @@ func (s Store) List(name string) ([]InstalledEntry, error)
 - 默认 `~/.config/eget/sdk.installed.json`。
 - 如果 `XDG_CONFIG_HOME` 设置，使用 `$XDG_CONFIG_HOME/eget/sdk.installed.json`。
 
-- [ ] **Step 4: 运行 store 测试**
+- [x] **Step 4: 运行 store 测试**
 
 Run:
 

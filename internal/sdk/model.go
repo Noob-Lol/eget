@@ -38,3 +38,25 @@ type IndexFile struct {
 	URL      string `json:"url"`
 	Filename string `json:"filename"`
 }
+
+type InstalledStore struct {
+	Schema    int                         `json:"schema"`
+	Installed map[string]InstalledSDKNode `json:"installed"`
+}
+
+type InstalledSDKNode struct {
+	Versions map[string]InstalledEntry `json:"versions"`
+}
+
+type InstalledEntry struct {
+	Name            string    `json:"name"`
+	Version         string    `json:"version"`
+	Path            string    `json:"path"`
+	URL             string    `json:"url"`
+	Filename        string    `json:"filename"`
+	OS              string    `json:"os"`
+	Arch            string    `json:"arch"`
+	Ext             string    `json:"ext"`
+	InstalledAt     time.Time `json:"installed_at"`
+	StripComponents int       `json:"strip_components"`
+}
