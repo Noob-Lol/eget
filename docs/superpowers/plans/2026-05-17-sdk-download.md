@@ -774,7 +774,7 @@ git commit -m "feat(sdk): parse and cache sdk indexes"
 - Modify: `internal/install/archive.go`
 - Modify: `internal/install/defaults_test.go`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/install/defaults_test.go` 新增：
 
@@ -805,7 +805,7 @@ root/pkg/tool.txt 存在
 目录时间戳仍按已有逻辑恢复
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -819,7 +819,7 @@ Expected:
 FAIL，ArchiveExtractOptions 或 ExtractAllToWithOptions 不存在
 ```
 
-- [ ] **Step 3: 实现 options API**
+- [x] **Step 3: 实现 options API**
 
 在 `internal/install/archive.go`：
 
@@ -856,7 +856,7 @@ func stripArchivePath(name string, components int) (string, bool, error)
 - 剥离后仍需经过 `safeArchiveRelativePath`。
 - 如果所有普通文件都被跳过，返回错误。
 
-- [ ] **Step 4: 运行 install 测试**
+- [x] **Step 4: 运行 install 测试**
 
 Run:
 

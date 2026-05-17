@@ -50,6 +50,10 @@ type ArchiveExtractor struct {
 	Decompress DecompFn
 }
 
+type ArchiveExtractOptions struct {
+	StripComponents int
+}
+
 func NewArchiveExtractor(file Chooser, ar ArchiveFn, decompress DecompFn) *ArchiveExtractor {
 	return &ArchiveExtractor{File: file, Ar: ar, Decompress: decompress}
 }
@@ -205,6 +209,10 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 }
 
 func (a *ArchiveExtractor) ExtractAllTo(data []byte, output string) ([]string, error) {
+	return a.ExtractAllToWithOptions(data, output, ArchiveExtractOptions{})
+}
+
+func (a *ArchiveExtractor) ExtractAllToWithOptions(data []byte, output string, opts ArchiveExtractOptions) ([]string, error) {
 	if output == "" {
 		output = "."
 	}
@@ -232,7 +240,14 @@ func (a *ArchiveExtractor) ExtractAllTo(data []byte, output string) ([]string, e
 		if !direct && !possible {
 			continue
 		}
-		target, err := safeArchiveOutputPath(output, f.Name)
+		name, ok, err := stripArchivePath(f.Name, opts.StripComponents)
+		if err != nil {
+			return nil, fmt.Errorf("extract: %w", err)
+		}
+		if !ok {
+			continue
+		}
+		target, err := safeArchiveOutputPath(output, name)
 		if err != nil {
 			return nil, fmt.Errorf("extract: %w", err)
 		}
@@ -267,7 +282,14 @@ func (a *ArchiveExtractor) ExtractAllTo(data []byte, output string) ([]string, e
 		if l.sym {
 			err = os.Symlink(l.oldname, l.newname)
 		} else {
-			oldname, pathErr := safeArchiveOutputPath(output, l.oldname)
+			oldName, ok, stripErr := stripArchivePath(l.oldname, opts.StripComponents)
+			if stripErr != nil {
+				return nil, fmt.Errorf("extract: %w", stripErr)
+			}
+			if !ok {
+				return nil, fmt.Errorf("extract: linked target %q was stripped", l.oldname)
+			}
+			oldname, pathErr := safeArchiveOutputPath(output, oldName)
 			if pathErr != nil {
 				return nil, fmt.Errorf("extract: %w", pathErr)
 			}
@@ -282,7 +304,25 @@ func (a *ArchiveExtractor) ExtractAllTo(data []byte, output string) ([]string, e
 			return nil, fmt.Errorf("extract: %w", err)
 		}
 	}
+	if opts.StripComponents > 0 && len(extracted) == 0 {
+		return nil, fmt.Errorf("extract: no files extracted")
+	}
 	return extracted, nil
+}
+
+func stripArchivePath(name string, components int) (string, bool, error) {
+	if components <= 0 {
+		return name, true, nil
+	}
+	clean, err := safeArchiveRelativePath(name)
+	if err != nil {
+		return "", false, err
+	}
+	parts := strings.Split(filepath.ToSlash(clean), "/")
+	if len(parts) <= components {
+		return "", false, nil
+	}
+	return strings.Join(parts[components:], "/"), true, nil
 }
 
 func writeArchiveEntry(ar Archive, writer archiveEntryWriter, target string, mode fs.FileMode, modTime time.Time) error {

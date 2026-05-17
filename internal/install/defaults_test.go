@@ -323,6 +323,68 @@ func TestArchiveExtractorExtractAllToStreamsArchiveOnce(t *testing.T) {
 	}
 }
 
+func TestArchiveExtractorExtractAllToWithOptionsStripsComponents(t *testing.T) {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	files := map[string]string{
+		"go/bin/go":       "go",
+		"go/pkg/tool.txt": "tool",
+	}
+	for name, content := range files {
+		header := &zip.FileHeader{Name: name, Method: zip.Store}
+		header.SetMode(0o644)
+		w, err := zw.CreateHeader(header)
+		if err != nil {
+			t.Fatalf("create zip file: %v", err)
+		}
+		if _, err := w.Write([]byte(content)); err != nil {
+			t.Fatalf("write zip file: %v", err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+
+	extractor := NewArchiveExtractor(&GlobChooser{all: true, expr: "*"}, NewZipArchive, nil)
+	root := t.TempDir()
+	filesOut, err := extractor.ExtractAllToWithOptions(buf.Bytes(), root, ArchiveExtractOptions{StripComponents: 1})
+	if err != nil {
+		t.Fatalf("extract all with strip: %v", err)
+	}
+	if len(filesOut) != 2 {
+		t.Fatalf("expected 2 extracted files, got %#v", filesOut)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "bin", "go"))
+	if err != nil {
+		t.Fatalf("read stripped go file: %v", err)
+	}
+	if string(data) != "go" {
+		t.Fatalf("expected go content, got %q", data)
+	}
+	if _, err := os.Stat(filepath.Join(root, "go")); !os.IsNotExist(err) {
+		t.Fatalf("expected stripped root directory to be absent, stat err=%v", err)
+	}
+}
+
+func TestArchiveExtractorExtractAllToWithOptionsRejectsAllSkippedEntries(t *testing.T) {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	dirHeader := &zip.FileHeader{Name: "go/", Method: zip.Store}
+	dirHeader.SetMode(0o755 | os.ModeDir)
+	if _, err := zw.CreateHeader(dirHeader); err != nil {
+		t.Fatalf("create zip dir: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+
+	extractor := NewArchiveExtractor(&GlobChooser{all: true, expr: "*"}, NewZipArchive, nil)
+	_, err := extractor.ExtractAllToWithOptions(buf.Bytes(), t.TempDir(), ArchiveExtractOptions{StripComponents: 1})
+	if err == nil {
+		t.Fatal("expected extract all with strip to fail when all entries are skipped")
+	}
+}
+
 func TestTarArchiveNextRejectsPathTraversal(t *testing.T) {
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
