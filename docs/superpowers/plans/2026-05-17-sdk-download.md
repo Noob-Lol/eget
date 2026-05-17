@@ -1108,7 +1108,7 @@ git commit -m "feat(sdk): store installed sdk records"
 - Create: `internal/sdk/service.go`
 - Create: `internal/sdk/service_test.go`
 
-- [ ] **Step 1: 定义 service 依赖接口**
+- [x] **Step 1: 定义 service 依赖接口**
 
 `internal/sdk/service.go`：
 
@@ -1127,7 +1127,7 @@ type Service struct {
 
 避免 service 直接依赖 CLI，也避免在测试里真实联网。
 
-- [ ] **Step 2: 写 install service 失败测试**
+- [x] **Step 2: 写 install service 失败测试**
 
 使用本地 zip fixture 和 fake downloader：
 
@@ -1141,7 +1141,7 @@ strip_components=1 后目标目录包含 bin/go
 目标目录已存在且 Force=true 安全删除后重装
 ```
 
-- [ ] **Step 3: 实现 install**
+- [x] **Step 3: 实现 install**
 
 ```go
 type InstallOptions struct {
@@ -1170,7 +1170,7 @@ func (s Service) InstallMany(ctx context.Context, targets []string, opts Install
 - 解压完成后 rename 到最终目录。
 - 失败时清理临时目录。
 
-- [ ] **Step 4: 写 list/remove 测试**
+- [x] **Step 4: 写 list/remove 测试**
 
 覆盖：
 
@@ -1182,7 +1182,7 @@ Remove 目录不存在时删除记录并返回 warning 信息
 Remove 路径不在允许根目录时报错且不删除
 ```
 
-- [ ] **Step 5: 实现 list/remove**
+- [x] **Step 5: 实现 list/remove**
 
 ```go
 type RemoveResult struct {
@@ -1203,7 +1203,7 @@ func (s Service) Remove(target string) (RemoveResult, error)
 - `filepath.Abs` + `filepath.Rel` 校验 path 在允许根内。
 - 不接受 `..` 逃逸。
 
-- [ ] **Step 6: 写 index action 测试**
+- [x] **Step 6: 写 index action 测试**
 
 覆盖：
 
@@ -1217,7 +1217,7 @@ IndexRefreshAll 遍历所有配置了 index_url 的 SDK
 刷新失败且无旧缓存时报错
 ```
 
-- [ ] **Step 7: 实现 index actions**
+- [x] **Step 7: 实现 index actions**
 
 ```go
 func (s Service) RefreshIndex(ctx context.Context, name string) (Index, error)
@@ -1228,7 +1228,7 @@ func (s Service) ClearIndex(name string) error
 func (s Service) ClearAllIndexes() error
 ```
 
-- [ ] **Step 8: 运行 service 测试**
+- [x] **Step 8: 运行 service 测试**
 
 Run:
 
