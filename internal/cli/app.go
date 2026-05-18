@@ -219,7 +219,7 @@ var commandFlagSpecs = map[string]flagSpec{
 		values: setOf("name", "tag", "system", "to", "file", "asset", "source", "chunk"),
 	},
 	"list": {
-		bools:  setOf("outdated", "old", "all", "a", "gui"),
+		bools:  setOf("outdated", "old", "all", "a", "gui", "no-installed", "ni"),
 		values: setOf("info", "i"),
 	},
 	"update": {

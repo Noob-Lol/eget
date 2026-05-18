@@ -859,6 +859,43 @@ func TestMain_ListAllShortBindsOption(t *testing.T) {
 	}
 }
 
+func TestMain_ListNoInstalledBindsOption(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "long", args: []string{"list", "--no-installed"}},
+		{name: "short", args: []string{"list", "--ni"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]commandCall, 0, 1)
+			handler := func(name string, options any) error {
+				calls = append(calls, commandCall{name: name, options: options})
+				return nil
+			}
+
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			err := newApp(handler, &stdout, &stderr).RunWithArgs(tt.args)
+			if err != nil {
+				t.Fatalf("expected list no-installed command to parse, got %v", err)
+			}
+			if len(calls) != 1 {
+				t.Fatalf("expected one handler call, got %d", len(calls))
+			}
+
+			opts, ok := calls[0].options.(*ListOptions)
+			if !ok {
+				t.Fatalf("expected ListOptions, got %T", calls[0].options)
+			}
+			if !opts.NoInstalled {
+				t.Fatalf("expected no-installed flag to be true")
+			}
+		})
+	}
+}
+
 func TestMain_ListGUIBindsOption(t *testing.T) {
 	calls := make([]commandCall, 0, 1)
 	handler := func(name string, options any) error {

@@ -157,6 +157,8 @@ eget uninstall fzf
 eget list|ls
 # 列出全部托管包和已安装包
 eget list --all
+# 列出 config 中配置但未安装的包
+eget list --no-installed
 # 只列出 GUI 包
 eget list --gui
 # update fzf
@@ -217,6 +219,7 @@ eget config set global.target ~/.local/bin
 
 - 默认列出已安装包。
 - 使用 `--all` / `-a` 列出本地 managed packages 与 installed store 的并集。
+- 使用 `--no-installed` / `--ni` 列出 `[packages]` 中已配置但未安装的包。
 - 使用 `--gui` 只显示当前列表视图中的 GUI 应用。
 
 `query`(alias: `q`)

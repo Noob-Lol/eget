@@ -3,10 +3,11 @@ package cli
 import "github.com/gookit/gcli/v3"
 
 type ListOptions struct {
-	Outdated bool
-	All      bool
-	GUI      bool
-	Info     string
+	Outdated    bool
+	All         bool
+	GUI         bool
+	NoInstalled bool
+	Info        string
 }
 
 func newListCmd(handler CommandHandler) (*gcli.Command, func()) {
@@ -17,6 +18,7 @@ func newListCmd(handler CommandHandler) (*gcli.Command, func()) {
 		c.BoolOpt(&opts.Outdated, "outdated", "old", false, "Check and list outdated installed packages")
 		c.BoolOpt(&opts.All, "all", "a", false, "List all managed and installed packages")
 		c.BoolOpt(&opts.GUI, "gui", "", false, "List GUI applications")
+		c.BoolOpt(&opts.NoInstalled, "no-installed", "ni", false, "List packages configured but not installed")
 		c.StrOpt(&opts.Info, "info", "i", "", "Show detailed info for a package")
 	}
 	cmd.Func = func(_ *gcli.Command, args []string) error {

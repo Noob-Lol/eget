@@ -129,7 +129,7 @@ The core implementation lives in `internal/sdk`:
 
 `uninstall` resolves package name or repo target, reads installed records, deletes recorded extracted files, and removes the installed-store entry. It does not remove `[packages.<name>]`.
 
-`list` defaults to installed packages. `list --all` merges managed package definitions and installed records.
+`list` defaults to installed packages. `list --all` merges managed package definitions and installed records. `list --no-installed` filters that merged view down to configured packages that have no installed-store entry.
 
 `update` checks latest version information before installing. `update --check` is equivalent to the outdated-check path; `update --all` updates managed packages with newer versions.
 

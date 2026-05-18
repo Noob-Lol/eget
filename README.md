@@ -157,6 +157,8 @@ eget uninstall fzf
 eget list|ls
 # list all managed and installed packages
 eget list --all
+# list packages configured but not installed
+eget list --no-installed
 # list GUI packages
 eget list --gui
 # update fzf
@@ -217,6 +219,7 @@ The target argument accepted by `install` and `download` can be:
 
 - Lists installed packages by default.
 - Use `--all` / `-a` to list the union of local managed packages and installed-store entries.
+- Use `--no-installed` / `--ni` to list packages configured in `[packages]` but not installed.
 - Use `--gui` to filter the current list view to GUI applications.
 
 `query` (alias: `q`)

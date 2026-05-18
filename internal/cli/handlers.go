@@ -214,6 +214,12 @@ func (s *cliService) handleList(opts *ListOptions) error {
 	if opts != nil && opts.Outdated && opts.Info != "" {
 		return fmt.Errorf("list --outdated and --info cannot be used together")
 	}
+	if opts != nil && opts.Outdated && opts.NoInstalled {
+		return fmt.Errorf("list --outdated and --no-installed cannot be used together")
+	}
+	if opts != nil && opts.NoInstalled && opts.Info != "" {
+		return fmt.Errorf("list --no-installed and --info cannot be used together")
+	}
 	if opts != nil && opts.Info != "" {
 		item, err := s.listService.FindPackage(opts.Info)
 		if err != nil {
@@ -263,7 +269,13 @@ func (s *cliService) handleList(opts *ListOptions) error {
 
 	var items []app.ListItem
 	var err error
-	if opts != nil && opts.GUI {
+	if opts != nil && opts.NoInstalled {
+		items, err = s.listService.ListPackages()
+		items = filterNoInstalledListItems(items)
+		if opts.GUI {
+			items = filterGUIListItems(items)
+		}
+	} else if opts != nil && opts.GUI {
 		items, err = s.listService.ListGUIPackages(opts.All)
 	} else if opts != nil && opts.All {
 		items, err = s.listService.ListPackages()
@@ -285,6 +297,8 @@ func (s *cliService) handleList(opts *ListOptions) error {
 	}
 
 	switch {
+	case opts != nil && opts.NoInstalled:
+		ccolor.Infoln("Not Installed Packages:")
 	case opts != nil && opts.All:
 		ccolor.Infoln("Managed Packages:")
 	case opts == nil || !opts.GUI:
@@ -297,6 +311,26 @@ func (s *cliService) handleList(opts *ListOptions) error {
 	}
 	ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 	return nil
+}
+
+func filterNoInstalledListItems(items []app.ListItem) []app.ListItem {
+	filtered := make([]app.ListItem, 0, len(items))
+	for _, item := range items {
+		if !item.Installed {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
+}
+
+func filterGUIListItems(items []app.ListItem) []app.ListItem {
+	filtered := make([]app.ListItem, 0, len(items))
+	for _, item := range items {
+		if item.IsGUI {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }
 
 func listPackageRow(item app.ListItem) []any {

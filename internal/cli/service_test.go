@@ -1134,6 +1134,47 @@ func TestHandleListAllPrintsManagedAndInstalledPackages(t *testing.T) {
 	}
 }
 
+func TestHandleListNoInstalledPrintsOnlyManagedMissingPackages(t *testing.T) {
+	now := time.Date(2026, 5, 5, 13, 20, 19, 0, time.FixedZone("CST", 8*60*60))
+	svc := &cliService{
+		listService: app.ListService{
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["chlog"] = cfgpkg.Section{Repo: util.StringPtr("gookit/gitw")}
+				cfg.Packages["ripgrep"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+				return cfg, nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{
+					Installed: map[string]storepkg.Entry{
+						"gookit/gitw": {Repo: "gookit/gitw", Tag: "v0.3.6", InstalledAt: now},
+					},
+				}, nil
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleList(&ListOptions{NoInstalled: true})
+	if err != nil {
+		t.Fatalf("handle list no-installed: %v", err)
+	}
+
+	got := out.String()
+	if !strings.Contains(got, "Not Installed Packages:") {
+		t.Fatalf("expected not installed packages title, got %q", got)
+	}
+	if !strings.Contains(got, "ripgrep") || !strings.Contains(got, "No-Install") {
+		t.Fatalf("expected managed-only package in output, got %q", got)
+	}
+	if strings.Contains(got, "chlog") || strings.Contains(got, "v0.3.6") {
+		t.Fatalf("expected installed package to be omitted, got %q", got)
+	}
+}
+
 func TestHandleListGUIPrintsOnlyGUIPackages(t *testing.T) {
 	isGUI := true
 	svc := &cliService{
@@ -1225,6 +1266,16 @@ func TestHandleListRejectsOutdatedWithInfo(t *testing.T) {
 	err := svc.handleList(&ListOptions{Outdated: true, Info: "chlog"})
 	if err == nil {
 		t.Fatal("expected conflicting list options to fail")
+	}
+}
+
+func TestHandleListRejectsNoInstalledConflicts(t *testing.T) {
+	svc := &cliService{}
+	if err := svc.handleList(&ListOptions{NoInstalled: true, Info: "chlog"}); err == nil {
+		t.Fatal("expected no-installed with info to fail")
+	}
+	if err := svc.handleList(&ListOptions{NoInstalled: true, Outdated: true}); err == nil {
+		t.Fatal("expected no-installed with outdated to fail")
 	}
 }
 
