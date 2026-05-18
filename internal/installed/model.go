@@ -8,6 +8,9 @@ type Entry struct {
 	InstalledAt    time.Time      `toml:"installed_at" mapstructure:"installed_at"`
 	URL            string         `toml:"url" mapstructure:"url"`
 	Asset          string         `toml:"asset" mapstructure:"asset"`
+	Desc           string         `toml:"desc,omitempty" mapstructure:"desc"`
+	Homepage       string         `toml:"homepage,omitempty" mapstructure:"homepage"`
+	RepoURL        string         `toml:"repo_url,omitempty" mapstructure:"repo_url"`
 	Tool           string         `toml:"tool,omitempty" mapstructure:"tool"`
 	ExtractedFiles []string       `toml:"extracted_files" mapstructure:"extracted_files"`
 	Options        map[string]any `toml:"options" mapstructure:"options"`

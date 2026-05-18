@@ -12,9 +12,16 @@ import (
 )
 
 type ConfigService struct {
-	ConfigPath string
-	Load       func() (*cfgpkg.File, error)
-	Save       func(path string, file *cfgpkg.File) error
+	ConfigPath   string
+	Load         func() (*cfgpkg.File, error)
+	Save         func(path string, file *cfgpkg.File) error
+	RepoMetadata func(repo string) (RepoMetadata, error)
+}
+
+type RepoMetadata struct {
+	Desc     string
+	Homepage string
+	RepoURL  string
 }
 
 type ConfigInfoResult struct {
@@ -36,7 +43,13 @@ func (s ConfigService) AddPackage(repo, name string, opts install.Options) error
 	if cfg.Packages == nil {
 		cfg.Packages = make(map[string]cfgpkg.Section)
 	}
-	cfg.Packages[name] = sectionFromInstallOptions(repo, name, opts)
+	section := sectionFromInstallOptions(repo, name, opts)
+	if section.Desc == nil || *section.Desc == "" {
+		if meta, ok := s.repoMetadata(repo); ok && meta.Desc != "" {
+			section.Desc = util.StringPtr(meta.Desc)
+		}
+	}
+	cfg.Packages[name] = section
 	return s.save(cfg)
 }
 
@@ -235,4 +248,15 @@ func sectionFromInstallOptions(repo, name string, opts install.Options) cfgpkg.S
 		section.IsGUI = util.BoolPtr(true)
 	}
 	return section
+}
+
+func (s ConfigService) repoMetadata(repo string) (RepoMetadata, bool) {
+	if s.RepoMetadata == nil {
+		return RepoMetadata{}, false
+	}
+	meta, err := s.RepoMetadata(repo)
+	if err != nil {
+		return RepoMetadata{}, false
+	}
+	return meta, true
 }

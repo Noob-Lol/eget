@@ -109,6 +109,9 @@ func TestStoreSaveRoundTripWithExtendedFields(t *testing.T) {
 				Version:     "v0.3.6",
 				Tag:         "v0.3.6",
 				ReleaseDate: releasedAt,
+				Desc:        "Git release changelog generator",
+				Homepage:    "https://gookit.github.io/gitw",
+				RepoURL:     "https://github.com/gookit/gitw",
 			},
 		},
 	}
@@ -132,6 +135,9 @@ func TestStoreSaveRoundTripWithExtendedFields(t *testing.T) {
 	if !entry.ReleaseDate.Equal(releasedAt) {
 		t.Fatalf("expected release date %v, got %v", releasedAt, entry.ReleaseDate)
 	}
+	assert.Eq(t, "Git release changelog generator", entry.Desc)
+	assert.Eq(t, "https://gookit.github.io/gitw", entry.Homepage)
+	assert.Eq(t, "https://github.com/gookit/gitw", entry.RepoURL)
 	if entry.Options["system"] != "windows/amd64" {
 		t.Fatalf("expected options to round-trip, got %#v", entry.Options)
 	}

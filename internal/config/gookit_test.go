@@ -33,6 +33,9 @@ func TestPathGetAndSet(t *testing.T) {
 	if err := SetByPath(cfg, "packages.fzf.repo", "junegunn/fzf"); err != nil {
 		t.Fatalf("set packages.fzf.repo: %v", err)
 	}
+	if err := SetByPath(cfg, "packages.fzf.desc", "Command-line fuzzy finder"); err != nil {
+		t.Fatalf("set packages.fzf.desc: %v", err)
+	}
 	if err := SetByPath(cfg, "packages.fzf.chunk_concurrency", "2"); err != nil {
 		t.Fatalf("set packages.fzf.chunk_concurrency: %v", err)
 	}
@@ -86,6 +89,9 @@ func TestPathGetAndSet(t *testing.T) {
 	}
 	if pkg.ChunkConcurrency == nil || *pkg.ChunkConcurrency != 2 {
 		t.Fatalf("expected package chunk_concurrency to be parsed, got %#v", pkg.ChunkConcurrency)
+	}
+	if pkg.Desc == nil || *pkg.Desc != "Command-line fuzzy finder" {
+		t.Fatalf("expected package desc to be parsed, got %#v", pkg.Desc)
 	}
 }
 
@@ -192,6 +198,7 @@ func TestDumpConfigStringIncludesConcurrencyOptions(t *testing.T) {
 	cfg.Global.BatchConcurrency = &batch
 	cfg.Packages["fd"] = Section{
 		Repo:             stringPtr("sharkdp/fd"),
+		Desc:             stringPtr("Simple, fast and user-friendly alternative to find"),
 		ChunkConcurrency: &pkgChunk,
 	}
 
@@ -207,6 +214,9 @@ func TestDumpConfigStringIncludesConcurrencyOptions(t *testing.T) {
 	}
 	if !strings.Contains(text, "chunk_concurrency = 2") {
 		t.Fatalf("expected package chunk_concurrency in dump, got %q", text)
+	}
+	if !strings.Contains(text, `desc = "Simple, fast and user-friendly alternative to find"`) {
+		t.Fatalf("expected package desc in dump, got %q", text)
 	}
 }
 

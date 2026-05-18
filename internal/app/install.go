@@ -53,12 +53,13 @@ type InstallAllResult struct {
 type ReleaseInfoFunc func(repo, url string) (string, time.Time, error)
 
 type Service struct {
-	Runner      Runner
-	Store       InstalledStore
-	Config      PackageAdder
-	Now         func() time.Time
-	ReleaseInfo ReleaseInfoFunc
-	LoadConfig  func() (*cfgpkg.File, error)
+	Runner       Runner
+	Store        InstalledStore
+	Config       PackageAdder
+	Now          func() time.Time
+	ReleaseInfo  ReleaseInfoFunc
+	RepoMetadata func(repo string) (RepoMetadata, error)
+	LoadConfig   func() (*cfgpkg.File, error)
 }
 
 func (s Service) InstallTarget(target string, opts install.Options, extras ...InstallExtras) (RunResult, error) {
@@ -315,6 +316,16 @@ func (s Service) installResolvedTarget(runTarget string, opts install.Options) (
 			releaseDate = gotDate
 		}
 	}
+	meta := s.repoMetadata(repo)
+	if desc := s.configDescForRepo(repo); desc != "" {
+		meta.Desc = desc
+	}
+	if meta.Homepage == "" {
+		meta.Homepage = inferRepoWebURL(repo)
+	}
+	if meta.RepoURL == "" {
+		meta.RepoURL = inferRepoWebURL(repo)
+	}
 
 	entry := storepkg.Entry{
 		Repo:           repo,
@@ -322,6 +333,9 @@ func (s Service) installResolvedTarget(runTarget string, opts install.Options) (
 		InstalledAt:    s.now(),
 		URL:            result.URL,
 		Asset:          chooseAsset(result),
+		Desc:           meta.Desc,
+		Homepage:       meta.Homepage,
+		RepoURL:        meta.RepoURL,
 		Tool:           result.Tool,
 		ExtractedFiles: append([]string(nil), result.ExtractedFiles...),
 		Options:        extractOptionsMap(opts),
@@ -335,6 +349,26 @@ func (s Service) installResolvedTarget(runTarget string, opts install.Options) (
 		return RunResult{}, err
 	}
 	return result, nil
+}
+
+func (s Service) configDescForRepo(repo string) string {
+	cfg, err := s.loadConfig()
+	if err != nil || cfg == nil {
+		return ""
+	}
+	pkg := packageSectionForRepoTarget(cfg, repo)
+	return util.DerefString(pkg.Desc)
+}
+
+func (s Service) repoMetadata(repo string) RepoMetadata {
+	if s.RepoMetadata == nil {
+		return RepoMetadata{}
+	}
+	meta, err := s.RepoMetadata(repo)
+	if err != nil {
+		return RepoMetadata{}
+	}
+	return meta
 }
 
 func (s Service) DownloadTarget(target string, opts install.Options) (RunResult, error) {

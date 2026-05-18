@@ -6,6 +6,7 @@ type Section struct {
 	CacheDir             *string           `toml:"cache_dir" mapstructure:"cache_dir"`
 	ProxyURL             *string           `toml:"proxy_url" mapstructure:"proxy_url"`
 	DownloadOnly         *bool             `toml:"download_only" mapstructure:"download_only"`
+	Desc                 *string           `toml:"desc" mapstructure:"desc"`
 	File                 *string           `toml:"file" mapstructure:"file"`
 	GithubToken          *string           `toml:"github_token" mapstructure:"github_token"`
 	GuiTarget            *string           `toml:"gui_target" mapstructure:"gui_target"`

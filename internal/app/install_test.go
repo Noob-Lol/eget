@@ -82,6 +82,14 @@ func TestInstallTargetRunsInstallFlowAndRecordsInstalledState(t *testing.T) {
 			}
 			return "v1.0.0", now.Add(-time.Hour), nil
 		},
+		RepoMetadata: func(repo string) (RepoMetadata, error) {
+			assert.Eq(t, "junegunn/fzf", repo)
+			return RepoMetadata{
+				Desc:     "Command-line fuzzy finder",
+				Homepage: "https://junegunn.github.io/fzf",
+				RepoURL:  "https://github.com/junegunn/fzf",
+			}, nil
+		},
 	}
 
 	opts := install.Options{
@@ -128,6 +136,9 @@ func TestInstallTargetRunsInstallFlowAndRecordsInstalledState(t *testing.T) {
 	if got := store.entry.Options["download_source"]; got != true {
 		t.Fatalf("expected source option to be recorded, got %#v", got)
 	}
+	assert.Eq(t, "Command-line fuzzy finder", store.entry.Desc)
+	assert.Eq(t, "https://junegunn.github.io/fzf", store.entry.Homepage)
+	assert.Eq(t, "https://github.com/junegunn/fzf", store.entry.RepoURL)
 	if len(result.ExtractedFiles) != 1 || result.ExtractedFiles[0] != "./fzf" {
 		t.Fatalf("expected extracted files to round-trip, got %#v", result.ExtractedFiles)
 	}
@@ -558,6 +569,7 @@ system = "windows/amd64"
 
 [packages.picoclaw]
 repo = "sipeed/picoclaw"
+desc = "Manual PicoClaw description"
 target = "D:/Program/AITools/PicoClaw"
 tag = "v1.2.3"
 file = "*.exe"
@@ -575,6 +587,9 @@ asset_filters = ["windows"]
 		Store:  store,
 		LoadConfig: func() (*cfgpkg.File, error) {
 			return cfg, nil
+		},
+		RepoMetadata: func(repo string) (RepoMetadata, error) {
+			return RepoMetadata{Desc: "Repository PicoClaw description"}, nil
 		},
 	}
 
@@ -613,6 +628,7 @@ asset_filters = ["windows"]
 	if store.entry.Target != "sipeed/picoclaw" {
 		t.Fatalf("expected installed target to be real repo, got %q", store.entry.Target)
 	}
+	assert.Eq(t, "Manual PicoClaw description", store.entry.Desc)
 }
 
 func TestInstallTargetAppliesManagedPackageOptionsWhenTargetIsRepo(t *testing.T) {

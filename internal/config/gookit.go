@@ -221,6 +221,9 @@ func sectionToMap(section Section) map[string]any {
 	if section.DownloadOnly != nil {
 		data["download_only"] = *section.DownloadOnly
 	}
+	if section.Desc != nil && *section.Desc != "" {
+		data["desc"] = *section.Desc
+	}
 	if section.File != nil {
 		data["file"] = *section.File
 	}

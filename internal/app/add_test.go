@@ -19,6 +19,10 @@ func TestAddPackage(t *testing.T) {
 			return cfgpkg.NewFile(), nil
 		},
 		Save: cfgpkg.Save,
+		RepoMetadata: func(repo string) (RepoMetadata, error) {
+			assert.Eq(t, "junegunn/fzf", repo)
+			return RepoMetadata{Desc: "Command-line fuzzy finder"}, nil
+		},
 	}
 
 	opts := install.Options{
@@ -73,6 +77,7 @@ func TestAddPackage(t *testing.T) {
 	if pkg.IsGUI == nil || !*pkg.IsGUI {
 		t.Fatalf("expected is_gui to be persisted, got %#v", pkg.IsGUI)
 	}
+	assert.Eq(t, "Command-line fuzzy finder", *pkg.Desc)
 }
 
 func TestAddPackageWithCustomName(t *testing.T) {

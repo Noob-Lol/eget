@@ -59,6 +59,15 @@ func entryToMap(entry Entry) map[string]any {
 	if entry.Tool != "" {
 		data["tool"] = entry.Tool
 	}
+	if entry.Desc != "" {
+		data["desc"] = entry.Desc
+	}
+	if entry.Homepage != "" {
+		data["homepage"] = entry.Homepage
+	}
+	if entry.RepoURL != "" {
+		data["repo_url"] = entry.RepoURL
+	}
 	if entry.Version != "" {
 		data["version"] = entry.Version
 	}
