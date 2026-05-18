@@ -34,6 +34,7 @@
   - 只输入一个参数时，也支持使用逗号分隔，例如: `install name1,name2,name3`
 - [ ] package config 新增 desc 字段用于指定 package 的描述，可以手动设置，为空时默认从 repository 中获取
   - 没有添加config 的 package, 但是 installed 里的 package 也会记录描述信息，方便查看
+- [ ] eget list 新增 --no-installed 用于显示 config 里未安装的 package
 
 ## search 结果展示 ✅
 

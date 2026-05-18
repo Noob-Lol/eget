@@ -338,50 +338,19 @@ SourceForge 查询目标使用 `sourceforge:<project>` 或 `sourceforge:<project
 - `[packages.<name>]`
 - `[sdk.<name>]`
 
-示例：
+最小示例：
 
 ```toml
 [global]
 target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
 proxy_url = "http://127.0.0.1:7890"
-system = "windows/amd64"
-sys7z_path = ""
-chunk_concurrency = 0
-batch_concurrency = 0
-ignore_update_packages = []
 sdk_target = "~/sdks"
-sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
-
-[api_cache]
-enable = false
-cache_time = 300
-
-[ghproxy]
-enable = false
-host_url = ""
-support_api = true
-fallbacks = []
-
-["inhere/markview"]
-tag = "nightly"
 
 [packages.markview]
 repo = "inhere/markview"
-target = "~/.local/bin"
 tag = "nightly"
 asset_filters = ["windows"]
-
-[packages.winmerge]
-repo = "sourceforge:winmerge"
-source_path = "stable"
-system = "windows/amd64"
-asset_filters = ["x64", "PerUser", "setup"]
-
-[packages.forgejo]
-repo = "gitea:codeberg.org/forgejo/forgejo"
-system = "linux/amd64"
-asset_filters = ["linux", "amd64"]
 
 [sdk.go]
 aliases = ["golang"]
@@ -407,94 +376,15 @@ arch_map = { amd64 = "x64", arm64 = "arm64", 386 = "x86" }
 ext_map = { windows = "zip", linux = "tar.xz", darwin = "tar.gz" }
 ```
 
-常见字段：
-
-- `target`
-- `gui_target`
-- `cache_dir`
-- `proxy_url`
-- `sys7z_path`
-- `chunk_concurrency`
-- `batch_concurrency`
-- `sdk_target`
-- `sdk_ext_map`
-- `api_cache.enable`
-- `api_cache.cache_time`
-- `ghproxy.enable`
-- `ghproxy.host_url`
-- `ghproxy.support_api`
-- `ghproxy.fallbacks`
-- `system`
-- `tag`
-- `source_path`
-- `file`
-- `asset_filters`
-- `download_source`
-- `extract_all`
-- `is_gui`
-- `quiet`
-- `upgrade_only`
-- `sdk.<name>.aliases`
-- `sdk.<name>.target`
-- `sdk.<name>.url_template`
-- `sdk.<name>.index_url`
-- `sdk.<name>.index_format`
-- `sdk.<name>.index_parser`
-- `sdk.<name>.index_path_prefix`
-- `sdk.<name>.filename_pattern`
-- `sdk.<name>.strip_components`
-- `sdk.<name>.os_map`
-- `sdk.<name>.arch_map`
-- `sdk.<name>.ext_map`
-
-默认初始化配置：
+创建默认配置：
 
 ```bash
 eget config init
 ```
 
-会写入:
-- `global.target = "~/.local/bin"`
-- `global.cache_dir = "~/.cache/eget"`
-- `global.proxy_url = ""`
-- `global.sys7z_path = ""`
-- `global.chunk_concurrency = 0`
-- `global.batch_concurrency = 0`
-- `global.ignore_update_packages = []`
-- `api_cache.enable = false`
-- `api_cache.cache_time = 300`
-- `ghproxy.enable = false`
-- `ghproxy.host_url = ""`
-- `ghproxy.support_api = true`
-
 默认会写入 `~/.config/eget/eget.toml`。
 
-目录语义：
-
-- `target` 是默认安装目录
-- `cache_dir` 是默认下载缓存目录
-- `proxy_url` 是全局远程请求代理，GitHub 查询和远程下载都会使用它
-- `sys7z_path` 是可选的 7z 可执行文件路径。为空时会从 `PATH` 依次查找 `7z`、`7zz`、`7za`
-- `source_path` 用于限定 SourceForge 项目 files 区域下的发现路径，例如 `stable`
-- `api_cache` 会缓存已知 provider 的元数据 `GET` 响应，包括 GitHub API、GitLab/Gitea release API 和 SourceForge files 列表；缓存文件目录派生为 `{cache_dir}/api-cache/`
-- `cache_time` 单位为秒；缓存过期后会重新请求并刷新缓存
-- `ghproxy` 会重写 GitHub 资源下载 URL；当 `support_api = true` 时，也会重写 `api.github.com` 请求
-- `ghproxy.fallbacks` 会在主代理失败时按顺序回退重试
-- `proxy_url` 是 HTTP 层代理，`ghproxy` 是请求 URL 重写，两者可以同时启用
-- `download` 在未指定 `--to` 时默认使用 `cache_dir`
-- `install`/`download` 对远程 URL 的原始下载内容会优先复用 `cache_dir` 中的缓存文件
-- `ignore_update_packages` 用于在 `list --outdated`、`update --check` 和 `update --all` 中跳过指定 package 名称
-- `sdk_target` 是 SDK 安装根目录。SDK 配置里的相对 `target` 会基于该目录解析
-- `sdk_ext_map` 是按 Go OS 名称配置的默认 SDK 归档扩展名；SDK 级别 `ext_map` 会覆盖它
-- `sdk.<name>.target` 是安装目录模板，支持 `{name}`、`{version}`、`{os}`、`{arch}`、`{ext}`
-- `sdk.<name>.url_template` 是精确版本安装时使用的归档 URL 模板
-- `sdk.<name>.index_url` 指向 HTML 或 JSON 索引，用于 `latest` 和 `go:1.22` 这种前缀版本解析
-- `sdk.<name>.index_format = "html"` 会解析页面里的 `<a href>` 归档链接；如果配置了 `url_template`，也可以从 `v20.11.1/` 这类版本目录链接生成当前平台归档 URL。JSON 索引需要配置受支持的 `index_parser`，当前为 `go-json` 或 `node-json`
-- `sdk.<name>.filename_pattern` 用于从 HTML index 解析归档文件名
-- `sdk.<name>.strip_components` 用于解压时剥离归档内路径前缀，例如去掉顶层 `go/` 或 `node-v.../` 目录
-
-安装记录 store 默认也会写入 `~/.config/eget/installed.toml`。
-SDK 安装记录 store 默认写入 `~/.config/eget/sdk.installed.json`。
+完整配置说明见 [docs/config.zh-CN.md](docs/config.zh-CN.md)，包括全局字段、package 配置、SDK 配置、缓存目录、安装记录文件、ghproxy、API cache 和 SDK index 设置。SDK 专题使用说明见 [docs/sdk-usage.md](docs/sdk-usage.md)。
 
 ## 构建与测试
 
@@ -517,7 +407,7 @@ make test
 - `internal/source/github`: GitHub 资源查找
 - `internal/source/forge`: GitLab/Gitea/Forgejo 资源查找
 
-> 更详细说明见 [docs/DOCS.md](docs/DOCS.md)。
+> 更详细说明见 [docs/architecture.md](docs/architecture.md)。
 
 ## 参考项目
 

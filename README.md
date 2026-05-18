@@ -338,50 +338,19 @@ Supported config sections:
 - `[packages.<name>]`
 - `[sdk.<name>]`
 
-Example:
+Minimal example:
 
 ```toml
 [global]
 target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
 proxy_url = "http://127.0.0.1:7890"
-system = "windows/amd64"
-sys7z_path = ""
-chunk_concurrency = 0
-batch_concurrency = 0
-ignore_update_packages = []
 sdk_target = "~/sdks"
-sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
-
-[api_cache]
-enable = false
-cache_time = 300
-
-[ghproxy]
-enable = false
-host_url = ""
-support_api = true
-fallbacks = []
-
-["inhere/markview"]
-tag = "nightly"
 
 [packages.markview]
 repo = "inhere/markview"
-target = "~/.local/bin"
 tag = "nightly"
 asset_filters = ["windows"]
-
-[packages.winmerge]
-repo = "sourceforge:winmerge"
-source_path = "stable"
-system = "windows/amd64"
-asset_filters = ["x64", "PerUser", "setup"]
-
-[packages.forgejo]
-repo = "gitea:codeberg.org/forgejo/forgejo"
-system = "linux/amd64"
-asset_filters = ["linux", "amd64"]
 
 [sdk.go]
 aliases = ["golang"]
@@ -407,95 +376,15 @@ arch_map = { amd64 = "x64", arm64 = "arm64", 386 = "x86" }
 ext_map = { windows = "zip", linux = "tar.xz", darwin = "tar.gz" }
 ```
 
-Common fields:
-
-- `target`
-- `gui_target`
-- `cache_dir`
-- `proxy_url`
-- `sys7z_path`
-- `chunk_concurrency`
-- `batch_concurrency`
-- `sdk_target`
-- `sdk_ext_map`
-- `api_cache.enable`
-- `api_cache.cache_time`
-- `ghproxy.enable`
-- `ghproxy.host_url`
-- `ghproxy.support_api`
-- `ghproxy.fallbacks`
-- `system`
-- `tag`
-- `source_path`
-- `file`
-- `asset_filters`
-- `download_source`
-- `extract_all`
-- `is_gui`
-- `quiet`
-- `upgrade_only`
-- `sdk.<name>.aliases`
-- `sdk.<name>.target`
-- `sdk.<name>.url_template`
-- `sdk.<name>.index_url`
-- `sdk.<name>.index_format`
-- `sdk.<name>.index_parser`
-- `sdk.<name>.index_path_prefix`
-- `sdk.<name>.filename_pattern`
-- `sdk.<name>.strip_components`
-- `sdk.<name>.os_map`
-- `sdk.<name>.arch_map`
-- `sdk.<name>.ext_map`
-
-Default initialization:
+Create a default config:
 
 ```bash
 eget config init
 ```
 
-This writes:
+By default, this writes `~/.config/eget/eget.toml`.
 
-- `global.target = "~/.local/bin"`
-- `global.cache_dir = "~/.cache/eget"`
-- `global.proxy_url = ""`
-- `global.sys7z_path = ""`
-- `global.chunk_concurrency = 0`
-- `global.batch_concurrency = 0`
-- `global.ignore_update_packages = []`
-- `api_cache.enable = false`
-- `api_cache.cache_time = 300`
-- `ghproxy.enable = false`
-- `ghproxy.host_url = ""`
-- `ghproxy.support_api = true`
-
-By default, the file is created at `~/.config/eget/eget.toml`.
-
-Directory semantics:
-
-- `target` is the default install directory
-- `cache_dir` is the default download cache directory
-- `proxy_url` is the global proxy for remote requests; both GitHub lookups and remote downloads use it
-- `sys7z_path` is an optional 7z executable path. When empty, eget searches `PATH` for `7z`, `7zz`, then `7za`
-- `source_path` narrows SourceForge discovery under a project's files area, for example `stable`
-- `api_cache` caches known provider metadata `GET` responses, including GitHub API, GitLab/Gitea release API, and SourceForge files listings; the cache file directory is derived as `{cache_dir}/api-cache/`
-- `cache_time` is measured in seconds; expired cache entries are refreshed from the network
-- `ghproxy` rewrites GitHub asset download URLs; when `support_api = true`, it also rewrites `api.github.com` requests
-- `ghproxy.fallbacks` are tried in order when the primary ghproxy host fails
-- `proxy_url` is the HTTP-layer proxy, while `ghproxy` rewrites request URLs; both can be enabled together
-- `download` uses `cache_dir` by default when `--to` is not provided
-- `install` and `download` will reuse cached remote download contents from `cache_dir` when available
-- `ignore_update_packages` skips named packages during `list --outdated`, `update --check`, and `update --all`
-- `sdk_target` is the root directory for SDK installations. Relative SDK `target` values are resolved under this root
-- `sdk_ext_map` is the default archive extension map by Go OS name; SDK-level `ext_map` overrides it
-- `sdk.<name>.target` is the install directory template. Supported variables are `{name}`, `{version}`, `{os}`, `{arch}`, and `{ext}`
-- `sdk.<name>.url_template` is the archive URL template for exact-version installs
-- `sdk.<name>.index_url` points to an HTML or JSON index used for `latest` and prefix versions such as `go:1.22`
-- `sdk.<name>.index_format = "html"` parses `<a href>` archive links, and can build current-platform archive URLs from version directory links such as `v20.11.1/` when `url_template` is configured. JSON indexes require a supported `index_parser`, currently `go-json` or `node-json`
-- `sdk.<name>.filename_pattern` describes archive filenames when parsing HTML indexes
-- `sdk.<name>.strip_components` removes leading path segments during archive extraction, useful for archives that contain a top-level `go/` or `node-v.../` directory
-
-The installed-state store also defaults to `~/.config/eget/installed.toml`.
-The SDK installed-state store defaults to `~/.config/eget/sdk.installed.json`.
+See [docs/config.md](docs/config.md) for the full configuration reference, including global fields, package sections, SDK sections, cache directories, installed-state files, ghproxy, API cache, and SDK index settings. For SDK-specific usage, see [docs/sdk-usage.md](docs/sdk-usage.md).
 
 ## Build and Test
 
@@ -518,7 +407,7 @@ The current version has been restructured into an explicit subcommand CLI, with 
 - `internal/source/github`: GitHub asset discovery
 - `internal/source/forge`: GitLab/Gitea/Forgejo asset discovery
 
-> For more details, see [docs/DOCS.md](docs/DOCS.md).
+> For more details, see [docs/architecture.md](docs/architecture.md).
 
 ## References
 
