@@ -175,6 +175,7 @@ func (s *Service) SelectFinder(target string, opts *Options) (Finder, string, er
 
 func (s *Service) SelectDetector(opts *Options) (Detector, error) {
 	var system Detector
+	targetGOOS := runtime.GOOS
 	switch {
 	case opts.System == "all":
 		if s.AllDetectorFactory == nil {
@@ -189,6 +190,7 @@ func (s *Service) SelectDetector(opts *Options) (Detector, error) {
 		if len(split) < 2 {
 			return nil, fmt.Errorf("system descriptor must be os/arch")
 		}
+		targetGOOS = split[0]
 		detector, err := s.SystemDetectorFactory(split[0], split[1])
 		if err != nil {
 			return nil, err
@@ -212,15 +214,35 @@ func (s *Service) SelectDetector(opts *Options) (Detector, error) {
 		return nil, fmt.Errorf("asset detector factories are required")
 	}
 
-	detectors := make([]Detector, len(opts.Asset))
-	for i, asset := range opts.Asset {
-		filter, err := parseAssetFilter(asset)
+	detectors := make([]Detector, 0, len(opts.Asset))
+	for _, asset := range opts.Asset {
+		expr, ok := assetFilterForGOOS(asset, targetGOOS)
+		if !ok {
+			continue
+		}
+		filter, err := parseAssetFilter(expr)
 		if err != nil {
 			return nil, err
 		}
-		detectors[i] = s.AssetDetectorFactory(filter.Expr, filter.Anti, filter.Regex)
+		detectors = append(detectors, s.AssetDetectorFactory(filter.Expr, filter.Anti, filter.Regex))
+	}
+	if len(detectors) == 0 {
+		return system, nil
 	}
 	return s.DetectorChainFactory(detectors, system), nil
+}
+
+func assetFilterForGOOS(raw, goos string) (string, bool) {
+	prefix, expr, found := strings.Cut(raw, ":")
+	if !found || !isKnownGOOS(prefix) {
+		return raw, true
+	}
+	return expr, prefix == goos
+}
+
+func isKnownGOOS(value string) bool {
+	_, ok := installGOOSMap[value]
+	return ok
 }
 
 type assetFilter struct {

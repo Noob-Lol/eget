@@ -258,7 +258,7 @@ eget config set global.target ~/.local/bin
 - `--system`: 指定目标系统与架构，例如 `windows/amd64`、`linux/arm64`。
 - `--to`: 指定安装或下载输出路径；可传目录，也可传完整文件路径。
 - `--file`: 指定归档内要提取的文件；支持逗号分隔多个文件或 glob 模式，例如 `README.md,LICENSE`。对 7z 可读取的 `.exe` 安装包使用时，需要系统 7z。
-- `--asset`: 指定资源过滤关键词；可用逗号分隔多个过滤条件，也支持 `REG:` 前缀正则，例如 `REG:\\.deb$`，排除可用 `^REG:...`。
+- `--asset`: 指定资源过滤关键词；可用逗号分隔多个过滤条件，也支持 `REG:` 前缀正则，例如 `REG:\\.deb$`，排除可用 `^REG:...`。过滤条件可用 Go OS 前缀限定目标系统，例如 `windows:zip`、`linux:tar.gz`、`darwin:tar.gz`；仅当当前 `--system` 的 OS 匹配时生效。
 - `--source`: 下载源码归档而不是预构建二进制。
 - `--extract-all`, `--ea`: 提取归档中的全部文件，而不是只选择一个目标文件。
 - `--chunk N`: 控制单个下载文件的 HTTP Range 分片并发。`0` 表示自动，`1` 表示单连接下载，大于 `1` 表示最多使用该数量的分片。
