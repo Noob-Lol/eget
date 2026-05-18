@@ -32,9 +32,11 @@
 - [x] 新增支持 sdk 下载安装，需要支持多版本。例如 go, node 等 sdk（详情见下面）
 - [x] 增强 install/update 的 target 参数支持多个目标。eg: `install name1 name2 ...`
   - 只输入一个参数时，也支持使用逗号分隔，例如: `install name1,name2,name3`
+- [x] eget list 新增 --no-installed 用于显示 config 里未安装的 package
 - [ ] package config 新增 desc 字段用于指定 package 的描述，可以手动设置，为空时默认从 repository 中获取
   - 没有添加config 的 package, 但是 installed 里的 package 也会记录描述信息，方便查看
-- [x] eget list 新增 --no-installed 用于显示 config 里未安装的 package
+- [ ] 新增命令 show 用于显示 package 详情: 配置信息+installed 信息, 包括版本, 安装路径, 状态, 项目主页URL 等
+- [x] 增强 asset filters 支持平台前缀规则，只会在当前平台生效。例如: `windows:zip`, `linux:tar.gz`, `darwin:tar.gz`
 
 ## search 结果展示 ✅
 
