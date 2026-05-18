@@ -256,6 +256,7 @@ func TestTagFromReleaseURL(t *testing.T) {
 		want string
 	}{
 		{name: "github release download", url: "https://github.com/junegunn/fzf/releases/download/v1.0.0/fzf.tar.gz", want: "v1.0.0"},
+		{name: "github release download with slash tag", url: "https://github.com/windirstat/windirstat/releases/download/release/v2.6.0/windirstat.exe", want: "release/v2.6.0"},
 		{name: "gitlab release asset", url: "https://gitlab.com/fdroid/fdroidserver/-/releases/v2.3.3/downloads/fdroidserver-linux-amd64.tar.gz", want: "v2.3.3"},
 		{name: "gitea release download", url: "https://codeberg.org/forgejo/forgejo/releases/download/v9.0.0/forgejo-9.0.0-linux-amd64.xz", want: "v9.0.0"},
 		{name: "not release url", url: "https://gitlab.com/fdroid/fdroidserver/-/package_files/123/download", want: ""},

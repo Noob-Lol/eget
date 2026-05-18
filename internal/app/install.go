@@ -401,23 +401,31 @@ func tagFromReleaseURL(rawURL string) string {
 		return ""
 	}
 	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
-	for i := 0; i+2 < len(parts); i++ {
+	for i := 0; i+3 < len(parts); i++ {
 		if parts[i] == "releases" && parts[i+1] == "download" {
-			tag, err := url.PathUnescape(parts[i+2])
-			if err != nil {
-				return parts[i+2]
-			}
-			return tag
+			return releaseTagFromPathParts(parts[i+2 : len(parts)-1])
 		}
-		if parts[i] == "releases" && parts[i+2] == "downloads" {
-			tag, err := url.PathUnescape(parts[i+1])
-			if err != nil {
-				return parts[i+1]
+		if parts[i] == "releases" {
+			for j := i + 2; j+1 < len(parts); j++ {
+				if parts[j] == "downloads" {
+					return releaseTagFromPathParts(parts[i+1 : j])
+				}
 			}
-			return tag
 		}
 	}
 	return ""
+}
+
+func releaseTagFromPathParts(parts []string) string {
+	if len(parts) == 0 {
+		return ""
+	}
+	raw := strings.Join(parts, "/")
+	tag, err := url.PathUnescape(raw)
+	if err != nil {
+		return raw
+	}
+	return tag
 }
 
 func (s Service) loadConfig() (*cfgpkg.File, error) {
