@@ -795,7 +795,21 @@ func TestHandleSDKRemovePrintsResult(t *testing.T) {
 func TestHandleSDKIndexActions(t *testing.T) {
 	now := time.Date(2026, 5, 17, 9, 0, 0, 0, time.UTC)
 	fake := &fakeSDKService{
-		index: sdk.Index{Schema: 1, SDK: "go", SourceURL: "https://example.com/go", FetchedAt: now},
+		index: sdk.Index{
+			Schema:    1,
+			SDK:       "go",
+			SourceURL: "https://example.com/go",
+			FetchedAt: now,
+			Items: []sdk.IndexItem{
+				{Version: "1.21.1", Stable: true, Files: []sdk.IndexFile{
+					{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "go1.21.1.linux-amd64.tar.gz"},
+					{OS: "windows", Arch: "amd64", Ext: "zip", Filename: "go1.21.1.windows-amd64.zip"},
+				}},
+				{Version: "1.22.0-rc.1", Stable: false, Files: []sdk.IndexFile{
+					{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "go1.22.0-rc.1.linux-amd64.tar.gz"},
+				}},
+			},
+		},
 		indexes: []sdk.Index{
 			{Schema: 1, SDK: "go", SourceURL: "https://example.com/go", FetchedAt: now},
 		},
@@ -820,19 +834,14 @@ func TestHandleSDKIndexActions(t *testing.T) {
 	assert.NoErr(t, svc.handle("sdk.index.list", &SDKIndexOptions{Action: "list"}))
 	assert.Contains(t, out.String(), "go")
 
-	origStdout := os.Stdout
-	r, w, err := os.Pipe()
-	assert.NoErr(t, err)
-	defer r.Close()
-	defer w.Close()
-	os.Stdout = w
-	defer func() { os.Stdout = origStdout }()
+	out.Reset()
 	assert.NoErr(t, svc.handle("sdk.index.show", &SDKIndexOptions{Action: "show", Name: "go"}))
-	_ = w.Close()
-	var jsonOut bytes.Buffer
-	_, err = io.Copy(&jsonOut, r)
-	assert.NoErr(t, err)
-	assert.Contains(t, jsonOut.String(), `"sdk": "go"`)
+	showOut := out.String()
+	assert.Contains(t, showOut, "SDK Index")
+	assert.Contains(t, showOut, "go")
+	assert.Contains(t, showOut, "Versions")
+	assert.Contains(t, showOut, "Latest Stable")
+	assert.NotContains(t, showOut, `"items"`)
 }
 
 func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {

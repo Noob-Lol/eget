@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -109,6 +110,17 @@ type sdkCachedIndexDisplay struct {
 	SourceURL string `json:"source_url,omitempty"`
 	FetchedAt string `json:"fetched_at,omitempty"`
 	Path      string `json:"path,omitempty"`
+}
+
+type sdkIndexSummaryDisplay struct {
+	SDK          string
+	Source       string
+	FetchedAt    string
+	Versions     int
+	Stable       int
+	Files        int
+	Latest       string
+	LatestStable string
 }
 
 func compactTime(value time.Time) string {
@@ -289,6 +301,101 @@ func sdkCachedIndexesToDisplay(infos []sdk.CachedIndexInfo) []sdkCachedIndexDisp
 		})
 	}
 	return items
+}
+
+func printSDKIndexSummary(index sdk.Index) {
+	ccolor.Infoln("SDK Index:")
+	summary := sdkIndexSummary(index)
+	ccolor.Print(cliutil.FormatTable([]string{"Name", "Value"}, [][]any{
+		{"SDK", summary.SDK},
+		{"Source", summary.Source},
+		{"Fetched At", summary.FetchedAt},
+		{"Versions", summary.Versions},
+		{"Stable", summary.Stable},
+		{"Files", summary.Files},
+		{"Latest", summary.Latest},
+		{"Latest Stable", summary.LatestStable},
+	}, cliutil.MinimalStyle))
+
+	platforms := sdkIndexPlatformRows(index)
+	if len(platforms) > 0 {
+		ccolor.Print(cliutil.FormatTable([]string{"Platform", "Files"}, platforms, cliutil.MinimalStyle))
+	}
+
+	versions := sdkIndexVersionRows(index, 10)
+	if len(versions) > 0 {
+		ccolor.Print(cliutil.FormatTable([]string{"Version", "Stable", "Files"}, versions, cliutil.MinimalStyle))
+	}
+}
+
+func sdkIndexSummary(index sdk.Index) sdkIndexSummaryDisplay {
+	stable := 0
+	files := 0
+	latest := ""
+	latestStable := ""
+	for _, item := range index.Items {
+		files += len(item.Files)
+		latest = item.Version
+		if item.Stable {
+			stable++
+			latestStable = item.Version
+		}
+	}
+	if latest == "" {
+		latest = "-"
+	}
+	if latestStable == "" {
+		latestStable = "-"
+	}
+	return sdkIndexSummaryDisplay{
+		SDK:          index.SDK,
+		Source:       index.SourceURL,
+		FetchedAt:    compactTime(index.FetchedAt),
+		Versions:     len(index.Items),
+		Stable:       stable,
+		Files:        files,
+		Latest:       latest,
+		LatestStable: latestStable,
+	}
+}
+
+func sdkIndexPlatformRows(index sdk.Index) [][]any {
+	counts := map[string]int{}
+	for _, item := range index.Items {
+		for _, file := range item.Files {
+			key := strings.Trim(file.OS+"/"+file.Arch+"."+file.Ext, "/.")
+			if key == "" {
+				key = "-"
+			}
+			counts[key]++
+		}
+	}
+	keys := make([]string, 0, len(counts))
+	for key := range counts {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	rows := make([][]any, 0, len(keys))
+	for _, key := range keys {
+		rows = append(rows, []any{key, counts[key]})
+	}
+	return rows
+}
+
+func sdkIndexVersionRows(index sdk.Index, limit int) [][]any {
+	if limit <= 0 || len(index.Items) == 0 {
+		return nil
+	}
+	start := len(index.Items) - limit
+	if start < 0 {
+		start = 0
+	}
+	rows := make([][]any, 0, len(index.Items)-start)
+	for i := len(index.Items) - 1; i >= start; i-- {
+		item := index.Items[i]
+		rows = append(rows, []any{item.Version, item.Stable, len(item.Files)})
+	}
+	return rows
 }
 
 func printJSON(value any) error {

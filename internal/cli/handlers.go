@@ -654,7 +654,8 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 		if err != nil {
 			return err
 		}
-		return printJSON(index)
+		printSDKIndexSummary(index)
+		return nil
 	case "refresh":
 		svc := s.sdkServiceWithIndexReporter()
 		if opts.All {
