@@ -672,6 +672,27 @@ func TestMain_SDKRoutesAndBindsOptions(t *testing.T) {
 			},
 		},
 		{
+			name:    "index refresh alias",
+			args:    []string{"sdk", "idx", "build", "node"},
+			wantCmd: "sdk.index.refresh",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKIndexOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "refresh", opts.Action)
+				assert.Eq(t, "node", opts.Name)
+			},
+		},
+		{
+			name:    "index list alias",
+			args:    []string{"sdk", "idx", "ls"},
+			wantCmd: "sdk.index.list",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKIndexOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "list", opts.Action)
+			},
+		},
+		{
 			name:    "index clear all",
 			args:    []string{"sdk", "index", "clear", "--all"},
 			wantCmd: "sdk.index.clear",

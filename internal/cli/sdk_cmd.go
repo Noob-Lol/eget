@@ -55,6 +55,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 
 func newSDKInstallCmd(opts *SDKInstallOptions, handler CommandHandler) *gcli.Command {
 	cmd := gcli.NewCommand("install", "Install SDK target(s)")
+	cmd.Aliases = []string{"i", "ins"}
 	cmd.Config = func(c *gcli.Command) {
 		c.BoolOpt(&opts.Force, "force", "f", false, "Remove existing SDK directory before installing")
 		c.AddArg("target", "SDK target(s), for example go@1.22.0 or node:20.11.1", true, true)
@@ -74,6 +75,7 @@ func newSDKInstallCmd(opts *SDKInstallOptions, handler CommandHandler) *gcli.Com
 
 func newSDKListCmd(opts *SDKListOptions, handler CommandHandler) *gcli.Command {
 	cmd := gcli.NewCommand("list", "List installed SDK versions")
+	cmd.Aliases = []string{"ls"}
 	cmd.Config = func(c *gcli.Command) {
 		c.BoolOpt(&opts.JSON, "json", "j", false, "Output as JSON")
 		c.AddArg("name", "SDK name filter", false)
@@ -92,6 +94,7 @@ func newSDKListCmd(opts *SDKListOptions, handler CommandHandler) *gcli.Command {
 
 func newSDKRemoveCmd(opts *SDKRemoveOptions, handler CommandHandler) *gcli.Command {
 	cmd := gcli.NewCommand("remove", "Remove an installed SDK version")
+	cmd.Aliases = []string{"rm"}
 	cmd.Config = func(c *gcli.Command) {
 		c.AddArg("target", "SDK target with explicit version", true)
 	}
@@ -108,17 +111,25 @@ func newSDKRemoveCmd(opts *SDKRemoveOptions, handler CommandHandler) *gcli.Comma
 
 func newSDKIndexCmd(opts *SDKIndexOptions, handler CommandHandler) *gcli.Command {
 	cmd := gcli.NewCommand("index", "Manage SDK index cache")
+	cmd.Aliases = []string{"idx"}
 	cmd.Subs = []*gcli.Command{
-		newSDKIndexActionCmd("list", opts, handler),
-		newSDKIndexActionCmd("show", opts, handler),
-		newSDKIndexActionCmd("refresh", opts, handler),
-		newSDKIndexActionCmd("clear", opts, handler),
+		newSDKIndexActionCmd("list", opts, handler, func(c *gcli.Command) {
+			c.Aliases = []string{"ls"}
+		}),
+		newSDKIndexActionCmd("show", opts, handler, nil),
+		newSDKIndexActionCmd("refresh", opts, handler, func(c *gcli.Command) {
+			c.Aliases = []string{"build"}
+		}),
+		newSDKIndexActionCmd("clear", opts, handler, nil),
 	}
 	return cmd
 }
 
-func newSDKIndexActionCmd(action string, opts *SDKIndexOptions, handler CommandHandler) *gcli.Command {
+func newSDKIndexActionCmd(action string, opts *SDKIndexOptions, handler CommandHandler, configure func(*gcli.Command)) *gcli.Command {
 	cmd := gcli.NewCommand(action, "Run sdk index "+action)
+	if configure != nil {
+		configure(cmd)
+	}
 	cmd.Config = func(c *gcli.Command) {
 		if action == "refresh" || action == "clear" {
 			c.BoolOpt(&opts.All, "all", "a", false, "Apply to all SDK indexes")

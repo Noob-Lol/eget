@@ -235,17 +235,53 @@ var commandFlagSpecs = map[string]flagSpec{
 			"install": {
 				bools: setOf("force", "f"),
 			},
+			"i": {
+				bools: setOf("force", "f"),
+			},
+			"ins": {
+				bools: setOf("force", "f"),
+			},
 			"list": {
 				bools: setOf("json", "j"),
 			},
+			"ls": {
+				bools: setOf("json", "j"),
+			},
 			"remove": {},
+			"rm":     {},
 			"index": {
 				subs: map[string]flagSpec{
 					"list": {
 						bools: setOf("json", "j"),
 					},
+					"ls": {
+						bools: setOf("json", "j"),
+					},
 					"show": {},
 					"refresh": {
+						bools: setOf("all", "a"),
+					},
+					"build": {
+						bools: setOf("all", "a"),
+					},
+					"clear": {
+						bools: setOf("all", "a"),
+					},
+				},
+			},
+			"idx": {
+				subs: map[string]flagSpec{
+					"list": {
+						bools: setOf("json", "j"),
+					},
+					"ls": {
+						bools: setOf("json", "j"),
+					},
+					"show": {},
+					"refresh": {
+						bools: setOf("all", "a"),
+					},
+					"build": {
 						bools: setOf("all", "a"),
 					},
 					"clear": {
