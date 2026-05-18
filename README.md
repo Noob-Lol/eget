@@ -159,6 +159,8 @@ eget list|ls
 eget list --all
 # list packages configured but not installed
 eget list --no-installed
+# show package details
+eget show fzf
 # list GUI packages
 eget list --gui
 # update fzf
@@ -209,7 +211,7 @@ The target argument accepted by `install` and `download` can be:
 
 `add`
 
-- Writes a managed package definition to `[packages.<name>]` in the config file.
+- Writes a managed package definition to `[packages.<name>]` in the config file. When `desc` is not set manually, eget tries to store the repository description.
 
 `uninstall` (aliases: `uni`, `rm`)
 
@@ -221,6 +223,11 @@ The target argument accepted by `install` and `download` can be:
 - Use `--all` / `-a` to list the union of local managed packages and installed-store entries.
 - Use `--no-installed` / `--ni` to list packages configured in `[packages]` but not installed.
 - Use `--gui` to filter the current list view to GUI applications.
+
+`show`
+
+- Shows package details merged from `[packages.<name>]` and the installed store, including description, version, status, homepage, repository URL, selected asset, asset URL, install target, and extracted files.
+- `packages.<name>.desc` can be set manually. If it is empty, `add` / `install --add` try to fetch the repository description, and installed records also store description/homepage/repository URL metadata when available.
 
 `query` (alias: `q`)
 

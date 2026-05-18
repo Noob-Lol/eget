@@ -159,6 +159,8 @@ eget list|ls
 eget list --all
 # 列出 config 中配置但未安装的包
 eget list --no-installed
+# 显示 package 详情
+eget show fzf
 # 只列出 GUI 包
 eget list --gui
 # update fzf
@@ -209,7 +211,7 @@ eget config set global.target ~/.local/bin
 
 `add`
 
-- 将一个托管包写入配置文件的 `[packages.<name>]`。
+- 将一个托管包写入配置文件的 `[packages.<name>]`。未手动设置 `desc` 时，eget 会尝试写入 repository 描述。
 
 `uninstall`(alias: `uni`, `rm`)
 
@@ -221,6 +223,11 @@ eget config set global.target ~/.local/bin
 - 使用 `--all` / `-a` 列出本地 managed packages 与 installed store 的并集。
 - 使用 `--no-installed` / `--ni` 列出 `[packages]` 中已配置但未安装的包。
 - 使用 `--gui` 只显示当前列表视图中的 GUI 应用。
+
+`show`
+
+- 合并 `[packages.<name>]` 与 installed store 信息，显示 package 详情，包括描述、版本、状态、主页、repository URL、选中的 asset、asset URL、安装目标和已提取文件。
+- `packages.<name>.desc` 可手动设置；为空时，`add` / `install --add` 会尝试获取 repository 描述，installed 记录也会在可用时保存描述、主页和 repository URL。
 
 `query`(alias: `q`)
 
