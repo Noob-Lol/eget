@@ -67,6 +67,38 @@ func TestParseHTMLIndexForNodeLinksWithPathPrefix(t *testing.T) {
 	assert.Eq(t, "https://registry.npmmirror.com/binaries/node/v20.11.1/node-v20.11.1-win-x64.zip", winFile.URL)
 }
 
+func TestParseHTMLIndexBuildsNodeFilesFromVersionDirectories(t *testing.T) {
+	body := strings.NewReader(`
+<a href="v20.11.1/">v20.11.1/</a>
+<a href="v21.0.0/">v21.0.0/</a>
+<a href="latest/">latest/</a>
+`)
+
+	index, err := ParseHTMLIndex(body, HTMLParseOptions{
+		SDK:             "node",
+		SourceURL:       "https://mirrors.aliyun.com/nodejs-release/",
+		IndexPathPrefix: "/nodejs-release/",
+		FilenamePattern: "node-v{version}-{os}-{arch}.{ext}",
+		URLTemplate:     "https://mirrors.aliyun.com/nodejs-release/v{version}/node-v{version}-{os}-{arch}.{ext}",
+		OS:              "linux",
+		Arch:            "x64",
+		Ext:             "tar.xz",
+	})
+	if err != nil {
+		t.Fatalf("parse html index: %v", err)
+	}
+
+	assert.Eq(t, 2, len(index.Items))
+	assert.Eq(t, "20.11.1", index.Items[0].Version)
+	assert.Eq(t, 1, len(index.Items[0].Files))
+	file := index.Items[0].Files[0]
+	assert.Eq(t, "linux", file.OS)
+	assert.Eq(t, "x64", file.Arch)
+	assert.Eq(t, "tar.xz", file.Ext)
+	assert.Eq(t, "node-v20.11.1-linux-x64.tar.xz", file.Filename)
+	assert.Eq(t, "https://mirrors.aliyun.com/nodejs-release/v20.11.1/node-v20.11.1-linux-x64.tar.xz", file.URL)
+}
+
 func TestParseHTMLIndexUsesCustomFilenamePattern(t *testing.T) {
 	body := strings.NewReader(`<a href="zig-0.12.0-windows-x86_64.zip">zig</a>`)
 

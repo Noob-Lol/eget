@@ -28,6 +28,8 @@ type Service struct {
 	GOARCH     string
 	Now        func() time.Time
 	Downloader DownloaderFunc
+
+	OnIndexRefresh func(IndexRefreshEvent)
 }
 
 type InstallOptions struct {
@@ -224,33 +226,56 @@ func (s Service) RefreshIndex(ctx context.Context, name string) (Index, error) {
 	if cfg.IndexURL == "" {
 		return Index{}, fmt.Errorf("sdk %s index_url is not configured", cfg.Name)
 	}
+	s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshFetchStart, SDK: cfg.Name, URL: cfg.IndexURL})
 	body, err := s.fetchIndex(ctx, cfg.IndexURL)
 	if err != nil {
 		if cached, loadErr := s.IndexCache.Load(cfg.Name); loadErr == nil {
+			s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshCacheHit, SDK: cfg.Name, URL: cfg.IndexURL, Err: err, Versions: len(cached.Items), Files: countIndexFiles(cached)})
 			return cached, nil
 		}
 		return Index{}, err
 	}
 	defer body.Close()
+	s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshFetchDone, SDK: cfg.Name, URL: cfg.IndexURL})
 
 	var index Index
+	format := cfg.IndexFormat
+	parser := cfg.IndexParser
 	switch {
 	case cfg.IndexParser != "":
+		if format == "" {
+			format = "json"
+		}
+		s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshParseStart, SDK: cfg.Name, URL: cfg.IndexURL, Format: format, Parser: parser})
 		index, err = ParseJSONIndex(body, cfg.IndexParser, JSONParseOptions{SDK: cfg.Name, SourceURL: cfg.IndexURL, Now: s.Now})
 	case cfg.IndexFormat == "json":
+		if parser == "" {
+			parser = cfg.Name + "-json"
+		}
+		s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshParseStart, SDK: cfg.Name, URL: cfg.IndexURL, Format: "json", Parser: parser})
 		index, err = ParseJSONIndex(body, cfg.IndexParser, JSONParseOptions{SDK: cfg.Name, SourceURL: cfg.IndexURL, Now: s.Now})
 	default:
+		if format == "" {
+			format = "html"
+		}
+		s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshParseStart, SDK: cfg.Name, URL: cfg.IndexURL, Format: format})
 		index, err = ParseHTMLIndex(body, HTMLParseOptions{
 			SDK:             cfg.Name,
 			SourceURL:       cfg.IndexURL,
 			IndexPathPrefix: cfg.IndexPathPrefix,
 			FilenamePattern: cfg.FilenamePattern,
+			URLTemplate:     cfg.URLTemplate,
+			OS:              cfg.OS,
+			Arch:            cfg.Arch,
+			Ext:             cfg.Ext,
 			Now:             s.Now,
 		})
 	}
 	if err != nil {
+		s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshParseFailed, SDK: cfg.Name, URL: cfg.IndexURL, Format: format, Parser: parser, Err: err})
 		return Index{}, err
 	}
+	s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshParseDone, SDK: cfg.Name, URL: cfg.IndexURL, Format: format, Parser: parser, Versions: len(index.Items), Files: countIndexFiles(index)})
 	if err := s.IndexCache.Save(index); err != nil {
 		return Index{}, err
 	}
@@ -301,6 +326,20 @@ func (s Service) ClearIndex(name string) error {
 
 func (s Service) ClearAllIndexes() error {
 	return s.IndexCache.ClearAll()
+}
+
+func (s Service) emitIndexRefresh(event IndexRefreshEvent) {
+	if s.OnIndexRefresh != nil {
+		s.OnIndexRefresh(event)
+	}
+}
+
+func countIndexFiles(index Index) int {
+	total := 0
+	for _, item := range index.Items {
+		total += len(item.Files)
+	}
+	return total
 }
 
 func (s Service) fetchIndex(ctx context.Context, rawURL string) (io.ReadCloser, error) {

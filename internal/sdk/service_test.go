@@ -224,6 +224,44 @@ func TestServiceRefreshShowListAndClearIndex(t *testing.T) {
 	assert.Err(t, err)
 }
 
+func TestServiceRefreshIndexReportsFetchAndParseStages(t *testing.T) {
+	root := t.TempDir()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, `<a href="go1.21.1.linux-amd64.zip">go</a>`)
+	}))
+	defer server.Close()
+	cfg := testSDKConfig(root)
+	goSDK := cfg.SDK["go"]
+	goSDK.IndexURL = stringPtr(server.URL + "/golang/")
+	cfg.SDK["go"] = goSDK
+
+	var events []IndexRefreshEvent
+	svc := Service{
+		Config:     cfg,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+		OnIndexRefresh: func(event IndexRefreshEvent) {
+			events = append(events, event)
+		},
+	}
+
+	index, err := svc.RefreshIndex(context.Background(), "go")
+	if err != nil {
+		t.Fatalf("refresh index: %v", err)
+	}
+	assert.Eq(t, "go", index.SDK)
+	assert.Eq(t, 4, len(events))
+	assert.Eq(t, IndexRefreshFetchStart, events[0].Stage)
+	assert.Eq(t, server.URL+"/golang/", events[0].URL)
+	assert.Eq(t, IndexRefreshFetchDone, events[1].Stage)
+	assert.Eq(t, IndexRefreshParseStart, events[2].Stage)
+	assert.Eq(t, "html", events[2].Format)
+	assert.Eq(t, IndexRefreshParseDone, events[3].Stage)
+	assert.Eq(t, 1, events[3].Versions)
+	assert.Eq(t, 1, events[3].Files)
+}
+
 func TestServiceRefreshAllIndexes(t *testing.T) {
 	root := t.TempDir()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

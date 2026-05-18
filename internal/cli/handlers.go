@@ -656,8 +656,9 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 		}
 		return printJSON(index)
 	case "refresh":
+		svc := s.sdkServiceWithIndexReporter()
 		if opts.All {
-			indexes, err := s.sdkService.RefreshAllIndexes(context.Background())
+			indexes, err := svc.RefreshAllIndexes(context.Background())
 			if err != nil {
 				return err
 			}
@@ -666,7 +667,7 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 			}
 			return nil
 		}
-		index, err := s.sdkService.RefreshIndex(context.Background(), opts.Name)
+		index, err := svc.RefreshIndex(context.Background(), opts.Name)
 		if err != nil {
 			return err
 		}
@@ -687,6 +688,44 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 		return nil
 	default:
 		return fmt.Errorf("sdk index action is required")
+	}
+}
+
+func (s *cliService) sdkServiceWithIndexReporter() sdkCLIService {
+	reporter := s.sdkIndexRefreshReporter()
+	switch svc := s.sdkService.(type) {
+	case sdk.Service:
+		svc.OnIndexRefresh = reporter
+		return svc
+	case *sdk.Service:
+		cloned := *svc
+		cloned.OnIndexRefresh = reporter
+		return &cloned
+	default:
+		return s.sdkService
+	}
+}
+
+func (s *cliService) sdkIndexRefreshReporter() func(sdk.IndexRefreshEvent) {
+	return func(event sdk.IndexRefreshEvent) {
+		switch event.Stage {
+		case sdk.IndexRefreshFetchStart:
+			ccolor.Fprintf(s.stderrWriter(), " - Fetch SDK index %s: %s\n", event.SDK, event.URL)
+		case sdk.IndexRefreshFetchDone:
+			ccolor.Fprintf(s.stderrWriter(), " - Fetched SDK index %s\n", event.SDK)
+		case sdk.IndexRefreshParseStart:
+			parser := event.Parser
+			if parser == "" {
+				parser = "-"
+			}
+			ccolor.Fprintf(s.stderrWriter(), " - Parse SDK index %s: format=%s parser=%s\n", event.SDK, event.Format, parser)
+		case sdk.IndexRefreshParseDone:
+			ccolor.Fprintf(s.stderrWriter(), " - Parsed SDK index %s: %d versions, %d files\n", event.SDK, event.Versions, event.Files)
+		case sdk.IndexRefreshParseFailed:
+			ccolor.Fprintf(s.stderrWriter(), " - Parse SDK index failed %s: %v\n", event.SDK, event.Err)
+		case sdk.IndexRefreshCacheHit:
+			ccolor.Fprintf(s.stderrWriter(), " - Reused cached SDK index %s after fetch failed: %v\n", event.SDK, event.Err)
+		}
 	}
 }
 

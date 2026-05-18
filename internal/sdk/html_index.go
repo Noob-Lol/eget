@@ -18,6 +18,10 @@ type HTMLParseOptions struct {
 	SourceURL       string
 	IndexPathPrefix string
 	FilenamePattern string
+	URLTemplate     string
+	OS              string
+	Arch            string
+	Ext             string
 	Now             func() time.Time
 }
 
@@ -62,10 +66,15 @@ func ParseHTMLIndex(body io.Reader, opts HTMLParseOptions) (Index, error) {
 		}
 		parsed, ok := matcher.Match(path.Base(resolved.Path))
 		if !ok {
-			continue
+			parsed, ok = buildFileFromVersionDirectory(resolved, opts)
+			if !ok {
+				continue
+			}
 		}
 		file := parsed.File
-		file.URL = resolved.String()
+		if file.URL == "" {
+			file.URL = resolved.String()
+		}
 		item := items[parsed.Version]
 		if item == nil {
 			item = &IndexItem{Version: parsed.Version, Stable: isStableVersion(parsed.Version)}
@@ -74,7 +83,7 @@ func ParseHTMLIndex(body io.Reader, opts HTMLParseOptions) (Index, error) {
 		item.Files = append(item.Files, file)
 	}
 	if len(items) == 0 {
-		return Index{}, fmt.Errorf("no sdk files found in html index")
+		return Index{}, fmt.Errorf("no sdk files found in html index %s with pattern %q", opts.SourceURL, pattern)
 	}
 
 	indexItems := make([]IndexItem, 0, len(items))
@@ -89,6 +98,49 @@ func ParseHTMLIndex(body io.Reader, opts HTMLParseOptions) (Index, error) {
 	})
 
 	return newIndex(opts.SDK, opts.SourceURL, opts.Now, indexItems), nil
+}
+
+var versionDirectoryNameRe = regexp.MustCompile(`^v?(\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z.-]+)?)$`)
+
+func buildFileFromVersionDirectory(resolved *url.URL, opts HTMLParseOptions) (parsedIndexFile, bool) {
+	if opts.URLTemplate == "" || opts.OS == "" || opts.Arch == "" || opts.Ext == "" {
+		return parsedIndexFile{}, false
+	}
+	dirPath := strings.TrimSuffix(resolved.Path, "/")
+	name := path.Base(dirPath)
+	matches := versionDirectoryNameRe.FindStringSubmatch(name)
+	if matches == nil {
+		return parsedIndexFile{}, false
+	}
+	version := matches[1]
+	rendered, err := RenderTemplate(opts.URLTemplate, TemplateVars{
+		Name:    opts.SDK,
+		Version: version,
+		OS:      opts.OS,
+		Arch:    opts.Arch,
+		Ext:     opts.Ext,
+	})
+	if err != nil {
+		return parsedIndexFile{}, false
+	}
+	downloadURL, err := url.Parse(rendered)
+	if err != nil {
+		return parsedIndexFile{}, false
+	}
+	filename := path.Base(downloadURL.Path)
+	if filename == "." || filename == "/" || filename == "" {
+		return parsedIndexFile{}, false
+	}
+	return parsedIndexFile{
+		Version: version,
+		File: IndexFile{
+			OS:       opts.OS,
+			Arch:     opts.Arch,
+			Ext:      opts.Ext,
+			URL:      rendered,
+			Filename: filename,
+		},
+	}, true
 }
 
 func attrValue(token html.Token, name string) string {

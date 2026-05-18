@@ -39,6 +39,28 @@ type IndexFile struct {
 	Filename string `json:"filename"`
 }
 
+type IndexRefreshStage string
+
+const (
+	IndexRefreshFetchStart  IndexRefreshStage = "fetch_start"
+	IndexRefreshFetchDone   IndexRefreshStage = "fetch_done"
+	IndexRefreshParseStart  IndexRefreshStage = "parse_start"
+	IndexRefreshParseDone   IndexRefreshStage = "parse_done"
+	IndexRefreshParseFailed IndexRefreshStage = "parse_failed"
+	IndexRefreshCacheHit    IndexRefreshStage = "cache_hit"
+)
+
+type IndexRefreshEvent struct {
+	Stage    IndexRefreshStage
+	SDK      string
+	URL      string
+	Format   string
+	Parser   string
+	Versions int
+	Files    int
+	Err      error
+}
+
 type InstalledStore struct {
 	Schema    int                         `json:"schema"`
 	Installed map[string]InstalledSDKNode `json:"installed"`
