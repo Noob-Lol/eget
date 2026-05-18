@@ -95,11 +95,16 @@ func (s *Store) Record(target string, entry Entry) error {
 	}
 
 	key := NormalizeRepoName(target)
-	entry.Repo = key
+	if entry.Repo == "" {
+		entry.Repo = key
+	}
 	if config.Installed == nil {
 		config.Installed = make(map[string]Entry)
 	}
 	config.Installed[key] = entry
+	if legacyKey := NormalizeRepoName(entry.Repo); legacyKey != "" && legacyKey != key {
+		delete(config.Installed, legacyKey)
+	}
 
 	return s.Save(config)
 }

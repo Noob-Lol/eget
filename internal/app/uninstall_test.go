@@ -70,6 +70,62 @@ func TestUninstallPackageRemovesRecordedFilesAndInstalledEntry(t *testing.T) {
 	}
 }
 
+func TestUninstallPackageUsesPackageInstalledKeyWhenPresent(t *testing.T) {
+	tmp := t.TempDir()
+	greqPath := filepath.Join(tmp, "greq.exe")
+	gbenchPath := filepath.Join(tmp, "gbench.exe")
+	if err := os.WriteFile(greqPath, []byte("greq"), 0o755); err != nil {
+		t.Fatalf("write greq bin: %v", err)
+	}
+	if err := os.WriteFile(gbenchPath, []byte("gbench"), 0o755); err != nil {
+		t.Fatalf("write gbench bin: %v", err)
+	}
+
+	store := &fakeInstalledStoreWithLoad{
+		cfg: &storepkg.Config{
+			Installed: map[string]storepkg.Entry{
+				"greq": {
+					Repo:           "gookit/greq",
+					Target:         "gookit/greq",
+					ExtractedFiles: []string{greqPath},
+				},
+				"gbench": {
+					Repo:           "gookit/greq",
+					Target:         "gookit/greq",
+					ExtractedFiles: []string{gbenchPath},
+				},
+			},
+		},
+	}
+	svc := UninstallService{
+		Store: store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["greq"] = cfgpkg.Section{Repo: util.StringPtr("gookit/greq")}
+			cfg.Packages["gbench"] = cfgpkg.Section{Repo: util.StringPtr("gookit/greq")}
+			return cfg, nil
+		},
+	}
+
+	result, err := svc.Uninstall("greq")
+	if err != nil {
+		t.Fatalf("uninstall package: %v", err)
+	}
+
+	if result.Repo != "gookit/greq" {
+		t.Fatalf("expected repo gookit/greq, got %#v", result)
+	}
+	if len(store.removeCalls) != 1 || store.removeCalls[0] != "greq" {
+		t.Fatalf("expected installed record removal for greq, got %#v", store.removeCalls)
+	}
+	if _, err := os.Stat(greqPath); !os.IsNotExist(err) {
+		t.Fatalf("expected greq file to be removed, stat err=%v", err)
+	}
+	if _, err := os.Stat(gbenchPath); err != nil {
+		t.Fatalf("expected gbench file to remain, stat err=%v", err)
+	}
+}
+
 func TestUninstallRepoAcceptsDirectRepoTarget(t *testing.T) {
 	tmp := t.TempDir()
 	binPath := filepath.Join(tmp, "rg")

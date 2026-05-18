@@ -20,13 +20,18 @@ type UninstallResult struct {
 	RemovedFiles []string
 }
 
+type uninstallTarget struct {
+	Key  string
+	Repo string
+}
+
 type UninstallService struct {
 	Store      RemovableInstalledStore
 	LoadConfig func() (*cfgpkg.File, error)
 }
 
 func (s UninstallService) Uninstall(target string) (UninstallResult, error) {
-	repo, err := s.resolveRepo(target)
+	resolved, err := s.resolveTarget(target)
 	if err != nil {
 		return UninstallResult{}, err
 	}
@@ -37,12 +42,12 @@ func (s UninstallService) Uninstall(target string) (UninstallResult, error) {
 	if err != nil {
 		return UninstallResult{}, err
 	}
-	entry, ok := cfg.Installed[repo]
+	entry, key, ok := findUninstallEntry(cfg, resolved)
 	if !ok {
-		return UninstallResult{}, fmt.Errorf("installed entry not found for %q", repo)
+		return UninstallResult{}, fmt.Errorf("installed entry not found for %q", resolved.Key)
 	}
 
-	result := UninstallResult{Repo: repo}
+	result := UninstallResult{Repo: firstNonEmpty(entry.Repo, resolved.Repo)}
 	for _, file := range entry.ExtractedFiles {
 		err := os.Remove(file)
 		if err != nil && !os.IsNotExist(err) {
@@ -50,28 +55,54 @@ func (s UninstallService) Uninstall(target string) (UninstallResult, error) {
 		}
 		result.RemovedFiles = append(result.RemovedFiles, file)
 	}
-	if err := s.Store.Remove(repo); err != nil {
+	if err := s.Store.Remove(key); err != nil {
 		return UninstallResult{}, err
 	}
 	return result, nil
 }
 
-func (s UninstallService) resolveRepo(target string) (string, error) {
+func (s UninstallService) resolveTarget(target string) (uninstallTarget, error) {
 	cfg, err := s.loadConfig()
 	if err != nil {
-		return "", err
+		return uninstallTarget{}, err
 	}
 	if pkg, ok := cfg.Packages[target]; ok {
 		repo := util.DerefString(pkg.Repo)
 		if repo == "" {
-			return "", fmt.Errorf("package %q has no repo", target)
+			return uninstallTarget{}, fmt.Errorf("package %q has no repo", target)
 		}
-		return repo, nil
+		return uninstallTarget{Key: target, Repo: repo}, nil
 	}
 	if strings.Contains(target, "/") {
-		return target, nil
+		return uninstallTarget{Key: target, Repo: target}, nil
 	}
-	return "", fmt.Errorf("unknown package %q", target)
+	return uninstallTarget{}, fmt.Errorf("unknown package %q", target)
+}
+
+func findUninstallEntry(cfg *storepkg.Config, target uninstallTarget) (storepkg.Entry, string, bool) {
+	if cfg == nil || cfg.Installed == nil {
+		return storepkg.Entry{}, "", false
+	}
+	for _, key := range uninstallCandidateKeys(target) {
+		if entry, ok := cfg.Installed[key]; ok {
+			return entry, key, true
+		}
+	}
+	return storepkg.Entry{}, "", false
+}
+
+func uninstallCandidateKeys(target uninstallTarget) []string {
+	keys := []string{target.Key}
+	if normalized := storepkg.NormalizeRepoName(target.Key); normalized != target.Key {
+		keys = append(keys, normalized)
+	}
+	if target.Repo != "" && target.Repo != target.Key {
+		keys = append(keys, target.Repo)
+	}
+	if normalized := storepkg.NormalizeRepoName(target.Repo); normalized != "" && normalized != target.Repo {
+		keys = append(keys, normalized)
+	}
+	return keys
 }
 
 func (s UninstallService) loadConfig() (*cfgpkg.File, error) {

@@ -619,8 +619,8 @@ asset_filters = ["windows"]
 	if len(runner.opts.Asset) != 1 || runner.opts.Asset[0] != "windows" {
 		t.Fatalf("expected package asset filter to be merged, got %#v", runner.opts.Asset)
 	}
-	if store.target != "sipeed/picoclaw" {
-		t.Fatalf("expected installed store to record real repo target, got %q", store.target)
+	if store.target != "picoclaw" {
+		t.Fatalf("expected installed store to record package name, got %q", store.target)
 	}
 	if store.entry.Repo != "sipeed/picoclaw" {
 		t.Fatalf("expected installed repo sipeed/picoclaw, got %q", store.entry.Repo)
@@ -629,6 +629,41 @@ asset_filters = ["windows"]
 		t.Fatalf("expected installed target to be real repo, got %q", store.entry.Target)
 	}
 	assert.Eq(t, "Manual PicoClaw description", store.entry.Desc)
+}
+
+func TestInstallTargetRecordsManagedPackageNameAsInstalledKey(t *testing.T) {
+	cfg := mustLoadFromString(t, `
+[packages.greq]
+repo = "gookit/greq"
+asset_filters = ["greq"]
+
+[packages.gbench]
+repo = "gookit/greq"
+asset_filters = ["gbench"]
+`)
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:            "https://github.com/gookit/greq/releases/download/v1.0.0/greq.exe",
+			ExtractedFiles: []string{"./greq.exe"},
+		},
+	}
+	store := &fakeInstalledStore{}
+	svc := Service{
+		Runner: runner,
+		Store:  store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("greq", install.Options{})
+	if err != nil {
+		t.Fatalf("install managed package: %v", err)
+	}
+
+	assert.Eq(t, "greq", store.target)
+	assert.Eq(t, "gookit/greq", store.entry.Repo)
+	assert.Eq(t, "gookit/greq", store.entry.Target)
 }
 
 func TestInstallTargetAppliesManagedPackageOptionsWhenTargetIsRepo(t *testing.T) {

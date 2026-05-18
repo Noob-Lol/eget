@@ -66,7 +66,7 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 	if err := validateRawConcurrencyOptions(opts); err != nil {
 		return RunResult{}, err
 	}
-	runTarget, opts, err := s.resolveInstallRequest(target, opts, false)
+	runTarget, recordTarget, opts, err := s.resolveInstallRequest(target, opts, false)
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -74,7 +74,7 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 		return RunResult{}, err
 	}
 	opts = normalizeExtractionOptions(opts)
-	result, err := s.installResolvedTarget(runTarget, opts)
+	result, err := s.installResolvedTarget(runTarget, recordTarget, opts)
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -135,7 +135,7 @@ func (s Service) InstallAllPackages(cli install.Options) ([]InstallAllResult, er
 		if repo == "" {
 			return nil, fmt.Errorf("package %q has no repo", name)
 		}
-		runTarget, opts, err := s.resolveInstallRequestWithConfig(cfg, name, cli, false)
+		runTarget, recordTarget, opts, err := s.resolveInstallRequestWithConfig(cfg, name, cli, false)
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +143,7 @@ func (s Service) InstallAllPackages(cli install.Options) ([]InstallAllResult, er
 			return nil, err
 		}
 		opts = normalizeExtractionOptions(opts)
-		result, err := s.installResolvedTarget(runTarget, opts)
+		result, err := s.installResolvedTarget(runTarget, recordTarget, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +178,7 @@ func (s Service) installAllPackagesConcurrent(cfg *cfgpkg.File, names []string, 
 					continue
 				default:
 				}
-				runTarget, opts, err := s.resolveInstallRequestWithConfig(cfg, item.name, cli, false)
+				runTarget, recordTarget, opts, err := s.resolveInstallRequestWithConfig(cfg, item.name, cli, false)
 				if err != nil {
 					sendFirstError(errCh, err, cancel)
 					continue
@@ -188,7 +188,7 @@ func (s Service) installAllPackagesConcurrent(cfg *cfgpkg.File, names []string, 
 					continue
 				}
 				opts = normalizeExtractionOptions(opts)
-				result, err := s.installResolvedTarget(runTarget, opts)
+				result, err := s.installResolvedTarget(runTarget, recordTarget, opts)
 				if err != nil {
 					sendFirstError(errCh, err, cancel)
 					continue
@@ -233,33 +233,33 @@ func sourceVersion(tag string, sourceBacked bool) string {
 	return ""
 }
 
-func (s Service) resolveInstallRequest(target string, cli install.Options, preferCacheDir bool) (string, install.Options, error) {
+func (s Service) resolveInstallRequest(target string, cli install.Options, preferCacheDir bool) (string, string, install.Options, error) {
 	cfg, err := s.loadConfig()
 	if err != nil {
-		return "", install.Options{}, err
+		return "", "", install.Options{}, err
 	}
 	return s.resolveInstallRequestWithConfig(cfg, target, cli, preferCacheDir)
 }
 
-func (s Service) resolveInstallRequestWithConfig(cfg *cfgpkg.File, target string, cli install.Options, preferCacheDir bool) (string, install.Options, error) {
+func (s Service) resolveInstallRequestWithConfig(cfg *cfgpkg.File, target string, cli install.Options, preferCacheDir bool) (string, string, install.Options, error) {
 	if pkg, ok := cfg.Packages[target]; ok {
 		repo := util.DerefString(pkg.Repo)
 		if repo == "" {
-			return "", install.Options{}, fmt.Errorf("package %q has no repo", target)
+			return "", "", install.Options{}, fmt.Errorf("package %q has no repo", target)
 		}
 		opts, err := s.resolveInstallOptionsWithConfig(cfg, repo, pkg, cli, preferCacheDir)
 		if err != nil {
-			return "", install.Options{}, err
+			return "", "", install.Options{}, err
 		}
-		return repo, opts, nil
+		return repo, target, opts, nil
 	}
 
 	pkg := packageSectionForRepoTarget(cfg, target)
 	opts, err := s.resolveInstallOptionsWithConfig(cfg, target, pkg, cli, preferCacheDir)
 	if err != nil {
-		return "", install.Options{}, err
+		return "", "", install.Options{}, err
 	}
-	return target, opts, nil
+	return target, target, opts, nil
 }
 
 func packageSectionForRepoTarget(cfg *cfgpkg.File, target string) cfgpkg.Section {
@@ -283,7 +283,7 @@ func packageSectionForRepoTarget(cfg *cfgpkg.File, target string) cfgpkg.Section
 	return cfgpkg.Section{}
 }
 
-func (s Service) installResolvedTarget(runTarget string, opts install.Options) (RunResult, error) {
+func (s Service) installResolvedTarget(runTarget, recordTarget string, opts install.Options) (RunResult, error) {
 	result, err := s.Runner.Run(runTarget, opts)
 	if err != nil {
 		return RunResult{}, err
@@ -345,7 +345,7 @@ func (s Service) installResolvedTarget(runTarget string, opts install.Options) (
 		IsGUI:          result.IsGUI || opts.IsGUI,
 		InstallMode:    installMode,
 	}
-	if err := s.Store.Record(runTarget, entry); err != nil {
+	if err := s.Store.Record(recordTarget, entry); err != nil {
 		return RunResult{}, err
 	}
 	return result, nil

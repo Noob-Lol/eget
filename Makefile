@@ -86,6 +86,19 @@ build-windows:
 	upx -6 --no-progress $(DIST_DIR)/$(APP)-windows-amd64.exe
 	@echo "   → $(DIST_DIR)/$(APP)-windows-amd64.exe"
 
+.PHONY: release
+release: build-all ## Create release archives for all platforms
+	@echo "Creating release archives..."
+	@mkdir -p release
+	@cd $(DIST_DIR) && \
+	tar -czf ../release/$(APP)-$(VERSION)-linux-amd64.zip $(APP)-linux-amd64; \
+	tar -czf ../release/$(APP)-$(VERSION)-linux-arm64.zip $(APP)-linux-arm64; \
+	tar -czf ../release/$(APP)-$(VERSION)-darwin-amd64.zip $(APP)-darwin-amd64; \
+	tar -czf ../release/$(APP)-$(VERSION)-darwin-arm64.zip $(APP)-darwin-arm64; \
+	zip ../release/$(APP)-$(VERSION)-windows-amd64.zip $(APP)-windows-amd64.exe; \
+	# zip ../release/$(APP)-$(VERSION)-windows-arm64.zip $(APP)-windows-arm64.exe; \
+	@echo "Release archives created in release/"
+
 ## clean: remove build artifacts
 clean:
 	@rm -f $(BINARY)

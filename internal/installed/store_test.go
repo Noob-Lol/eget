@@ -224,6 +224,92 @@ func TestStoreRecordAndRemove(t *testing.T) {
 	}
 }
 
+func TestStoreRecordPreservesEntryRepoWhenKeyIsPackageName(t *testing.T) {
+	tmp := t.TempDir()
+	store := NewStore(Options{
+		HomeDir:   filepath.Join(tmp, "home"),
+		GOOS:      "linux",
+		LookupEnv: func(string) (string, bool) { return "", false },
+	})
+
+	err := store.Record("greq", Entry{
+		Repo:           "gookit/greq",
+		Target:         "gookit/greq",
+		InstalledAt:    time.Unix(1710000000, 0).UTC(),
+		URL:            "https://github.com/gookit/greq/releases/download/v1.0.0/greq.exe",
+		Asset:          "greq.exe",
+		ExtractedFiles: []string{"greq.exe"},
+	})
+	if err != nil {
+		t.Fatalf("record package entry: %v", err)
+	}
+
+	cfg, err := store.Load()
+	if err != nil {
+		t.Fatalf("reload config: %v", err)
+	}
+
+	entry, ok := cfg.Installed["greq"]
+	if !ok {
+		t.Fatal("expected package key entry to be recorded")
+	}
+	assert.Eq(t, "gookit/greq", entry.Repo)
+	assert.Eq(t, "gookit/greq", entry.Target)
+}
+
+func TestStoreRecordPackageKeyRemovesLegacyRepoKey(t *testing.T) {
+	tmp := t.TempDir()
+	store := NewStore(Options{
+		HomeDir:   filepath.Join(tmp, "home"),
+		GOOS:      "linux",
+		LookupEnv: func(string) (string, bool) { return "", false },
+	})
+
+	err := store.Save(&Config{Installed: map[string]Entry{
+		"gookit/greq": {
+			Repo:           "gookit/greq",
+			Target:         "gookit/greq",
+			InstalledAt:    time.Unix(1710000000, 0).UTC(),
+			URL:            "https://github.com/gookit/greq/releases/download/v1.0.0/old.exe",
+			Asset:          "old.exe",
+			ExtractedFiles: []string{"old.exe"},
+		},
+		"gbench": {
+			Repo:           "gookit/greq",
+			Target:         "gookit/greq",
+			InstalledAt:    time.Unix(1710000001, 0).UTC(),
+			URL:            "https://github.com/gookit/greq/releases/download/v1.0.0/gbench.exe",
+			Asset:          "gbench.exe",
+			ExtractedFiles: []string{"gbench.exe"},
+		},
+	}})
+	if err != nil {
+		t.Fatalf("seed installed config: %v", err)
+	}
+
+	err = store.Record("greq", Entry{
+		Repo:           "gookit/greq",
+		Target:         "gookit/greq",
+		InstalledAt:    time.Unix(1710000002, 0).UTC(),
+		URL:            "https://github.com/gookit/greq/releases/download/v1.0.0/greq.exe",
+		Asset:          "greq.exe",
+		ExtractedFiles: []string{"greq.exe"},
+	})
+	if err != nil {
+		t.Fatalf("record package entry: %v", err)
+	}
+
+	cfg, err := store.Load()
+	if err != nil {
+		t.Fatalf("reload config: %v", err)
+	}
+	if _, ok := cfg.Installed["gookit/greq"]; ok {
+		t.Fatalf("expected legacy repo key to be removed, got %#v", cfg.Installed)
+	}
+	assert.Eq(t, "greq.exe", cfg.Installed["greq"].Asset)
+	assert.Eq(t, "gbench.exe", cfg.Installed["gbench"].Asset)
+}
+
 func TestNormalizeRepoNameSourceForge(t *testing.T) {
 	assert.Eq(t, "sourceforge:winmerge", NormalizeRepoName("sourceforge:winmerge"))
 	assert.Eq(t, "sourceforge:winmerge", NormalizeRepoName("sourceforge:winmerge/stable"))
