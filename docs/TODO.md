@@ -33,7 +33,7 @@
 - [x] 增强 install/update 的 target 参数支持多个目标。eg: `install name1 name2 ...`
   - 只输入一个参数时，也支持使用逗号分隔，例如: `install name1,name2,name3`
 - [ ] package config 新增 desc 字段用于指定 package 的描述，可以手动设置，为空时默认从 repository 中获取
-  - 没有在config, 但是 installed 里的 package 也会记录描述信息，方便查看
+  - 没有添加config 的 package, 但是 installed 里的 package 也会记录描述信息，方便查看
 
 ## search 结果展示 ✅
 
@@ -100,10 +100,12 @@ ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 [sdk.node]
 aliases = ["nodejs"]
 target = "nodejs/node{version}"
-url_template = "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{ext}"
-index_url = "https://registry.npmmirror.com/binary.html"
+url_template = "https://mirrors.aliyun.com/nodejs-release/v{version}/node-v{version}-{os}-{arch}.{ext}"
+# https://nodejs.org/dist/
+# mirror2: https://registry.npmmirror.com/binary.html?path=node/
+index_url = "https://mirrors.aliyun.com/nodejs-release/"
 index_format = "html"
-index_path_prefix = "/binaries/node/"
+index_path_prefix = "/nodejs-release/"
 filename_pattern = "node-v{version}-{os}-{arch}.{ext}"
 strip_components = 1
 os_map = { windows = "win", linux = "linux", darwin = "darwin" }

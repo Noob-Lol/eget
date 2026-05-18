@@ -128,7 +128,7 @@ eget sdk index list|show|refresh|clear
 
 SDK index：
 
-- `index_format = "html"` 解析 HTML 页面中的 `<a href>`，配合 `filename_pattern` 提取版本、OS、arch、ext。
+- `index_format = "html"` 解析 HTML 页面中的 `<a href>`，配合 `filename_pattern` 提取版本、OS、arch、ext；对于 `v20.11.1/` 这类版本目录链接，会在配置 `url_template` 后生成当前平台归档 URL。
 - JSON index 需要设置内置 `index_parser`，当前支持 `go-json` 和 `node-json`。
 - `sdk index refresh` 拉取远端并写入 `{cache_dir}/sdk-index/<name>.json`。
 - `sdk index show/list/clear` 只操作本地规范化缓存。

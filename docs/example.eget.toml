@@ -65,12 +65,26 @@ ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 [sdk.node]
 aliases = ["nodejs"]
 target = "nodejs/node{version}"
-url_template = "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{ext}"
-index_url = "https://registry.npmmirror.com/binary.html"
+url_template = "https://mirrors.aliyun.com/nodejs-release/v{version}/node-v{version}-{os}-{arch}.{ext}"
+# https://nodejs.org/dist/
+index_url = "https://mirrors.aliyun.com/nodejs-release/"
 index_format = "html"
-index_path_prefix = "/binaries/node/"
+index_path_prefix = "/nodejs-release/"
 filename_pattern = "node-v{version}-{os}-{arch}.{ext}"
 strip_components = 1
 os_map = { windows = "win", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "x64", arm64 = "arm64", 386 = "x86" }
 ext_map = { windows = "zip", linux = "tar.xz", darwin = "tar.gz" }
+
+# python
+[sdk.python]
+aliases = ["py"]
+target = "python/python{version}"
+url_template = "https://mirrors.aliyun.com/python/python{version}/python-{version}.tar.xz"
+# https://registry.npmmirror.com/binary.html?path=python/
+index_url = "https://registry.npmmirror.com/binary.html?path=python/"
+index_format = "html"
+filename_path_prefix = "/python/"
+filename_pattern = "python-{version}.tar.xz"
+strip_components = 1
+ext_map = { windows = "zip", linux = "tar.gzz", darwin = "tar.gz" }

@@ -396,10 +396,10 @@ ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 [sdk.node]
 aliases = ["nodejs"]
 target = "nodejs/node{version}"
-url_template = "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{ext}"
-index_url = "https://registry.npmmirror.com/binary.html"
+url_template = "https://mirrors.aliyun.com/nodejs-release/v{version}/node-v{version}-{os}-{arch}.{ext}"
+index_url = "https://mirrors.aliyun.com/nodejs-release/"
 index_format = "html"
-index_path_prefix = "/binaries/node/"
+index_path_prefix = "/nodejs-release/"
 filename_pattern = "node-v{version}-{os}-{arch}.{ext}"
 strip_components = 1
 os_map = { windows = "win", linux = "linux", darwin = "darwin" }
@@ -489,7 +489,7 @@ eget config init
 - `sdk.<name>.target` 是安装目录模板，支持 `{name}`、`{version}`、`{os}`、`{arch}`、`{ext}`
 - `sdk.<name>.url_template` 是精确版本安装时使用的归档 URL 模板
 - `sdk.<name>.index_url` 指向 HTML 或 JSON 索引，用于 `latest` 和 `go:1.22` 这种前缀版本解析
-- `sdk.<name>.index_format = "html"` 会解析页面里的 `<a href>` 链接。JSON 索引需要配置受支持的 `index_parser`，当前为 `go-json` 或 `node-json`
+- `sdk.<name>.index_format = "html"` 会解析页面里的 `<a href>` 归档链接；如果配置了 `url_template`，也可以从 `v20.11.1/` 这类版本目录链接生成当前平台归档 URL。JSON 索引需要配置受支持的 `index_parser`，当前为 `go-json` 或 `node-json`
 - `sdk.<name>.filename_pattern` 用于从 HTML index 解析归档文件名
 - `sdk.<name>.strip_components` 用于解压时剥离归档内路径前缀，例如去掉顶层 `go/` 或 `node-v.../` 目录
 

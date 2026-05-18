@@ -396,10 +396,10 @@ ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 [sdk.node]
 aliases = ["nodejs"]
 target = "nodejs/node{version}"
-url_template = "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{ext}"
-index_url = "https://registry.npmmirror.com/binary.html"
+url_template = "https://mirrors.aliyun.com/nodejs-release/v{version}/node-v{version}-{os}-{arch}.{ext}"
+index_url = "https://mirrors.aliyun.com/nodejs-release/"
 index_format = "html"
-index_path_prefix = "/binaries/node/"
+index_path_prefix = "/nodejs-release/"
 filename_pattern = "node-v{version}-{os}-{arch}.{ext}"
 strip_components = 1
 os_map = { windows = "win", linux = "linux", darwin = "darwin" }
@@ -490,7 +490,7 @@ Directory semantics:
 - `sdk.<name>.target` is the install directory template. Supported variables are `{name}`, `{version}`, `{os}`, `{arch}`, and `{ext}`
 - `sdk.<name>.url_template` is the archive URL template for exact-version installs
 - `sdk.<name>.index_url` points to an HTML or JSON index used for `latest` and prefix versions such as `go:1.22`
-- `sdk.<name>.index_format = "html"` parses links from `<a href>`. JSON indexes require a supported `index_parser`, currently `go-json` or `node-json`
+- `sdk.<name>.index_format = "html"` parses `<a href>` archive links, and can build current-platform archive URLs from version directory links such as `v20.11.1/` when `url_template` is configured. JSON indexes require a supported `index_parser`, currently `go-json` or `node-json`
 - `sdk.<name>.filename_pattern` describes archive filenames when parsing HTML indexes
 - `sdk.<name>.strip_components` removes leading path segments during archive extraction, useful for archives that contain a top-level `go/` or `node-v.../` directory
 
