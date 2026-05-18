@@ -807,6 +807,32 @@ func TestMain_ListOutdatedBindsOption(t *testing.T) {
 	}
 }
 
+func TestMain_ShowBindsTarget(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"show", "fzf"})
+	if err != nil {
+		t.Fatalf("expected show command to parse, got %v", err)
+	}
+	if len(calls) != 1 {
+		t.Fatalf("expected one handler call, got %d", len(calls))
+	}
+	if calls[0].name != "show" {
+		t.Fatalf("expected command show, got %q", calls[0].name)
+	}
+	opts, ok := calls[0].options.(*ShowOptions)
+	if !ok {
+		t.Fatalf("expected ShowOptions, got %T", calls[0].options)
+	}
+	assert.Eq(t, "fzf", opts.Target)
+}
+
 func TestMain_ListAllBindsOption(t *testing.T) {
 	calls := make([]commandCall, 0, 1)
 	handler := func(name string, options any) error {

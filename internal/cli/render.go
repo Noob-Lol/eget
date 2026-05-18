@@ -42,6 +42,30 @@ type listItemDisplay struct {
 	IgnoreUpdate bool   `mapstructure:"IgnoreUpdate"`
 }
 
+type showResultDisplay struct {
+	Name           string         `mapstructure:"Name"`
+	Repo           string         `mapstructure:"Repo"`
+	Description    string         `mapstructure:"Description"`
+	Homepage       string         `mapstructure:"Homepage"`
+	RepoURL        string         `mapstructure:"RepoURL"`
+	Configured     bool           `mapstructure:"Configured"`
+	Installed      bool           `mapstructure:"Installed"`
+	ConfigTarget   string         `mapstructure:"ConfigTarget"`
+	InstallTarget  string         `mapstructure:"InstallTarget"`
+	Version        string         `mapstructure:"Version"`
+	Tag            string         `mapstructure:"Tag"`
+	InstalledAt    string         `mapstructure:"InstalledAt"`
+	ReleaseDate    string         `mapstructure:"ReleaseDate"`
+	Asset          string         `mapstructure:"Asset"`
+	AssetURL       string         `mapstructure:"AssetURL"`
+	Tool           string         `mapstructure:"Tool"`
+	ExtractedFiles []string       `mapstructure:"ExtractedFiles"`
+	IsGUI          bool           `mapstructure:"IsGUI"`
+	InstallMode    string         `mapstructure:"InstallMode"`
+	SourcePath     string         `mapstructure:"SourcePath"`
+	Options        map[string]any `mapstructure:"Options"`
+}
+
 type repoInfoDisplay struct {
 	Repo          string `json:"repo" mapstructure:"repo"`
 	Description   string `json:"description,omitempty" mapstructure:"description"`
@@ -153,6 +177,32 @@ func listItemToDisplay(item app.ListItem) listItemDisplay {
 		IsGUI:        item.IsGUI,
 		InstallMode:  item.InstallMode,
 		IgnoreUpdate: item.IgnoreUpdate,
+	}
+}
+
+func showResultToDisplay(result app.ShowResult) showResultDisplay {
+	return showResultDisplay{
+		Name:           result.Name,
+		Repo:           result.Repo,
+		Description:    result.Desc,
+		Homepage:       result.Homepage,
+		RepoURL:        result.RepoURL,
+		Configured:     result.Configured,
+		Installed:      result.Installed,
+		ConfigTarget:   result.ConfigTarget,
+		InstallTarget:  result.InstallTarget,
+		Version:        result.Version,
+		Tag:            result.Tag,
+		InstalledAt:    compactTime(result.InstalledAt),
+		ReleaseDate:    compactTime(result.ReleaseDate),
+		Asset:          result.Asset,
+		AssetURL:       result.AssetURL,
+		Tool:           result.Tool,
+		ExtractedFiles: append([]string(nil), result.ExtractedFiles...),
+		IsGUI:          result.IsGUI,
+		InstallMode:    result.InstallMode,
+		SourcePath:     result.SourcePath,
+		Options:        result.Options,
 	}
 }
 

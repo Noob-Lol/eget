@@ -1261,6 +1261,55 @@ func TestHandleListInfoPrintsDetails(t *testing.T) {
 	}
 }
 
+func TestHandleShowPrintsPackageDetails(t *testing.T) {
+	installedAt := time.Date(2026, 5, 5, 13, 20, 19, 0, time.UTC)
+	svc := &cliService{
+		showService: app.ShowService{
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["chlog"] = cfgpkg.Section{
+					Repo: util.StringPtr("gookit/gitw"),
+					Desc: util.StringPtr("Git helper tools"),
+				}
+				return cfg, nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"gookit/gitw": {
+						Repo:           "gookit/gitw",
+						Target:         "gookit/gitw",
+						InstalledAt:    installedAt,
+						Tag:            "v0.3.6",
+						Version:        "v0.3.6",
+						Asset:          "chlog-windows-amd64.exe",
+						URL:            "https://github.com/gookit/gitw/releases/download/v0.3.6/chlog-windows-amd64.exe",
+						ExtractedFiles: []string{"D:/bin/chlog.exe"},
+						RepoURL:        "https://github.com/gookit/gitw",
+					},
+				}}, nil
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	cliui.SetOutput(&out)
+	defer cliui.ResetOutput()
+
+	err := svc.handleShow(&ShowOptions{Target: "chlog"})
+	if err != nil {
+		t.Fatalf("handle show: %v", err)
+	}
+
+	got := out.String()
+	assert.Contains(t, got, "Package Details")
+	assert.Contains(t, got, "chlog")
+	assert.Contains(t, got, "Git helper tools")
+	assert.Contains(t, got, "v0.3.6")
+	assert.Contains(t, got, "https://github.com/gookit/gitw")
+	assert.Contains(t, got, "D:/bin/chlog.exe")
+	assert.Contains(t, got, "2026-05-05T13:20:19")
+}
+
 func TestHandleListRejectsOutdatedWithInfo(t *testing.T) {
 	svc := &cliService{}
 	err := svc.handleList(&ListOptions{Outdated: true, Info: "chlog"})

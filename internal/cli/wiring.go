@@ -65,7 +65,18 @@ func newCLIService() (*cliService, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfgService := app.ConfigService{ConfigPath: cfgPath}
+	repoMetadata := func(repo string) (app.RepoMetadata, error) {
+		info, err := githubClient.RepoInfo(repo)
+		if err != nil {
+			return app.RepoMetadata{}, err
+		}
+		return app.RepoMetadata{
+			Desc:     info.Description,
+			Homepage: info.Homepage,
+			RepoURL:  "https://github.com/" + repo,
+		}, nil
+	}
+	cfgService := app.ConfigService{ConfigPath: cfgPath, RepoMetadata: repoMetadata}
 	latestInfo := func(repo, sourcePath string) (app.LatestInfo, error) {
 		if sfTarget, err := sourcesf.ParseTarget(repo); err == nil {
 			info, err := sourcesf.LatestVersion(sfTarget.Project, sourcePath, client.NewHTTPGetter(defaultClientOpts))
@@ -122,7 +133,9 @@ func newCLIService() (*cliService, error) {
 			}
 			return githubClient.LatestReleaseInfo(repo)
 		},
+		RepoMetadata: repoMetadata,
 	}
+	showService := app.ShowService{}
 	updService := app.UpdateService{
 		Install:    &appService,
 		LatestInfo: latestInfo,
@@ -135,6 +148,7 @@ func newCLIService() (*cliService, error) {
 		appService:       appService,
 		cfgService:       cfgService,
 		listService:      listService,
+		showService:      showService,
 		queryService:     queryService,
 		searchService:    searchService,
 		uninstallService: uninstallService,

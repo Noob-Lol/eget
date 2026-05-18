@@ -25,6 +25,7 @@ type cliService struct {
 	appService       app.Service
 	cfgService       app.ConfigService
 	listService      app.ListService
+	showService      app.ShowService
 	queryService     app.QueryService
 	searchService    app.SearchService
 	uninstallService app.UninstallService

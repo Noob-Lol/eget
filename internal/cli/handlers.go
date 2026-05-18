@@ -96,6 +96,9 @@ func (s *cliService) handle(name string, options any) error {
 	case "list":
 		opts := options.(*ListOptions)
 		return s.handleList(opts)
+	case "show":
+		opts := options.(*ShowOptions)
+		return s.handleShow(opts)
 	case "config":
 		opts := options.(*ConfigOptions)
 		return s.handleConfig(opts)
@@ -310,6 +313,18 @@ func (s *cliService) handleList(opts *ListOptions) error {
 		rows = append(rows, listPackageRow(item))
 	}
 	ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
+	return nil
+}
+
+func (s *cliService) handleShow(opts *ShowOptions) error {
+	if opts == nil || opts.Target == "" {
+		return fmt.Errorf("show target is required")
+	}
+	result, err := s.showService.ShowPackage(opts.Target)
+	if err != nil {
+		return err
+	}
+	show.AList("Package Details", showResultToDisplay(result))
 	return nil
 }
 

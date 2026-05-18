@@ -114,6 +114,7 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 	app.add(newAddCmd(handler))
 	app.add(newUninstallCmd(handler))
 	app.add(newListCmd(handler))
+	app.add(newShowCmd(handler))
 	app.add(newUpdateCmd(handler))
 	app.add(newConfigCmd(handler))
 	app.add(newQueryCmd(handler))
@@ -295,6 +296,7 @@ var commandFlagSpecs = map[string]flagSpec{
 		bools:  setOf("json", "j"),
 		values: setOf("sort", "order", "limit", "l"),
 	},
+	"show":      {},
 	"uninstall": {},
 	"config": {
 		subs: map[string]flagSpec{
