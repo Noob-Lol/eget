@@ -250,7 +250,7 @@ func TestServiceSearchIndexMatchesKeywordsAndExcludes(t *testing.T) {
 		t.Fatalf("save index: %v", err)
 	}
 
-	results, err := svc.SearchIndex("go", []string{"1.22 amd64", "^windows ^rc"}, 20)
+	results, err := svc.SearchIndex("go", SearchOptions{Keywords: []string{"1.22 amd64", "^windows ^rc"}, Number: 20})
 	if err != nil {
 		t.Fatalf("search index: %v", err)
 	}
@@ -288,17 +288,67 @@ func TestServiceSearchIndexLimitsResults(t *testing.T) {
 		t.Fatalf("save index: %v", err)
 	}
 
-	limited, err := svc.SearchIndex("go", []string{"amd64"}, 2)
+	limited, err := svc.SearchIndex("go", SearchOptions{Keywords: []string{"amd64"}, Number: 2})
 	if err != nil {
 		t.Fatalf("search limited index: %v", err)
 	}
 	assert.Eq(t, 2, len(limited))
 
-	all, err := svc.SearchIndex("go", []string{"amd64"}, 0)
+	all, err := svc.SearchIndex("go", SearchOptions{Keywords: []string{"amd64"}, Number: 0})
 	if err != nil {
 		t.Fatalf("search unlimited index: %v", err)
 	}
 	assert.Eq(t, 3, len(all))
+}
+
+func TestServiceSearchIndexSupportsRegexAndVersionSort(t *testing.T) {
+	root := t.TempDir()
+	cfg := testSDKConfig(root)
+	cfg.SDK["node"] = cfgpkg.SDKSection{
+		Target:          stringPtr("nodejs/node{version}"),
+		URLTemplate:     stringPtr("https://example.com/node-v{version}-{os}-{arch}.{ext}"),
+		IndexURL:        stringPtr("https://example.com/node/"),
+		IndexFormat:     stringPtr("html"),
+		FilenamePattern: stringPtr("node-v{version}-{os}-{arch}.{ext}"),
+		ExtMap:          map[string]string{"linux": "tar.gz"},
+		ArchMap:         map[string]string{"amd64": "x64"},
+	}
+	svc := Service{
+		Config:     cfg,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+	}
+	err := svc.IndexCache.Save(Index{
+		Schema: 1,
+		SDK:    "node",
+		Items: []IndexItem{
+			{Version: "20.11.1", Stable: true, Files: []IndexFile{{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "node-v20.11.1-linux-x64.tar.gz"}}},
+			{Version: "22.0.0", Stable: true, Files: []IndexFile{{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "node-v22.0.0-linux-x64.tar.gz"}}},
+			{Version: "22.3.1", Stable: true, Files: []IndexFile{{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "node-v22.3.1-linux-x64.tar.gz"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("save index: %v", err)
+	}
+
+	desc, err := svc.SearchIndex("node", SearchOptions{Keywords: []string{"REG:^22"}, Sort: "desc", Number: 1})
+	if err != nil {
+		t.Fatalf("search desc index: %v", err)
+	}
+	assert.Eq(t, 1, len(desc))
+	assert.Eq(t, "22.3.1", desc[0].Version)
+
+	asc, err := svc.SearchIndex("node", SearchOptions{Keywords: []string{"REG:^22"}, Sort: "asc", Number: 0})
+	if err != nil {
+		t.Fatalf("search asc index: %v", err)
+	}
+	assert.Eq(t, 2, len(asc))
+	assert.Eq(t, "22.0.0", asc[0].Version)
+	assert.Eq(t, "22.3.1", asc[1].Version)
+
+	_, err = svc.SearchIndex("node", SearchOptions{Keywords: []string{"REG:["}})
+	assert.Err(t, err)
 }
 
 func TestServiceRefreshIndexReportsFetchAndParseStages(t *testing.T) {

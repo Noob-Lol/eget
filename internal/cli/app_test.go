@@ -665,14 +665,15 @@ func TestMain_SDKRoutesAndBindsOptions(t *testing.T) {
 		},
 		{
 			name:    "search json",
-			args:    []string{"sdk", "search", "--json", "--number", "5", "node", "20"},
+			args:    []string{"sdk", "search", "--json", "--number", "5", "--sort", "desc", "node", "REG:^22"},
 			wantCmd: "sdk.search",
 			assertOpts: func(t *testing.T, options any) {
 				opts, ok := options.(*SDKSearchOptions)
 				assert.True(t, ok)
 				assert.Eq(t, "node", opts.Name)
-				assert.Eq(t, []string{"20"}, opts.Keywords)
+				assert.Eq(t, []string{"REG:^22"}, opts.Keywords)
 				assert.Eq(t, 5, opts.Number)
+				assert.Eq(t, "desc", opts.Sort)
 				assert.True(t, opts.JSON)
 			},
 		},

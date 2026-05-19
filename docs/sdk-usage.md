@@ -82,6 +82,7 @@ eget sdk remove go@1.22.0
 eget sdk search go 1.22 amd64
 eget sdk search go "1.22 amd64"
 eget sdk search go 1.22 amd64 ^windows ^rc
+eget sdk search --sort desc node REG:^22
 eget sdk search -n 0 go 1.22 amd64
 eget sdk search --json node 20 linux
 ```
@@ -91,6 +92,7 @@ eget sdk search --json node 20 linux
 - `amd64`：结果中必须包含 `amd64`。
 - `^windows`：结果中不能包含 `windows`。
 - `^rc`：结果中不能包含 `rc`。
+- `REG:^22`：用正则匹配字段，例如匹配版本号以 `22` 开头的 Node 版本。
 
 搜索字段包括版本号、stable/prerelease 状态、文件的 `os`、`arch`、`ext`、`filename` 和 `url`。输出按匹配到的文件展示，每行对应一个 index asset 文件。
 
@@ -99,6 +101,12 @@ eget sdk search --json node 20 linux
 ```bash
 eget sdk search --number 50 go 1.22
 eget sdk search -n 0 go amd64
+```
+
+可以通过 `--sort asc|desc` 按版本号升序或倒序排序。排序会先于 `-n, --number` 限制执行：
+
+```bash
+eget sdk search --sort desc -n 5 node REG:^22
 ```
 
 ## Index 管理

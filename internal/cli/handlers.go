@@ -681,7 +681,11 @@ func (s *cliService) handleSDKSearch(opts *SDKSearchOptions) error {
 	if opts == nil || opts.Name == "" {
 		return fmt.Errorf("sdk search name is required")
 	}
-	results, err := s.sdkService.SearchIndex(opts.Name, opts.Keywords, opts.Number)
+	results, err := s.sdkService.SearchIndex(opts.Name, sdk.SearchOptions{
+		Keywords: opts.Keywords,
+		Number:   opts.Number,
+		Sort:     opts.Sort,
+	})
 	if err != nil {
 		return err
 	}

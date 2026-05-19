@@ -50,6 +50,12 @@ type SearchResult struct {
 	URL      string `json:"url,omitempty"`
 }
 
+type SearchOptions struct {
+	Keywords []string
+	Number   int
+	Sort     string
+}
+
 type IndexRefreshStage string
 
 const (

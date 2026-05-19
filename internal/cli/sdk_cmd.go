@@ -25,6 +25,7 @@ type SDKSearchOptions struct {
 	Keywords []string
 	JSON     bool
 	Number   int
+	Sort     string
 }
 
 type SDKIndexOptions struct {
@@ -47,6 +48,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
   eget sdk list
   eget sdk remove go@1.22.0
   eget sdk search go 1.22 amd64 ^windows
+  eget sdk search --sort desc node REG:^22
   eget sdk index refresh go`
 	cmd.Subs = []*gcli.Command{
 		newSDKInstallCmd(installOpts, handler),
@@ -125,6 +127,7 @@ func newSDKSearchCmd(opts *SDKSearchOptions, handler CommandHandler) *gcli.Comma
 	cmd.Config = func(c *gcli.Command) {
 		c.BoolOpt(&opts.JSON, "json", "j", false, "Output as JSON")
 		c.IntOpt(&opts.Number, "number", "n", 20, "Maximum search results, <= 0 means unlimited")
+		c.StrOpt(&opts.Sort, "sort", "", "", "Sort by version: asc, desc")
 		c.AddArg("name", "SDK name", true)
 		c.AddArg("keyword", "Search keyword(s), prefix with ^ to exclude", false, true)
 	}

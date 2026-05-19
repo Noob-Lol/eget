@@ -247,6 +247,10 @@ var commandFlagSpecs = map[string]flagSpec{
 			},
 			"remove": {},
 			"rm":     {},
+			"search": {
+				bools:  setOf("json", "j"),
+				values: setOf("number", "n", "sort"),
+			},
 			"index": {
 				subs: map[string]flagSpec{
 					"list": {
