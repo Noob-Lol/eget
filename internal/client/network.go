@@ -433,7 +433,7 @@ func downloadRangeChunks(rawURL string, out io.Writer, bar io.Writer, size int64
 				return
 			}
 			dst := body[br.Start : br.End+1]
-			n, err := io.ReadFull(resp.Body, dst)
+			n, err := readRangeBody(resp.Body, dst, progressWriter)
 			if err != nil {
 				errCh <- fmt.Errorf("download range %s: %w", rangeHeader, err)
 				return
@@ -441,9 +441,6 @@ func downloadRangeChunks(rawURL string, out io.Writer, bar io.Writer, size int64
 			if int64(n) != br.End-br.Start+1 {
 				errCh <- fmt.Errorf("download range %s length mismatch", rangeHeader)
 				return
-			}
-			if progressWriter != nil {
-				_, _ = progressWriter.Write(dst[:n])
 			}
 		}()
 	}
@@ -463,6 +460,31 @@ func downloadRangeChunks(rawURL string, out io.Writer, bar io.Writer, size int64
 		}
 	}
 	return err
+}
+
+func readRangeBody(body io.Reader, dst []byte, progressWriter io.Writer) (int, error) {
+	const progressReadChunkSize = 256 * 1024
+	total := 0
+	for total < len(dst) {
+		end := total + progressReadChunkSize
+		if end > len(dst) {
+			end = len(dst)
+		}
+		n, err := body.Read(dst[total:end])
+		if n > 0 {
+			if progressWriter != nil {
+				_, _ = progressWriter.Write(dst[total : total+n])
+			}
+			total += n
+		}
+		if err != nil {
+			if err == io.EOF && total == len(dst) {
+				return total, nil
+			}
+			return total, err
+		}
+	}
+	return total, nil
 }
 
 func intFromContentLength(size int64) (int, error) {
