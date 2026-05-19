@@ -91,7 +91,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 
 	url, candidates, err := detector.Detect(assets)
 	if len(candidates) != 0 && err != nil {
-		url, err = r.resolveCandidate(target, candidates)
+		url, err = r.resolveCandidate(target, candidates, opts)
 		if err != nil {
 			return RunResult{}, err
 		}
@@ -444,7 +444,11 @@ func newDownloadProgress(out io.Writer, size int64) *progress.Progress {
 	return p
 }
 
-func (r *InstallRunner) resolveCandidate(target string, candidates []string) (string, error) {
+func (r *InstallRunner) resolveCandidate(target string, candidates []string, opts Options) (string, error) {
+	if selected := uniqueCandidateForName(candidates, opts.Name); selected != "" {
+		return selected, nil
+	}
+
 	previousAssets, _, _ := r.loadInstalled()
 	if previous := previousAssets[storepkg.NormalizeRepoName(target)]; previous != "" {
 		for _, candidate := range candidates {
@@ -473,6 +477,52 @@ func (r *InstallRunner) resolveCandidate(target string, candidates []string) (st
 		return "", fmt.Errorf("selection %d is out of bounds", choice)
 	}
 	return candidates[choice], nil
+}
+
+func uniqueCandidateForName(candidates []string, name string) string {
+	hint := normalizedAssetNameHint(name)
+	if hint == "" {
+		return ""
+	}
+
+	match := ""
+	for _, candidate := range candidates {
+		if !assetBaseMatchesName(path.Base(candidate), hint) {
+			continue
+		}
+		if match != "" {
+			return ""
+		}
+		match = candidate
+	}
+	return match
+}
+
+func normalizedAssetNameHint(name string) string {
+	name = strings.TrimSpace(strings.ToLower(name))
+	if name == "" {
+		return ""
+	}
+	for _, suffix := range []string{".exe", ".appimage"} {
+		name = strings.TrimSuffix(name, suffix)
+	}
+	return name
+}
+
+func assetBaseMatchesName(base, hint string) bool {
+	base = strings.ToLower(base)
+	if base == hint {
+		return true
+	}
+	if len(base) <= len(hint) || !strings.HasPrefix(base, hint) {
+		return false
+	}
+	switch base[len(hint)] {
+	case '-', '_', '.':
+		return true
+	default:
+		return false
+	}
 }
 
 func (r *InstallRunner) resolveExtractedFile(candidates []ExtractedFile, opts Options) (ExtractedFile, bool, error) {

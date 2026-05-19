@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/goutil/x/ccolor"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
@@ -548,6 +549,44 @@ func TestRunStopsWhenConfiguredAssetFilterMatchesNoCurrentReleaseAssets(t *testi
 	if downloadCalls != 0 {
 		t.Fatalf("expected no download when current release asset does not match, got %d calls", downloadCalls)
 	}
+}
+
+func TestResolveCandidateSelectsUniqueNameMatch(t *testing.T) {
+	runner := &InstallRunner{Stderr: io.Discard}
+	runner.Prompt = func(choices []string) (int, error) {
+		t.Fatalf("expected --name to avoid prompt, got choices %#v", choices)
+		return 0, nil
+	}
+
+	got, err := runner.resolveCandidate("gookit/greq", []string{
+		"https://github.com/gookit/greq/releases/download/v0.6.0/gbench-v0.6.0-windows-amd64.zip",
+		"https://github.com/gookit/greq/releases/download/v0.6.0/greq-v0.6.0-windows-amd64.zip",
+	}, Options{Name: "gbench"})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "https://github.com/gookit/greq/releases/download/v0.6.0/gbench-v0.6.0-windows-amd64.zip", got)
+}
+
+func TestResolveCandidateKeepsPromptWhenNameMatchIsAmbiguous(t *testing.T) {
+	runner := &InstallRunner{Stderr: io.Discard}
+	prompted := false
+	runner.Prompt = func(choices []string) (int, error) {
+		prompted = true
+		assert.Eq(t, []string{
+			"gbench-v0.6.0-windows-amd64.zip",
+			"gbench-lite-v0.6.0-windows-amd64.zip",
+		}, choices)
+		return 1, nil
+	}
+
+	got, err := runner.resolveCandidate("gookit/greq", []string{
+		"https://github.com/gookit/greq/releases/download/v0.6.0/gbench-v0.6.0-windows-amd64.zip",
+		"https://github.com/gookit/greq/releases/download/v0.6.0/gbench-lite-v0.6.0-windows-amd64.zip",
+	}, Options{Name: "gbench"})
+
+	assert.NoErr(t, err)
+	assert.True(t, prompted)
+	assert.Eq(t, "https://github.com/gookit/greq/releases/download/v0.6.0/gbench-lite-v0.6.0-windows-amd64.zip", got)
 }
 
 func TestRunFallsBackToOlderSourceForgeVersionWhenAssetMissing(t *testing.T) {
