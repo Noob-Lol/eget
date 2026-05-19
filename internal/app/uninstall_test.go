@@ -159,6 +159,46 @@ func TestUninstallRepoAcceptsDirectRepoTarget(t *testing.T) {
 	}
 }
 
+func TestUninstallAcceptsInstalledOnlyPackageKey(t *testing.T) {
+	tmp := t.TempDir()
+	binPath := filepath.Join(tmp, "gbench.exe")
+	if err := os.WriteFile(binPath, []byte("bin"), 0o755); err != nil {
+		t.Fatalf("write bin: %v", err)
+	}
+
+	store := &fakeInstalledStoreWithLoad{
+		cfg: &storepkg.Config{
+			Installed: map[string]storepkg.Entry{
+				"gbench": {
+					Repo:           "gookit/greq",
+					Target:         "gookit/greq",
+					ExtractedFiles: []string{binPath},
+				},
+			},
+		},
+	}
+	svc := UninstallService{
+		Store: store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	result, err := svc.Uninstall("gbench")
+	if err != nil {
+		t.Fatalf("uninstall installed-only package key: %v", err)
+	}
+	if result.Repo != "gookit/greq" {
+		t.Fatalf("expected repo gookit/greq, got %#v", result)
+	}
+	if len(store.removeCalls) != 1 || store.removeCalls[0] != "gbench" {
+		t.Fatalf("expected installed record removal for gbench, got %#v", store.removeCalls)
+	}
+	if _, err := os.Stat(binPath); !os.IsNotExist(err) {
+		t.Fatalf("expected file %q to be removed, stat err=%v", binPath, err)
+	}
+}
+
 func TestUninstallFailsWhenInstalledEntryMissing(t *testing.T) {
 	store := &fakeInstalledStoreWithLoad{
 		cfg: &storepkg.Config{

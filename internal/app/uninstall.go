@@ -76,7 +76,7 @@ func (s UninstallService) resolveTarget(target string) (uninstallTarget, error) 
 	if strings.Contains(target, "/") {
 		return uninstallTarget{Key: target, Repo: target}, nil
 	}
-	return uninstallTarget{}, fmt.Errorf("unknown package %q", target)
+	return uninstallTarget{Key: target}, nil
 }
 
 func findUninstallEntry(cfg *storepkg.Config, target uninstallTarget) (storepkg.Entry, string, bool) {

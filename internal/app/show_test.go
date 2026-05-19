@@ -91,6 +91,35 @@ func TestShowPackageSupportsInstalledOnlyPackageAndInfersHomepage(t *testing.T) 
 	assert.Eq(t, "2.16.44", got.Version)
 }
 
+func TestShowPackageUsesInstalledAliasName(t *testing.T) {
+	svc := ShowService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"gbench": {
+					Repo:   "gookit/greq",
+					Target: "gookit/greq",
+					Tool:   "greq",
+					Asset:  "gbench-v0.6.0-windows-amd64.zip",
+				},
+			}}, nil
+		},
+	}
+
+	got, err := svc.ShowPackage("gbench")
+	if err != nil {
+		t.Fatalf("ShowPackage installed alias: %v", err)
+	}
+
+	assert.Eq(t, "gbench", got.Name)
+	assert.Eq(t, "gookit/greq", got.Repo)
+	assert.Eq(t, "greq", got.Tool)
+	assert.True(t, got.Installed)
+	assert.False(t, got.Configured)
+}
+
 func TestShowPackageReturnsErrorForMissingTarget(t *testing.T) {
 	svc := ShowService{
 		LoadConfig: func() (*cfgpkg.File, error) {

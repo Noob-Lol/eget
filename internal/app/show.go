@@ -52,7 +52,7 @@ func (s ShowService) ShowPackage(target string) (ShowResult, error) {
 	}
 
 	name, pkg, configured := findShowConfigPackage(cfg, target)
-	entry, installedOK := findShowInstalledEntry(installed, target, pkg)
+	entry, installedName, installedOK := findShowInstalledEntry(installed, target, pkg)
 	if !configured && !installedOK {
 		return ShowResult{}, fmt.Errorf("package %q is not configured or installed", target)
 	}
@@ -72,7 +72,7 @@ func (s ShowService) ShowPackage(target string) (ShowResult, error) {
 		applyInstalledEntryToShowResult(&result, entry)
 	}
 	if result.Name == "" {
-		result.Name = showRepoName(result.Repo)
+		result.Name = firstNonEmpty(showInstalledAliasName(installedName, entry), showRepoName(result.Repo))
 	}
 	if result.Homepage == "" {
 		result.Homepage = inferRepoWebURL(result.Repo)
@@ -81,6 +81,16 @@ func (s ShowService) ShowPackage(target string) (ShowResult, error) {
 		result.RepoURL = inferRepoWebURL(result.Repo)
 	}
 	return result, nil
+}
+
+func showInstalledAliasName(key string, entry storepkg.Entry) string {
+	if key == "" || key == storepkg.NormalizeRepoName(entry.Repo) || key == storepkg.NormalizeRepoName(entry.Target) {
+		return ""
+	}
+	if strings.Contains(key, "/") || strings.Contains(key, ":") {
+		return ""
+	}
+	return key
 }
 
 func findShowConfigPackage(cfg *cfgpkg.File, target string) (string, cfgpkg.Section, bool) {
@@ -97,9 +107,9 @@ func findShowConfigPackage(cfg *cfgpkg.File, target string) (string, cfgpkg.Sect
 	return "", cfgpkg.Section{}, false
 }
 
-func findShowInstalledEntry(installed *storepkg.Config, target string, pkg cfgpkg.Section) (storepkg.Entry, bool) {
+func findShowInstalledEntry(installed *storepkg.Config, target string, pkg cfgpkg.Section) (storepkg.Entry, string, bool) {
 	if installed == nil || installed.Installed == nil {
-		return storepkg.Entry{}, false
+		return storepkg.Entry{}, "", false
 	}
 	candidates := []string{target, storepkg.NormalizeRepoName(target), util.DerefString(pkg.Repo)}
 	for _, candidate := range candidates {
@@ -107,19 +117,20 @@ func findShowInstalledEntry(installed *storepkg.Config, target string, pkg cfgpk
 			continue
 		}
 		if entry, ok := installed.Installed[candidate]; ok {
-			return entry, true
+			return entry, candidate, true
 		}
-		if entry, ok := installed.Installed[storepkg.NormalizeRepoName(candidate)]; ok {
-			return entry, true
+		normalized := storepkg.NormalizeRepoName(candidate)
+		if entry, ok := installed.Installed[normalized]; ok {
+			return entry, normalized, true
 		}
 	}
 	normalized := storepkg.NormalizeRepoName(target)
-	for _, entry := range installed.Installed {
+	for key, entry := range installed.Installed {
 		if entry.Target == target || storepkg.NormalizeRepoName(entry.Target) == normalized {
-			return entry, true
+			return entry, key, true
 		}
 	}
-	return storepkg.Entry{}, false
+	return storepkg.Entry{}, "", false
 }
 
 func applyInstalledEntryToShowResult(result *ShowResult, entry storepkg.Entry) {
