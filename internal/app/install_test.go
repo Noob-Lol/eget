@@ -692,6 +692,28 @@ func TestInstallTargetRecordsCLINameAsInstalledKey(t *testing.T) {
 	assert.Eq(t, "gookit/greq", store.entry.Target)
 }
 
+func TestExtractOptionsMapOmitsGuiTargetForCLIInstall(t *testing.T) {
+	got := extractOptionsMap(install.Options{
+		Output:    "C:/Users/inhere/.local/bin",
+		GuiTarget: "D:/Program/Tools",
+	}, false)
+
+	if _, ok := got["gui_target"]; ok {
+		t.Fatalf("expected non-GUI install options to omit gui_target, got %#v", got)
+	}
+	assert.Eq(t, "C:/Users/inhere/.local/bin", got["output"])
+}
+
+func TestExtractOptionsMapKeepsGuiTargetForGUIInstall(t *testing.T) {
+	got := extractOptionsMap(install.Options{
+		Output:    "C:/Users/inhere/.local/bin",
+		GuiTarget: "D:/Program/Tools",
+	}, true)
+
+	assert.Eq(t, "D:/Program/Tools", got["gui_target"])
+	assert.Eq(t, true, got["is_gui"])
+}
+
 func TestInstallTargetAppliesManagedPackageOptionsWhenTargetIsRepo(t *testing.T) {
 	cfg := mustLoadFromString(t, `
 [packages.erd]

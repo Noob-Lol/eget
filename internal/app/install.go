@@ -345,7 +345,7 @@ func (s Service) installResolvedTarget(runTarget, recordTarget string, opts inst
 		RepoURL:        meta.RepoURL,
 		Tool:           result.Tool,
 		ExtractedFiles: append([]string(nil), result.ExtractedFiles...),
-		Options:        extractOptionsMap(opts),
+		Options:        extractOptionsMap(opts, result.IsGUI || opts.IsGUI),
 		Tag:            tag,
 		Version:        sourceVersion(tag, isSourceForge || isForge),
 		ReleaseDate:    releaseDate,
@@ -656,7 +656,7 @@ func expandPath(value string) (string, error) {
 	return util.Expand(value)
 }
 
-func extractOptionsMap(opts install.Options) map[string]interface{} {
+func extractOptionsMap(opts install.Options, isGUI bool) map[string]interface{} {
 	recorded := make(map[string]interface{})
 	if opts.Tag != "" {
 		recorded["tag"] = opts.Tag
@@ -667,10 +667,10 @@ func extractOptionsMap(opts install.Options) map[string]interface{} {
 	if opts.Output != "" {
 		recorded["output"] = opts.Output
 	}
-	if opts.GuiTarget != "" {
+	if isGUI && opts.GuiTarget != "" {
 		recorded["gui_target"] = opts.GuiTarget
 	}
-	if opts.IsGUI {
+	if isGUI {
 		recorded["is_gui"] = true
 	}
 	if opts.ExtractFile != "" {
