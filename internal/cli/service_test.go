@@ -40,6 +40,7 @@ type fakeSDKService struct {
 	cachedIndexes  []sdk.CachedIndexInfo
 	searchName     string
 	searchKeywords []string
+	searchNumber   int
 	searchResults  []sdk.SearchResult
 	clearName      string
 	clearAll       bool
@@ -81,9 +82,10 @@ func (f *fakeSDKService) ListIndexes() ([]sdk.CachedIndexInfo, error) {
 	return f.cachedIndexes, f.err
 }
 
-func (f *fakeSDKService) SearchIndex(name string, keywords []string) ([]sdk.SearchResult, error) {
+func (f *fakeSDKService) SearchIndex(name string, keywords []string, number int) ([]sdk.SearchResult, error) {
 	f.searchName = name
 	f.searchKeywords = append([]string(nil), keywords...)
+	f.searchNumber = number
 	return f.searchResults, f.err
 }
 
@@ -813,10 +815,11 @@ func TestHandleSDKSearchPrintsResults(t *testing.T) {
 	ccolor.SetOutput(&out)
 	defer ccolor.SetOutput(os.Stdout)
 
-	err := svc.handle("sdk.search", &SDKSearchOptions{Name: "go", Keywords: []string{"1.22", "amd64", "^windows"}})
+	err := svc.handle("sdk.search", &SDKSearchOptions{Name: "go", Keywords: []string{"1.22", "amd64", "^windows"}, Number: 7})
 	assert.NoErr(t, err)
 	assert.Eq(t, "go", fake.searchName)
 	assert.Eq(t, []string{"1.22", "amd64", "^windows"}, fake.searchKeywords)
+	assert.Eq(t, 7, fake.searchNumber)
 	got := out.String()
 	assert.Contains(t, got, "1.22.0")
 	assert.Contains(t, got, "linux")

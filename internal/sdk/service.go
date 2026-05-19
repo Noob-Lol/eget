@@ -316,7 +316,7 @@ func (s Service) ListIndexes() ([]CachedIndexInfo, error) {
 	return s.IndexCache.List()
 }
 
-func (s Service) SearchIndex(name string, keywords []string) ([]SearchResult, error) {
+func (s Service) SearchIndex(name string, keywords []string, number int) ([]SearchResult, error) {
 	cfg, err := s.resolveConfig(name)
 	if err != nil {
 		return nil, err
@@ -340,6 +340,9 @@ func (s Service) SearchIndex(name string, keywords []string) ([]SearchResult, er
 			}
 			if searchResultMatches(result, keywords) {
 				results = append(results, result)
+				if number > 0 && len(results) >= number {
+					return results, nil
+				}
 			}
 		}
 	}

@@ -24,6 +24,7 @@ type SDKSearchOptions struct {
 	Name     string
 	Keywords []string
 	JSON     bool
+	Number   int
 }
 
 type SDKIndexOptions struct {
@@ -37,7 +38,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 	installOpts := &SDKInstallOptions{}
 	listOpts := &SDKListOptions{}
 	removeOpts := &SDKRemoveOptions{}
-	searchOpts := &SDKSearchOptions{}
+	searchOpts := &SDKSearchOptions{Number: 20}
 	indexOpts := &SDKIndexOptions{}
 	cmd := gcli.NewCommand("sdk", "Download and manage SDK archives")
 	cmd.Help = `<info>Examples</>:
@@ -58,7 +59,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 		*installOpts = SDKInstallOptions{}
 		*listOpts = SDKListOptions{}
 		*removeOpts = SDKRemoveOptions{}
-		*searchOpts = SDKSearchOptions{}
+		*searchOpts = SDKSearchOptions{Number: 20}
 		*indexOpts = SDKIndexOptions{}
 	}
 }
@@ -123,6 +124,7 @@ func newSDKSearchCmd(opts *SDKSearchOptions, handler CommandHandler) *gcli.Comma
 	cmd := gcli.NewCommand("search", "Search SDK index cache")
 	cmd.Config = func(c *gcli.Command) {
 		c.BoolOpt(&opts.JSON, "json", "j", false, "Output as JSON")
+		c.IntOpt(&opts.Number, "number", "n", 20, "Maximum search results, <= 0 means unlimited")
 		c.AddArg("name", "SDK name", true)
 		c.AddArg("keyword", "Search keyword(s), prefix with ^ to exclude", false, true)
 	}

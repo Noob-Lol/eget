@@ -250,7 +250,7 @@ func TestServiceSearchIndexMatchesKeywordsAndExcludes(t *testing.T) {
 		t.Fatalf("save index: %v", err)
 	}
 
-	results, err := svc.SearchIndex("go", []string{"1.22 amd64", "^windows ^rc"})
+	results, err := svc.SearchIndex("go", []string{"1.22 amd64", "^windows ^rc"}, 20)
 	if err != nil {
 		t.Fatalf("search index: %v", err)
 	}
@@ -262,6 +262,43 @@ func TestServiceSearchIndexMatchesKeywordsAndExcludes(t *testing.T) {
 	assert.Eq(t, "linux", results[0].OS)
 	assert.Eq(t, "amd64", results[0].Arch)
 	assert.Eq(t, "go1.22.0.linux-amd64.tar.gz", results[0].Filename)
+}
+
+func TestServiceSearchIndexLimitsResults(t *testing.T) {
+	root := t.TempDir()
+	cfg := testSDKConfig(root)
+	svc := Service{
+		Config:     cfg,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+	}
+	err := svc.IndexCache.Save(Index{
+		Schema: 1,
+		SDK:    "go",
+		Items: []IndexItem{
+			{Version: "1.22.0", Stable: true, Files: []IndexFile{
+				{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "go1.22.0.linux-amd64.tar.gz"},
+				{OS: "darwin", Arch: "amd64", Ext: "tar.gz", Filename: "go1.22.0.darwin-amd64.tar.gz"},
+				{OS: "windows", Arch: "amd64", Ext: "zip", Filename: "go1.22.0.windows-amd64.zip"},
+			}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("save index: %v", err)
+	}
+
+	limited, err := svc.SearchIndex("go", []string{"amd64"}, 2)
+	if err != nil {
+		t.Fatalf("search limited index: %v", err)
+	}
+	assert.Eq(t, 2, len(limited))
+
+	all, err := svc.SearchIndex("go", []string{"amd64"}, 0)
+	if err != nil {
+		t.Fatalf("search unlimited index: %v", err)
+	}
+	assert.Eq(t, 3, len(all))
 }
 
 func TestServiceRefreshIndexReportsFetchAndParseStages(t *testing.T) {
