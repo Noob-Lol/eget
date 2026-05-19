@@ -120,6 +120,9 @@ func (s *cliService) handle(name string, options any) error {
 	case "sdk.remove":
 		opts := options.(*SDKRemoveOptions)
 		return s.handleSDKRemove(opts)
+	case "sdk.search":
+		opts := options.(*SDKSearchOptions)
+		return s.handleSDKSearch(opts)
 	case "sdk.index.list", "sdk.index.show", "sdk.index.refresh", "sdk.index.clear":
 		opts := options.(*SDKIndexOptions)
 		return s.handleSDKIndex(opts)
@@ -671,6 +674,30 @@ func (s *cliService) handleSDKRemove(opts *SDKRemoveOptions) error {
 		return nil
 	}
 	ccolor.Successf("✓ Removed %s@%s -> %s\n", result.Name, result.Version, result.Path)
+	return nil
+}
+
+func (s *cliService) handleSDKSearch(opts *SDKSearchOptions) error {
+	if opts == nil || opts.Name == "" {
+		return fmt.Errorf("sdk search name is required")
+	}
+	results, err := s.sdkService.SearchIndex(opts.Name, opts.Keywords)
+	if err != nil {
+		return err
+	}
+	if opts.JSON {
+		return printJSON(results)
+	}
+	if len(results) == 0 {
+		ccolor.Infoln("no SDK index matches found")
+		return nil
+	}
+	cols := []string{"Version", "Stable", "OS", "Arch", "Ext", "Filename"}
+	rows := make([][]any, 0, len(results))
+	for _, result := range results {
+		rows = append(rows, []any{result.Version, result.Stable, result.OS, result.Arch, result.Ext, result.Filename})
+	}
+	ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 	return nil
 }
 

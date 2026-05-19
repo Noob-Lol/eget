@@ -651,6 +651,30 @@ func TestMain_SDKRoutesAndBindsOptions(t *testing.T) {
 			},
 		},
 		{
+			name:    "search keywords",
+			args:    []string{"sdk", "search", "go", "1.22", "amd64", "^windows"},
+			wantCmd: "sdk.search",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKSearchOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "go", opts.Name)
+				assert.Eq(t, []string{"1.22", "amd64", "^windows"}, opts.Keywords)
+				assert.False(t, opts.JSON)
+			},
+		},
+		{
+			name:    "search json",
+			args:    []string{"sdk", "search", "--json", "node", "20"},
+			wantCmd: "sdk.search",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKSearchOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "node", opts.Name)
+				assert.Eq(t, []string{"20"}, opts.Keywords)
+				assert.True(t, opts.JSON)
+			},
+		},
+		{
 			name:    "index refresh name",
 			args:    []string{"sdk", "index", "refresh", "go"},
 			wantCmd: "sdk.index.refresh",

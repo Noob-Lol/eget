@@ -13,6 +13,7 @@ type sdkCLIService interface {
 	InstallMany(context.Context, []string, sdk.InstallOptions) ([]sdk.InstallResult, error)
 	List(string) ([]sdk.InstalledEntry, error)
 	Remove(string) (sdk.RemoveResult, error)
+	SearchIndex(string, []string) ([]sdk.SearchResult, error)
 	RefreshIndex(context.Context, string) (sdk.Index, error)
 	RefreshAllIndexes(context.Context) ([]sdk.Index, error)
 	ShowIndex(string) (sdk.Index, error)

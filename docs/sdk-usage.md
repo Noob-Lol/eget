@@ -11,6 +11,8 @@ eget sdk install --force go@1.22.0
 eget sdk list
 eget sdk list --json
 eget sdk remove go@1.22.0
+eget sdk search go 1.22 amd64 ^windows
+eget sdk search --json node 20 linux
 eget sdk index refresh go
 eget sdk index refresh --all
 eget sdk index show go
@@ -71,6 +73,25 @@ eget sdk remove go@1.22.0
 ```
 
 `sdk remove` 需要明确版本，不支持 `go` 或 `go@latest`。
+
+## 搜索 Index Cache
+
+`sdk search` 只搜索本地 SDK index cache，不会联网刷新。第一个参数固定是 SDK 名称，后续参数是搜索关键词：
+
+```bash
+eget sdk search go 1.22 amd64
+eget sdk search go "1.22 amd64"
+eget sdk search go 1.22 amd64 ^windows ^rc
+eget sdk search --json node 20 linux
+```
+
+多个关键词使用 AND 匹配，所有普通关键词都必须命中。以 `^` 开头的关键词表示排除，语义和 asset filter 的 exclude 类似：
+
+- `amd64`：结果中必须包含 `amd64`。
+- `^windows`：结果中不能包含 `windows`。
+- `^rc`：结果中不能包含 `rc`。
+
+搜索字段包括版本号、stable/prerelease 状态、文件的 `os`、`arch`、`ext`、`filename` 和 `url`。输出按匹配到的文件展示，每行对应一个 index asset 文件。
 
 ## Index 管理
 

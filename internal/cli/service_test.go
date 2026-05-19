@@ -38,6 +38,9 @@ type fakeSDKService struct {
 	index          sdk.Index
 	indexes        []sdk.Index
 	cachedIndexes  []sdk.CachedIndexInfo
+	searchName     string
+	searchKeywords []string
+	searchResults  []sdk.SearchResult
 	clearName      string
 	clearAll       bool
 	err            error
@@ -76,6 +79,12 @@ func (f *fakeSDKService) ShowIndex(name string) (sdk.Index, error) {
 
 func (f *fakeSDKService) ListIndexes() ([]sdk.CachedIndexInfo, error) {
 	return f.cachedIndexes, f.err
+}
+
+func (f *fakeSDKService) SearchIndex(name string, keywords []string) ([]sdk.SearchResult, error) {
+	f.searchName = name
+	f.searchKeywords = append([]string(nil), keywords...)
+	return f.searchResults, f.err
 }
 
 func (f *fakeSDKService) ClearIndex(name string) error {
@@ -790,6 +799,28 @@ func TestHandleSDKRemovePrintsResult(t *testing.T) {
 	assert.NoErr(t, err)
 	assert.Eq(t, "go@1.21.1", fake.removeTarget)
 	assert.Contains(t, out.String(), "already missing")
+}
+
+func TestHandleSDKSearchPrintsResults(t *testing.T) {
+	fake := &fakeSDKService{
+		searchResults: []sdk.SearchResult{{
+			SDK: "go", Version: "1.22.0", Stable: true, OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "go1.22.0.linux-amd64.tar.gz",
+		}},
+	}
+	svc := &cliService{sdkService: fake}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handle("sdk.search", &SDKSearchOptions{Name: "go", Keywords: []string{"1.22", "amd64", "^windows"}})
+	assert.NoErr(t, err)
+	assert.Eq(t, "go", fake.searchName)
+	assert.Eq(t, []string{"1.22", "amd64", "^windows"}, fake.searchKeywords)
+	got := out.String()
+	assert.Contains(t, got, "1.22.0")
+	assert.Contains(t, got, "linux")
+	assert.Contains(t, got, "go1.22.0.linux-amd64.tar.gz")
 }
 
 func TestHandleSDKIndexActions(t *testing.T) {

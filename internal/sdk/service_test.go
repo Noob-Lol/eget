@@ -224,6 +224,46 @@ func TestServiceRefreshShowListAndClearIndex(t *testing.T) {
 	assert.Err(t, err)
 }
 
+func TestServiceSearchIndexMatchesKeywordsAndExcludes(t *testing.T) {
+	root := t.TempDir()
+	cfg := testSDKConfig(root)
+	svc := Service{
+		Config:     cfg,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+	}
+	err := svc.IndexCache.Save(Index{
+		Schema: 1,
+		SDK:    "go",
+		Items: []IndexItem{
+			{Version: "1.22.0", Stable: true, Files: []IndexFile{
+				{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "go1.22.0.linux-amd64.tar.gz", URL: "https://example.com/go1.22.0.linux-amd64.tar.gz"},
+				{OS: "windows", Arch: "amd64", Ext: "zip", Filename: "go1.22.0.windows-amd64.zip", URL: "https://example.com/go1.22.0.windows-amd64.zip"},
+			}},
+			{Version: "1.22.1-rc.1", Stable: false, Files: []IndexFile{
+				{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "go1.22.1-rc.1.linux-amd64.tar.gz", URL: "https://example.com/go1.22.1-rc.1.linux-amd64.tar.gz"},
+			}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("save index: %v", err)
+	}
+
+	results, err := svc.SearchIndex("go", []string{"1.22 amd64", "^windows ^rc"})
+	if err != nil {
+		t.Fatalf("search index: %v", err)
+	}
+
+	assert.Eq(t, 1, len(results))
+	assert.Eq(t, "go", results[0].SDK)
+	assert.Eq(t, "1.22.0", results[0].Version)
+	assert.True(t, results[0].Stable)
+	assert.Eq(t, "linux", results[0].OS)
+	assert.Eq(t, "amd64", results[0].Arch)
+	assert.Eq(t, "go1.22.0.linux-amd64.tar.gz", results[0].Filename)
+}
+
 func TestServiceRefreshIndexReportsFetchAndParseStages(t *testing.T) {
 	root := t.TempDir()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

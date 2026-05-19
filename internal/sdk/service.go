@@ -316,6 +316,36 @@ func (s Service) ListIndexes() ([]CachedIndexInfo, error) {
 	return s.IndexCache.List()
 }
 
+func (s Service) SearchIndex(name string, keywords []string) ([]SearchResult, error) {
+	cfg, err := s.resolveConfig(name)
+	if err != nil {
+		return nil, err
+	}
+	index, err := s.IndexCache.Load(cfg.Name)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]SearchResult, 0)
+	for _, item := range index.Items {
+		for _, file := range item.Files {
+			result := SearchResult{
+				SDK:      index.SDK,
+				Version:  item.Version,
+				Stable:   item.Stable,
+				OS:       file.OS,
+				Arch:     file.Arch,
+				Ext:      file.Ext,
+				Filename: file.Filename,
+				URL:      file.URL,
+			}
+			if searchResultMatches(result, keywords) {
+				results = append(results, result)
+			}
+		}
+	}
+	return results, nil
+}
+
 func (s Service) ClearIndex(name string) error {
 	cfg, err := s.resolveConfig(name)
 	if err != nil {
@@ -326,6 +356,58 @@ func (s Service) ClearIndex(name string) error {
 
 func (s Service) ClearAllIndexes() error {
 	return s.IndexCache.ClearAll()
+}
+
+func searchResultMatches(result SearchResult, keywords []string) bool {
+	keywords = normalizeSearchKeywords(keywords)
+	haystack := strings.ToLower(strings.Join([]string{
+		result.SDK,
+		result.Version,
+		fmt.Sprintf("%t", result.Stable),
+		stabilityName(result.Stable),
+		result.OS,
+		result.Arch,
+		result.Ext,
+		result.Filename,
+		result.URL,
+	}, " "))
+	for _, keyword := range keywords {
+		keyword = strings.TrimSpace(keyword)
+		if keyword == "" {
+			continue
+		}
+		exclude := strings.HasPrefix(keyword, "^")
+		if exclude {
+			keyword = strings.TrimPrefix(keyword, "^")
+		}
+		keyword = strings.ToLower(strings.TrimSpace(keyword))
+		if keyword == "" {
+			continue
+		}
+		contains := strings.Contains(haystack, keyword)
+		if exclude && contains {
+			return false
+		}
+		if !exclude && !contains {
+			return false
+		}
+	}
+	return true
+}
+
+func normalizeSearchKeywords(keywords []string) []string {
+	normalized := make([]string, 0, len(keywords))
+	for _, keyword := range keywords {
+		normalized = append(normalized, strings.Fields(keyword)...)
+	}
+	return normalized
+}
+
+func stabilityName(stable bool) string {
+	if stable {
+		return "stable"
+	}
+	return "prerelease"
 }
 
 func (s Service) emitIndexRefresh(event IndexRefreshEvent) {

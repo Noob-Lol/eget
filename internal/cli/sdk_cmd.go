@@ -20,6 +20,12 @@ type SDKRemoveOptions struct {
 	Target string
 }
 
+type SDKSearchOptions struct {
+	Name     string
+	Keywords []string
+	JSON     bool
+}
+
 type SDKIndexOptions struct {
 	Action string
 	Name   string
@@ -31,6 +37,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 	installOpts := &SDKInstallOptions{}
 	listOpts := &SDKListOptions{}
 	removeOpts := &SDKRemoveOptions{}
+	searchOpts := &SDKSearchOptions{}
 	indexOpts := &SDKIndexOptions{}
 	cmd := gcli.NewCommand("sdk", "Download and manage SDK archives")
 	cmd.Help = `<info>Examples</>:
@@ -38,17 +45,20 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
   eget sdk install --force go:1.22 node:20.11.1
   eget sdk list
   eget sdk remove go@1.22.0
+  eget sdk search go 1.22 amd64 ^windows
   eget sdk index refresh go`
 	cmd.Subs = []*gcli.Command{
 		newSDKInstallCmd(installOpts, handler),
 		newSDKListCmd(listOpts, handler),
 		newSDKRemoveCmd(removeOpts, handler),
+		newSDKSearchCmd(searchOpts, handler),
 		newSDKIndexCmd(indexOpts, handler),
 	}
 	return cmd, func() {
 		*installOpts = SDKInstallOptions{}
 		*listOpts = SDKListOptions{}
 		*removeOpts = SDKRemoveOptions{}
+		*searchOpts = SDKSearchOptions{}
 		*indexOpts = SDKIndexOptions{}
 	}
 }
@@ -105,6 +115,27 @@ func newSDKRemoveCmd(opts *SDKRemoveOptions, handler CommandHandler) *gcli.Comma
 		}
 		snapshot := *opts
 		return handler("sdk.remove", &snapshot)
+	}
+	return cmd
+}
+
+func newSDKSearchCmd(opts *SDKSearchOptions, handler CommandHandler) *gcli.Command {
+	cmd := gcli.NewCommand("search", "Search SDK index cache")
+	cmd.Config = func(c *gcli.Command) {
+		c.BoolOpt(&opts.JSON, "json", "j", false, "Output as JSON")
+		c.AddArg("name", "SDK name", true)
+		c.AddArg("keyword", "Search keyword(s), prefix with ^ to exclude", false, true)
+	}
+	cmd.Func = func(c *gcli.Command, args []string) error {
+		opts.Name = c.Arg("name").String()
+		keywords := append(c.Arg("keyword").Strings(), args...)
+		if err := validateNoFlagArgs(append([]string{opts.Name}, keywords...)); err != nil {
+			return err
+		}
+		opts.Keywords = append([]string(nil), keywords...)
+		snapshot := *opts
+		snapshot.Keywords = append([]string(nil), opts.Keywords...)
+		return handler("sdk.search", &snapshot)
 	}
 	return cmd
 }

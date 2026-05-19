@@ -39,6 +39,17 @@ type IndexFile struct {
 	Filename string `json:"filename"`
 }
 
+type SearchResult struct {
+	SDK      string `json:"sdk"`
+	Version  string `json:"version"`
+	Stable   bool   `json:"stable"`
+	OS       string `json:"os"`
+	Arch     string `json:"arch"`
+	Ext      string `json:"ext"`
+	Filename string `json:"filename,omitempty"`
+	URL      string `json:"url,omitempty"`
+}
+
 type IndexRefreshStage string
 
 const (
