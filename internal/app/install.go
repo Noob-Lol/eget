@@ -259,7 +259,14 @@ func (s Service) resolveInstallRequestWithConfig(cfg *cfgpkg.File, target string
 	if err != nil {
 		return "", "", install.Options{}, err
 	}
-	return target, target, opts, nil
+	return target, installRecordTarget(target, opts), opts, nil
+}
+
+func installRecordTarget(target string, opts install.Options) string {
+	if opts.Name != "" {
+		return opts.Name
+	}
+	return target
 }
 
 func packageSectionForRepoTarget(cfg *cfgpkg.File, target string) cfgpkg.Section {

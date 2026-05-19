@@ -666,6 +666,32 @@ asset_filters = ["gbench"]
 	assert.Eq(t, "gookit/greq", store.entry.Target)
 }
 
+func TestInstallTargetRecordsCLINameAsInstalledKey(t *testing.T) {
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:            "https://github.com/gookit/greq/releases/download/v1.0.0/gbench.exe",
+			ExtractedFiles: []string{"./gbench.exe"},
+		},
+	}
+	store := &fakeInstalledStore{}
+	svc := Service{
+		Runner: runner,
+		Store:  store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	_, err := svc.InstallTarget("gookit/greq", install.Options{Name: "gbench"})
+	if err != nil {
+		t.Fatalf("install repo with CLI name: %v", err)
+	}
+
+	assert.Eq(t, "gbench", store.target)
+	assert.Eq(t, "gookit/greq", store.entry.Repo)
+	assert.Eq(t, "gookit/greq", store.entry.Target)
+}
+
 func TestInstallTargetAppliesManagedPackageOptionsWhenTargetIsRepo(t *testing.T) {
 	cfg := mustLoadFromString(t, `
 [packages.erd]
