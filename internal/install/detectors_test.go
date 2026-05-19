@@ -6,16 +6,80 @@ import (
 	"github.com/gookit/goutil/testutil/assert"
 )
 
-func TestSystemDetectorSkipsSBOMAssets(t *testing.T) {
+func TestReleaseAssetMetadataClassification(t *testing.T) {
+	tests := []struct {
+		name     string
+		asset    string
+		metadata bool
+	}{
+		{name: "sha256", asset: "tool.exe.sha256", metadata: true},
+		{name: "sha256sum", asset: "tool.exe.sha256sum", metadata: true},
+		{name: "sha512", asset: "tool.tar.gz.sha512", metadata: true},
+		{name: "sha512sum", asset: "tool.tar.gz.sha512sum", metadata: true},
+		{name: "md5", asset: "tool.zip.md5", metadata: true},
+		{name: "signature", asset: "tool.exe.sig", metadata: true},
+		{name: "ascii signature", asset: "tool.tar.gz.asc", metadata: true},
+		{name: "minisig", asset: "tool.tar.gz.minisig", metadata: true},
+		{name: "sbom", asset: "tool.zip.sbom.json", metadata: true},
+		{name: "spdx", asset: "tool.spdx.json", metadata: true},
+		{name: "cyclonedx", asset: "tool.cyclonedx.json", metadata: true},
+		{name: "attestation", asset: "tool.intoto.jsonl", metadata: true},
+		{name: "blockmap", asset: "tool.exe.blockmap", metadata: true},
+		{name: "latest yml", asset: "latest.yml", metadata: true},
+		{name: "latest mac yml", asset: "latest-mac.yml", metadata: true},
+		{name: "releases manifest", asset: "RELEASES", metadata: true},
+		{name: "installer", asset: "tool.exe"},
+		{name: "archive", asset: "tool.tar.gz"},
+		{name: "signal app", asset: "signal-desktop-win.exe"},
+		{name: "generic json package", asset: "tool-schema.json"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Eq(t, tt.metadata, isReleaseMetadataAsset("https://example.com/"+tt.asset))
+		})
+	}
+}
+
+func TestSystemDetectorSkipsReleaseMetadataAssets(t *testing.T) {
 	d, err := newSystemDetector("windows", "amd64")
 	assert.NoErr(t, err)
 
 	got, candidates, err := d.Detect([]string{
-		"https://example.com/vhs_0.11.0_Windows_x86_64.zip",
-		"https://example.com/vhs_0.11.0_Windows_x86_64.zip.sbom.json",
+		"https://example.com/OpenHuman_0.53.43_x64-setup.exe",
+		"https://example.com/OpenHuman_0.53.43_x64-setup.exe.sig",
+		"https://example.com/OpenHuman_0.53.43_x64-setup.exe.sha512",
+		"https://example.com/OpenHuman_0.53.43_x64-setup.exe.blockmap",
+		"https://example.com/latest.yml",
 	})
 
 	assert.NoErr(t, err)
-	assert.Eq(t, "https://example.com/vhs_0.11.0_Windows_x86_64.zip", got)
+	assert.Eq(t, "https://example.com/OpenHuman_0.53.43_x64-setup.exe", got)
+	assert.Empty(t, candidates)
+}
+
+func TestAssetDetectorSkipsReleaseMetadataAssets(t *testing.T) {
+	d := &assetDetector{Asset: "exe"}
+
+	got, candidates, err := d.Detect([]string{
+		"https://example.com/OpenHuman_0.53.43_x64-setup.exe",
+		"https://example.com/OpenHuman_0.53.43_x64-setup.exe.sig",
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "https://example.com/OpenHuman_0.53.43_x64-setup.exe", got)
+	assert.Empty(t, candidates)
+}
+
+func TestAllDetectorSkipsReleaseMetadataAssets(t *testing.T) {
+	d := &allDetector{}
+
+	got, candidates, err := d.Detect([]string{
+		"https://example.com/OpenHuman_0.53.43_x64-setup.exe",
+		"https://example.com/OpenHuman_0.53.43_x64-setup.exe.sig",
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "https://example.com/OpenHuman_0.53.43_x64-setup.exe", got)
 	assert.Empty(t, candidates)
 }

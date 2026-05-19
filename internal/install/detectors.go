@@ -37,6 +37,15 @@ type systemDetector struct {
 	Arch systemArch
 }
 
+type releaseAssetKind int
+
+const (
+	releaseAssetInstallable releaseAssetKind = iota
+	releaseAssetChecksum
+	releaseAssetSignature
+	releaseAssetMetadata
+)
+
 func (dc *detectorChain) Detect(assets []string) (string, []string, error) {
 	for _, d := range dc.detectors {
 		choice, candidates, err := d.Detect(assets)
@@ -59,6 +68,7 @@ func (dc *detectorChain) Detect(assets []string) (string, []string, error) {
 }
 
 func (a *allDetector) Detect(assets []string) (string, []string, error) {
+	assets = selectableReleaseAssets(assets)
 	if len(assets) == 1 {
 		return assets[0], nil, nil
 	}
@@ -68,6 +78,9 @@ func (a *allDetector) Detect(assets []string) (string, []string, error) {
 func (s *assetDetector) Detect(assets []string) (string, []string, error) {
 	var candidates []string
 	for _, a := range assets {
+		if isReleaseMetadataAsset(a) {
+			continue
+		}
 		base := path.Base(a)
 		if !s.Anti && base == s.Asset {
 			return a, nil, nil
@@ -132,10 +145,8 @@ func (d *systemDetector) Detect(assets []string) (string, []string, error) {
 	var matches []string
 	var candidates []string
 	all := make([]string, 0, len(assets))
+	assets = selectableReleaseAssets(assets)
 	for _, a := range assets {
-		if isReleaseMetadataAsset(a) {
-			continue
-		}
 		osMatch, extra := d.Os.Match(a)
 		if extra {
 			priority = append(priority, a)
@@ -174,10 +185,57 @@ func (d *systemDetector) Detect(assets []string) (string, []string, error) {
 }
 
 func isReleaseMetadataAsset(asset string) bool {
+	return classifyReleaseAsset(asset) != releaseAssetInstallable
+}
+
+func selectableReleaseAssets(assets []string) []string {
+	selectable := make([]string, 0, len(assets))
+	for _, asset := range assets {
+		if !isReleaseMetadataAsset(asset) {
+			selectable = append(selectable, asset)
+		}
+	}
+	return selectable
+}
+
+func classifyReleaseAsset(asset string) releaseAssetKind {
 	name := strings.ToLower(path.Base(asset))
-	return strings.HasSuffix(name, ".sha256") ||
+	switch {
+	case name == "releases" ||
+		name == "latest.yml" ||
+		name == "latest-mac.yml" ||
+		name == "latest-linux.yml" ||
+		strings.HasSuffix(name, ".blockmap") ||
+		strings.HasSuffix(name, ".yml") ||
+		strings.HasSuffix(name, ".yaml") ||
+		strings.HasSuffix(name, ".sbom.json") ||
+		strings.HasSuffix(name, ".spdx.json") ||
+		strings.HasSuffix(name, ".cyclonedx.json") ||
+		strings.HasSuffix(name, ".intoto") ||
+		strings.HasSuffix(name, ".intoto.jsonl") ||
+		strings.HasSuffix(name, ".provenance") ||
+		strings.HasSuffix(name, ".attestation"):
+		return releaseAssetMetadata
+	case strings.HasSuffix(name, ".sha256") ||
 		strings.HasSuffix(name, ".sha256sum") ||
-		strings.HasSuffix(name, ".sbom.json")
+		strings.HasSuffix(name, ".sha512") ||
+		strings.HasSuffix(name, ".sha512sum") ||
+		strings.HasSuffix(name, ".md5") ||
+		strings.HasSuffix(name, ".md5sum") ||
+		strings.HasSuffix(name, ".checksums.txt") ||
+		strings.HasSuffix(name, ".checksum.txt"):
+		return releaseAssetChecksum
+	case strings.HasSuffix(name, ".sig") ||
+		strings.HasSuffix(name, ".asc") ||
+		strings.HasSuffix(name, ".minisig") ||
+		strings.HasSuffix(name, ".pem") ||
+		strings.HasSuffix(name, ".crt") ||
+		strings.HasSuffix(name, ".cert") ||
+		strings.HasSuffix(name, ".gpg"):
+		return releaseAssetSignature
+	default:
+		return releaseAssetInstallable
+	}
 }
 
 var (
