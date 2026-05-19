@@ -27,6 +27,7 @@ func TestReleaseAssetMetadataClassification(t *testing.T) {
 		{name: "blockmap", asset: "tool.exe.blockmap", metadata: true},
 		{name: "latest yml", asset: "latest.yml", metadata: true},
 		{name: "latest mac yml", asset: "latest-mac.yml", metadata: true},
+		{name: "latest json", asset: "latest.json", metadata: true},
 		{name: "releases manifest", asset: "RELEASES", metadata: true},
 		{name: "installer", asset: "tool.exe"},
 		{name: "archive", asset: "tool.tar.gz"},
@@ -55,6 +56,29 @@ func TestSystemDetectorSkipsReleaseMetadataAssets(t *testing.T) {
 
 	assert.NoErr(t, err)
 	assert.Eq(t, "https://example.com/OpenHuman_0.53.43_x64-setup.exe", got)
+	assert.Empty(t, candidates)
+}
+
+func TestWindowsDetectorSelectsInstallerByExtensionAndArch(t *testing.T) {
+	d, err := newSystemDetector("windows", "amd64")
+	assert.NoErr(t, err)
+
+	got, candidates, err := d.Detect([]string{
+		"https://example.com/latest.json",
+		"https://example.com/openhuman-core-0.54.0-aarch64-unknown-linux-gnu.tar.gz",
+		"https://example.com/openhuman-core-0.54.0-x86_64-unknown-linux-gnu.tar.gz",
+		"https://example.com/OpenHuman_0.54.0_aarch64-apple-darwin.app.tar.gz",
+		"https://example.com/OpenHuman_0.54.0_aarch64.dmg",
+		"https://example.com/OpenHuman_0.54.0_amd64.AppImage",
+		"https://example.com/OpenHuman_0.54.0_amd64.deb",
+		"https://example.com/OpenHuman_0.54.0_x64-setup.exe",
+		"https://example.com/OpenHuman_0.54.0_x64.dmg",
+		"https://example.com/OpenHuman_0.54.0_x64_en-US.msi",
+		"https://example.com/OpenHuman_0.54.0_x86_64-apple-darwin.app.tar.gz",
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "https://example.com/OpenHuman_0.54.0_x64-setup.exe", got)
 	assert.Empty(t, candidates)
 }
 

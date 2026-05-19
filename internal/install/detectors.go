@@ -148,10 +148,10 @@ func (d *systemDetector) Detect(assets []string) (string, []string, error) {
 	assets = selectableReleaseAssets(assets)
 	for _, a := range assets {
 		osMatch, extra := d.Os.Match(a)
-		if extra {
+		archMatch := d.Arch.Match(a)
+		if extra && archMatch {
 			priority = append(priority, a)
 		}
-		archMatch := d.Arch.Match(a)
 		if osMatch && archMatch {
 			matches = append(matches, a)
 		}
@@ -205,6 +205,7 @@ func classifyReleaseAsset(asset string) releaseAssetKind {
 		name == "latest.yml" ||
 		name == "latest-mac.yml" ||
 		name == "latest-linux.yml" ||
+		name == "latest.json" ||
 		strings.HasSuffix(name, ".blockmap") ||
 		strings.HasSuffix(name, ".yml") ||
 		strings.HasSuffix(name, ".yaml") ||
@@ -240,7 +241,7 @@ func classifyReleaseAsset(asset string) releaseAssetKind {
 
 var (
 	installOSDarwin    = systemOS{name: "darwin", regex: regexp.MustCompile(`(?i)(darwin|mac.?(os)?|osx)`)}
-	installOSWindows   = systemOS{name: "windows", regex: regexp.MustCompile(`(?i)([^r]win|windows)`)}
+	installOSWindows   = systemOS{name: "windows", regex: regexp.MustCompile(`(?i)([^r]win|windows|\.exe$|\.msi$)`), priority: regexp.MustCompile(`(?i)\.exe$`)}
 	installOSLinux     = systemOS{name: "linux", regex: regexp.MustCompile(`(?i)(linux|ubuntu)`), anti: regexp.MustCompile(`(?i)(android)`), priority: regexp.MustCompile(`\.appimage$`)}
 	installOSNetBSD    = systemOS{name: "netbsd", regex: regexp.MustCompile(`(?i)(netbsd)`)}
 	installOSFreeBSD   = systemOS{name: "freebsd", regex: regexp.MustCompile(`(?i)(freebsd)`)}
