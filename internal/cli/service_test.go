@@ -283,7 +283,7 @@ func TestPromptIndexRendersInteractiveSelect(t *testing.T) {
 		t.Fatalf("read stderr: %v", err)
 	}
 	got := string(rendered)
-	assert.Contains(t, got, "Select package resource")
+	assert.Contains(t, got, "Select package resource (2)")
 	assert.Contains(t, got, "1) first.zip")
 	assert.Contains(t, got, "2) second.zip")
 }

@@ -82,6 +82,28 @@ func TestWindowsDetectorSelectsInstallerByExtensionAndArch(t *testing.T) {
 	assert.Empty(t, candidates)
 }
 
+func TestWindowsDetectorShowsArchivesWhenMultipleExecutablesMatch(t *testing.T) {
+	d, err := newSystemDetector("windows", "amd64")
+	assert.NoErr(t, err)
+
+	got, candidates, err := d.Detect([]string{
+		"https://example.com/codex-app-server-x86_64-pc-windows-msvc.exe",
+		"https://example.com/codex-app-server-x86_64-pc-windows-msvc.zip",
+		"https://example.com/codex-command-runner-x86_64-pc-windows-msvc.exe",
+		"https://example.com/codex-command-runner-x86_64-pc-windows-msvc.tar.gz",
+		"https://example.com/codex-x86_64-unknown-linux-gnu.tar.gz",
+	})
+
+	assert.Err(t, err)
+	assert.Eq(t, "", got)
+	assert.Eq(t, []string{
+		"https://example.com/codex-app-server-x86_64-pc-windows-msvc.exe",
+		"https://example.com/codex-app-server-x86_64-pc-windows-msvc.zip",
+		"https://example.com/codex-command-runner-x86_64-pc-windows-msvc.exe",
+		"https://example.com/codex-command-runner-x86_64-pc-windows-msvc.tar.gz",
+	}, candidates)
+}
+
 func TestAssetDetectorSkipsReleaseMetadataAssets(t *testing.T) {
 	d := &assetDetector{Asset: "exe"}
 

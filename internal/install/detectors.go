@@ -164,7 +164,7 @@ func (d *systemDetector) Detect(assets []string) (string, []string, error) {
 		return priority[0], nil, nil
 	}
 	if len(priority) > 1 {
-		return "", priority, fmt.Errorf("%d priority matches found", len(matches))
+		return "", matches, fmt.Errorf("%d matches found", len(matches))
 	}
 	if len(matches) == 1 {
 		return matches[0], nil, nil

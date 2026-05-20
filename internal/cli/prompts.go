@@ -29,7 +29,7 @@ func runSelectIndex(in io.Reader, out io.Writer, be backend.Backend, choices []s
 		})
 	}
 
-	selectUI := interactui.NewSelect("Select package resource", items)
+	selectUI := interactui.NewSelect(fmt.Sprintf("Select package resource (%d)", len(items)), items)
 	selectUI.Filterable = true
 	selectUI.FilterPrompt = "Filter assets"
 	selectUI.PageSize = 12
