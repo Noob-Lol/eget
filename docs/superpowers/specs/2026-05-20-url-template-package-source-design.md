@@ -4,12 +4,15 @@
 
 为 `eget` 增加一类一等 package 来源，用于支持不发布在 GitHub、GitLab、Gitea/Forgejo、SourceForge 上的独立下载站。
 
-典型目标是 Claude Code Windows 安装脚本使用的发布模型：
+典型目标是 Claude Code 安装脚本使用的发布模型：
 
 ```text
 latest version:  https://downloads.claude.ai/claude-code-releases/latest
 manifest:        https://downloads.claude.ai/claude-code-releases/{version}/manifest.json
-binary:          https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}/claude.exe
+windows binary:  https://downloads.claude.ai/claude-code-releases/{version}/win32-x64/claude.exe
+linux binary:    https://downloads.claude.ai/claude-code-releases/{version}/linux-x64/claude
+linux musl:      https://downloads.claude.ai/claude-code-releases/{version}/linux-x64-musl/claude
+darwin binary:   https://downloads.claude.ai/claude-code-releases/{version}/darwin-arm64/claude
 ```
 
 用户配置一次后，应能继续使用普通 package 管理命令：
@@ -79,7 +82,7 @@ repo = "template:claude"
 
 ## 配置模型
 
-Claude Code 示例：
+Claude Code 跨平台示例：
 
 ```toml
 [packages.claude]
@@ -90,13 +93,15 @@ target = "~/.local/bin"
 latest_url = "https://downloads.claude.ai/claude-code-releases/latest"
 latest_format = "text"
 
-url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}/claude.exe"
-os_map = { windows = "win32" }
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+os_map = { windows = "win32", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "x64", arm64 = "arm64" }
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+libc_map = { glibc = "", musl = "-musl" }
 
 checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
 checksum_format = "json"
-checksum_json_path = "platforms.{os}-{arch}.checksum"
+checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 ```
 
 普通归档包示例：
@@ -154,6 +159,7 @@ version_regex = ""
 os_map = {}
 arch_map = {}
 ext_map = {}
+libc_map = {}
 
 checksum_url_template = ""
 checksum_format = ""
@@ -170,7 +176,8 @@ checksum_regex = ""
 - `version_regex`: 可选。用于从 text 或 JSON 字符串值中提取版本；有命名分组 `version` 时优先使用，否则使用第一个捕获分组。
 - `os_map`: Go OS 到上游发布命名的映射。
 - `arch_map`: Go arch 到上游发布命名的映射。
-- `ext_map`: Go OS 到上游归档扩展名的映射。
+- `ext_map`: Go OS 到上游文件扩展名或后缀的映射。URL template package 中该值是字面量；如果模板写 `claude{ext}`，Windows 可配置为 `.exe`，Linux/Darwin 可配置为空字符串。SDK 配置仍可继续用 `.{ext}` 拼接无点扩展名。
+- `libc_map`: 可选。Linux libc variant 到模板后缀的映射。支持 `glibc` 和 `musl`；非 Linux 平台 `{libc}` 为空。
 - `checksum_url_template`: 可选。checksum 元数据 URL，用同一套变量渲染。
 - `checksum_format`: checksum 响应格式，支持 `json`、`text`、`sha256sum`。设置 `checksum_url_template` 时必填。
 - `checksum_json_path`: `checksum_format = "json"` 时使用的点路径。
@@ -194,6 +201,7 @@ checksum_regex = ""
 | `{os}` | 应用 `os_map` 后的 OS |
 | `{arch}` | 应用 `arch_map` 后的 arch |
 | `{ext}` | 应用 `ext_map` 后的扩展名 |
+| `{libc}` | Linux libc variant 应用 `libc_map` 后的值；非 Linux 为空 |
 
 映射流程：
 
@@ -202,13 +210,17 @@ checksum_regex = ""
 3. 应用 `os_map[GOOS]`；没有配置时保留 `GOOS`。
 4. 应用 `arch_map[GOARCH]`；没有配置时保留 `GOARCH`。
 5. 应用 `ext_map[GOOS]`；没有配置时 `{ext}` 为空字符串。
-6. 用 `{name}`、`{version}`、`{os}`、`{arch}`、`{ext}` 渲染 `url_template`、checksum template 和 JSON path。
+6. 如果目标 OS 是 Linux 且配置了 `libc_map`，检测当前系统 libc。musl 时使用 `libc_map["musl"]`，否则使用 `libc_map["glibc"]`。没有匹配项时 `{libc}` 为空字符串。
+7. 用 `{name}`、`{version}`、`{os}`、`{arch}`、`{ext}`、`{libc}` 渲染 `url_template`、checksum template 和 JSON path。
 
-Claude Code Windows amd64 配置：
+Claude Code Windows amd64 渲染：
 
 ```toml
-os_map = { windows = "win32" }
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+os_map = { windows = "win32", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "x64", arm64 = "arm64" }
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+libc_map = { glibc = "", musl = "-musl" }
 ```
 
 渲染结果：
@@ -216,16 +228,40 @@ arch_map = { amd64 = "x64", arm64 = "arm64" }
 ```text
 {os}       = win32
 {arch}     = x64
+{libc}     =
+{ext}      = .exe
+url path   = win32-x64/claude.exe
 ```
 
-上游需要 `win32-x64` 时，直接在模板中写 `{os}-{arch}`：
+Claude Code Linux musl amd64 渲染：
+
+```text
+{os}       = linux
+{arch}     = x64
+{libc}     = -musl
+{ext}      =
+url path   = linux-x64-musl/claude
+```
+
+上游需要 `win32-x64`、`linux-x64-musl` 这类组合时，直接在模板中写 `{os}-{arch}{libc}`：
 
 ```toml
-url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}/claude.exe"
-checksum_json_path = "platforms.{os}-{arch}.checksum"
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 ```
 
 这沿用 SDK 的 `os_map` / `arch_map` 风格，不新增 `platform_map` 或 `platform_template`。
+
+### 平台检测补充
+
+默认平台来自现有 `system` 解析。只有用户没有显式配置 `--system` 或 package/global `system` 时，才允许进行 runtime 平台修正。
+
+首版建议补充两类检测：
+
+- Linux libc：检测 musl/glibc，用于渲染 `{libc}`。这能覆盖 Claude Code 的 `linux-x64` 与 `linux-x64-musl` 分发差异。
+- macOS Rosetta：如果当前进程是 amd64，但运行在 Apple Silicon 的 Rosetta 2 下，默认应优先使用 native arm64。用户显式设置 `--system darwin/amd64` 时不做该修正。
+
+如果平台检测失败，应回退到 Go runtime 的 `GOOS/GOARCH`，不要阻塞非 Claude 类 package。
 
 ## 版本选择
 
@@ -264,7 +300,7 @@ Claude Code 示例：
 ```toml
 checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
 checksum_format = "json"
-checksum_json_path = "platforms.{os}-{arch}.checksum"
+checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 ```
 
 流程：
@@ -329,10 +365,10 @@ type URLTemplateOptions struct {
     LatestFormat        string
     LatestJSONPath      string
     VersionRegex        string
-    PlatformTemplate    string
     OSMap               map[string]string
     ArchMap             map[string]string
     ExtMap              map[string]string
+    LibcMap             map[string]string
     ChecksumURLTemplate string
     ChecksumFormat      string
     ChecksumJSONPath    string
@@ -415,6 +451,7 @@ eget install --template ...
 - install latest 或 update 时缺少 `latest_url`。
 - 不支持的 `latest_format` 或 `checksum_format`。
 - `system` 格式非法。
+- Linux libc 检测失败时不报错，除非模板使用了 `{libc}` 且 `libc_map` 没有可用默认值。
 - template 引用了未知变量。
 - latest 响应解析后版本为空。
 - `version_regex` 不匹配 latest 响应。
@@ -459,7 +496,8 @@ fetch metadata -> download asset -> verify -> extract/place file
 - 直接 URL 和 URL template package 的区别。
 - 为什么 URL template package 可以 update，固定直接 URL 通常不能。
 - `os_map` / `arch_map` 与 SDK 配置语义一致。
-- Claude Code 示例直接在 `url_template` 和 `checksum_json_path` 中使用 `{os}-{arch}`。
+- Claude Code 示例直接在 `url_template` 和 `checksum_json_path` 中使用 `{os}-{arch}{libc}`。
+- Linux musl 使用 `{libc}` 表达，不新增 `platform_template`。
 - 首版不执行 post-install 脚本。
 
 ## 测试策略
@@ -467,10 +505,12 @@ fetch metadata -> download asset -> verify -> extract/place file
 优先测试 `internal/source/urltemplate`：
 
 - 解析合法和非法 `template:<id>`。
-- 使用 `os_map`、`arch_map`、`ext_map` 渲染变量。
+- 使用 `os_map`、`arch_map`、`ext_map`、`libc_map` 渲染变量。
 - 解析 text latest。
 - 解析 JSON latest。
-- 使用带 `{os}-{arch}` 的 JSON path 提取 checksum。
+- 使用带 `{os}-{arch}{libc}` 的 JSON path 提取 checksum。
+- Linux glibc 渲染为空 `{libc}`，Linux musl 渲染为 `-musl`。
+- Windows 渲染 `.exe` 文件后缀，Linux/Darwin 渲染空文件后缀。
 - 解析 sha256sum 文本。
 - latest version 为空时报错。
 - checksum path 缺失时报错。
@@ -521,6 +561,7 @@ repo = "template:<id>"
 - `latest_format = "text"`。
 - 缺失 `os_map` / `arch_map` 条目时回退到 Go 原始名称。
 - 缺失 `ext_map` 条目时 `{ext}` 渲染为空字符串。
+- 缺失 `libc_map` 时 `{libc}` 渲染为空字符串。
 - `--tag` 在 install 时覆盖 `latest_url`。
 - package `tag` 在 install 时覆盖 `latest_url`。
 - `update` 总是使用 `latest_url` 对比 latest，即使 package 配置了 `tag`。
