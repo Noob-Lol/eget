@@ -57,6 +57,8 @@ eget install --asset zip windirstat/windirstat
 eget install --asset "REG:\\.deb$" owner/repo
 # Filter assets by prefix/suffix
 eget install --asset "PRE:codex,SUF:.zip" openai/codex
+# Extract all files and rename one extracted file
+eget install --extract-all --rename "codex-x86_64-pc-windows-msvc.exe=codex.exe" openai/codex
 # Install to a custom directory
 eget install --to ~/.local/bin/fzf junegunn/fzf
 ```
@@ -268,6 +270,7 @@ The target argument accepted by `install` and `download` can be:
 - `--to`: Set the install or download output path; accepts either a directory or a full file path.
 - `--file`: Select file(s) to extract from an archive; supports comma-separated file names or glob patterns such as `README.md,LICENSE`. For 7z-readable `.exe` installers, system 7z is required.
 - `--asset`: Filter release assets by keyword; multiple filters can be separated by commas. Regex is also supported with the `REG:` prefix, for example `REG:\\.deb$`. Prefix and suffix matching are supported with `PRE:` and `SUF:`, for example `PRE:codex` or `SUF:.zip`. Exclusions can use `^`, such as `^REG:...` or `^SUF:.sha256`. Filters can be scoped to the target OS with a Go OS prefix such as `windows:zip`, `linux:tar.gz`, or `darwin:SUF:.zip`; scoped filters only apply when the current `--system` OS matches.
+- `--rename`: Rename extracted files with comma-separated `from=to` pairs, for example `--rename "tool-windows-amd64.exe=tool.exe"`. This works with `--file` and `--extract-all`, and is persisted by `install --add`.
 - `--source`: Download the source archive instead of a prebuilt binary release.
 - `--extract-all`, `--ea`: Extract all files from the archive instead of selecting a single target file.
 - `--chunk N`: Control HTTP Range chunk concurrency for one downloaded file. `0` means auto, `1` means single-connection download, and values greater than `1` request up to that many chunks.
@@ -327,6 +330,7 @@ Global options:
 Notes:
 
 - `install --name` can rename a single executable asset, for example installing `chlog-windows-amd64.exe` as `chlog.exe`.
+- `install --rename` can rename selected files while extracting multiple files; the config field is `rename_files`, for example `rename_files = { "codex-x86_64-pc-windows-msvc.exe" = "codex.exe" }`.
 - `install --add` only applies to repo targets and appends the managed package definition after a successful install.
 - `global.gui_target` is used only for portable GUI applications. GUI installers such as `.msi` or `setup.exe` are launched and do not record a final install directory.
 - `download` stores the raw downloaded asset by default; extraction only happens when `--file` or `--extract-all` is provided.
@@ -363,6 +367,7 @@ sdk_target = "~/sdks"
 repo = "inhere/markview"
 tag = "nightly"
 asset_filters = ["windows"]
+rename_files = { "markview-windows-amd64.exe" = "markview.exe" }
 
 [sdk.go]
 aliases = ["golang"]

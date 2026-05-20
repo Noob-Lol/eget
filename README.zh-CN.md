@@ -55,6 +55,10 @@ eget install --name chlog gookit/gitw
 eget install --asset zip windirstat/windirstat
 # 使用正则筛选资源
 eget install --asset "REG:\\.deb$" owner/repo
+# 使用前缀/后缀筛选资源
+eget install --asset "PRE:codex,SUF:.zip" openai/codex
+# 解压全部文件，并重命名其中一个解压文件
+eget install --extract-all --rename "codex-x86_64-pc-windows-msvc.exe=codex.exe" openai/codex
 # 安装到指定目录
 eget install --to ~/.local/bin/fzf junegunn/fzf
 ```
@@ -265,7 +269,8 @@ eget config set global.target ~/.local/bin
 - `--system`: 指定目标系统与架构，例如 `windows/amd64`、`linux/arm64`。
 - `--to`: 指定安装或下载输出路径；可传目录，也可传完整文件路径。
 - `--file`: 指定归档内要提取的文件；支持逗号分隔多个文件或 glob 模式，例如 `README.md,LICENSE`。对 7z 可读取的 `.exe` 安装包使用时，需要系统 7z。
-- `--asset`: 指定资源过滤关键词；可用逗号分隔多个过滤条件，也支持 `REG:` 前缀正则，例如 `REG:\\.deb$`，排除可用 `^REG:...`。过滤条件可用 Go OS 前缀限定目标系统，例如 `windows:zip`、`linux:tar.gz`、`darwin:tar.gz`；仅当当前 `--system` 的 OS 匹配时生效。
+- `--asset`: 指定资源过滤关键词；可用逗号分隔多个过滤条件。支持 `REG:` 前缀正则，例如 `REG:\\.deb$`。支持 `PRE:` 和 `SUF:` 前缀/后缀匹配，例如 `PRE:codex` 或 `SUF:.zip`。排除可用 `^`，例如 `^REG:...` 或 `^SUF:.sha256`。过滤条件可用 Go OS 前缀限定目标系统，例如 `windows:zip`、`linux:tar.gz`、`darwin:SUF:.zip`；仅当当前 `--system` 的 OS 匹配时生效。
+- `--rename`: 使用逗号分隔的 `from=to` 映射重命名解压文件，例如 `--rename "tool-windows-amd64.exe=tool.exe"`。可配合 `--file` 和 `--extract-all` 使用，并会被 `install --add` 持久化。
 - `--source`: 下载源码归档而不是预构建二进制。
 - `--extract-all`, `--ea`: 提取归档中的全部文件，而不是只选择一个目标文件。
 - `--chunk N`: 控制单个下载文件的 HTTP Range 分片并发。`0` 表示自动，`1` 表示单连接下载，大于 `1` 表示最多使用该数量的分片。
@@ -325,6 +330,7 @@ SourceForge 查询目标使用 `sourceforge:<project>` 或 `sourceforge:<project
 说明：
 
 - `install --name` 可用于指定单文件可执行资产的输出文件名，例如将 `chlog-windows-amd64.exe` 安装为 `chlog.exe`。
+- `install --rename` 可在解压多个文件时只重命名指定文件；配置字段为 `rename_files`，例如 `rename_files = { "codex-x86_64-pc-windows-msvc.exe" = "codex.exe" }`。
 - `install --add` 仅对 repo 目标生效，并在安装成功后追加托管包配置。
 - `global.gui_target` 只用于免安装 GUI 应用。`.msi`、`setup.exe` 等 GUI 安装器会被启动，但不会记录最终安装目录。
 - `download` 默认保存原始下载文件；只有设置了 `--file` 或 `--extract-all` 才会自动提取归档内容。
@@ -361,6 +367,7 @@ sdk_target = "~/sdks"
 repo = "inhere/markview"
 tag = "nightly"
 asset_filters = ["windows"]
+rename_files = { "markview-windows-amd64.exe" = "markview.exe" }
 
 [sdk.go]
 aliases = ["golang"]
