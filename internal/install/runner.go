@@ -32,7 +32,7 @@ type Runner interface {
 	Run(target string, opts Options) (RunResult, error)
 }
 
-type PromptFunc func(choices []string) (int, error)
+type PromptFunc func(title, filterPrompt string, choices []string) (int, error)
 type ConfirmFunc func(file string) (bool, error)
 
 type InstallRunner struct {
@@ -469,7 +469,7 @@ func (r *InstallRunner) resolveCandidate(target string, candidates []string, opt
 	for i, candidate := range candidates {
 		choices[i] = path.Base(candidate)
 	}
-	choice, err := r.Prompt(choices)
+	choice, err := r.Prompt("Select package resource", "Filter assets", choices)
 	if err != nil {
 		return "", err
 	}
@@ -542,7 +542,7 @@ func (r *InstallRunner) resolveExtractedFile(candidates []ExtractedFile, opts Op
 		choices[i] = candidates[i].String()
 	}
 	choices[len(candidates)] = "all"
-	choice, err := r.Prompt(choices)
+	choice, err := r.Prompt("Select extracted file", "Filter files", choices)
 	if err != nil {
 		return ExtractedFile{}, false, err
 	}

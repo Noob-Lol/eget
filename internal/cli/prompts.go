@@ -15,10 +15,14 @@ import (
 )
 
 func promptIndex(choices []string) (int, error) {
-	return runSelectIndex(os.Stdin, os.Stderr, readline.New(), choices)
+	return promptSelect("Select package resource", "Filter assets", choices)
 }
 
-func runSelectIndex(in io.Reader, out io.Writer, be backend.Backend, choices []string) (int, error) {
+func promptSelect(title, filterPrompt string, choices []string) (int, error) {
+	return runSelectIndex(os.Stdin, os.Stderr, readline.New(), title, filterPrompt, choices)
+}
+
+func runSelectIndex(in io.Reader, out io.Writer, be backend.Backend, title, filterPrompt string, choices []string) (int, error) {
 	items := make([]interactui.Item, 0, len(choices))
 	for i, choice := range choices {
 		key := strconv.Itoa(i + 1)
@@ -29,9 +33,9 @@ func runSelectIndex(in io.Reader, out io.Writer, be backend.Backend, choices []s
 		})
 	}
 
-	selectUI := interactui.NewSelect(fmt.Sprintf("Select package resource (%d)", len(items)), items)
+	selectUI := interactui.NewSelect(fmt.Sprintf("%s (%d)", title, len(items)), items)
 	selectUI.Filterable = true
-	selectUI.FilterPrompt = "Filter assets"
+	selectUI.FilterPrompt = filterPrompt
 	selectUI.PageSize = 12
 	if len(items) > 0 {
 		selectUI.DefaultKey = items[0].Key

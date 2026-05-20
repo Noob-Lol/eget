@@ -553,7 +553,7 @@ func TestRunStopsWhenConfiguredAssetFilterMatchesNoCurrentReleaseAssets(t *testi
 
 func TestResolveCandidateSelectsUniqueNameMatch(t *testing.T) {
 	runner := &InstallRunner{Stderr: io.Discard}
-	runner.Prompt = func(choices []string) (int, error) {
+	runner.Prompt = func(title, filterPrompt string, choices []string) (int, error) {
 		t.Fatalf("expected --name to avoid prompt, got choices %#v", choices)
 		return 0, nil
 	}
@@ -570,8 +570,10 @@ func TestResolveCandidateSelectsUniqueNameMatch(t *testing.T) {
 func TestResolveCandidateKeepsPromptWhenNameMatchIsAmbiguous(t *testing.T) {
 	runner := &InstallRunner{Stderr: io.Discard}
 	prompted := false
-	runner.Prompt = func(choices []string) (int, error) {
+	runner.Prompt = func(title, filterPrompt string, choices []string) (int, error) {
 		prompted = true
+		assert.Eq(t, "Select package resource", title)
+		assert.Eq(t, "Filter assets", filterPrompt)
 		assert.Eq(t, []string{
 			"gbench-v0.6.0-windows-amd64.zip",
 			"gbench-lite-v0.6.0-windows-amd64.zip",
@@ -587,6 +589,28 @@ func TestResolveCandidateKeepsPromptWhenNameMatchIsAmbiguous(t *testing.T) {
 	assert.NoErr(t, err)
 	assert.True(t, prompted)
 	assert.Eq(t, "https://github.com/gookit/greq/releases/download/v0.6.0/gbench-lite-v0.6.0-windows-amd64.zip", got)
+}
+
+func TestResolveExtractedFileUsesExtractedFilePromptTitle(t *testing.T) {
+	runner := &InstallRunner{Stderr: io.Discard}
+	prompted := false
+	runner.Prompt = func(title, filterPrompt string, choices []string) (int, error) {
+		prompted = true
+		assert.Eq(t, "Select extracted file", title)
+		assert.Eq(t, "Filter files", filterPrompt)
+		assert.Eq(t, []string{"gsa.exe", "gsa-helper.exe", "all"}, choices)
+		return 0, nil
+	}
+
+	selected, all, err := runner.resolveExtractedFile([]ExtractedFile{
+		{ArchiveName: `gsa.exe`, Name: `gsa.exe`, mode: 0o666},
+		{ArchiveName: `gsa-helper.exe`, Name: `gsa-helper.exe`, mode: 0o666},
+	}, Options{System: "windows/amd64"})
+
+	assert.NoErr(t, err)
+	assert.True(t, prompted)
+	assert.False(t, all)
+	assert.Eq(t, `gsa.exe`, selected.ArchiveName)
 }
 
 func TestRunFallsBackToOlderSourceForgeVersionWhenAssetMissing(t *testing.T) {

@@ -54,7 +54,7 @@ func newCLIService() (*cliService, error) {
 		}
 		return assets, urls, nil
 	}
-	runner.Prompt = promptIndex
+	runner.Prompt = promptSelect
 
 	store, err := storepkg.DefaultStore()
 	if err != nil {
