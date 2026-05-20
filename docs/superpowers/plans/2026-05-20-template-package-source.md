@@ -617,7 +617,7 @@ git commit -m "feat(install): wire template package source"
 - Modify: `internal/install/runner.go`
 - Test: `internal/install/service_test.go`
 
-- [ ] **Step 1: 新增 checksum resolver 测试**
+- [x] **Step 1: 新增 checksum resolver 测试**
 
 在 `internal/install/service_test.go` 添加 `TestTemplateChecksumVerifierUsesRenderedManifest`。测试目标：
 
@@ -635,7 +635,7 @@ svc.Sha256VerifierFactory = func(expected string) (Verifier, error) {
 }
 ```
 
-- [ ] **Step 2: runner 保存 resolved template state**
+- [x] **Step 2: runner 保存 resolved template state**
 
 在 `InstallRunner.Run` 的 `finder.Find()` 后：
 
@@ -647,7 +647,7 @@ if templateFinder, ok := finder.(*urltemplate.Finder); ok {
 }
 ```
 
-- [ ] **Step 3: 实现 checksum resolver**
+- [x] **Step 3: 实现 checksum resolver**
 
 在 `internal/install/service.go` 的 `SelectVerifier` 中，显式 `Verify` 优先；否则当 `URLTemplate.ChecksumURLTemplate` 非空时：
 
@@ -657,11 +657,11 @@ if templateFinder, ok := finder.(*urltemplate.Finder); ok {
 4. `urltemplate.ParseChecksum` 提取 checksum。
 5. 调用 `Sha256VerifierFactory(checksum)`。
 
-- [ ] **Step 4: 显式 verify 优先测试**
+- [x] **Step 4: 显式 verify 优先测试**
 
 新增测试：同时配置 `Verify` 和 `ChecksumURLTemplate` 时，不请求 manifest，`Sha256VerifierFactory` 收到 `Verify`。
 
-- [ ] **Step 5: 运行测试**
+- [x] **Step 5: 运行测试**
 
 Run:
 
@@ -671,7 +671,7 @@ go test ./internal/source/urltemplate ./internal/install
 
 Expected: PASS.
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add internal/source/urltemplate internal/install

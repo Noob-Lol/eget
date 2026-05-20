@@ -14,6 +14,7 @@ import (
 	"github.com/gookit/goutil/x/ccolor"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
+	"github.com/inherelab/eget/internal/source/urltemplate"
 )
 
 func TestCacheFilePath(t *testing.T) {
@@ -374,6 +375,97 @@ func TestRunExtractAllDoesNotPromptForDetectedInstaller(t *testing.T) {
 	if len(result.ExtractedFiles) != 1 {
 		t.Fatalf("expected extracted file, got %#v", result.ExtractedFiles)
 	}
+}
+
+func TestRunTemplateFinderResolvesChecksumVarsForVerifier(t *testing.T) {
+	assetURL := "https://example.com/1.2.3/win32-x64/claude.exe"
+	outputDir := t.TempDir()
+	origDownloadGetWithOptions := downloadGetWithOptions
+	origHTTPDo := httpDo
+	defer func() {
+		downloadGetWithOptions = origDownloadGetWithOptions
+		httpDo = origHTTPDo
+	}()
+
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		assert.Eq(t, assetURL, url)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("binary-data")),
+		}, nil
+	}
+	httpDo = func(client *http.Client, req *http.Request) (*http.Response, error) {
+		_ = client
+		assert.Eq(t, "https://example.com/1.2.3/manifest.json", req.URL.String())
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       io.NopCloser(strings.NewReader(`{"platforms":{"win32-x64":{"checksum":"abc"}}}`)),
+		}, nil
+	}
+
+	svc := NewService()
+	svc.TemplateGetterFactory = func(opts Options) urltemplate.HTTPGetter {
+		return fakeHTTPGetterFunc(func(url string) (*http.Response, error) {
+			assert.Eq(t, "https://example.com/latest", url)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Status:     "200 OK",
+				Body:       io.NopCloser(strings.NewReader("1.2.3")),
+			}, nil
+		})
+	}
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	svc.SystemDetectorFactory = func(goos, goarch string) (Detector, error) {
+		assert.Eq(t, "windows", goos)
+		assert.Eq(t, "amd64", goarch)
+		return &fakeDetector{name: assetURL}, nil
+	}
+	var verifierValue string
+	svc.Sha256VerifierFactory = func(expected string) (Verifier, error) {
+		verifierValue = expected
+		return &fakeVerifier{}, nil
+	}
+	svc.BinaryChooserFactory = func(tool string) any {
+		return &fakeChooser{name: tool}
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return fakeInstallExtractor{file: ExtractedFile{
+			Name:        "claude.exe",
+			ArchiveName: "claude.exe",
+			Extract: func(to string) error {
+				return os.WriteFile(to, []byte("binary-data"), 0o755)
+			},
+		}}
+	}
+
+	runner := NewRunner(svc)
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+
+	result, err := runner.Run("template:claude", Options{
+		System: "windows/amd64",
+		Output: outputDir,
+		URLTemplate: URLTemplateOptions{
+			LatestURL:           "https://example.com/latest",
+			URLTemplate:         "https://example.com/{version}/{os}-{arch}/claude{ext}",
+			OSMap:               map[string]string{"windows": "win32"},
+			ArchMap:             map[string]string{"amd64": "x64"},
+			ExtMap:              map[string]string{"windows": ".exe"},
+			ChecksumURLTemplate: "https://example.com/{version}/manifest.json",
+			ChecksumFormat:      "json",
+			ChecksumJSONPath:    "platforms.{os}-{arch}.checksum",
+		},
+	})
+	if err != nil {
+		t.Fatalf("run template install: %v", err)
+	}
+
+	assert.Eq(t, "abc", verifierValue)
+	assert.Eq(t, assetURL, result.URL)
+	assert.Eq(t, []string{filepath.Join(outputDir, "claude.exe")}, result.ExtractedFiles)
 }
 
 type fakeInstallExtractor struct {

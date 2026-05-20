@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"path"
 	"regexp"
@@ -348,6 +349,15 @@ func (s *Service) SelectVerifier(sumAsset string, opts *Options) (Verifier, erro
 			return nil, fmt.Errorf("sha256 asset verifier factory is required")
 		}
 		return s.Sha256AssetVerifierFactory(sumAsset, *opts), nil
+	case opts.URLTemplate.ChecksumURLTemplate != "":
+		if s.Sha256VerifierFactory == nil {
+			return nil, fmt.Errorf("sha256 verifier factory is required")
+		}
+		checksum, err := s.resolveTemplateChecksum(opts)
+		if err != nil {
+			return nil, err
+		}
+		return s.Sha256VerifierFactory(checksum)
 	case opts.Hash:
 		if s.Sha256PrinterFactory == nil {
 			return nil, fmt.Errorf("sha256 printer factory is required")
@@ -359,6 +369,45 @@ func (s *Service) SelectVerifier(sumAsset string, opts *Options) (Verifier, erro
 		}
 		return s.NoVerifierFactory(), nil
 	}
+}
+
+func (s *Service) resolveTemplateChecksum(opts *Options) (string, error) {
+	vars := opts.URLTemplate.ResolvedVars
+	if len(vars) == 0 {
+		return "", fmt.Errorf("template checksum requires resolved variables")
+	}
+	manifestURL, err := urltemplate.Render(opts.URLTemplate.ChecksumURLTemplate, vars)
+	if err != nil {
+		return "", err
+	}
+	checksumPath := opts.URLTemplate.ChecksumJSONPath
+	if checksumPath != "" {
+		checksumPath, err = urltemplate.Render(checksumPath, vars)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// Template latest/checksum URLs are arbitrary site metadata. They use the
+	// shared HTTP client for proxy/SSL behavior, but do not force API-cache
+	// classification because arbitrary metadata URLs are not provider APIs.
+	resp, err := GetWithOptions(manifestURL, *opts)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return "", fmt.Errorf("fetch checksum metadata: %s", resp.Status)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return urltemplate.ParseChecksum(data, urltemplate.Config{
+		ChecksumFormat:   opts.URLTemplate.ChecksumFormat,
+		ChecksumJSONPath: checksumPath,
+		ChecksumRegex:    opts.URLTemplate.ChecksumRegex,
+	})
 }
 
 func (s *Service) SelectExtractor(url, tool string, opts *Options) (any, error) {

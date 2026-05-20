@@ -15,6 +15,7 @@ import (
 	"github.com/gookit/cliui/progress"
 	"github.com/gookit/goutil/x/ccolor"
 	storepkg "github.com/inherelab/eget/internal/installed"
+	"github.com/inherelab/eget/internal/source/urltemplate"
 	"github.com/inherelab/eget/internal/util"
 )
 
@@ -81,6 +82,11 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	assets, err := finder.Find()
 	if err != nil {
 		return RunResult{}, err
+	}
+	if templateFinder, ok := finder.(*urltemplate.Finder); ok {
+		opts.URLTemplate.ResolvedVersion = templateFinder.Version
+		opts.URLTemplate.ResolvedVars = templateFinder.Vars()
+		opts.CacheVersion = templateFinder.Version
 	}
 	verbosef("finder assets: %d", len(assets))
 
