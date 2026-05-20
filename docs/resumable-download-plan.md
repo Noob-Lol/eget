@@ -217,7 +217,7 @@ git commit -m "feat(install): resume cached downloads"
 - Modify: `docs/resumable-download-plan.md`
 - Modify: `AGENTS.md`
 
-- [ ] **Step 1: 聚焦测试**
+- [x] **Step 1: 聚焦测试**
 
 Run:
 
@@ -227,7 +227,7 @@ go test ./internal/client ./internal/install
 
 Expected: PASS。
 
-- [ ] **Step 2: 全量测试**
+- [x] **Step 2: 全量测试**
 
 Run:
 
@@ -237,7 +237,7 @@ go test ./...
 
 Expected: PASS。
 
-- [ ] **Step 3: 清理进行中登记并提交验证状态**
+- [x] **Step 3: 清理进行中登记并提交验证状态**
 
 实现约束：
 - 将本计划剩余 checkbox 更新为完成。

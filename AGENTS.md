@@ -16,8 +16,6 @@
 
 <!-- PROCESSING WORKS:START -->
 
-- [ ] 大文件自动断点续传实现：[docs/resumable-download-plan.md](docs/resumable-download-plan.md)
-
 <!-- PROCESSING WORKS:END -->
 
 ## 核心原则
