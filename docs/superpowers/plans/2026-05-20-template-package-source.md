@@ -687,7 +687,7 @@ git commit -m "feat(install): verify template checksums"
 - Modify: `internal/install/runner.go`
 - Test: `internal/install/runner_test.go`
 
-- [ ] **Step 1: 新增 run-asset 测试**
+- [x] **Step 1: 新增 run-asset 测试**
 
 在 `internal/install/runner_test.go` 添加：
 
@@ -706,7 +706,7 @@ runner.AssetRunner = func(path string, args []string, stdout, stderr io.Writer) 
 }
 ```
 
-- [ ] **Step 2: 添加常量和 hook**
+- [x] **Step 2: 添加常量和 hook**
 
 在 `internal/install/options.go`：
 
@@ -723,7 +723,7 @@ AssetRunner func(path string, args []string, stdout, stderr io.Writer) error
 
 默认实现使用 `exec.Command(path, args...)`，stdout/stderr 直连。
 
-- [ ] **Step 3: 实现 action branch**
+- [x] **Step 3: 实现 action branch**
 
 在 checksum verify 成功后、选择 extractor 前：
 
@@ -737,7 +737,7 @@ AssetRunner func(path string, args []string, stdout, stderr io.Writer) error
 
 不要新增 `install_cleanup`；cache 文件遵循现有 cache 语义，临时执行副本由实现自行清理。
 
-- [ ] **Step 4: 运行测试**
+- [x] **Step 4: 运行测试**
 
 Run:
 
@@ -748,7 +748,7 @@ go test ./internal/install
 
 Expected: PASS.
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add internal/install

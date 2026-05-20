@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -27,6 +28,7 @@ type RunResult struct {
 	IsGUI          bool
 	InstallMode    string
 	InstallerFile  string
+	Version        string
 }
 
 type Runner interface {
@@ -42,6 +44,7 @@ type InstallRunner struct {
 	Prompt                 PromptFunc
 	ConfirmLaunchInstaller ConfirmFunc
 	InstallerLauncher      InstallerLauncher
+	AssetRunner            func(path string, args []string, stdout, stderr io.Writer) error
 	Stdout                 io.Writer
 	Stderr                 io.Writer
 }
@@ -119,6 +122,9 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	if _, err := fmt.Fprintf(output, "📦 Asset %s\n", url); err != nil {
 		return RunResult{}, err
 	}
+	if err := validateInstallAction(opts); err != nil {
+		return RunResult{}, err
+	}
 
 	body, err := r.downloadBody(url, opts)
 	if err != nil {
@@ -141,6 +147,24 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 		}
 	} else if opts.Verify != "" {
 		ccolor.Fprintln(output, "<error>Checksum verified</>")
+	}
+
+	if opts.URLTemplate.InstallAction == InstallActionRunAsset {
+		assetPath, err := r.materializeRunAsset(body, url, opts)
+		if err != nil {
+			return RunResult{}, err
+		}
+		ccolor.Fprintf(output, "Running installer asset: <cyan>%s</>\n", assetPath)
+		if err := r.runAsset(assetPath, opts.URLTemplate.InstallArgs); err != nil {
+			return RunResult{}, err
+		}
+		return RunResult{
+			URL:         url,
+			Tool:        tool,
+			Asset:       path.Base(url),
+			InstallMode: InstallModeRunAsset,
+			Version:     opts.URLTemplate.ResolvedVersion,
+		}, nil
 	}
 
 	extractor, err := SelectExtractorAs[Extractor](r.Service, url, tool, &opts)
@@ -258,6 +282,61 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	}
 
 	return result, nil
+}
+
+func validateInstallAction(opts Options) error {
+	action := opts.URLTemplate.InstallAction
+	if action == "" {
+		return nil
+	}
+	if action != InstallActionRunAsset {
+		return fmt.Errorf("unsupported install_action %q", action)
+	}
+	if opts.Verify == "" && opts.URLTemplate.ChecksumURLTemplate == "" {
+		return fmt.Errorf("install_action %q requires checksum source", action)
+	}
+	return nil
+}
+
+func (r *InstallRunner) materializeRunAsset(body []byte, url string, opts Options) (string, error) {
+	if IsLocalFile(url) {
+		return url, nil
+	}
+	target := CacheFilePathWithMeta(opts.CacheDir, url, CacheMeta{Name: opts.CacheName, Version: opts.CacheVersion})
+	if target == "" {
+		target = filepath.Join(os.TempDir(), filepath.Base(url))
+	}
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		return "", err
+	}
+	mode := os.FileMode(0o644)
+	if runtime.GOOS != "windows" {
+		mode = 0o755
+	}
+	if err := os.WriteFile(target, body, mode); err != nil {
+		return "", err
+	}
+	if runtime.GOOS != "windows" {
+		_ = os.Chmod(target, 0o755)
+	}
+	return target, nil
+}
+
+func (r *InstallRunner) runAsset(path string, args []string) error {
+	stdout, stderr := r.Stdout, r.Stderr
+	if stdout == nil {
+		stdout = io.Discard
+	}
+	if stderr == nil {
+		stderr = io.Discard
+	}
+	if r.AssetRunner != nil {
+		return r.AssetRunner(path, append([]string(nil), args...), stdout, stderr)
+	}
+	cmd := exec.Command(path, args...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	return cmd.Run()
 }
 
 func (r *InstallRunner) resolveVersionFallback(finder Finder, detector Detector, opts Options, originalErr error) (string, []string, error) {

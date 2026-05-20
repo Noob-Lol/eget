@@ -75,8 +75,10 @@ type URLTemplateOptions struct {
 }
 
 const (
-	InstallModePortable  = "portable"
-	InstallModeInstaller = "installer"
+	InstallModePortable   = "portable"
+	InstallModeInstaller  = "installer"
+	InstallModeRunAsset   = "run-asset"
+	InstallActionRunAsset = "run-asset"
 )
 
 type TargetKind string
