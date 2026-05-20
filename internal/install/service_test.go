@@ -15,6 +15,7 @@ import (
 	forge "github.com/inherelab/eget/internal/source/forge"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
+	"github.com/inherelab/eget/internal/source/urltemplate"
 )
 
 type fakeDetector struct {
@@ -319,6 +320,51 @@ func TestSelectFinder(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), "forge getter factory is required") {
 			t.Fatalf("expected forge getter factory error, got %v", err)
 		}
+	})
+
+	t.Run("template target", func(t *testing.T) {
+		var requests []string
+		svc.TemplateGetterFactory = func(opts Options) urltemplate.HTTPGetter {
+			if opts.ProxyURL != "http://127.0.0.1:7890" {
+				t.Fatalf("expected proxy url to propagate to template getter, got %q", opts.ProxyURL)
+			}
+			return fakeHTTPGetterFunc(func(url string) (*http.Response, error) {
+				requests = append(requests, url)
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Status:     "200 OK",
+					Body:       io.NopCloser(strings.NewReader("1.2.3")),
+				}, nil
+			})
+		}
+
+		finder, tool, err := svc.SelectFinder("template:claude", &Options{
+			ProxyURL: "http://127.0.0.1:7890",
+			System:   "windows/amd64",
+			URLTemplate: URLTemplateOptions{
+				LatestURL:   "https://example.com/latest",
+				URLTemplate: "https://example.com/{version}/{os}-{arch}/claude{ext}",
+				OSMap:       map[string]string{"windows": "win32"},
+				ArchMap:     map[string]string{"amd64": "x64"},
+				ExtMap:      map[string]string{"windows": ".exe"},
+			},
+		})
+		if err != nil {
+			t.Fatalf("SelectFinder(template): %v", err)
+		}
+		if tool != "claude" {
+			t.Fatalf("tool = %q, want claude", tool)
+		}
+		got, ok := finder.(*urltemplate.Finder)
+		if !ok {
+			t.Fatalf("finder type = %T, want *urltemplate.Finder", finder)
+		}
+		assets, err := got.Find()
+		if err != nil {
+			t.Fatalf("Find(template): %v", err)
+		}
+		assert.Eq(t, []string{"https://example.com/1.2.3/win32-x64/claude.exe"}, assets)
+		assert.Eq(t, []string{"https://example.com/latest"}, requests)
 	})
 
 	t.Run("invalid target", func(t *testing.T) {

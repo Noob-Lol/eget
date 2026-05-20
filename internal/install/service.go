@@ -12,6 +12,7 @@ import (
 	forge "github.com/inherelab/eget/internal/source/forge"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
+	"github.com/inherelab/eget/internal/source/urltemplate"
 )
 
 type Finder interface {
@@ -50,6 +51,7 @@ type Service struct {
 	GitHubGetterFactory      func(opts Options) sourcegithub.HTTPGetter
 	ForgeGetterFactory       func(opts Options) forge.HTTPGetter
 	SourceForgeGetterFactory func(opts Options) sourcesf.HTTPGetter
+	TemplateGetterFactory    func(opts Options) urltemplate.HTTPGetter
 
 	AllDetectorFactory    func() Detector
 	SystemDetectorFactory func(goos, goarch string) (Detector, error)
@@ -168,9 +170,60 @@ func (s *Service) SelectFinder(target string, opts *Options) (Finder, string, er
 			Tag:    opts.Tag,
 			Getter: s.ForgeGetterFactory(*opts),
 		}, forgeTarget.Project, nil
+	case TargetTemplate:
+		templateTarget, err := urltemplate.ParseTarget(target)
+		if err != nil {
+			return nil, "", err
+		}
+		getter := urltemplate.HTTPGetter(NewHTTPGetter(*opts))
+		if s.TemplateGetterFactory != nil {
+			getter = s.TemplateGetterFactory(*opts)
+		}
+		goos, goarch, libc := urltemplate.EffectiveSystem(opts.System, runtime.GOOS, runtime.GOARCH, urltemplate.DetectLibc, urltemplate.FixDarwinRosetta)
+		return &urltemplate.Finder{
+			Name:   templateTarget.ID,
+			Target: templateTarget,
+			Config: urlTemplateConfigFromOptions(opts.URLTemplate),
+			Tag:    opts.Tag,
+			GOOS:   goos,
+			GOARCH: goarch,
+			Libc:   libc,
+			Getter: getter,
+		}, templateTarget.ID, nil
 	default:
 		return nil, "", fmt.Errorf("invalid argument (must be of the form `user/repo`)")
 	}
+}
+
+func urlTemplateConfigFromOptions(opts URLTemplateOptions) urltemplate.Config {
+	return urltemplate.Config{
+		URLTemplate:         opts.URLTemplate,
+		LatestURL:           opts.LatestURL,
+		LatestFormat:        opts.LatestFormat,
+		LatestJSONPath:      opts.LatestJSONPath,
+		VersionRegex:        opts.VersionRegex,
+		OSMap:               cloneStringMap(opts.OSMap),
+		ArchMap:             cloneStringMap(opts.ArchMap),
+		ExtMap:              cloneStringMap(opts.ExtMap),
+		LibcMap:             cloneStringMap(opts.LibcMap),
+		ChecksumURLTemplate: opts.ChecksumURLTemplate,
+		ChecksumFormat:      opts.ChecksumFormat,
+		ChecksumJSONPath:    opts.ChecksumJSONPath,
+		ChecksumRegex:       opts.ChecksumRegex,
+		InstallAction:       opts.InstallAction,
+		InstallArgs:         append([]string(nil), opts.InstallArgs...),
+	}
+}
+
+func cloneStringMap(value map[string]string) map[string]string {
+	if len(value) == 0 {
+		return nil
+	}
+	cloned := make(map[string]string, len(value))
+	for key, item := range value {
+		cloned[key] = item
+	}
+	return cloned
 }
 
 func (s *Service) SelectDetector(opts *Options) (Detector, error) {

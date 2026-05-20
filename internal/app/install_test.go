@@ -631,6 +631,48 @@ asset_filters = ["windows"]
 	assert.Eq(t, "Manual PicoClaw description", store.entry.Desc)
 }
 
+func TestInstallTargetMergesTemplatePackageOptions(t *testing.T) {
+	cfg := mustLoadFromString(t, `
+[packages.claude]
+repo = "template:claude"
+latest_url = "https://example.com/latest"
+latest_format = "text"
+url_template = "https://example.com/{version}/{os}-{arch}/claude{ext}"
+os_map = { windows = "win32" }
+arch_map = { amd64 = "x64" }
+ext_map = { windows = ".exe" }
+install_action = "run-asset"
+install_args = ["install", "latest"]
+`)
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:            "https://example.com/1.2.3/win32-x64/claude.exe",
+			Tool:           "claude",
+			ExtractedFiles: []string{"./claude.exe"},
+		},
+	}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("claude", install.Options{})
+	if err != nil {
+		t.Fatalf("install template package: %v", err)
+	}
+
+	assert.Eq(t, "template:claude", runner.target)
+	assert.Eq(t, "https://example.com/latest", runner.opts.URLTemplate.LatestURL)
+	assert.Eq(t, "https://example.com/{version}/{os}-{arch}/claude{ext}", runner.opts.URLTemplate.URLTemplate)
+	assert.Eq(t, map[string]string{"windows": "win32"}, runner.opts.URLTemplate.OSMap)
+	assert.Eq(t, map[string]string{"amd64": "x64"}, runner.opts.URLTemplate.ArchMap)
+	assert.Eq(t, map[string]string{"windows": ".exe"}, runner.opts.URLTemplate.ExtMap)
+	assert.Eq(t, "run-asset", runner.opts.URLTemplate.InstallAction)
+	assert.Eq(t, []string{"install", "latest"}, runner.opts.URLTemplate.InstallArgs)
+}
+
 func TestInstallTargetRecordsManagedPackageNameAsInstalledKey(t *testing.T) {
 	cfg := mustLoadFromString(t, `
 [packages.greq]

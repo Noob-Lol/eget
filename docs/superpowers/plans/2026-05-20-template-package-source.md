@@ -498,7 +498,7 @@ git commit -m "feat(source): add template source renderer"
 - Test: `internal/install/service_test.go`
 - Test: `internal/app/install_test.go`
 
-- [ ] **Step 1: 新增 `SelectFinder` 测试**
+- [x] **Step 1: 新增 `SelectFinder` 测试**
 
 在 `internal/install/service_test.go` 的 `TestSelectFinder` 中添加 `template target` subtest，断言：
 
@@ -508,7 +508,7 @@ git commit -m "feat(source): add template source renderer"
 
 测试中使用 `TemplateGetterFactory` 注入 fake getter。
 
-- [ ] **Step 2: 实现 target kind 和 runtime options**
+- [x] **Step 2: 实现 target kind 和 runtime options**
 
 在 `internal/install/options.go`：
 
@@ -549,7 +549,7 @@ type URLTemplateOptions struct {
 
 并在 `Options` 添加 `URLTemplate URLTemplateOptions`。
 
-- [ ] **Step 3: `SelectFinder` 支持 template**
+- [x] **Step 3: `SelectFinder` 支持 template**
 
 在 `internal/install/service.go` 的 `Service` 添加：
 
@@ -582,15 +582,15 @@ case TargetTemplate:
 	}, templateTarget.ID, nil
 ```
 
-- [ ] **Step 4: App 层把配置合并到 runtime options**
+- [x] **Step 4: App 层把配置合并到 runtime options**
 
 在 `internal/app/install.go` 的 `resolveInstallOptionsWithConfig` 返回 `install.Options` 时填充 `URLTemplate`。字段来自 `merged`，map/slice 要 clone。
 
-- [ ] **Step 5: 新增 app merge 测试**
+- [x] **Step 5: 新增 app merge 测试**
 
 在 `internal/app/install_test.go` 添加 `TestInstallTargetMergesTemplatePackageOptions`，断言 managed package `claude` 解析到 `template:claude`，并把 `LatestURL`、`URLTemplate`、`InstallAction`、`InstallArgs` 传给 runner。
 
-- [ ] **Step 6: 运行测试**
+- [x] **Step 6: 运行测试**
 
 Run:
 
@@ -600,7 +600,7 @@ go test ./internal/source/urltemplate ./internal/install ./internal/app
 
 Expected: PASS.
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 git add internal/install internal/app internal/source/urltemplate

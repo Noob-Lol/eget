@@ -8,6 +8,7 @@ import (
 
 	"github.com/inherelab/eget/internal/source/forge"
 	"github.com/inherelab/eget/internal/source/sourceforge"
+	"github.com/inherelab/eget/internal/source/urltemplate"
 )
 
 type Options struct {
@@ -49,7 +50,28 @@ type Options struct {
 	RenameFiles         map[string]string
 	Hash                bool
 	Verify              string
+	URLTemplate         URLTemplateOptions
 	DisableSSL          bool
+}
+
+type URLTemplateOptions struct {
+	URLTemplate         string
+	LatestURL           string
+	LatestFormat        string
+	LatestJSONPath      string
+	VersionRegex        string
+	OSMap               map[string]string
+	ArchMap             map[string]string
+	ExtMap              map[string]string
+	LibcMap             map[string]string
+	ChecksumURLTemplate string
+	ChecksumFormat      string
+	ChecksumJSONPath    string
+	ChecksumRegex       string
+	InstallAction       string
+	InstallArgs         []string
+	ResolvedVersion     string
+	ResolvedVars        map[string]string
 }
 
 const (
@@ -67,6 +89,7 @@ const (
 	TargetLocalFile   TargetKind = "local_file"
 	TargetSourceForge TargetKind = "sourceforge"
 	TargetForge       TargetKind = "forge"
+	TargetTemplate    TargetKind = "template"
 )
 
 var githubURLPattern = regexp.MustCompile(`^(http(s)?://)?github\.com/[\w\-_.,]+/[\w\-_.,]+(.git)?(/)?$`)
@@ -93,6 +116,8 @@ func DetectTargetKind(target string) TargetKind {
 		return TargetSourceForge
 	case forge.IsTarget(target):
 		return TargetForge
+	case urltemplate.IsTarget(target):
+		return TargetTemplate
 	case IsGitHubURL(target):
 		return TargetGitHubURL
 	case IsURL(target):

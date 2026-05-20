@@ -219,7 +219,7 @@ sendLoop:
 
 func isManagedConfigTarget(target string) bool {
 	switch install.DetectTargetKind(target) {
-	case install.TargetRepo, install.TargetGitHubURL, install.TargetSourceForge, install.TargetForge:
+	case install.TargetRepo, install.TargetGitHubURL, install.TargetSourceForge, install.TargetForge, install.TargetTemplate:
 		return true
 	default:
 		return false
@@ -602,7 +602,24 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		RenameFiles:         cloneStringMap(merged.RenameFiles),
 		Hash:                merged.ShowHash,
 		Verify:              merged.Verify,
-		DisableSSL:          merged.DisableSSL,
+		URLTemplate: install.URLTemplateOptions{
+			URLTemplate:         merged.URLTemplate,
+			LatestURL:           merged.LatestURL,
+			LatestFormat:        merged.LatestFormat,
+			LatestJSONPath:      merged.LatestJSONPath,
+			VersionRegex:        merged.VersionRegex,
+			OSMap:               cloneStringMap(merged.OSMap),
+			ArchMap:             cloneStringMap(merged.ArchMap),
+			ExtMap:              cloneStringMap(merged.ExtMap),
+			LibcMap:             cloneStringMap(merged.LibcMap),
+			ChecksumURLTemplate: merged.ChecksumURLTemplate,
+			ChecksumFormat:      merged.ChecksumFormat,
+			ChecksumJSONPath:    merged.ChecksumJSONPath,
+			ChecksumRegex:       merged.ChecksumRegex,
+			InstallAction:       merged.InstallAction,
+			InstallArgs:         append([]string(nil), merged.InstallArgs...),
+		},
+		DisableSSL: merged.DisableSSL,
 	}, nil
 }
 
