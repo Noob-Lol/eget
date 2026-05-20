@@ -27,6 +27,21 @@ type Section struct {
 	Target               *string           `toml:"target" mapstructure:"target"`
 	UpgradeOnly          *bool             `toml:"upgrade_only" mapstructure:"upgrade_only"`
 	Verify               *string           `toml:"verify_sha256" mapstructure:"verify_sha256"`
+	URLTemplate          *string           `toml:"url_template" mapstructure:"url_template"`
+	LatestURL            *string           `toml:"latest_url" mapstructure:"latest_url"`
+	LatestFormat         *string           `toml:"latest_format" mapstructure:"latest_format"`
+	LatestJSONPath       *string           `toml:"latest_json_path" mapstructure:"latest_json_path"`
+	VersionRegex         *string           `toml:"version_regex" mapstructure:"version_regex"`
+	OSMap                map[string]string `toml:"os_map" mapstructure:"os_map"`
+	ArchMap              map[string]string `toml:"arch_map" mapstructure:"arch_map"`
+	ExtMap               map[string]string `toml:"ext_map" mapstructure:"ext_map"`
+	LibcMap              map[string]string `toml:"libc_map" mapstructure:"libc_map"`
+	ChecksumURLTemplate  *string           `toml:"checksum_url_template" mapstructure:"checksum_url_template"`
+	ChecksumFormat       *string           `toml:"checksum_format" mapstructure:"checksum_format"`
+	ChecksumJSONPath     *string           `toml:"checksum_json_path" mapstructure:"checksum_json_path"`
+	ChecksumRegex        *string           `toml:"checksum_regex" mapstructure:"checksum_regex"`
+	InstallAction        *string           `toml:"install_action" mapstructure:"install_action"`
+	InstallArgs          []string          `toml:"install_args" mapstructure:"install_args"`
 	DisableSSL           *bool             `toml:"disable_ssl" mapstructure:"disable_ssl"`
 	ChunkConcurrency     *int              `toml:"chunk_concurrency" mapstructure:"chunk_concurrency"`
 	BatchConcurrency     *int              `toml:"batch_concurrency" mapstructure:"batch_concurrency"`
@@ -72,29 +87,44 @@ type File struct {
 }
 
 type Merged struct {
-	ExtractAll       bool
-	AssetFilters     []string
-	CacheDir         string
-	ProxyURL         string
-	DownloadOnly     bool
-	File             string
-	GithubToken      string
-	GuiTarget        string
-	IsGUI            bool
-	Name             string
-	Quiet            bool
-	RenameFiles      map[string]string
-	ShowHash         bool
-	Source           bool
-	SourcePath       string
-	Sys7zPath        string
-	System           string
-	Tag              string
-	Target           string
-	UpgradeOnly      bool
-	Verify           string
-	DisableSSL       bool
-	ChunkConcurrency int
+	ExtractAll          bool
+	AssetFilters        []string
+	CacheDir            string
+	ProxyURL            string
+	DownloadOnly        bool
+	File                string
+	GithubToken         string
+	GuiTarget           string
+	IsGUI               bool
+	Name                string
+	Quiet               bool
+	RenameFiles         map[string]string
+	ShowHash            bool
+	Source              bool
+	SourcePath          string
+	Sys7zPath           string
+	System              string
+	Tag                 string
+	Target              string
+	UpgradeOnly         bool
+	Verify              string
+	URLTemplate         string
+	LatestURL           string
+	LatestFormat        string
+	LatestJSONPath      string
+	VersionRegex        string
+	OSMap               map[string]string
+	ArchMap             map[string]string
+	ExtMap              map[string]string
+	LibcMap             map[string]string
+	ChecksumURLTemplate string
+	ChecksumFormat      string
+	ChecksumJSONPath    string
+	ChecksumRegex       string
+	InstallAction       string
+	InstallArgs         []string
+	DisableSSL          bool
+	ChunkConcurrency    int
 }
 
 type CLIOverrides struct {

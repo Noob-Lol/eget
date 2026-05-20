@@ -274,6 +274,54 @@ func TestSetByPathSupportsGlobalSys7zPath(t *testing.T) {
 	assert.Eq(t, "C:/Tools/7z.exe", value)
 }
 
+func TestPackageURLTemplateFieldsRoundTrip(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+	repo := "template:claude"
+	latestURL := "https://downloads.claude.ai/claude-code-releases/latest"
+	latestFormat := "text"
+	urlTemplate := "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+	checksumURL := "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
+	checksumFormat := "json"
+	checksumPath := "platforms.{os}-{arch}{libc}.checksum"
+	installAction := "run-asset"
+
+	cfg := NewFile()
+	cfg.Packages["claude"] = Section{
+		Repo:                &repo,
+		LatestURL:           &latestURL,
+		LatestFormat:        &latestFormat,
+		URLTemplate:         &urlTemplate,
+		OSMap:               map[string]string{"windows": "win32", "linux": "linux", "darwin": "darwin"},
+		ArchMap:             map[string]string{"amd64": "x64", "arm64": "arm64"},
+		ExtMap:              map[string]string{"windows": ".exe", "linux": "", "darwin": ""},
+		LibcMap:             map[string]string{"glibc": "", "musl": "-musl"},
+		ChecksumURLTemplate: &checksumURL,
+		ChecksumFormat:      &checksumFormat,
+		ChecksumJSONPath:    &checksumPath,
+		InstallAction:       &installAction,
+		InstallArgs:         []string{"install", "latest"},
+	}
+
+	text, err := dumpConfigString(cfg)
+	assert.NoErr(t, err)
+	assert.Contains(t, text, `repo = "template:claude"`)
+	assert.Contains(t, text, `install_args = ["install", "latest"]`)
+
+	err = Save(configPath, cfg)
+	assert.NoErr(t, err)
+	loaded, err := LoadFile(configPath)
+	assert.NoErr(t, err)
+
+	pkg := loaded.Packages["claude"]
+	assert.Eq(t, repo, *pkg.Repo)
+	assert.Eq(t, latestURL, *pkg.LatestURL)
+	assert.Eq(t, urlTemplate, *pkg.URLTemplate)
+	assert.Eq(t, map[string]string{"windows": ".exe", "linux": "", "darwin": ""}, pkg.ExtMap)
+	assert.Eq(t, map[string]string{"glibc": "", "musl": "-musl"}, pkg.LibcMap)
+	assert.Eq(t, []string{"install", "latest"}, pkg.InstallArgs)
+}
+
 func TestSaveAndLoadRoundTrip(t *testing.T) {
 	tmp := t.TempDir()
 	configPath := filepath.Join(tmp, "eget.toml")

@@ -178,7 +178,7 @@ func normalizePathValue(key string, value any) (any, bool) {
 			return nil, false
 		}
 		return parsed, true
-	case "asset_filters", "fallbacks", "ignore_update_packages":
+	case "asset_filters", "fallbacks", "ignore_update_packages", "install_args":
 		return splitAndTrim(text), true
 	default:
 		return text, true
@@ -283,6 +283,51 @@ func sectionToMap(section Section) map[string]any {
 	}
 	if section.Verify != nil {
 		data["verify_sha256"] = *section.Verify
+	}
+	if section.URLTemplate != nil {
+		data["url_template"] = *section.URLTemplate
+	}
+	if section.LatestURL != nil {
+		data["latest_url"] = *section.LatestURL
+	}
+	if section.LatestFormat != nil {
+		data["latest_format"] = *section.LatestFormat
+	}
+	if section.LatestJSONPath != nil {
+		data["latest_json_path"] = *section.LatestJSONPath
+	}
+	if section.VersionRegex != nil {
+		data["version_regex"] = *section.VersionRegex
+	}
+	if len(section.OSMap) > 0 {
+		data["os_map"] = cloneStringMap(section.OSMap)
+	}
+	if len(section.ArchMap) > 0 {
+		data["arch_map"] = cloneStringMap(section.ArchMap)
+	}
+	if len(section.ExtMap) > 0 {
+		data["ext_map"] = cloneStringMap(section.ExtMap)
+	}
+	if len(section.LibcMap) > 0 {
+		data["libc_map"] = cloneStringMap(section.LibcMap)
+	}
+	if section.ChecksumURLTemplate != nil {
+		data["checksum_url_template"] = *section.ChecksumURLTemplate
+	}
+	if section.ChecksumFormat != nil {
+		data["checksum_format"] = *section.ChecksumFormat
+	}
+	if section.ChecksumJSONPath != nil {
+		data["checksum_json_path"] = *section.ChecksumJSONPath
+	}
+	if section.ChecksumRegex != nil {
+		data["checksum_regex"] = *section.ChecksumRegex
+	}
+	if section.InstallAction != nil {
+		data["install_action"] = *section.InstallAction
+	}
+	if len(section.InstallArgs) > 0 {
+		data["install_args"] = append([]string(nil), section.InstallArgs...)
 	}
 	if section.DisableSSL != nil {
 		data["disable_ssl"] = *section.DisableSSL

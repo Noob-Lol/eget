@@ -24,10 +24,25 @@ func MergeInstallOptions(global, repo, pkg Section, cli CLIOverrides) Merged {
 	merged.Tag = firstString(cli.Tag, pkg.Tag, repo.Tag, global.Tag)
 	merged.Target = firstString(cli.Target, pkg.Target, repo.Target, global.Target)
 	merged.Verify = firstString(cli.Verify, pkg.Verify, repo.Verify, global.Verify)
+	merged.URLTemplate = firstString(pkg.URLTemplate, repo.URLTemplate, global.URLTemplate)
+	merged.LatestURL = firstString(pkg.LatestURL, repo.LatestURL, global.LatestURL)
+	merged.LatestFormat = firstString(pkg.LatestFormat, repo.LatestFormat, global.LatestFormat)
+	merged.LatestJSONPath = firstString(pkg.LatestJSONPath, repo.LatestJSONPath, global.LatestJSONPath)
+	merged.VersionRegex = firstString(pkg.VersionRegex, repo.VersionRegex, global.VersionRegex)
+	merged.ChecksumURLTemplate = firstString(pkg.ChecksumURLTemplate, repo.ChecksumURLTemplate, global.ChecksumURLTemplate)
+	merged.ChecksumFormat = firstString(pkg.ChecksumFormat, repo.ChecksumFormat, global.ChecksumFormat)
+	merged.ChecksumJSONPath = firstString(pkg.ChecksumJSONPath, repo.ChecksumJSONPath, global.ChecksumJSONPath)
+	merged.ChecksumRegex = firstString(pkg.ChecksumRegex, repo.ChecksumRegex, global.ChecksumRegex)
+	merged.InstallAction = firstString(pkg.InstallAction, repo.InstallAction, global.InstallAction)
 	merged.ChunkConcurrency = firstInt(cli.ChunkConcurrency, pkg.ChunkConcurrency, repo.ChunkConcurrency, global.ChunkConcurrency)
 
 	merged.AssetFilters = firstStrings(cli.AssetFilters, pkg.AssetFilters, repo.AssetFilters, global.AssetFilters)
 	merged.RenameFiles = firstStringMap(cli.RenameFiles, pkg.RenameFiles, repo.RenameFiles, global.RenameFiles)
+	merged.OSMap = firstStringMap(nil, pkg.OSMap, repo.OSMap, global.OSMap)
+	merged.ArchMap = firstStringMap(nil, pkg.ArchMap, repo.ArchMap, global.ArchMap)
+	merged.ExtMap = firstStringMap(nil, pkg.ExtMap, repo.ExtMap, global.ExtMap)
+	merged.LibcMap = firstStringMap(nil, pkg.LibcMap, repo.LibcMap, global.LibcMap)
+	merged.InstallArgs = firstStrings(nil, pkg.InstallArgs, repo.InstallArgs, global.InstallArgs)
 
 	return merged
 }

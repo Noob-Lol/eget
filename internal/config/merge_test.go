@@ -279,6 +279,41 @@ func TestMergeInstallOptionsMergesRenameFiles(t *testing.T) {
 	assert.Eq(t, map[string]string{"cli.exe": "cli-renamed.exe"}, merged.RenameFiles)
 }
 
+func TestMergeInstallOptionsMergesURLTemplateFields(t *testing.T) {
+	merged := MergeInstallOptions(
+		Section{
+			URLTemplate: stringPtr("global"),
+			OSMap:       map[string]string{"windows": "global-win"},
+		},
+		Section{
+			URLTemplate: stringPtr("repo"),
+			OSMap:       map[string]string{"windows": "repo-win"},
+		},
+		Section{
+			URLTemplate:   stringPtr("package"),
+			LatestURL:     stringPtr("https://example.com/latest"),
+			LatestFormat:  stringPtr("text"),
+			OSMap:         map[string]string{"windows": "win32"},
+			ArchMap:       map[string]string{"amd64": "x64"},
+			ExtMap:        map[string]string{"windows": ".exe"},
+			LibcMap:       map[string]string{"musl": "-musl"},
+			InstallAction: stringPtr("run-asset"),
+			InstallArgs:   []string{"install", "latest"},
+		},
+		CLIOverrides{},
+	)
+
+	assert.Eq(t, "package", merged.URLTemplate)
+	assert.Eq(t, "https://example.com/latest", merged.LatestURL)
+	assert.Eq(t, "text", merged.LatestFormat)
+	assert.Eq(t, map[string]string{"windows": "win32"}, merged.OSMap)
+	assert.Eq(t, map[string]string{"amd64": "x64"}, merged.ArchMap)
+	assert.Eq(t, map[string]string{"windows": ".exe"}, merged.ExtMap)
+	assert.Eq(t, map[string]string{"musl": "-musl"}, merged.LibcMap)
+	assert.Eq(t, "run-asset", merged.InstallAction)
+	assert.Eq(t, []string{"install", "latest"}, merged.InstallArgs)
+}
+
 func boolPtr(v bool) *bool {
 	return &v
 }

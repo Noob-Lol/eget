@@ -38,7 +38,7 @@
 - Test: `internal/config/gookit_test.go`
 - Test: `internal/config/merge_test.go`
 
-- [ ] **Step 1: 新增配置 round-trip 失败测试**
+- [x] **Step 1: 新增配置 round-trip 失败测试**
 
 在 `internal/config/gookit_test.go` 添加：
 
@@ -94,7 +94,7 @@ func TestPackageURLTemplateFieldsRoundTrip(t *testing.T) {
 
 如果当前文件还没有 `path/filepath` import，需要添加。
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -104,7 +104,7 @@ go test ./internal/config -run TestPackageURLTemplateFieldsRoundTrip
 
 Expected: FAIL，缺少 `Section.LatestURL`、`Section.URLTemplate`、map 字段或 install action 字段。
 
-- [ ] **Step 3: 添加配置字段**
+- [x] **Step 3: 添加配置字段**
 
 在 `internal/config/model.go` 的 `Section` 添加：
 
@@ -128,7 +128,7 @@ InstallArgs         []string          `toml:"install_args" mapstructure:"install
 
 在 `Merged` 添加同名非指针字段；首版不为这些字段添加 CLI overrides。
 
-- [ ] **Step 4: 支持 encode/decode**
+- [x] **Step 4: 支持 encode/decode**
 
 在 `internal/config/gookit.go` 的 `sectionToMap` 添加新字段输出；`install_args` 按 `[]string` 输出。更新 `normalizePathValue`：
 
@@ -137,7 +137,7 @@ case "asset_filters", "fallbacks", "ignore_update_packages", "install_args":
 	return splitAndTrim(text), true
 ```
 
-- [ ] **Step 5: 新增 merge 测试**
+- [x] **Step 5: 新增 merge 测试**
 
 在 `internal/config/merge_test.go` 添加：
 
@@ -178,7 +178,7 @@ func TestMergeInstallOptionsMergesURLTemplateFields(t *testing.T) {
 }
 ```
 
-- [ ] **Step 6: 实现 merge**
+- [x] **Step 6: 实现 merge**
 
 在 `internal/config/merge.go` 合并 package > repo > global：
 
@@ -200,7 +200,7 @@ merged.LibcMap = firstStringMap(nil, pkg.LibcMap, repo.LibcMap, global.LibcMap)
 merged.InstallArgs = firstStrings(nil, pkg.InstallArgs, repo.InstallArgs, global.InstallArgs)
 ```
 
-- [ ] **Step 7: 运行配置测试**
+- [x] **Step 7: 运行配置测试**
 
 Run:
 
@@ -210,7 +210,7 @@ go test ./internal/config
 
 Expected: PASS.
 
-- [ ] **Step 8: 提交**
+- [x] **Step 8: 提交**
 
 ```bash
 git add internal/config/model.go internal/config/gookit.go internal/config/merge.go internal/config/gookit_test.go internal/config/merge_test.go
