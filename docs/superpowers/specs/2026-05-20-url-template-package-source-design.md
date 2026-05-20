@@ -111,7 +111,6 @@ checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 
 install_action = "run-asset"
 install_args = ["install", "latest"]
-install_cleanup = true
 ```
 
 普通归档包示例：
@@ -178,7 +177,6 @@ checksum_regex = ""
 
 install_action = ""
 install_args = []
-install_cleanup = true
 ```
 
 字段语义：
@@ -198,7 +196,6 @@ install_cleanup = true
 - `checksum_regex`: 可选。用于从 text 或 sha256sum 内容中提取 checksum。
 - `install_action`: 可选。为空时走默认下载/提取/放置流程；`run-asset` 表示校验后执行下载到本地的 asset。
 - `install_args`: `run-asset` 的参数数组，不经过 shell。支持同一套模板变量。
-- `install_cleanup`: `run-asset` 执行完成后是否删除临时 asset，默认 `true`。
 
 首版建议完整支持：
 
@@ -337,7 +334,6 @@ checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 ```toml
 install_action = "run-asset"
 install_args = ["install", "latest"]
-install_cleanup = true
 ```
 
 `run-asset` 的语义：
@@ -348,7 +344,7 @@ install_cleanup = true
 4. 使用 `exec.Command(assetPath, installArgs...)` 运行，不经过 shell。
 5. 命令 stdout/stderr 直连当前进程 stdout/stderr，方便用户看到 installer 输出。
 6. 命令退出码非 0 时，整个 install 失败。
-7. `install_cleanup = true` 时删除临时 asset；复用缓存文件时不删除全局下载缓存。
+7. 运行结束后不由 package 配置决定清理策略：如果 asset 来自现有下载 cache，则继续遵循 cache 保留语义；如果实现必须创建临时执行副本，则只清理该临时副本。
 8. installed store 记录 source、version、asset URL 和 `install_mode = "run-asset"`。
 
 安全约束：
@@ -376,16 +372,17 @@ checksum_format = "json"
 checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 install_action = "run-asset"
 install_args = ["install", "latest"]
-install_cleanup = true
 ```
 
 这会复刻官方脚本的核心流程：
 
 ```text
-latest -> manifest checksum -> download binary -> verify -> run `claude install latest` -> cleanup
+latest -> manifest checksum -> download binary -> verify -> run `claude install latest` -> keep existing cache semantics
 ```
 
 它不会由 eget 自己修改 shell profile；这些副作用由 Claude installer binary 自己承担。
+
+`run-asset` 不提供 `install_cleanup` 配置项。eget 已有下载 cache 语义，package 不应额外决定是否删除缓存文件；临时执行副本属于实现细节，执行后应由实现自行清理。
 
 ## 安装数据流
 
