@@ -447,7 +447,6 @@ type URLTemplateOptions struct {
     ChecksumRegex       string
     InstallAction       string
     InstallArgs         []string
-    InstallCleanup      bool
 }
 
 type Options struct {
