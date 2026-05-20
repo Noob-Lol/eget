@@ -6,7 +6,8 @@
 -->
 
 - [x] 增强 list --outdated 用于显示有更新的工具
-- [ ] 新增 eget 自身管理命令，eg: clean 用于清理缓存
+- [ ] 新增 eget 自身管理命令 `pm`，可以添加一些自身管理命令。
+  - `pm clean` 用于清理缓存，包括下载的文件、缓存的 API 响应等。默认清理3天前的缓存。
 - [x] 增强功能：参考自 https://github.com/marwanhawari/stew
   - [x] 新增命令 query 用于浏览 GitHub repository 的 releases
   - [x] 新增命令 search 用于搜索 GitHub 上的 repository

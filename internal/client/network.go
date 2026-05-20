@@ -60,6 +60,7 @@ var verboseWriter io.Writer = os.Stderr
 var verboseEnabled bool
 var proxyNoticeMu sync.Mutex
 var proxyNoticeSeen = map[string]struct{}{}
+var downloadProgressFlushInterval = 500 * time.Millisecond
 
 func SetVerbose(enabled bool, writer io.Writer) {
 	verboseEnabled = enabled
@@ -562,7 +563,7 @@ func concurrentProgressWriter(bar io.Writer) (io.Writer, func()) {
 		return io.Discard, func() {}
 	}
 	if p, ok := bar.(*progress.Progress); ok {
-		writer := progress.NewConcurrentWriterWithInterval(p, 100*time.Millisecond)
+		writer := progress.NewConcurrentWriterWithInterval(p, downloadProgressFlushInterval)
 		return writer, func() { _ = writer.Close() }
 	}
 	if closer, ok := bar.(io.Closer); ok {

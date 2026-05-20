@@ -20,6 +20,8 @@ import (
 	"github.com/inherelab/eget/internal/util"
 )
 
+const downloadProgressRedrawFreq = 256 * 1024
+
 type RunResult struct {
 	URL            string
 	Tool           string
@@ -523,7 +525,7 @@ func newDownloadProgress(out io.Writer, size int64) *progress.Progress {
 	}
 	p := progress.CustomBar(40, progress.BarStyles[0], size)
 	p.Out = out
-	p.RedrawFreq = 2048
+	p.RedrawFreq = downloadProgressRedrawFreq
 	p.Format = "Downloading [{@bar}] <info>{@percent:4s}%</> {@curSize}/{@maxSize} ({@elapsed}/{@remaining} T:{@estimated})"
 	p.Start()
 	return p

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/goutil/x/ccolor"
@@ -82,6 +83,10 @@ func TestProxyNoticePrintsOncePerKindAndProxyURL(t *testing.T) {
 	got := ccolor.ClearCode(notice.String())
 	assert.Eq(t, 1, strings.Count(got, "proxy_url for GitHub API request"))
 	assert.Eq(t, 1, strings.Count(got, "proxy_url for download request"))
+}
+
+func TestDownloadProgressFlushIntervalIsThrottled(t *testing.T) {
+	assert.True(t, downloadProgressFlushInterval >= 500*time.Millisecond)
 }
 
 func TestDownloadRangeChunksUpdatesProgressWhileReading(t *testing.T) {

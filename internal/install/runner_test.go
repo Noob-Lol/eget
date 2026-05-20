@@ -241,6 +241,13 @@ func TestDownloadWritesAndFinishesProgressWriter(t *testing.T) {
 	}
 }
 
+func TestNewDownloadProgressUsesCoarseRedrawFrequency(t *testing.T) {
+	p := newDownloadProgress(io.Discard, 500*1024*1024)
+	defer p.Finish()
+
+	assert.True(t, p.RedrawFreq >= 256*1024)
+}
+
 func TestEffectiveOutputUsesGuiTargetForPortableGUI(t *testing.T) {
 	opts := Options{Output: "C:/Tools", GuiTarget: "C:/Program/AITools", IsGUI: true, InstallMode: InstallModePortable}
 	got := effectiveOutput(opts)
