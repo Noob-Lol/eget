@@ -118,8 +118,8 @@ func TestInstallTargetRunsInstallFlowAndRecordsInstalledState(t *testing.T) {
 	if store.calls != 1 {
 		t.Fatalf("expected store to be called once, got %d", store.calls)
 	}
-	if store.target != "junegunn/fzf" {
-		t.Fatalf("expected store target junegunn/fzf, got %q", store.target)
+	if store.target != "fzf" {
+		t.Fatalf("expected store target fzf, got %q", store.target)
 	}
 	if store.entry.Tool != "fzf" {
 		t.Fatalf("expected tool fzf, got %q", store.entry.Tool)

@@ -126,7 +126,10 @@ func findShowInstalledEntry(installed *storepkg.Config, target string, pkg cfgpk
 	}
 	normalized := storepkg.NormalizeRepoName(target)
 	for key, entry := range installed.Installed {
-		if entry.Target == target || storepkg.NormalizeRepoName(entry.Target) == normalized {
+		if entry.Target == target ||
+			storepkg.NormalizeRepoName(entry.Target) == normalized ||
+			target == showRepoName(entry.Repo) ||
+			target == showRepoName(entry.Target) {
 			return entry, key, true
 		}
 	}

@@ -88,6 +88,11 @@ func findUninstallEntry(cfg *storepkg.Config, target uninstallTarget) (storepkg.
 			return entry, key, true
 		}
 	}
+	for key, entry := range cfg.Installed {
+		if target.Key == repoName(entry.Repo) || target.Key == repoName(entry.Target) {
+			return entry, key, true
+		}
+	}
 	return storepkg.Entry{}, "", false
 }
 

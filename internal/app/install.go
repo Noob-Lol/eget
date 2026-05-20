@@ -266,6 +266,9 @@ func installRecordTarget(target string, opts install.Options) string {
 	if opts.Name != "" {
 		return opts.Name
 	}
+	if normalized, err := install.NormalizeRepoTarget(target); err == nil {
+		return repoName(normalized)
+	}
 	return target
 }
 

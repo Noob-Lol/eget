@@ -199,6 +199,43 @@ func TestUninstallAcceptsInstalledOnlyPackageKey(t *testing.T) {
 	}
 }
 
+func TestUninstallFindsLegacyRepoKeyByRepoName(t *testing.T) {
+	tmp := t.TempDir()
+	installerPath := filepath.Join(tmp, "OpenHuman_0.54.0_x64-setup.exe")
+	if err := os.WriteFile(installerPath, []byte("bin"), 0o755); err != nil {
+		t.Fatalf("write installer: %v", err)
+	}
+
+	store := &fakeInstalledStoreWithLoad{
+		cfg: &storepkg.Config{
+			Installed: map[string]storepkg.Entry{
+				"tinyhumansai/openhuman": {
+					Repo:           "tinyhumansai/openhuman",
+					Target:         "tinyhumansai/openhuman",
+					ExtractedFiles: []string{installerPath},
+				},
+			},
+		},
+	}
+	svc := UninstallService{
+		Store: store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	result, err := svc.Uninstall("openhuman")
+	if err != nil {
+		t.Fatalf("uninstall legacy repo key by name: %v", err)
+	}
+	if result.Repo != "tinyhumansai/openhuman" {
+		t.Fatalf("expected repo tinyhumansai/openhuman, got %#v", result)
+	}
+	if len(store.removeCalls) != 1 || store.removeCalls[0] != "tinyhumansai/openhuman" {
+		t.Fatalf("expected installed record removal for repo key, got %#v", store.removeCalls)
+	}
+}
+
 func TestUninstallFailsWhenInstalledEntryMissing(t *testing.T) {
 	store := &fakeInstalledStoreWithLoad{
 		cfg: &storepkg.Config{

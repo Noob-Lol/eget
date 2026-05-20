@@ -120,6 +120,34 @@ func TestShowPackageUsesInstalledAliasName(t *testing.T) {
 	assert.False(t, got.Configured)
 }
 
+func TestShowPackageFindsLegacyRepoKeyByRepoName(t *testing.T) {
+	svc := ShowService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"tinyhumansai/openhuman": {
+					Repo:        "tinyhumansai/openhuman",
+					Target:      "tinyhumansai/openhuman",
+					InstallMode: "installer",
+					IsGUI:       true,
+				},
+			}}, nil
+		},
+	}
+
+	got, err := svc.ShowPackage("openhuman")
+	if err != nil {
+		t.Fatalf("ShowPackage legacy repo key by name: %v", err)
+	}
+
+	assert.Eq(t, "openhuman", got.Name)
+	assert.Eq(t, "tinyhumansai/openhuman", got.Repo)
+	assert.True(t, got.Installed)
+	assert.True(t, got.IsGUI)
+}
+
 func TestShowPackageReturnsErrorForMissingTarget(t *testing.T) {
 	svc := ShowService{
 		LoadConfig: func() (*cfgpkg.File, error) {
