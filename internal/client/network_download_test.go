@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -42,6 +44,119 @@ func TestDownloadUsesRangeChunksForLargeFiles(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Eq(t, body, out.Bytes())
 	assert.True(t, rangeRequests.Load() > 1)
+}
+
+func TestDownloadFileKeepsPartForLargeRangeDownloadFailure(t *testing.T) {
+	body := bytes.Repeat([]byte("a"), 512*1024)
+	remoteSize := int64(len(body) + 1024)
+	origMinSize := resumableDownloadMinSize
+	resumableDownloadMinSize = 256 * 1024
+	defer func() { resumableDownloadMinSize = origMinSize }()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			w.Header().Set("Accept-Ranges", "bytes")
+			w.Header().Set("Content-Length", strconv.FormatInt(remoteSize, 10))
+			w.Header().Set("ETag", `"large-v1"`)
+			return
+		}
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("Content-Length", strconv.FormatInt(remoteSize, 10))
+		w.Header().Set("ETag", `"large-v1"`)
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+
+	target := filepath.Join(t.TempDir(), "tool.zip")
+	err := DownloadFile(server.URL, target, nil, Options{ChunkConcurrency: 1})
+
+	assert.NotNil(t, err)
+	partInfo, statErr := os.Stat(target + ".part")
+	assert.Nil(t, statErr)
+	assert.True(t, partInfo.Size() > 0)
+	_, statErr = os.Stat(target + ".meta.json")
+	assert.Nil(t, statErr)
+	_, statErr = os.Stat(target)
+	assert.True(t, os.IsNotExist(statErr))
+}
+
+func TestDownloadFileResumesLargeRangeDownload(t *testing.T) {
+	body := bytes.Repeat([]byte("r"), 768*1024)
+	partSize := len(body) / 2
+	origMinSize := resumableDownloadMinSize
+	resumableDownloadMinSize = 256 * 1024
+	defer func() { resumableDownloadMinSize = origMinSize }()
+
+	var gotRange atomic.Value
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("ETag", `"resume-v1"`)
+		if r.Method == http.MethodHead {
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+			return
+		}
+		rangeHeader := r.Header.Get("Range")
+		gotRange.Store(rangeHeader)
+		if rangeHeader != "" {
+			assert.Eq(t, fmt.Sprintf("bytes=%d-", partSize), rangeHeader)
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)-partSize))
+			w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", partSize, len(body)-1, len(body)))
+			w.WriteHeader(http.StatusPartialContent)
+			_, _ = w.Write(body[partSize:])
+			return
+		}
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+
+	target := filepath.Join(t.TempDir(), "tool.zip")
+	assert.Nil(t, os.WriteFile(target+".part", body[:partSize], 0o644))
+	assert.Nil(t, saveDownloadFileMeta(target+".meta.json", downloadFileMeta{
+		Schema: 1,
+		URL:    server.URL,
+		Size:   int64(len(body)),
+		ETag:   `"resume-v1"`,
+	}))
+
+	err := DownloadFile(server.URL, target, nil, Options{ChunkConcurrency: 1})
+
+	assert.Nil(t, err)
+	assert.Eq(t, fmt.Sprintf("bytes=%d-", partSize), gotRange.Load())
+	saved, readErr := os.ReadFile(target)
+	assert.Nil(t, readErr)
+	assert.Eq(t, body, saved)
+	_, statErr := os.Stat(target + ".part")
+	assert.True(t, os.IsNotExist(statErr))
+}
+
+func TestDownloadFileRemovesPartWhenLargeDownloadCannotResume(t *testing.T) {
+	body := bytes.Repeat([]byte("n"), 512*1024)
+	remoteSize := int64(len(body) + 1024)
+	origMinSize := resumableDownloadMinSize
+	resumableDownloadMinSize = 256 * 1024
+	defer func() { resumableDownloadMinSize = origMinSize }()
+
+	var gotRange atomic.Value
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", strconv.FormatInt(remoteSize, 10))
+		gotRange.Store(r.Header.Get("Range"))
+		if r.Method == http.MethodHead {
+			return
+		}
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+
+	target := filepath.Join(t.TempDir(), "tool.zip")
+	err := DownloadFile(server.URL, target, nil, Options{ChunkConcurrency: 1})
+
+	assert.NotNil(t, err)
+	assert.Eq(t, "", gotRange.Load())
+	_, statErr := os.Stat(target + ".part")
+	assert.True(t, os.IsNotExist(statErr))
+	_, statErr = os.Stat(target + ".meta.json")
+	assert.True(t, os.IsNotExist(statErr))
 }
 
 func TestProxyNoticePrintsOncePerKindAndProxyURL(t *testing.T) {
