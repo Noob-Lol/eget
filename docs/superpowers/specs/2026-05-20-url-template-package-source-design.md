@@ -9,7 +9,7 @@
 ```text
 latest version:  https://downloads.claude.ai/claude-code-releases/latest
 manifest:        https://downloads.claude.ai/claude-code-releases/{version}/manifest.json
-binary:          https://downloads.claude.ai/claude-code-releases/{version}/{platform}/claude.exe
+binary:          https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}/claude.exe
 ```
 
 用户配置一次后，应能继续使用普通 package 管理命令：
@@ -40,7 +40,7 @@ eget uninstall claude
 
 ## 推荐方案
 
-新增 package source kind：`url-template`。
+新增 package source kind：`template`。
 
 不建议把它放到 `sdk`，因为 Claude Code 这类包不是多版本 SDK，而是普通工具包，只需要一个当前安装版本，并应参与现有 `install/list/update/uninstall` 主链路。
 
@@ -56,6 +56,27 @@ eget uninstall claude
 
 在此基础上只增加普通 package 所需的 latest 发现和 checksum manifest 字段。
 
+### Source Kind 命名
+
+推荐使用：
+
+```toml
+repo = "template:claude"
+```
+
+候选名称对比：
+
+| 前缀 | 评价 |
+| --- | --- |
+| `template:` | 推荐。短、清晰，表达“来源由配置模板渲染”，且不和直接 URL 混淆。 |
+| `url-template:` | 语义准确但偏长，配置里已经有 `url_template` 字段，重复度较高。 |
+| `site:` | 可读性好，但更像“任意网站抓取”，容易暗示后续支持网页解析。 |
+| `custom:` | 太宽泛，不说明机制。 |
+| `url:` | 容易和真实 URL scheme 混淆，例如 `https://...`。 |
+| `tpl:` | 太缩写，不适合作为用户配置主入口。 |
+
+因此首版以 `template:<id>` 作为规范写法，不提供别名前缀，避免配置风格发散。
+
 ## 配置模型
 
 Claude Code 示例：
@@ -63,20 +84,19 @@ Claude Code 示例：
 ```toml
 [packages.claude]
 name = "claude"
-repo = "url-template:claude"
+repo = "template:claude"
 target = "~/.local/bin"
 
 latest_url = "https://downloads.claude.ai/claude-code-releases/latest"
 latest_format = "text"
 
-url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{platform}/claude.exe"
-platform_template = "{os}-{arch}"
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}/claude.exe"
 os_map = { windows = "win32" }
 arch_map = { amd64 = "x64", arm64 = "arm64" }
 
 checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
 checksum_format = "json"
-checksum_json_path = "platforms.{platform}.checksum"
+checksum_json_path = "platforms.{os}-{arch}.checksum"
 ```
 
 普通归档包示例：
@@ -84,7 +104,7 @@ checksum_json_path = "platforms.{platform}.checksum"
 ```toml
 [packages.example]
 name = "example"
-repo = "url-template:example"
+repo = "template:example"
 target = "~/.local/bin"
 
 latest_url = "https://example.com/tool/latest.json"
@@ -98,24 +118,24 @@ ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 file = "tool"
 ```
 
-### 为什么使用 `repo = "url-template:<id>"`
+### 为什么使用 `repo = "template:<id>"`
 
-现有 managed package 模型要求每个 package 有一个 `repo` 字符串作为来源身份。`url-template:<id>` 保持这个不变量，并和已有前缀来源一致：
+现有 managed package 模型要求每个 package 有一个 `repo` 字符串作为来源身份。`template:<id>` 保持这个不变量，并和已有前缀来源一致：
 
 ```text
 sourceforge:...
 gitlab:...
 gitea:...
 forgejo:...
-url-template:...
+template:...
 ```
 
 规则：
 
-- `repo` 必须以 `url-template:` 开头。
+- `repo` 必须以 `template:` 开头。
 - 后缀 id 必须非空，用作稳定来源标识。
 - `[packages.<name>]` 的 `<name>` 仍是本地 package 名。
-- installed store 记录 `repo = "url-template:<id>"`。
+- installed store 记录 `repo = "template:<id>"`。
 - 渲染后的下载 URL 记录在 installed store 的 `url` 字段。
 
 这样不需要让 `repo` 变成可选字段，也不会破坏 `list/show/uninstall/update` 的目标解析。
@@ -131,7 +151,6 @@ latest_format = "text"
 latest_json_path = ""
 version_regex = ""
 
-platform_template = "{os}-{arch}"
 os_map = {}
 arch_map = {}
 ext_map = {}
@@ -149,7 +168,6 @@ checksum_regex = ""
 - `latest_format`: latest 响应格式，支持 `text`、`json`，默认 `text`。
 - `latest_json_path`: `latest_format = "json"` 时使用的点路径。
 - `version_regex`: 可选。用于从 text 或 JSON 字符串值中提取版本；有命名分组 `version` 时优先使用，否则使用第一个捕获分组。
-- `platform_template`: 可选。用于生成 `{platform}`，默认 `{os}-{arch}`。
 - `os_map`: Go OS 到上游发布命名的映射。
 - `arch_map`: Go arch 到上游发布命名的映射。
 - `ext_map`: Go OS 到上游归档扩展名的映射。
@@ -176,7 +194,6 @@ checksum_regex = ""
 | `{os}` | 应用 `os_map` 后的 OS |
 | `{arch}` | 应用 `arch_map` 后的 arch |
 | `{ext}` | 应用 `ext_map` 后的扩展名 |
-| `{platform}` | 渲染 `platform_template` 后的组合平台值 |
 
 映射流程：
 
@@ -185,15 +202,13 @@ checksum_regex = ""
 3. 应用 `os_map[GOOS]`；没有配置时保留 `GOOS`。
 4. 应用 `arch_map[GOARCH]`；没有配置时保留 `GOARCH`。
 5. 应用 `ext_map[GOOS]`；没有配置时 `{ext}` 为空字符串。
-6. 用 `{os}`、`{arch}`、`{ext}`、`{name}`、`{version}` 渲染 `platform_template`。
-7. 用完整变量集渲染 `url_template` 和 checksum template。
+6. 用 `{name}`、`{version}`、`{os}`、`{arch}`、`{ext}` 渲染 `url_template`、checksum template 和 JSON path。
 
 Claude Code Windows amd64 配置：
 
 ```toml
 os_map = { windows = "win32" }
 arch_map = { amd64 = "x64", arm64 = "arm64" }
-platform_template = "{os}-{arch}"
 ```
 
 渲染结果：
@@ -201,10 +216,16 @@ platform_template = "{os}-{arch}"
 ```text
 {os}       = win32
 {arch}     = x64
-{platform} = win32-x64
 ```
 
-这沿用 SDK 的 `os_map` / `arch_map` 风格，不新增 `platform_map`。
+上游需要 `win32-x64` 时，直接在模板中写 `{os}-{arch}`：
+
+```toml
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}/claude.exe"
+checksum_json_path = "platforms.{os}-{arch}.checksum"
+```
+
+这沿用 SDK 的 `os_map` / `arch_map` 风格，不新增 `platform_map` 或 `platform_template`。
 
 ## 版本选择
 
@@ -225,8 +246,8 @@ platform_template = "{os}-{arch}"
 installed store 记录要求：
 
 ```text
-repo:    url-template:<id>
-target:  url-template:<id>
+repo:    template:<id>
+target:  template:<id>
 tag:     selected version
 version: selected version
 url:     rendered asset URL
@@ -243,7 +264,7 @@ Claude Code 示例：
 ```toml
 checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
 checksum_format = "json"
-checksum_json_path = "platforms.{platform}.checksum"
+checksum_json_path = "platforms.{os}-{arch}.checksum"
 ```
 
 流程：
@@ -267,7 +288,7 @@ source target -> candidate asset URLs -> select one asset -> download -> verify 
 URL template package 的 source 阶段：
 
 ```text
-url-template:<id>
+template:<id>
   -> 解析版本
   -> 渲染 URL
   -> 返回单个 candidate asset URL
@@ -286,7 +307,7 @@ internal/source/urltemplate
 
 职责：
 
-- 解析 `url-template:<id>`。
+- 解析 `template:<id>`。
 - 解析 package source 配置。
 - 根据 `latest_url` 获取 latest version。
 - 渲染变量和 URL template。
@@ -324,7 +345,7 @@ type Options struct {
 }
 ```
 
-这样 `install.Service.SelectFinder(target, &opts)` 可以在 `target` 是 `url-template:<id>` 时使用 `opts.URLTemplate` 创建 finder，不需要让 install 层读取全局配置文件。
+这样 `install.Service.SelectFinder(target, &opts)` 可以在 `target` 是 `template:<id>` 时使用 `opts.URLTemplate` 创建 finder，不需要让 install 层读取全局配置文件。
 
 ## 更新检查数据流
 
@@ -347,7 +368,7 @@ type LatestCheckTarget struct {
 sourceforge:*     -> SourceForge latest
 gitlab/gitea:*    -> Forge latest
 owner/repo        -> GitHub latest
-url-template:*    -> URL template latest using Package fields
+template:*        -> URL template latest using Package fields
 ```
 
 这样不会把 URL template 配置藏进全局状态，也方便后续继续增加 provider。
@@ -378,19 +399,19 @@ eget uninstall claude
 首版不新增：
 
 ```bash
-eget add --url-template ...
-eget install --url-template ...
+eget add --template ...
+eget install --template ...
 ```
 
 原因：`os_map`、`arch_map`、JSON path、checksum template 用 CLI flags 表达会很笨重，也不利于稳定 API。先把配置格式和 update 主链路做稳，再考虑增加 CLI helper。
 
-`eget add` 对 `url-template:<id>` 不做自动推导。用户应手动写 `[packages.<name>]`，或后续通过专门 helper 生成配置。
+`eget add` 对 `template:<id>` 不做自动推导。用户应手动写 `[packages.<name>]`，或后续通过专门 helper 生成配置。
 
 ## 错误处理
 
 需要给出明确错误：
 
-- `repo = "url-template:<id>"` 但缺少 `url_template`。
+- `repo = "template:<id>"` 但缺少 `url_template`。
 - install latest 或 update 时缺少 `latest_url`。
 - 不支持的 `latest_format` 或 `checksum_format`。
 - `system` 格式非法。
@@ -438,18 +459,18 @@ fetch metadata -> download asset -> verify -> extract/place file
 - 直接 URL 和 URL template package 的区别。
 - 为什么 URL template package 可以 update，固定直接 URL 通常不能。
 - `os_map` / `arch_map` 与 SDK 配置语义一致。
-- Claude Code 示例使用 `platform_template = "{os}-{arch}"`。
+- Claude Code 示例直接在 `url_template` 和 `checksum_json_path` 中使用 `{os}-{arch}`。
 - 首版不执行 post-install 脚本。
 
 ## 测试策略
 
 优先测试 `internal/source/urltemplate`：
 
-- 解析合法和非法 `url-template:<id>`。
-- 使用 `os_map`、`arch_map`、`ext_map`、`platform_template` 渲染变量。
+- 解析合法和非法 `template:<id>`。
+- 使用 `os_map`、`arch_map`、`ext_map` 渲染变量。
 - 解析 text latest。
 - 解析 JSON latest。
-- 使用带 `{platform}` 的 JSON path 提取 checksum。
+- 使用带 `{os}-{arch}` 的 JSON path 提取 checksum。
 - 解析 sha256sum 文本。
 - latest version 为空时报错。
 - checksum path 缺失时报错。
@@ -488,7 +509,7 @@ go test ./...
 新行为只在以下配置中启用：
 
 ```toml
-repo = "url-template:<id>"
+repo = "template:<id>"
 ```
 
 不会把任何已有配置自动解释成 URL template package。
@@ -498,7 +519,6 @@ repo = "url-template:<id>"
 如果评审没有调整，实现按以下默认值执行：
 
 - `latest_format = "text"`。
-- `platform_template = "{os}-{arch}"`。
 - 缺失 `os_map` / `arch_map` 条目时回退到 Go 原始名称。
 - 缺失 `ext_map` 条目时 `{ext}` 渲染为空字符串。
 - `--tag` 在 install 时覆盖 `latest_url`。
