@@ -230,7 +230,7 @@ git commit -m "feat(config): add template package fields"
 - Test: `internal/source/urltemplate/template_test.go`
 - Test: `internal/source/urltemplate/finder_test.go`
 
-- [ ] **Step 1: 编写 target 解析测试**
+- [x] **Step 1: 编写 target 解析测试**
 
 Create `internal/source/urltemplate/target_test.go`:
 
@@ -273,7 +273,7 @@ func TestParseTarget(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 实现 target 解析**
+- [x] **Step 2: 实现 target 解析**
 
 Create `internal/source/urltemplate/target.go`:
 
@@ -308,7 +308,7 @@ func ParseTarget(value string) (Target, error) {
 }
 ```
 
-- [ ] **Step 3: 编写模板渲染和 metadata 解析测试**
+- [x] **Step 3: 编写模板渲染和 metadata 解析测试**
 
 Create `internal/source/urltemplate/template_test.go`，覆盖：
 
@@ -370,7 +370,7 @@ func TestRenderRejectsUnknownVariable(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: 实现 `template.go`**
+- [x] **Step 4: 实现 `template.go`**
 
 实现 `Config`、`VariablesFor`、`Render`、`ParseLatest`、`ParseChecksum`、`ExtractJSONPath`、regex helper。关键要求：
 
@@ -381,7 +381,7 @@ func TestRenderRejectsUnknownVariable(t *testing.T) {
 - `{libc}` 只在 Linux 且有检测结果时渲染。
 - 未知变量直接报错。
 
-- [ ] **Step 5: 编写 finder 测试**
+- [x] **Step 5: 编写 finder 测试**
 
 Create `internal/source/urltemplate/finder_test.go`:
 
@@ -427,7 +427,7 @@ func (f *fakeGetter) Get(url string) (*http.Response, error) {
 }
 ```
 
-- [ ] **Step 6: 实现 finder**
+- [x] **Step 6: 实现 finder**
 
 Create `internal/source/urltemplate/finder.go`，提供：
 
@@ -444,7 +444,7 @@ Create `internal/source/urltemplate/finder.go`，提供：
 3. 渲染变量和 URL。
 4. 保存 `Version` 和 vars，返回单个 URL。
 
-- [ ] **Step 7: 编写平台检测测试并实现**
+- [x] **Step 7: 编写平台检测测试并实现**
 
 Create `internal/source/urltemplate/platform.go`，测试：
 
@@ -470,7 +470,7 @@ func TestEffectiveSystemAppliesRosettaFixOnlyForImplicitSystem(t *testing.T) {
 
 实现 `EffectiveSystem`、`DetectLibc`、`FixDarwinRosetta`。生产检测为 best-effort，测试使用注入函数，避免平台依赖。
 
-- [ ] **Step 8: 运行 source tests**
+- [x] **Step 8: 运行 source tests**
 
 Run:
 
@@ -480,7 +480,7 @@ go test ./internal/source/urltemplate
 
 Expected: PASS.
 
-- [ ] **Step 9: 提交**
+- [x] **Step 9: 提交**
 
 ```bash
 git add internal/source/urltemplate
