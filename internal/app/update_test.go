@@ -71,7 +71,8 @@ func TestUpdatePackageUpdatesOutdatedManagedPackage(t *testing.T) {
 				"junegunn/fzf": {Repo: "junegunn/fzf", Tag: "v0.50.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo, sourcePath := target.Repo, target.SourcePath
 			assert.Eq(t, "junegunn/fzf", repo)
 			assert.Eq(t, "", sourcePath)
 			return LatestInfo{Tag: "v0.51.0"}, nil
@@ -94,6 +95,37 @@ func TestUpdatePackageUpdatesOutdatedManagedPackage(t *testing.T) {
 	}
 }
 
+func TestUpdatePackageUpdatesTemplateManagedPackage(t *testing.T) {
+	installer := &fakeInstallService{}
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["claude"] = cfgpkg.Section{
+				Repo:        util.StringPtr("template:claude"),
+				LatestURL:   util.StringPtr("https://example.com/latest"),
+				URLTemplate: util.StringPtr("https://example.com/{version}/{os}-{arch}/claude{ext}"),
+			}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"claude": {Repo: "template:claude", Target: "template:claude", Tag: "1.2.3"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			assert.Eq(t, "claude", target.Name)
+			assert.Eq(t, "template:claude", target.Repo)
+			assert.Eq(t, "https://example.com/latest", *target.Package.LatestURL)
+			return LatestInfo{Tag: "1.2.4"}, nil
+		},
+	}
+
+	_, err := svc.UpdatePackage("claude", install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"claude"}, installer.targets)
+}
+
 func TestUpdatePackageSkipsUpToDateManagedPackage(t *testing.T) {
 	installer := &fakeInstallService{}
 	svc := UpdateService{
@@ -108,7 +140,8 @@ func TestUpdatePackageSkipsUpToDateManagedPackage(t *testing.T) {
 				"junegunn/fzf": {Repo: "junegunn/fzf", Tag: "v0.50.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo := target.Repo
 			assert.Eq(t, "junegunn/fzf", repo)
 			return LatestInfo{Tag: "v0.50.0"}, nil
 		},
@@ -159,7 +192,8 @@ func TestUpdatePackageUpdatesInstalledOnlySourceForgeTarget(t *testing.T) {
 				},
 			}}, nil
 		},
-		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo, sourcePath := target.Repo, target.SourcePath
 			assert.Eq(t, "sourceforge:keepass", repo)
 			assert.Eq(t, "KeePass 2.x", sourcePath)
 			return LatestInfo{Tag: "2.59"}, nil
@@ -205,7 +239,8 @@ func TestUpdatePackageRestoresTemplateOptionsFromInstalledEntry(t *testing.T) {
 				},
 			}}, nil
 		},
-		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo, sourcePath := target.Repo, target.SourcePath
 			assert.Eq(t, "template:claude", repo)
 			assert.Eq(t, "", sourcePath)
 			return LatestInfo{Tag: "1.2.4"}, nil
@@ -288,7 +323,8 @@ asset_filters = ["linux"]
 				"junegunn/fzf": {Repo: "junegunn/fzf", Tag: "v0.50.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo := target.Repo
 			assert.Eq(t, "junegunn/fzf", repo)
 			return LatestInfo{Tag: "nightly"}, nil
 		},
@@ -331,7 +367,8 @@ func TestUpdateAllPackagesIteratesOutdatedManagedPackages(t *testing.T) {
 				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo := target.Repo
 			switch repo {
 			case "junegunn/fzf":
 				return LatestInfo{Tag: "v0.51.0"}, nil
@@ -374,7 +411,8 @@ func TestUpdateAllPackagesInstallsOnlyOutdatedInstalledPackages(t *testing.T) {
 				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", InstalledAt: now, Tag: "v13.0.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo := target.Repo
 			switch repo {
 			case "junegunn/fzf":
 				return LatestInfo{Tag: "v0.50.0"}, nil
@@ -412,7 +450,8 @@ func TestUpdateAllPackagesIgnoresConfiguredPackageNames(t *testing.T) {
 				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo := target.Repo
 			if repo == "junegunn/fzf" {
 				t.Fatal("expected ignored package fzf not to be checked")
 			}
@@ -442,7 +481,8 @@ func TestListUpdateCandidatesIgnoresConfiguredPackageNames(t *testing.T) {
 				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo := target.Repo
 			if repo == "junegunn/fzf" {
 				t.Fatal("expected ignored package fzf not to be checked")
 			}
@@ -477,7 +517,7 @@ func TestUpdateAllPackagesPassesAPICacheOptionsFromConfigToInstaller(t *testing.
 				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
 			return LatestInfo{Tag: "v14.0.0"}, nil
 		},
 	}
@@ -511,7 +551,7 @@ func TestUpdateAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testing
 				"sharkdp/fd":         {Repo: "sharkdp/fd", Tag: "v0.1.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
 			return LatestInfo{Tag: "v1.0.0"}, nil
 		},
 	}
@@ -556,7 +596,8 @@ func TestListUpdateCandidatesPassesSourcePathToLatestChecker(t *testing.T) {
 				"sourceforge:winmerge": {Repo: "sourceforge:winmerge", Tag: "2.16.42"},
 			}}, nil
 		},
-		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo, sourcePath := target.Repo, target.SourcePath
 			if repo != "sourceforge:winmerge" || sourcePath != "stable" {
 				t.Fatalf("unexpected latest check repo=%q sourcePath=%q", repo, sourcePath)
 			}
@@ -584,7 +625,8 @@ func TestListUpdateCandidatesChecksForgeRepo(t *testing.T) {
 				"gitlab:gitlab.com/fdroid/fdroidserver": {Repo: "gitlab:gitlab.com/fdroid/fdroidserver", Tag: "v2.3.3"},
 			}}, nil
 		},
-		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo, sourcePath := target.Repo, target.SourcePath
 			if repo != "gitlab:gitlab.com/fdroid/fdroidserver" || sourcePath != "" {
 				t.Fatalf("unexpected latest check repo=%q sourcePath=%q", repo, sourcePath)
 			}

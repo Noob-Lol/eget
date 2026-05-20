@@ -21,6 +21,7 @@ type ListItem struct {
 	Name         string
 	Repo         string
 	SourcePath   string
+	Package      cfgpkg.Section
 	Target       string
 	Tag          string
 	Version      string
@@ -55,10 +56,19 @@ type LatestInfo struct {
 	PublishedAt time.Time
 }
 
+type LatestCheckTarget struct {
+	Name       string
+	Repo       string
+	SourcePath string
+	Package    cfgpkg.Section
+}
+
+type LatestInfoFunc func(target LatestCheckTarget) (LatestInfo, error)
+
 type ListService struct {
 	LoadConfig    func() (*cfgpkg.File, error)
 	LoadInstalled func() (*storepkg.Config, error)
-	LatestInfo    func(repo, sourcePath string) (LatestInfo, error)
+	LatestInfo    LatestInfoFunc
 	OnCheckDone   func(checked, total int)
 }
 
@@ -80,6 +90,7 @@ func (s ListService) ListPackages() ([]ListItem, error) {
 			Name:         name,
 			Repo:         repo,
 			SourcePath:   util.DerefString(pkg.SourcePath),
+			Package:      pkg,
 			Target:       util.DerefString(pkg.Target),
 			Tag:          util.DerefString(pkg.Tag),
 			IgnoreUpdate: ignoredUpdates[name],
@@ -224,7 +235,7 @@ func (s ListService) ListOutdatedPackages() ([]OutdatedItem, []OutdatedCheckFail
 	return outdated, failures, checked, nil
 }
 
-func checkOutdatedItems(items []ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error), include func(ListItem) bool, batch int, onCheckDone func(checked, total int)) ([]OutdatedItem, []OutdatedCheckFailure, int) {
+func checkOutdatedItems(items []ListItem, latestInfo LatestInfoFunc, include func(ListItem) bool, batch int, onCheckDone func(checked, total int)) ([]OutdatedItem, []OutdatedCheckFailure, int) {
 	eligible := make([]ListItem, 0, len(items))
 	for _, item := range items {
 		if include != nil && !include(item) {
@@ -275,7 +286,7 @@ type outdatedCheckResult struct {
 	failure  *OutdatedCheckFailure
 }
 
-func runOutdatedChecks(items []ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error), batch int, onCheckDone func(checked, total int)) []outdatedCheckResult {
+func runOutdatedChecks(items []ListItem, latestInfo LatestInfoFunc, batch int, onCheckDone func(checked, total int)) []outdatedCheckResult {
 	results := make([]outdatedCheckResult, len(items))
 	if len(items) == 0 {
 		return results
@@ -332,7 +343,7 @@ func (p *outdatedCheckProgress) Done() {
 	p.fn(done, total)
 }
 
-func checkOutdatedItem(item ListItem, latestInfo func(repo, sourcePath string) (LatestInfo, error)) outdatedCheckResult {
+func checkOutdatedItem(item ListItem, latestInfo LatestInfoFunc) outdatedCheckResult {
 	if item.InstalledTag == "" {
 		failure := OutdatedCheckFailure{
 			Name:  item.Name,
@@ -342,7 +353,12 @@ func checkOutdatedItem(item ListItem, latestInfo func(repo, sourcePath string) (
 		return outdatedCheckResult{failure: &failure}
 	}
 
-	latest, err := latestInfo(item.Repo, item.SourcePath)
+	latest, err := latestInfo(LatestCheckTarget{
+		Name:       item.Name,
+		Repo:       item.Repo,
+		SourcePath: item.SourcePath,
+		Package:    item.Package,
+	})
 	if err != nil {
 		failure := OutdatedCheckFailure{
 			Name:  item.Name,

@@ -454,7 +454,8 @@ func TestHandleUpdateUpdatesMultipleTargets(t *testing.T) {
 					"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
 				}}, nil
 			},
-			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				repo := target.Repo
 				switch repo {
 				case "junegunn/fzf":
 					return app.LatestInfo{Tag: "v0.51.0"}, nil
@@ -905,7 +906,8 @@ func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 		},
 	}
 	publishedAt := time.Date(2026, 4, 21, 14, 10, 17, 0, time.UTC)
-	svc.listService.LatestInfo = func(repo, _ string) (app.LatestInfo, error) {
+	svc.listService.LatestInfo = func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+		repo := target.Repo
 		switch repo {
 		case "BurntSushi/ripgrep":
 			return app.LatestInfo{Tag: "v14.0.0", PublishedAt: publishedAt}, nil
@@ -958,7 +960,8 @@ func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 func TestHandleListOutdatedPrintsCheckedInstalledCountWhenNothingOutdated(t *testing.T) {
 	svc := &cliService{
 		listService: app.ListService{
-			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				repo := target.Repo
 				switch repo {
 				case "gookit/gitw":
 					return app.LatestInfo{Tag: "v0.3.6"}, nil
@@ -1020,7 +1023,8 @@ func TestHandleListOutdatedPrintsSingleProxyNoticeAndCacheSummary(t *testing.T) 
 	svc := &cliService{
 		proxyURL: "http://127.0.0.1:1081",
 		listService: app.ListService{
-			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				repo := target.Repo
 				apiURL := "https://api.github.com/repos/" + repo + "/releases/latest"
 				resp, err := client.GetWithOptions(apiURL, client.Options{
 					ProxyURL:        "http://127.0.0.1:1081",
@@ -1401,7 +1405,8 @@ func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {
 					"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
 				}}, nil
 			},
-			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				repo := target.Repo
 				switch repo {
 				case "junegunn/fzf":
 					return app.LatestInfo{Tag: "v0.50.0"}, nil
@@ -1440,7 +1445,8 @@ func TestHandleUpdateCheckPrintsSameOutdatedListWithoutUpdating(t *testing.T) {
 	installer := &fakeUpdateInstallerForCLI{}
 	svc := &cliService{
 		listService: app.ListService{
-			LatestInfo: func(repo, _ string) (app.LatestInfo, error) {
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				repo := target.Repo
 				switch repo {
 				case "BurntSushi/ripgrep":
 					return app.LatestInfo{Tag: "v14.0.0"}, nil

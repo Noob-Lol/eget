@@ -23,7 +23,7 @@ type UpdateService struct {
 	Install       Installer
 	LoadConfig    func() (*cfgpkg.File, error)
 	LoadInstalled func() (*storepkg.Config, error)
-	LatestInfo    func(repo, sourcePath string) (LatestInfo, error)
+	LatestInfo    LatestInfoFunc
 	OnCheckDone   func(checked, total int)
 }
 

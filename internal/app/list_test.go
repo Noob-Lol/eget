@@ -289,7 +289,8 @@ func TestListOutdatedPackagesIncludesInstalledOnlyEntries(t *testing.T) {
 				},
 			}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo := target.Repo
 			switch repo {
 			case "BurntSushi/ripgrep":
 				return LatestInfo{Tag: "v14.0.0", PublishedAt: publishedAt}, nil
@@ -338,7 +339,8 @@ func TestListOutdatedPackagesIgnoresConfiguredPackageNames(t *testing.T) {
 				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo := target.Repo
 			if repo == "junegunn/fzf" {
 				t.Fatal("expected ignored package fzf not to be checked")
 			}
@@ -376,7 +378,8 @@ func TestListOutdatedPackagesSkipsFailedChecks(t *testing.T) {
 				},
 			}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo := target.Repo
 			if repo == "junegunn/fzf" {
 				return LatestInfo{}, fmt.Errorf("github api failed")
 			}
@@ -414,7 +417,8 @@ func TestListOutdatedPackagesPassesSourcePathToLatestChecker(t *testing.T) {
 				"sourceforge:winmerge": {Repo: "sourceforge:winmerge", Tag: "2.16.42"},
 			}}, nil
 		},
-		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo, sourcePath := target.Repo, target.SourcePath
 			if repo != "sourceforge:winmerge" || sourcePath != "stable" {
 				t.Fatalf("unexpected latest check repo=%q sourcePath=%q", repo, sourcePath)
 			}
@@ -449,7 +453,8 @@ func TestListOutdatedPackagesChecksForgeRepo(t *testing.T) {
 				"gitea:codeberg.org/forgejo/forgejo": {Repo: "gitea:codeberg.org/forgejo/forgejo", Tag: "v8.0.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			repo, sourcePath := target.Repo, target.SourcePath
 			if repo != "gitea:codeberg.org/forgejo/forgejo" || sourcePath != "" {
 				t.Fatalf("unexpected latest check repo=%q sourcePath=%q", repo, sourcePath)
 			}
@@ -488,7 +493,7 @@ func TestListOutdatedPackagesUsesConfiguredBatchConcurrencyAndPreservesOrder(t *
 				"sharkdp/fd":         {Repo: "sharkdp/fd", Tag: "v0.1.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
 			mu.Lock()
 			active++
 			if active > maxActive {
@@ -556,7 +561,7 @@ func TestListOutdatedPackagesReportsCheckProgress(t *testing.T) {
 				"sharkdp/fd":         {Repo: "sharkdp/fd", Tag: "v0.1.0"},
 			}}, nil
 		},
-		LatestInfo: func(repo, _ string) (LatestInfo, error) {
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
 			return LatestInfo{Tag: "v1.0.0"}, nil
 		},
 		OnCheckDone: func(checked, total int) {

@@ -14,6 +14,7 @@ import (
 	forge "github.com/inherelab/eget/internal/source/forge"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
+	"github.com/inherelab/eget/internal/source/urltemplate"
 	"github.com/inherelab/eget/internal/util"
 )
 
@@ -77,7 +78,8 @@ func newCLIService() (*cliService, error) {
 		}, nil
 	}
 	cfgService := app.ConfigService{ConfigPath: cfgPath, RepoMetadata: repoMetadata}
-	latestInfo := func(repo, sourcePath string) (app.LatestInfo, error) {
+	latestInfo := func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+		repo, sourcePath := target.Repo, target.SourcePath
 		if sfTarget, err := sourcesf.ParseTarget(repo); err == nil {
 			info, err := sourcesf.LatestVersion(sfTarget.Project, sourcePath, client.NewHTTPGetter(defaultClientOpts))
 			if err != nil {
@@ -91,6 +93,19 @@ func newCLIService() (*cliService, error) {
 				return app.LatestInfo{}, err
 			}
 			return app.LatestInfo{Tag: info.Tag, PublishedAt: info.PublishedAt}, nil
+		}
+		if templateTarget, err := urltemplate.ParseTarget(repo); err == nil {
+			finder := urltemplate.Finder{
+				Name:   templateTarget.ID,
+				Target: templateTarget,
+				Config: urlTemplateConfigFromSection(target.Package),
+				Getter: client.NewHTTPGetter(defaultClientOpts),
+			}
+			info, err := finder.Latest()
+			if err != nil {
+				return app.LatestInfo{}, err
+			}
+			return app.LatestInfo{Tag: info.Version}, nil
 		}
 		tag, publishedAt, err := githubClient.LatestReleaseInfo(repo)
 		return app.LatestInfo{Tag: tag, PublishedAt: publishedAt}, err
@@ -157,6 +172,15 @@ func newCLIService() (*cliService, error) {
 		stderr:           os.Stderr,
 		proxyURL:         defaultOpts.ProxyURL,
 	}, nil
+}
+
+func urlTemplateConfigFromSection(section cfgpkg.Section) urltemplate.Config {
+	return urltemplate.Config{
+		LatestURL:      util.DerefString(section.LatestURL),
+		LatestFormat:   util.DerefString(section.LatestFormat),
+		LatestJSONPath: util.DerefString(section.LatestJSONPath),
+		VersionRegex:   util.DerefString(section.VersionRegex),
+	}
 }
 
 func configureVerbose(verbose bool, stderr io.Writer) {

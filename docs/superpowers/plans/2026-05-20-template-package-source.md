@@ -843,7 +843,7 @@ git commit -m "feat(app): record template package installs"
 - Test: `internal/app/update_test.go`
 - Test: `internal/cli/service_test.go`
 
-- [ ] **Step 1: 定义 target-aware latest 输入**
+- [x] **Step 1: 定义 target-aware latest 输入**
 
 在 `internal/app/list.go` 添加：
 
@@ -860,7 +860,7 @@ type LatestInfoFunc func(target LatestCheckTarget) (LatestInfo, error)
 
 `ListService.LatestInfo` 和 `UpdateService.LatestInfo` 改用 `LatestInfoFunc`。
 
-- [ ] **Step 2: ListItem 携带 package section**
+- [x] **Step 2: ListItem 携带 package section**
 
 `ListItem` 增加：
 
@@ -870,7 +870,7 @@ Package cfgpkg.Section
 
 配置 package item 构造时保存 `pkg`；installed-only item 保持 zero value。
 
-- [ ] **Step 3: 更新 outdated check**
+- [x] **Step 3: 更新 outdated check**
 
 `checkOutdatedItem` 调用：
 
@@ -885,11 +885,11 @@ latest, err := latestInfo(LatestCheckTarget{
 
 同步更新现有 tests 的 callback 签名。
 
-- [ ] **Step 4: 新增 template update 测试**
+- [x] **Step 4: 新增 template update 测试**
 
 在 `internal/app/update_test.go` 添加 `TestUpdatePackageUpdatesTemplateManagedPackage`，断言 latest checker 收到 `Package.LatestURL`，并且 outdated 时调用 installer target `claude`。
 
-- [ ] **Step 5: CLI wiring 支持 template latest**
+- [x] **Step 5: CLI wiring 支持 template latest**
 
 在 `internal/cli/wiring.go` 的 latest checker dispatch 中：
 
@@ -898,7 +898,7 @@ latest, err := latestInfo(LatestCheckTarget{
 - `template:*` 使用 `urltemplate.LatestVersion` 或 `Finder.Latest`。
 - 其他 repo 走 GitHub latest。
 
-- [ ] **Step 6: 运行 tests**
+- [x] **Step 6: 运行 tests**
 
 Run:
 
@@ -908,7 +908,7 @@ go test ./internal/app ./internal/cli
 
 Expected: PASS.
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 git add internal/app internal/cli
