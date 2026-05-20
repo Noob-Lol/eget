@@ -476,6 +476,50 @@ func TestAssetDetectorSupportsRegexExclude(t *testing.T) {
 	}
 }
 
+func TestAssetDetectorSupportsPrefixInclude(t *testing.T) {
+	filter, err := parseAssetFilter(`PRE:codex-app`)
+	if err != nil {
+		t.Fatalf("parseAssetFilter: %v", err)
+	}
+	d := &assetDetector{Asset: filter.Expr, Regex: filter.Regex}
+
+	got, candidates, err := d.Detect([]string{
+		"https://example.com/codex-app-server-x86_64-pc-windows-msvc.zip",
+		"https://example.com/codex-command-runner-x86_64-pc-windows-msvc.zip",
+	})
+	if err != nil {
+		t.Fatalf("Detect(): %v", err)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("expected no candidates, got %#v", candidates)
+	}
+	if got != "https://example.com/codex-app-server-x86_64-pc-windows-msvc.zip" {
+		t.Fatalf("expected prefix asset to match, got %q", got)
+	}
+}
+
+func TestAssetDetectorSupportsSuffixExclude(t *testing.T) {
+	filter, err := parseAssetFilter(`^SUF:.sha256`)
+	if err != nil {
+		t.Fatalf("parseAssetFilter: %v", err)
+	}
+	d := &assetDetector{Asset: filter.Expr, Anti: filter.Anti, Regex: filter.Regex}
+
+	got, candidates, err := d.Detect([]string{
+		"https://example.com/codex.exe",
+		"https://example.com/codex.exe.sha256",
+	})
+	if err != nil {
+		t.Fatalf("Detect(): %v", err)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("expected no candidates, got %#v", candidates)
+	}
+	if got != "https://example.com/codex.exe" {
+		t.Fatalf("expected sha256 asset to be excluded, got %q", got)
+	}
+}
+
 func TestAssetDetectorMatchesPlainFilterCaseInsensitive(t *testing.T) {
 	d := &assetDetector{Asset: "setup"}
 

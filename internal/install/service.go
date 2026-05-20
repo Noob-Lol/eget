@@ -267,6 +267,18 @@ func parseAssetFilter(raw string) (assetFilter, error) {
 		filter.Regex = re
 		return filter, nil
 	}
+	if strings.HasPrefix(raw, "PRE:") {
+		expr := strings.TrimPrefix(raw, "PRE:")
+		filter.Expr = expr
+		filter.Regex = regexp.MustCompile(`(?i)^` + regexp.QuoteMeta(expr))
+		return filter, nil
+	}
+	if strings.HasPrefix(raw, "SUF:") {
+		expr := strings.TrimPrefix(raw, "SUF:")
+		filter.Expr = expr
+		filter.Regex = regexp.MustCompile(`(?i)` + regexp.QuoteMeta(expr) + `$`)
+		return filter, nil
+	}
 	filter.Expr = raw
 	return filter, nil
 }

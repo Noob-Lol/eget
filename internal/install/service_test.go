@@ -450,6 +450,10 @@ func TestParseAssetFilter(t *testing.T) {
 		{name: "plain exclude", input: "^deb", wantExpr: "deb", wantAnti: true},
 		{name: "regex include", input: `REG:\.deb$`, wantExpr: `\.deb$`, wantRe: true},
 		{name: "regex exclude", input: `^REG:\.deb$`, wantExpr: `\.deb$`, wantAnti: true, wantRe: true},
+		{name: "prefix include", input: `PRE:codex`, wantExpr: `codex`, wantRe: true},
+		{name: "prefix exclude", input: `^PRE:codex`, wantExpr: `codex`, wantAnti: true, wantRe: true},
+		{name: "suffix include", input: `SUF:.zip`, wantExpr: `.zip`, wantRe: true},
+		{name: "suffix exclude", input: `^SUF:.sha256`, wantExpr: `.sha256`, wantAnti: true, wantRe: true},
 	}
 
 	for _, tt := range tests {

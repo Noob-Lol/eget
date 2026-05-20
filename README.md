@@ -55,6 +55,8 @@ eget install --name chlog gookit/gitw
 eget install --asset zip windirstat/windirstat
 # Filter assets with regex
 eget install --asset "REG:\\.deb$" owner/repo
+# Filter assets by prefix/suffix
+eget install --asset "PRE:codex,SUF:.zip" openai/codex
 # Install to a custom directory
 eget install --to ~/.local/bin/fzf junegunn/fzf
 ```
@@ -265,7 +267,7 @@ The target argument accepted by `install` and `download` can be:
 - `--system`: Override the target OS/arch, for example `windows/amd64` or `linux/arm64`.
 - `--to`: Set the install or download output path; accepts either a directory or a full file path.
 - `--file`: Select file(s) to extract from an archive; supports comma-separated file names or glob patterns such as `README.md,LICENSE`. For 7z-readable `.exe` installers, system 7z is required.
-- `--asset`: Filter release assets by keyword; multiple filters can be separated by commas. Regex is also supported with the `REG:` prefix, for example `REG:\\.deb$`, and exclusions can use `^REG:...`. Filters can be scoped to the target OS with a Go OS prefix such as `windows:zip`, `linux:tar.gz`, or `darwin:tar.gz`; scoped filters only apply when the current `--system` OS matches.
+- `--asset`: Filter release assets by keyword; multiple filters can be separated by commas. Regex is also supported with the `REG:` prefix, for example `REG:\\.deb$`. Prefix and suffix matching are supported with `PRE:` and `SUF:`, for example `PRE:codex` or `SUF:.zip`. Exclusions can use `^`, such as `^REG:...` or `^SUF:.sha256`. Filters can be scoped to the target OS with a Go OS prefix such as `windows:zip`, `linux:tar.gz`, or `darwin:SUF:.zip`; scoped filters only apply when the current `--system` OS matches.
 - `--source`: Download the source archive instead of a prebuilt binary release.
 - `--extract-all`, `--ea`: Extract all files from the archive instead of selecting a single target file.
 - `--chunk N`: Control HTTP Range chunk concurrency for one downloaded file. `0` means auto, `1` means single-connection download, and values greater than `1` request up to that many chunks.
