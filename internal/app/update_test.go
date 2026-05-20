@@ -175,6 +175,59 @@ func TestUpdatePackageUpdatesInstalledOnlySourceForgeTarget(t *testing.T) {
 	assert.Eq(t, map[string]string{"KeePass.exe": "keepass.exe"}, installer.options[0].RenameFiles)
 }
 
+func TestUpdatePackageRestoresTemplateOptionsFromInstalledEntry(t *testing.T) {
+	installer := &fakeInstallService{}
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"claude": {
+					Repo:    "template:claude",
+					Target:  "template:claude",
+					Tag:     "1.2.3",
+					Version: "1.2.3",
+					Options: map[string]any{
+						"latest_url":            "https://example.com/latest",
+						"latest_format":         "text",
+						"url_template":          "https://example.com/{version}/{os}-{arch}/claude{ext}",
+						"os_map":                map[string]string{"windows": "win32"},
+						"arch_map":              map[string]string{"amd64": "x64"},
+						"ext_map":               map[string]string{"windows": ".exe"},
+						"checksum_url_template": "https://example.com/{version}/manifest.json",
+						"checksum_format":       "json",
+						"checksum_json_path":    "platforms.{os}-{arch}.checksum",
+						"install_action":        "run-asset",
+						"install_args":          []string{"install", "latest"},
+					},
+				},
+			}}, nil
+		},
+		LatestInfo: func(repo, sourcePath string) (LatestInfo, error) {
+			assert.Eq(t, "template:claude", repo)
+			assert.Eq(t, "", sourcePath)
+			return LatestInfo{Tag: "1.2.4"}, nil
+		},
+	}
+
+	_, err := svc.UpdatePackage("claude", install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"template:claude"}, installer.targets)
+	opts := installer.options[0]
+	assert.Eq(t, "https://example.com/latest", opts.URLTemplate.LatestURL)
+	assert.Eq(t, "https://example.com/{version}/{os}-{arch}/claude{ext}", opts.URLTemplate.URLTemplate)
+	assert.Eq(t, map[string]string{"windows": "win32"}, opts.URLTemplate.OSMap)
+	assert.Eq(t, map[string]string{"amd64": "x64"}, opts.URLTemplate.ArchMap)
+	assert.Eq(t, map[string]string{"windows": ".exe"}, opts.URLTemplate.ExtMap)
+	assert.Eq(t, "https://example.com/{version}/manifest.json", opts.URLTemplate.ChecksumURLTemplate)
+	assert.Eq(t, "json", opts.URLTemplate.ChecksumFormat)
+	assert.Eq(t, "platforms.{os}-{arch}.checksum", opts.URLTemplate.ChecksumJSONPath)
+	assert.Eq(t, "run-asset", opts.URLTemplate.InstallAction)
+	assert.Eq(t, []string{"install", "latest"}, opts.URLTemplate.InstallArgs)
+}
+
 func TestUpdatePackageRejectsUnknownPlainWords(t *testing.T) {
 	installer := &fakeInstallService{}
 	svc := UpdateService{

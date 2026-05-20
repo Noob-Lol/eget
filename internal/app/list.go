@@ -106,7 +106,7 @@ func (s ListService) ListPackages() ([]ListItem, error) {
 			if !ok {
 				item = ListItem{
 					Name:         name,
-					Repo:         repo,
+					Repo:         firstNonEmpty(entry.Repo, repo),
 					IgnoreUpdate: ignoredUpdates[name],
 				}
 			}
@@ -114,7 +114,10 @@ func (s ListService) ListPackages() ([]ListItem, error) {
 				item.IgnoreUpdate = true
 			}
 			if item.Repo == "" {
-				item.Repo = repo
+				item.Repo = firstNonEmpty(entry.Repo, repo)
+			}
+			if item.Target == "" {
+				item.Target = entry.Target
 			}
 			item.Installed = true
 			item.Version = entry.Tag

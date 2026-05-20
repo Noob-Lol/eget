@@ -765,7 +765,7 @@ git commit -m "feat(install): support run asset action"
 - Test: `internal/app/install_test.go`
 - Test: `internal/app/update_test.go`
 
-- [ ] **Step 1: RunResult 增加 Version**
+- [x] **Step 1: RunResult 增加 Version**
 
 在 `internal/install/runner.go` 的 `RunResult` 增加：
 
@@ -775,7 +775,7 @@ Version string
 
 template finder resolve 后设置 result version。
 
-- [ ] **Step 2: installed store 记录 version 和 mode**
+- [x] **Step 2: installed store 记录 version 和 mode**
 
 在 `internal/app/install.go` 的 `installResolvedTarget` 中：
 
@@ -783,7 +783,7 @@ template finder resolve 后设置 result version。
 - `entry.Version` 对 template package 也记录 selected version。
 - `entry.InstallMode` 记录 `run-asset`。
 
-- [ ] **Step 3: 记录 template options**
+- [x] **Step 3: 记录 template options**
 
 在 `extractOptionsMap` 中记录：
 
@@ -803,18 +803,18 @@ template finder resolve 后设置 result version。
 - `install_action`
 - `install_args`
 
-- [ ] **Step 4: installed-only update 能还原 options**
+- [x] **Step 4: installed-only update 能还原 options**
 
 在 `internal/app/update.go` 的 `optionsFromInstalledEntry` 读取上述字段，填入 `opts.URLTemplate`。
 
-- [ ] **Step 5: 新增 app 测试**
+- [x] **Step 5: 新增 app 测试**
 
 添加：
 
 - `TestInstallTargetRecordsTemplateVersionAndRunAssetMode`
 - installed-only `template:claude` update 能从 installed options 恢复 `URLTemplate` 字段。
 
-- [ ] **Step 6: 运行 app tests**
+- [x] **Step 6: 运行 app tests**
 
 Run:
 
@@ -824,7 +824,7 @@ go test ./internal/app
 
 Expected: PASS.
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 git add internal/app internal/install

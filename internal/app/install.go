@@ -303,7 +303,7 @@ func (s Service) installResolvedTarget(runTarget, recordTarget string, opts inst
 	if installMode == "" && opts.IsGUI && len(result.ExtractedFiles) > 0 {
 		installMode = install.InstallModePortable
 	}
-	shouldRecord := len(result.ExtractedFiles) > 0 || installMode == install.InstallModeInstaller
+	shouldRecord := len(result.ExtractedFiles) > 0 || installMode == install.InstallModeInstaller || installMode == install.InstallModeRunAsset
 	if s.Store == nil || !shouldRecord {
 		return result, nil
 	}
@@ -312,6 +312,10 @@ func (s Service) installResolvedTarget(runTarget, recordTarget string, opts inst
 	tag, releaseDate := tagFromReleaseURL(result.URL), time.Time{}
 	isSourceForge := sourcesf.IsTarget(repo)
 	isForge := forge.IsTarget(repo)
+	isTemplate := install.DetectTargetKind(runTarget) == install.TargetTemplate
+	if tag == "" && isTemplate {
+		tag = result.Version
+	}
 	if tag == "" && isSourceForge {
 		tag = sourcesf.VersionFromText(result.URL)
 	}
@@ -350,7 +354,7 @@ func (s Service) installResolvedTarget(runTarget, recordTarget string, opts inst
 		ExtractedFiles: append([]string(nil), result.ExtractedFiles...),
 		Options:        extractOptionsMap(opts, result.IsGUI || opts.IsGUI),
 		Tag:            tag,
-		Version:        sourceVersion(tag, isSourceForge || isForge),
+		Version:        sourceVersion(tag, isSourceForge || isForge || isTemplate),
 		ReleaseDate:    releaseDate,
 		IsGUI:          result.IsGUI || opts.IsGUI,
 		InstallMode:    installMode,
@@ -746,6 +750,51 @@ func extractOptionsMap(opts install.Options, isGUI bool) map[string]interface{} 
 	}
 	if opts.DisableSSL {
 		recorded["disable_ssl"] = true
+	}
+	if opts.URLTemplate.URLTemplate != "" {
+		recorded["url_template"] = opts.URLTemplate.URLTemplate
+	}
+	if opts.URLTemplate.LatestURL != "" {
+		recorded["latest_url"] = opts.URLTemplate.LatestURL
+	}
+	if opts.URLTemplate.LatestFormat != "" {
+		recorded["latest_format"] = opts.URLTemplate.LatestFormat
+	}
+	if opts.URLTemplate.LatestJSONPath != "" {
+		recorded["latest_json_path"] = opts.URLTemplate.LatestJSONPath
+	}
+	if opts.URLTemplate.VersionRegex != "" {
+		recorded["version_regex"] = opts.URLTemplate.VersionRegex
+	}
+	if len(opts.URLTemplate.OSMap) > 0 {
+		recorded["os_map"] = cloneStringMap(opts.URLTemplate.OSMap)
+	}
+	if len(opts.URLTemplate.ArchMap) > 0 {
+		recorded["arch_map"] = cloneStringMap(opts.URLTemplate.ArchMap)
+	}
+	if len(opts.URLTemplate.ExtMap) > 0 {
+		recorded["ext_map"] = cloneStringMap(opts.URLTemplate.ExtMap)
+	}
+	if len(opts.URLTemplate.LibcMap) > 0 {
+		recorded["libc_map"] = cloneStringMap(opts.URLTemplate.LibcMap)
+	}
+	if opts.URLTemplate.ChecksumURLTemplate != "" {
+		recorded["checksum_url_template"] = opts.URLTemplate.ChecksumURLTemplate
+	}
+	if opts.URLTemplate.ChecksumFormat != "" {
+		recorded["checksum_format"] = opts.URLTemplate.ChecksumFormat
+	}
+	if opts.URLTemplate.ChecksumJSONPath != "" {
+		recorded["checksum_json_path"] = opts.URLTemplate.ChecksumJSONPath
+	}
+	if opts.URLTemplate.ChecksumRegex != "" {
+		recorded["checksum_regex"] = opts.URLTemplate.ChecksumRegex
+	}
+	if opts.URLTemplate.InstallAction != "" {
+		recorded["install_action"] = opts.URLTemplate.InstallAction
+	}
+	if len(opts.URLTemplate.InstallArgs) > 0 {
+		recorded["install_args"] = append([]string(nil), opts.URLTemplate.InstallArgs...)
 	}
 	return recorded
 }

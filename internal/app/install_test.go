@@ -673,6 +673,58 @@ install_args = ["install", "latest"]
 	assert.Eq(t, []string{"install", "latest"}, runner.opts.URLTemplate.InstallArgs)
 }
 
+func TestInstallTargetRecordsTemplateVersionAndRunAssetMode(t *testing.T) {
+	now := time.Unix(1710000000, 0).UTC()
+	cfg := mustLoadFromString(t, `
+[packages.claude]
+repo = "template:claude"
+latest_url = "https://example.com/latest"
+latest_format = "text"
+url_template = "https://example.com/{version}/{os}-{arch}/claude{ext}"
+os_map = { windows = "win32" }
+arch_map = { amd64 = "x64" }
+ext_map = { windows = ".exe" }
+checksum_url_template = "https://example.com/{version}/manifest.json"
+checksum_format = "json"
+checksum_json_path = "platforms.{os}-{arch}.checksum"
+install_action = "run-asset"
+install_args = ["install", "latest"]
+`)
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:         "https://example.com/1.2.3/win32-x64/claude.exe",
+			Tool:        "claude",
+			Asset:       "claude.exe",
+			InstallMode: install.InstallModeRunAsset,
+			Version:     "1.2.3",
+		},
+	}
+	store := &fakeInstalledStore{}
+	svc := Service{
+		Runner: runner,
+		Store:  store,
+		Now:    func() time.Time { return now },
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("claude", install.Options{})
+	if err != nil {
+		t.Fatalf("install template package: %v", err)
+	}
+
+	assert.Eq(t, "claude", store.target)
+	assert.Eq(t, "template:claude", store.entry.Repo)
+	assert.Eq(t, "template:claude", store.entry.Target)
+	assert.Eq(t, "1.2.3", store.entry.Tag)
+	assert.Eq(t, "1.2.3", store.entry.Version)
+	assert.Eq(t, install.InstallModeRunAsset, store.entry.InstallMode)
+	assert.Eq(t, "https://example.com/latest", store.entry.Options["latest_url"])
+	assert.Eq(t, "run-asset", store.entry.Options["install_action"])
+	assert.Eq(t, []string{"install", "latest"}, store.entry.Options["install_args"])
+}
+
 func TestInstallTargetRecordsManagedPackageNameAsInstalledKey(t *testing.T) {
 	cfg := mustLoadFromString(t, `
 [packages.greq]

@@ -105,6 +105,10 @@ func findUpdateTarget(cfg *cfgpkg.File, installed *storepkg.Config, target strin
 		if _, managed := cfg.Packages[item.Name]; managed && target == item.Name {
 			return item, entry, true, true
 		}
+		if item.Name == target {
+			_, managed := cfg.Packages[item.Name]
+			return item, entry, managed, true
+		}
 		if item.Repo == target || item.Repo == normalizedTarget || entry.Target == target || storepkg.NormalizeRepoName(entry.Target) == normalizedTarget {
 			_, managed := cfg.Packages[item.Name]
 			return item, entry, managed, true
@@ -122,6 +126,9 @@ func installedEntryForItem(installed *storepkg.Config, item ListItem) storepkg.E
 	}
 	normalized := storepkg.NormalizeRepoName(item.Repo)
 	if entry, ok := installed.Installed[normalized]; ok {
+		return entry
+	}
+	if entry, ok := installed.Installed[item.Name]; ok {
 		return entry
 	}
 	return storepkg.Entry{}
@@ -172,6 +179,23 @@ func optionsFromInstalledEntry(entry storepkg.Entry) install.Options {
 	opts.DisableSSL, _ = boolOption(entry.Options, "disable_ssl")
 	opts.Asset = stringSliceOption(entry.Options, "asset", "asset_filters")
 	opts.RenameFiles = stringMapOption(entry.Options, "rename_files")
+	opts.URLTemplate = install.URLTemplateOptions{
+		URLTemplate:         stringOptionValue(entry.Options, "url_template"),
+		LatestURL:           stringOptionValue(entry.Options, "latest_url"),
+		LatestFormat:        stringOptionValue(entry.Options, "latest_format"),
+		LatestJSONPath:      stringOptionValue(entry.Options, "latest_json_path"),
+		VersionRegex:        stringOptionValue(entry.Options, "version_regex"),
+		OSMap:               stringMapOption(entry.Options, "os_map"),
+		ArchMap:             stringMapOption(entry.Options, "arch_map"),
+		ExtMap:              stringMapOption(entry.Options, "ext_map"),
+		LibcMap:             stringMapOption(entry.Options, "libc_map"),
+		ChecksumURLTemplate: stringOptionValue(entry.Options, "checksum_url_template"),
+		ChecksumFormat:      stringOptionValue(entry.Options, "checksum_format"),
+		ChecksumJSONPath:    stringOptionValue(entry.Options, "checksum_json_path"),
+		ChecksumRegex:       stringOptionValue(entry.Options, "checksum_regex"),
+		InstallAction:       stringOptionValue(entry.Options, "install_action"),
+		InstallArgs:         stringSliceOption(entry.Options, "install_args"),
+	}
 	return opts
 }
 
@@ -227,6 +251,11 @@ func stringOption(values map[string]any, keys ...string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func stringOptionValue(values map[string]any, keys ...string) string {
+	value, _ := stringOption(values, keys...)
+	return value
 }
 
 func boolOption(values map[string]any, keys ...string) (bool, bool) {
