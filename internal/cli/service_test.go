@@ -1078,6 +1078,7 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 			LoadConfig: func() (*cfgpkg.File, error) {
 				cfg := cfgpkg.NewFile()
 				cfg.Packages["chlog"] = cfgpkg.Section{Repo: util.StringPtr("gookit/gitw")}
+				cfg.Packages["claude"] = cfgpkg.Section{Repo: util.StringPtr("template:claude")}
 				cfg.Packages["ripgrep"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
 				return cfg, nil
 			},
@@ -1085,6 +1086,7 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 				return &storepkg.Config{
 					Installed: map[string]storepkg.Entry{
 						"gookit/gitw": {Repo: "gookit/gitw", Tag: "v0.3.6", InstalledAt: now},
+						"claude":      {Repo: "template:claude", Target: "template:claude", Tag: "1.2.3", InstalledAt: now},
 					},
 				}, nil
 			},
@@ -1115,6 +1117,9 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 	}
 	if !strings.Contains(got, "chlog") || !strings.Contains(got, "v0.3.6") {
 		t.Fatalf("expected table row in output, got %q", got)
+	}
+	if !strings.Contains(got, "claude") || !strings.Contains(got, "template") {
+		t.Fatalf("expected template package source in output, got %q", got)
 	}
 	if !strings.Contains(got, "github") || !strings.Contains(got, "2026-05-05T13:20:19") {
 		t.Fatalf("expected source and update time in output, got %q", got)

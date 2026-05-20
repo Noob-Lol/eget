@@ -971,19 +971,19 @@ git commit -m "docs(source): clarify template metadata requests"
 - Modify: `internal/cli/handlers.go`
 - Modify: `internal/cli/service_test.go`
 
-- [ ] **Step 1: package source 显示 template**
+- [x] **Step 1: package source 显示 template**
 
 `packageSource` 中 `install.TargetTemplate` 返回 `"template"`。
 
-- [ ] **Step 2: list 输出测试**
+- [x] **Step 2: list 输出测试**
 
 在 `internal/cli/service_test.go` 添加 installed package `template:claude`，断言 list 输出 source 为 `template`。
 
-- [ ] **Step 3: update check wiring 测试**
+- [x] **Step 3: update check wiring 测试**
 
 添加 CLI 层 `update --check` 或 `list --outdated` 测试，断言 latest checker 收到 package section。
 
-- [ ] **Step 4: 运行 CLI tests**
+- [x] **Step 4: 运行 CLI tests**
 
 Run:
 
@@ -993,7 +993,7 @@ go test ./internal/cli
 
 Expected: PASS.
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add internal/cli
