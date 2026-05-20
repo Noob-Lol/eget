@@ -50,6 +50,21 @@ repo = "gitea:codeberg.org/forgejo/forgejo"
 system = "linux/amd64"
 asset_filters = ["linux", "amd64"]
 
+[packages."claude"]
+repo = "template:claude"
+latest_url = "https://downloads.claude.ai/claude-code-releases/latest"
+latest_format = "text"
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+os_map = { windows = "win32", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64" }
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+libc_map = { glibc = "", musl = "-musl" }
+checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
+checksum_format = "json"
+checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
+install_action = "run-asset"
+install_args = ["install", "latest"]
+
 # SDK download examples. `eget sdk` only downloads and installs SDKs;
 # environment activation remains the responsibility of tools like kite xenv.
 [sdk.go]

@@ -128,7 +128,7 @@ asset_filters = ["windows"]
 
 常用字段：
 
-- `repo`: package 来源。支持 GitHub 风格 `owner/repo`、直接 URL、SourceForge 和已支持的 forge 前缀。
+- `repo`: package 来源。支持 GitHub 风格 `owner/repo`、直接 URL、SourceForge、已支持的 forge 前缀和 `template:<id>`。
 - `target`: 当前 package 的安装目录。
 - `system`: 当前 package 的目标平台，格式为 `GOOS/GOARCH`。
 - `tag`: 版本 tag 或 release tag 偏好。
@@ -149,6 +149,55 @@ tag = "nightly"
 ```
 
 新配置建议优先使用 `[packages.<name>]`，因为它有明确的本地 package 名称。
+
+### Template Package Source
+
+`repo = "template:<id>"` 用于普通 release provider 以外的独立下载站。它通过配置读取最新版本、渲染下载 URL、可选读取 checksum manifest，然后继续复用普通安装、更新和 installed store 流程。
+
+Claude Code 示例：
+
+```toml
+[packages.claude]
+repo = "template:claude"
+latest_url = "https://downloads.claude.ai/claude-code-releases/latest"
+latest_format = "text"
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+os_map = { windows = "win32", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64" }
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+libc_map = { glibc = "", musl = "-musl" }
+checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
+checksum_format = "json"
+checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
+install_action = "run-asset"
+install_args = ["install", "latest"]
+```
+
+字段说明：
+
+- `latest_url`: 最新版本 metadata 地址。
+- `latest_format`: `text` 或 `json`，为空时按 `text` 处理。
+- `latest_json_path`: `latest_format = "json"` 时用于提取版本的点分路径。
+- `version_regex`: 可选正则；有捕获组时使用第一个捕获组，否则使用完整匹配。
+- `url_template`: 下载 URL 模板。
+- `os_map` / `arch_map` / `ext_map` / `libc_map`: 将当前平台变量映射到下载站命名。
+- `checksum_url_template`: checksum metadata 地址模板。
+- `checksum_format`: `text` 或 `json`。
+- `checksum_json_path`: `checksum_format = "json"` 时用于提取 checksum 的点分路径，可使用模板变量。
+- `checksum_regex`: 可选 checksum 正则提取。
+- `install_action = "run-asset"`: 下载和 checksum 校验成功后，执行下载到本地的 asset 本身。
+- `install_args`: 传给 `run-asset` 的参数数组。
+
+`url_template`、`checksum_url_template` 和 JSON path 模板支持变量：
+
+- `{name}`: template id。
+- `{version}`: latest 或命令行指定的版本。
+- `{os}`: 经过 `os_map` 处理后的 OS。
+- `{arch}`: 经过 `arch_map` 处理后的 arch。
+- `{ext}`: 经过 `ext_map` 处理后的扩展名。
+- `{libc}`: Linux 下检测到 libc 后经过 `libc_map` 处理的值；非 Linux 或未检测到时为空。
+
+`run-asset` 不是通用 `post_install`。它只执行当前下载并已通过 checksum 校验的 asset，参数必须是数组，不会经过 shell，也不会执行额外脚本。template 的 `latest_url` 和 `checksum_url_template` 是任意站点 metadata，请求会复用 `proxy_url`、`disable_ssl` 等 HTTP 配置，但不会被强制归类为 provider API cache。
 
 ## SDK 配置
 

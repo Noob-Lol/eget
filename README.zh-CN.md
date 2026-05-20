@@ -369,6 +369,21 @@ tag = "nightly"
 asset_filters = ["windows"]
 rename_files = { "markview-windows-amd64.exe" = "markview.exe" }
 
+[packages.claude]
+repo = "template:claude"
+latest_url = "https://downloads.claude.ai/claude-code-releases/latest"
+latest_format = "text"
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+os_map = { windows = "win32", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64" }
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+libc_map = { glibc = "", musl = "-musl" }
+checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
+checksum_format = "json"
+checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
+install_action = "run-asset"
+install_args = ["install", "latest"]
+
 [sdk.go]
 aliases = ["golang"]
 target = "gosdk/go{version}"
@@ -401,7 +416,7 @@ eget config init
 
 默认会写入 `~/.config/eget/eget.toml`。
 
-完整配置说明见 [docs/config.zh-CN.md](docs/config.zh-CN.md)，包括全局字段、package 配置、SDK 配置、缓存目录、安装记录文件、ghproxy、API cache 和 SDK index 设置。SDK 专题使用说明见 [docs/sdk-usage.md](docs/sdk-usage.md)。
+`template:<id>` 可用于独立下载站 package，例如 Claude Code 这种通过 latest metadata 和 URL 模板发布的工具。`run-asset` 只执行已下载并通过 checksum 校验的 asset，不是通用 `post_install`。完整配置说明见 [docs/config.zh-CN.md](docs/config.zh-CN.md)，包括全局字段、package 配置、Template Package Source、SDK 配置、缓存目录、安装记录文件、ghproxy、API cache 和 SDK index 设置。SDK 专题使用说明见 [docs/sdk-usage.md](docs/sdk-usage.md)。
 
 ## 构建与测试
 

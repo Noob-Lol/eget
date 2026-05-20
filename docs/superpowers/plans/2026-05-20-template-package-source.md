@@ -1012,7 +1012,7 @@ git commit -m "feat(cli): show template package source"
 - Modify: `docs/example.eget.toml`
 - Modify: `docs/architecture.md`
 
-- [ ] **Step 1: 配置文档**
+- [x] **Step 1: 配置文档**
 
 在 `docs/config.zh-CN.md` 和 `docs/config.md` 增加 Template Package Source 说明，包含 Claude Code 配置：
 
@@ -1035,11 +1035,11 @@ install_args = ["install", "latest"]
 
 明确 `run-asset` 不是通用 `post_install`，不会经过 shell。
 
-- [ ] **Step 2: README 简要说明**
+- [x] **Step 2: README 简要说明**
 
 README 只放短例子和指向 config 文档的链接，不重复完整字段说明。
 
-- [ ] **Step 3: architecture 更新**
+- [x] **Step 3: architecture 更新**
 
 在 `docs/architecture.md` 增加：
 
@@ -1049,11 +1049,11 @@ Template sources are handled by internal/source/urltemplate. They render a confi
 
 并说明 `run-asset` 是执行已校验下载 asset 的 install mode。
 
-- [ ] **Step 4: example config**
+- [x] **Step 4: example config**
 
 在 `docs/example.eget.toml` 增加 `[packages."claude"]` 示例。
 
-- [ ] **Step 5: 提交 docs**
+- [x] **Step 5: 提交 docs**
 
 ```bash
 git add README.md README.zh-CN.md docs/config.md docs/config.zh-CN.md docs/example.eget.toml docs/architecture.md

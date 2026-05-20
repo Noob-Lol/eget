@@ -369,6 +369,21 @@ tag = "nightly"
 asset_filters = ["windows"]
 rename_files = { "markview-windows-amd64.exe" = "markview.exe" }
 
+[packages.claude]
+repo = "template:claude"
+latest_url = "https://downloads.claude.ai/claude-code-releases/latest"
+latest_format = "text"
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+os_map = { windows = "win32", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64" }
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+libc_map = { glibc = "", musl = "-musl" }
+checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
+checksum_format = "json"
+checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
+install_action = "run-asset"
+install_args = ["install", "latest"]
+
 [sdk.go]
 aliases = ["golang"]
 target = "gosdk/go{version}"
@@ -401,7 +416,7 @@ eget config init
 
 By default, this writes `~/.config/eget/eget.toml`.
 
-See [docs/config.md](docs/config.md) for the full configuration reference, including global fields, package sections, SDK sections, cache directories, installed-state files, ghproxy, API cache, and SDK index settings. For SDK-specific usage, see [docs/sdk-usage.md](docs/sdk-usage.md).
+`template:<id>` can describe packages from independent download sites, such as Claude Code tools published through latest metadata and URL templates. `run-asset` only executes the downloaded asset after checksum verification; it is not a general `post_install`. See [docs/config.md](docs/config.md) for the full configuration reference, including global fields, package sections, Template Package Source, SDK sections, cache directories, installed-state files, ghproxy, API cache, and SDK index settings. For SDK-specific usage, see [docs/sdk-usage.md](docs/sdk-usage.md).
 
 ## Build and Test
 

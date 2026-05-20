@@ -41,6 +41,7 @@ eget install --tag nightly inhere/markview
 - `internal/source/github`: GitHub release/source discovery.
 - `internal/source/sourceforge`: SourceForge file discovery and latest-version checks.
 - `internal/source/forge`: GitLab/Gitea/Forgejo release asset discovery and latest-version checks.
+- `internal/source/urltemplate`: configured `template:<id>` sources for independent download sites. It renders URLs from latest metadata and platform variables, then returns a normal asset URL to the shared install pipeline.
 
 ## Install Flow
 
@@ -90,6 +91,16 @@ forgejo:<host>/<owner>/<repo>
 ```
 
 Forge backends return candidate download URLs; asset filtering, download, checksum, extraction, and installed-store recording continue through the shared install pipeline.
+
+Template sources use package config rather than provider APIs:
+
+```text
+template:<id>
+```
+
+`internal/source/urltemplate` fetches `latest_url`, renders `url_template` with variables such as `{version}`, `{os}`, `{arch}`, `{ext}`, and `{libc}`, and can render a checksum manifest URL/path before SHA-256 verification. Template metadata requests reuse the shared HTTP client for proxy and SSL behavior, but arbitrary metadata URLs are not forced into provider API-cache classification.
+
+When a package sets `install_action = "run-asset"`, the runner downloads and verifies the selected asset, writes it to the normal download cache or a temporary execution path, and executes that asset directly with `install_args`. This is an install mode for verified installer assets, not a shell-based post-install hook.
 
 ## Extraction
 

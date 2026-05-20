@@ -128,7 +128,7 @@ asset_filters = ["windows"]
 
 Common fields:
 
-- `repo`: package source. Supports GitHub-style `owner/repo`, direct URLs, SourceForge, and supported forge prefixes.
+- `repo`: package source. Supports GitHub-style `owner/repo`, direct URLs, SourceForge, supported forge prefixes, and `template:<id>`.
 - `target`: install directory for this package.
 - `system`: package-specific target platform in `GOOS/GOARCH` form.
 - `tag`: version tag or release tag preference.
@@ -149,6 +149,55 @@ tag = "nightly"
 ```
 
 Prefer `[packages.<name>]` for new config because it provides an explicit local package name.
+
+### Template Package Source
+
+`repo = "template:<id>"` is for independent download sites outside the built-in release providers. It reads latest-version metadata, renders a download URL, optionally reads a checksum manifest, then continues through the normal install, update, and installed-store flow.
+
+Claude Code example:
+
+```toml
+[packages.claude]
+repo = "template:claude"
+latest_url = "https://downloads.claude.ai/claude-code-releases/latest"
+latest_format = "text"
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+os_map = { windows = "win32", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64" }
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+libc_map = { glibc = "", musl = "-musl" }
+checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
+checksum_format = "json"
+checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
+install_action = "run-asset"
+install_args = ["install", "latest"]
+```
+
+Fields:
+
+- `latest_url`: latest-version metadata URL.
+- `latest_format`: `text` or `json`; empty means `text`.
+- `latest_json_path`: dot path used when `latest_format = "json"`.
+- `version_regex`: optional version extraction regex. If it has a capture group, the first group is used; otherwise the full match is used.
+- `url_template`: download URL template.
+- `os_map` / `arch_map` / `ext_map` / `libc_map`: map local platform variables to the download site's naming.
+- `checksum_url_template`: checksum metadata URL template.
+- `checksum_format`: `text` or `json`.
+- `checksum_json_path`: dot path used when `checksum_format = "json"`; template variables are allowed.
+- `checksum_regex`: optional checksum extraction regex.
+- `install_action = "run-asset"`: after download and checksum verification, execute the downloaded asset itself.
+- `install_args`: argument array passed to `run-asset`.
+
+`url_template`, `checksum_url_template`, and JSON path templates support:
+
+- `{name}`: template id.
+- `{version}`: latest or command-selected version.
+- `{os}`: OS after `os_map`.
+- `{arch}`: arch after `arch_map`.
+- `{ext}`: extension after `ext_map`.
+- `{libc}`: Linux libc value after `libc_map`; empty outside Linux or when libc is unknown.
+
+`run-asset` is not a general `post_install`. It only executes the downloaded asset after checksum verification, arguments must be an array, and no shell is used. Template `latest_url` and `checksum_url_template` values are arbitrary site metadata. Requests reuse HTTP options such as `proxy_url` and `disable_ssl`, but they are not forced into provider API cache classification.
 
 ## SDK Sections
 
