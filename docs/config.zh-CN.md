@@ -30,7 +30,7 @@ eget config init
 - `[global]`: 全局默认值、网络和缓存配置。
 - `[api_cache]`: provider 元数据 API 响应缓存。
 - `[ghproxy]`: GitHub URL 重写代理。
-- `["owner/repo"]`: 旧版直接 package 配置。
+- `["owner/repo"]`: ~旧版直接 package 配置~。
 - `[packages.<name>]`: 命名 package 配置。
 - `[sdk.<name>]`: SDK 下载和 index 配置。
 
@@ -89,7 +89,7 @@ cache_time = 300
 - `enable`: 是否缓存已知 provider 的元数据响应。
 - `cache_time`: 缓存有效期，单位为秒。
 
-API cache 会缓存 GitHub API、GitLab/Gitea release API、SourceForge files 列表等已知 provider 的 `GET` 响应。缓存文件目录为 `{cache_dir}/api-cache/`。
+> API cache 会缓存 GitHub API、GitLab/Gitea release API、SourceForge files 列表等已知 provider 的 `GET` 响应。缓存文件目录为 `{cache_dir}/api-cache/`。
 
 ## GitHub Proxy
 
@@ -110,7 +110,7 @@ fallbacks = []
 - `support_api`: 启用后也会重写 `api.github.com` 请求。
 - `fallbacks`: 主代理失败后按顺序尝试的备用代理地址。
 
-`proxy_url` 和 `ghproxy` 不是同一种能力。`proxy_url` 是 HTTP 层代理，`ghproxy` 是请求 URL 重写，两者可以同时启用。
+> `proxy_url` 和 `ghproxy` 不是同一种能力。`proxy_url` 是 HTTP 层代理，`ghproxy` 是请求 URL 重写，两者可以同时启用。
 
 ## Package 配置
 

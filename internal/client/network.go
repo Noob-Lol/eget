@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -57,6 +58,8 @@ var proxyNoticeWriter io.Writer = os.Stderr
 var apiCacheNoticeWriter io.Writer = os.Stderr
 var verboseWriter io.Writer = os.Stderr
 var verboseEnabled bool
+var proxyNoticeMu sync.Mutex
+var proxyNoticeSeen = map[string]struct{}{}
 
 func SetVerbose(enabled bool, writer io.Writer) {
 	verboseEnabled = enabled
@@ -588,7 +591,38 @@ func printProxyNotice(kind, proxyURL string) {
 	if proxyURL == "" || proxyNoticeWriter == nil {
 		return
 	}
+	key := proxyNoticeKey(kind, proxyURL, proxyNoticeWriter)
+	proxyNoticeMu.Lock()
+	if _, ok := proxyNoticeSeen[key]; ok {
+		proxyNoticeMu.Unlock()
+		return
+	}
+	proxyNoticeSeen[key] = struct{}{}
+	proxyNoticeMu.Unlock()
 	ccolor.Fprintf(proxyNoticeWriter, " - Using <ylw>proxy_url for %s</>: %s\n", kind, proxyURL)
+}
+
+func proxyNoticeKey(kind, proxyURL string, writer io.Writer) string {
+	return kind + "\x00" + proxyURL + "\x00" + writerIdentity(writer)
+}
+
+func writerIdentity(writer io.Writer) string {
+	if writer == nil {
+		return ""
+	}
+	value := reflect.ValueOf(writer)
+	switch value.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
+		return fmt.Sprintf("%T:%x", writer, value.Pointer())
+	default:
+		return fmt.Sprintf("%T", writer)
+	}
+}
+
+func resetProxyNoticeStateForTest() {
+	proxyNoticeMu.Lock()
+	defer proxyNoticeMu.Unlock()
+	proxyNoticeSeen = map[string]struct{}{}
 }
 
 func printAPICacheNotice(cachePath string) {

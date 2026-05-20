@@ -125,7 +125,7 @@ eget sdk index refresh go
 eget sdk index show go
 ```
 
-`eget sdk` 只负责下载和解压安装 SDK，不会修改 `PATH`、不会写 shell hook、不会管理当前激活版本，也不会写 `.xenv.toml`。如需环境切换，可在安装后配合 `kite xenv tools index` 和 `kite xenv use`。
+> `eget sdk` 只负责下载和解压安装 SDK，不会修改 `PATH`、不会写 shell hook、不会管理当前激活版本，也不会写 `.xenv.toml`。如需环境切换，可在安装后配合 `xenv tools index` 和 `xenv use`。
 
 ### 查询命令示例
 
