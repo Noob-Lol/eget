@@ -94,6 +94,19 @@ func Download(url string, out io.Writer, getbar func(size int64) io.Writer, opts
 	return client.Download(url, out, getbar, ClientOptions(opts))
 }
 
+func DownloadFile(url, target string, getbar func(size int64) io.Writer, opts Options) error {
+	restoreDownloadGet := client.SetDownloadGetWithOptionsForTest(func(url string, clientOpts client.Options) (*http.Response, error) {
+		return downloadGetWithOptions(url, opts)
+	})
+	defer restoreDownloadGet()
+	restoreHTTPDo := client.SetHTTPDoForTest(httpDo)
+	defer restoreHTTPDo()
+	restoreProxyNotice := client.SetProxyNoticeWriter(proxyNoticeWriter)
+	defer client.SetProxyNoticeWriter(restoreProxyNotice)
+	client.SetVerbose(verboseEnabled, verboseWriter)
+	return client.DownloadFile(url, target, getbar, ClientOptions(opts))
+}
+
 func verbosef(format string, args ...any) {
 	client.Verbosef(format, args...)
 }

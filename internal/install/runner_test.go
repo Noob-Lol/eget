@@ -3,12 +3,16 @@ package install
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
@@ -161,6 +165,52 @@ func TestDownloadBodyUsesCacheMetadata(t *testing.T) {
 	if calls != 0 {
 		t.Fatalf("expected no network calls, got %d", calls)
 	}
+}
+
+func TestDownloadBodyResumesLargeCachedDownload(t *testing.T) {
+	body := bytes.Repeat([]byte("r"), 768*1024)
+	partSize := len(body) / 2
+
+	var gotRange atomic.Value
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("ETag", `"install-resume-v1"`)
+		if r.Method == http.MethodHead {
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+			return
+		}
+		rangeHeader := r.Header.Get("Range")
+		gotRange.Store(rangeHeader)
+		if rangeHeader != "" {
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)-partSize))
+			w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", partSize, len(body)-1, len(body)))
+			w.WriteHeader(http.StatusPartialContent)
+			_, _ = w.Write(body[partSize:])
+			return
+		}
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+	downloadURL := server.URL + "/tool.zip"
+
+	cacheDir := t.TempDir()
+	cachePath := CacheFilePathWithMeta(cacheDir, downloadURL, CacheMeta{})
+	assert.Nil(t, os.WriteFile(cachePath+".part", body[:partSize], 0o644))
+	meta := fmt.Sprintf("{\n  \"schema\": 1,\n  \"url\": %q,\n  \"size\": %d,\n  \"etag\": %q\n}\n", downloadURL, len(body), `"install-resume-v1"`)
+	assert.Nil(t, os.WriteFile(cachePath+".meta.json", []byte(meta), 0o644))
+
+	runner := &InstallRunner{Stderr: io.Discard}
+	got, err := runner.downloadBody(downloadURL, Options{CacheDir: cacheDir})
+
+	assert.Nil(t, err)
+	assert.Eq(t, fmt.Sprintf("bytes=%d-", partSize), gotRange.Load())
+	assert.Eq(t, body, got)
+	saved, readErr := os.ReadFile(cachePath)
+	assert.Nil(t, readErr)
+	assert.Eq(t, body, saved)
+	_, statErr := os.Stat(cachePath + ".part")
+	assert.True(t, os.IsNotExist(statErr))
 }
 
 func TestDownloadPrintsProxyNoticeForRemoteRequest(t *testing.T) {

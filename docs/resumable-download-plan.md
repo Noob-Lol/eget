@@ -150,7 +150,7 @@ git commit -m "feat(download): add resumable file download"
 - Test: `internal/install/runner_test.go`
 - Update: `docs/resumable-download-plan.md`
 
-- [ ] **Step 1: 写失败测试：`downloadBody()` 自动续传 cache `.part`**
+- [x] **Step 1: 写失败测试：`downloadBody()` 自动续传 cache `.part`**
 
 测试名称：`TestDownloadBodyResumesLargeCachedDownload`
 
@@ -169,7 +169,7 @@ go test ./internal/install -run TestDownloadBodyResumesLargeCachedDownload
 
 Expected: FAIL，原因是 `downloadBody()` 尚未调用文件下载 API。
 
-- [ ] **Step 2: 增加 install 层 `DownloadFile()` wrapper**
+- [x] **Step 2: 增加 install 层 `DownloadFile()` wrapper**
 
 实现约束：
 - 在 `internal/install/network.go` 增加 `DownloadFile(url, path string, getbar func(int64) io.Writer, opts Options) error`。
@@ -184,7 +184,7 @@ go test ./internal/install -run TestDownloadBodyResumesLargeCachedDownload
 
 Expected: 仍 FAIL，直到 runner 接入。
 
-- [ ] **Step 3: 修改 `downloadBody()` 使用 cache 文件下载**
+- [x] **Step 3: 修改 `downloadBody()` 使用 cache 文件下载**
 
 实现约束：
 - 如果 `cachePath != "" && !IsLocalFile(url)`：
@@ -202,7 +202,7 @@ go test ./internal/install -run "TestDownloadBody(UsesCache|WritesCache|UsesCach
 
 Expected: PASS。
 
-- [ ] **Step 4: 更新计划并提交 Task 2**
+- [x] **Step 4: 更新计划并提交 Task 2**
 
 Run:
 

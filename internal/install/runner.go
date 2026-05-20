@@ -496,16 +496,14 @@ func (r *InstallRunner) downloadBody(url string, opts Options) ([]byte, error) {
 			ccolor.Fprintf(output, " - Using cached file <cyan>%s</>\n", filepath.Base(cachePath))
 			return data, nil
 		}
+		if err := DownloadFile(url, cachePath, r.downloadProgress(opts), opts); err != nil {
+			return nil, err
+		}
+		return os.ReadFile(cachePath)
 	}
 
 	buf := &bytes.Buffer{}
-	err := Download(url, buf, func(size int64) io.Writer {
-		pbout := r.Stdout
-		if pbout == nil || opts.Quiet {
-			pbout = io.Discard
-		}
-		return newDownloadProgress(pbout, size)
-	}, opts)
+	err := Download(url, buf, r.downloadProgress(opts), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -517,6 +515,16 @@ func (r *InstallRunner) downloadBody(url string, opts Options) ([]byte, error) {
 		}
 	}
 	return body, nil
+}
+
+func (r *InstallRunner) downloadProgress(opts Options) func(int64) io.Writer {
+	return func(size int64) io.Writer {
+		pbout := r.Stdout
+		if pbout == nil || opts.Quiet {
+			pbout = io.Discard
+		}
+		return newDownloadProgress(pbout, size)
+	}
 }
 
 func newDownloadProgress(out io.Writer, size int64) *progress.Progress {
