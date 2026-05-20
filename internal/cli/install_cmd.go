@@ -8,6 +8,7 @@ type InstallOptions struct {
 	To               string
 	File             string
 	Asset            string
+	Rename           string
 	Name             string
 	Source           bool
 	All              bool
@@ -31,6 +32,7 @@ func newInstallCmd(handler CommandHandler) (*gcli.Command, func()) {
 		c.StrOpt(&opts.To, "to", "", "", "Install destination")
 		c.StrOpt(&opts.File, "file", "", "", "File to extract, multi use comma split, support glob")
 		c.StrOpt(&opts.Asset, "asset", "a", "", "Asset filter, multi use comma split")
+		c.StrOpt(&opts.Rename, "rename", "", "", "Rename extracted files, comma separated from=to pairs")
 		c.StrOpt(&opts.Name, "name", "", "", "Managed package name when used with --add")
 		c.BoolOpt(&opts.Source, "source", "", false, "Download source archive")
 		c.BoolOpt(&opts.All, "extract-all", "ea", false, "Extract all files")

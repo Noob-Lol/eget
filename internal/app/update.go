@@ -171,6 +171,7 @@ func optionsFromInstalledEntry(entry storepkg.Entry) install.Options {
 	opts.Source, _ = boolOption(entry.Options, "download_source", "source")
 	opts.DisableSSL, _ = boolOption(entry.Options, "disable_ssl")
 	opts.Asset = stringSliceOption(entry.Options, "asset", "asset_filters")
+	opts.RenameFiles = stringMapOption(entry.Options, "rename_files")
 	return opts
 }
 
@@ -210,6 +211,9 @@ func applyUpdateCLIOverrides(base, cli install.Options) install.Options {
 	}
 	if len(cli.Asset) > 0 {
 		base.Asset = append([]string(nil), cli.Asset...)
+	}
+	if len(cli.RenameFiles) > 0 {
+		base.RenameFiles = cloneStringMap(cli.RenameFiles)
 	}
 	return base
 }
@@ -256,6 +260,30 @@ func stringSliceOption(values map[string]any, keys ...string) []string {
 		case string:
 			if typed != "" {
 				return strings.Split(typed, ",")
+			}
+		}
+	}
+	return nil
+}
+
+func stringMapOption(values map[string]any, keys ...string) map[string]string {
+	for _, key := range keys {
+		value, ok := values[key]
+		if !ok {
+			continue
+		}
+		switch typed := value.(type) {
+		case map[string]string:
+			return cloneStringMap(typed)
+		case map[string]any:
+			items := make(map[string]string, len(typed))
+			for from, to := range typed {
+				if text, ok := to.(string); ok {
+					items[from] = text
+				}
+			}
+			if len(items) > 0 {
+				return items
 			}
 		}
 	}

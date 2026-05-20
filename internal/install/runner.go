@@ -143,7 +143,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	}
 	verbosef("extractor selected for tool=%s", tool)
 
-	if opts.All && opts.ExtractFile == "" {
+	if opts.All && opts.ExtractFile == "" && len(opts.RenameFiles) == 0 {
 		if direct, ok := extractor.(DirectAllExtractor); ok && effectiveOutput(opts) != "-" {
 			result := RunResult{
 				URL:         url,
@@ -219,7 +219,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	}
 
 	extract := func(file ExtractedFile) (string, error) {
-		out, err := outputPath(file, effectiveOutput(opts), opts.All, opts.Name)
+		out, err := outputPath(file, effectiveOutput(opts), opts.All, opts.Name, opts.RenameFiles)
 		if err != nil {
 			return "", err
 		}
@@ -648,10 +648,14 @@ func checksumAsset(asset string, assets []string) string {
 	return ""
 }
 
-func outputPath(file ExtractedFile, output string, all bool, preferredName string) (string, error) {
+func outputPath(file ExtractedFile, output string, all bool, preferredName string, renameFiles ...map[string]string) (string, error) {
 	mode := file.Mode()
-	out := resolvedOutputName(file.Name, mode, preferredName)
+	renamed := renamedOutputName(file, firstRenameMap(renameFiles))
+	out := resolvedOutputName(firstNonEmpty(renamed, file.Name), mode, preferredName)
 	if all && output != "-" && file.Name != "" {
+		if renamed != "" {
+			return safeArchiveOutputPath(output, renamed)
+		}
 		var err error
 		out, err = safeArchiveOutputPath(output, file.Name)
 		if err != nil {
@@ -678,6 +682,37 @@ func outputPath(file ExtractedFile, output string, all bool, preferredName strin
 		return filepath.Join(os.Getenv("EGET_BIN"), out), nil
 	}
 	return out, nil
+}
+
+func firstRenameMap(items []map[string]string) map[string]string {
+	if len(items) == 0 {
+		return nil
+	}
+	return items[0]
+}
+
+func renamedOutputName(file ExtractedFile, renameFiles map[string]string) string {
+	if len(renameFiles) == 0 {
+		return ""
+	}
+	for _, key := range []string{file.ArchiveName, file.Name, filepath.Base(file.ArchiveName), filepath.Base(file.Name)} {
+		if key == "" {
+			continue
+		}
+		if renamed := renameFiles[key]; renamed != "" {
+			return renamed
+		}
+	}
+	return ""
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func resolvedOutputName(name string, mode os.FileMode, preferredName string) string {

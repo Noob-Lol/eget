@@ -245,6 +245,9 @@ func sectionToMap(section Section) map[string]any {
 	if section.Quiet != nil {
 		data["quiet"] = *section.Quiet
 	}
+	if len(section.RenameFiles) > 0 {
+		data["rename_files"] = cloneStringMap(section.RenameFiles)
+	}
 	if section.Repo != nil {
 		data["repo"] = *section.Repo
 	}

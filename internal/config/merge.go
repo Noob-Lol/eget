@@ -27,6 +27,7 @@ func MergeInstallOptions(global, repo, pkg Section, cli CLIOverrides) Merged {
 	merged.ChunkConcurrency = firstInt(cli.ChunkConcurrency, pkg.ChunkConcurrency, repo.ChunkConcurrency, global.ChunkConcurrency)
 
 	merged.AssetFilters = firstStrings(cli.AssetFilters, pkg.AssetFilters, repo.AssetFilters, global.AssetFilters)
+	merged.RenameFiles = firstStringMap(cli.RenameFiles, pkg.RenameFiles, repo.RenameFiles, global.RenameFiles)
 
 	return merged
 }
@@ -68,4 +69,16 @@ func firstStrings(cli *[]string, values ...[]string) []string {
 		}
 	}
 	return []string{}
+}
+
+func firstStringMap(cli *map[string]string, values ...map[string]string) map[string]string {
+	if cli != nil {
+		return cloneStringMap(*cli)
+	}
+	for _, value := range values {
+		if len(value) > 0 {
+			return cloneStringMap(value)
+		}
+	}
+	return nil
 }

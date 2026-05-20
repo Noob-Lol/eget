@@ -27,6 +27,7 @@ func installOptionsFromInstall(opts *InstallOptions) install.Options {
 		ChunkConcurrencySet: opts.ChunkConcurrency >= 0,
 		BatchConcurrencySet: opts.BatchConcurrency >= 0,
 		Asset:               splitAssetFilters(opts.Asset),
+		RenameFiles:         splitRenameFiles(opts.Rename),
 	}
 }
 
@@ -70,6 +71,7 @@ func installOptionsFromDownload(opts *DownloadOptions) install.Options {
 		To:     opts.To,
 		File:   opts.File,
 		Asset:  opts.Asset,
+		Rename: opts.Rename,
 		Source: opts.Source,
 		All:    opts.All,
 		Quiet:  opts.Quiet,
@@ -98,6 +100,7 @@ func installOptionsFromAdd(opts *AddOptions) install.Options {
 		ChunkConcurrency:    opts.ChunkConcurrency,
 		ChunkConcurrencySet: opts.ChunkConcurrency >= 0,
 		Asset:               splitAssetFilters(opts.Asset),
+		RenameFiles:         splitRenameFiles(opts.Rename),
 	}
 }
 
@@ -121,6 +124,26 @@ func splitAssetFilters(value string) []string {
 		return nil
 	}
 	return strings.Split(value, ",")
+}
+
+func splitRenameFiles(value string) map[string]string {
+	if value == "" {
+		return nil
+	}
+	items := map[string]string{}
+	for _, part := range strings.Split(value, ",") {
+		from, to, ok := strings.Cut(part, "=")
+		from = strings.TrimSpace(from)
+		to = strings.TrimSpace(to)
+		if !ok || from == "" || to == "" {
+			continue
+		}
+		items[from] = to
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	return items
 }
 
 func hasMultipleFilePatterns(value string) bool {

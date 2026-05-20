@@ -223,6 +223,9 @@ func sectionFromInstallOptions(repo, name string, opts install.Options) cfgpkg.S
 	if opts.ExtractFile != "" {
 		section.File = util.StringPtr(opts.ExtractFile)
 	}
+	if len(opts.RenameFiles) > 0 {
+		section.RenameFiles = cloneStringMap(opts.RenameFiles)
+	}
 	if opts.Tag != "" {
 		section.Tag = util.StringPtr(opts.Tag)
 	}

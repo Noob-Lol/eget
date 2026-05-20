@@ -76,7 +76,7 @@ func TestMain_InstallStandardOrderRoutesAndBindsOptions(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"install", "--tag", "nightly", "inhere/markview"})
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"install", "--tag", "nightly", "--rename", "tool-linux-amd64=tool", "inhere/markview"})
 	if err != nil {
 		t.Fatalf("expected install command to parse, got %v", err)
 	}
@@ -93,6 +93,9 @@ func TestMain_InstallStandardOrderRoutesAndBindsOptions(t *testing.T) {
 	}
 	if opts.Tag != "nightly" {
 		t.Fatalf("expected tag nightly, got %q", opts.Tag)
+	}
+	if opts.Rename != "tool-linux-amd64=tool" {
+		t.Fatalf("expected rename option to bind, got %q", opts.Rename)
 	}
 	if len(opts.Targets) != 1 || opts.Targets[0] != "inhere/markview" {
 		t.Fatalf("expected target inhere/markview, got %#v", opts.Targets)

@@ -503,6 +503,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		IsGUI:            boolOpt(cli.IsGUI),
 		Name:             stringOpt(cli.Name),
 		Quiet:            boolOpt(cli.Quiet),
+		RenameFiles:      mapOpt(cli.RenameFiles),
 		ShowHash:         boolOpt(cli.Hash),
 		Source:           boolOpt(cli.Source),
 		SourcePath:       stringOpt(cli.SourcePath),
@@ -598,6 +599,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		BatchConcurrencySet: true,
 		UpgradeOnly:         merged.UpgradeOnly,
 		Asset:               append([]string(nil), merged.AssetFilters...),
+		RenameFiles:         cloneStringMap(merged.RenameFiles),
 		Hash:                merged.ShowHash,
 		Verify:              merged.Verify,
 		DisableSSL:          merged.DisableSSL,
@@ -652,6 +654,25 @@ func sendFirstError(errCh chan<- error, err error, cancel func()) {
 	}
 }
 
+func mapOpt(value map[string]string) *map[string]string {
+	if len(value) == 0 {
+		return nil
+	}
+	cloned := cloneStringMap(value)
+	return &cloned
+}
+
+func cloneStringMap(value map[string]string) map[string]string {
+	if len(value) == 0 {
+		return nil
+	}
+	cloned := make(map[string]string, len(value))
+	for key, item := range value {
+		cloned[key] = item
+	}
+	return cloned
+}
+
 func expandPath(value string) (string, error) {
 	if value == "" {
 		return "", nil
@@ -693,6 +714,9 @@ func extractOptionsMap(opts install.Options, isGUI bool) map[string]interface{} 
 	}
 	if len(opts.Asset) > 0 {
 		recorded["asset"] = append([]string(nil), opts.Asset...)
+	}
+	if len(opts.RenameFiles) > 0 {
+		recorded["rename_files"] = cloneStringMap(opts.RenameFiles)
 	}
 	if opts.Hash {
 		recorded["hash"] = true

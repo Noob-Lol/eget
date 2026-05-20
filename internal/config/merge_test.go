@@ -253,6 +253,32 @@ func TestMergeInstallOptionsMergesSys7zPath(t *testing.T) {
 	assert.Eq(t, pkgPath, merged.Sys7zPath)
 }
 
+func TestMergeInstallOptionsMergesRenameFiles(t *testing.T) {
+	merged := MergeInstallOptions(
+		Section{RenameFiles: map[string]string{"global.exe": "global-renamed.exe"}},
+		Section{RenameFiles: map[string]string{"repo.exe": "repo-renamed.exe"}},
+		Section{RenameFiles: map[string]string{"pkg.exe": "pkg-renamed.exe"}},
+		CLIOverrides{},
+	)
+	assert.Eq(t, map[string]string{"pkg.exe": "pkg-renamed.exe"}, merged.RenameFiles)
+
+	merged = MergeInstallOptions(
+		Section{RenameFiles: map[string]string{"global.exe": "global-renamed.exe"}},
+		Section{RenameFiles: map[string]string{"repo.exe": "repo-renamed.exe"}},
+		Section{},
+		CLIOverrides{},
+	)
+	assert.Eq(t, map[string]string{"repo.exe": "repo-renamed.exe"}, merged.RenameFiles)
+
+	merged = MergeInstallOptions(
+		Section{RenameFiles: map[string]string{"global.exe": "global-renamed.exe"}},
+		Section{RenameFiles: map[string]string{"repo.exe": "repo-renamed.exe"}},
+		Section{RenameFiles: map[string]string{"pkg.exe": "pkg-renamed.exe"}},
+		CLIOverrides{RenameFiles: &map[string]string{"cli.exe": "cli-renamed.exe"}},
+	)
+	assert.Eq(t, map[string]string{"cli.exe": "cli-renamed.exe"}, merged.RenameFiles)
+}
+
 func boolPtr(v bool) *bool {
 	return &v
 }

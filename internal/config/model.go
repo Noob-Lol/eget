@@ -14,6 +14,7 @@ type Section struct {
 	IsGUI                *bool             `toml:"is_gui" mapstructure:"is_gui"`
 	Name                 *string           `toml:"name" mapstructure:"name"`
 	Quiet                *bool             `toml:"quiet" mapstructure:"quiet"`
+	RenameFiles          map[string]string `toml:"rename_files" mapstructure:"rename_files"`
 	Repo                 *string           `toml:"repo" mapstructure:"repo"`
 	ShowHash             *bool             `toml:"show_hash" mapstructure:"show_hash"`
 	Source               *bool             `toml:"download_source" mapstructure:"download_source"`
@@ -82,6 +83,7 @@ type Merged struct {
 	IsGUI            bool
 	Name             string
 	Quiet            bool
+	RenameFiles      map[string]string
 	ShowHash         bool
 	Source           bool
 	SourcePath       string
@@ -106,6 +108,7 @@ type CLIOverrides struct {
 	IsGUI            *bool
 	Name             *string
 	Quiet            *bool
+	RenameFiles      *map[string]string
 	ShowHash         *bool
 	Source           *bool
 	SourcePath       *string

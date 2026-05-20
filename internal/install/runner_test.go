@@ -1135,6 +1135,30 @@ func TestOutputPathKeepsArchiveDirectoriesForExtractAll(t *testing.T) {
 	}
 }
 
+func TestOutputPathAppliesRenameFileForExtractAll(t *testing.T) {
+	file := ExtractedFile{Name: "codex-x86_64-pc-windows-msvc.exe", mode: 0o666}
+	got, err := outputPath(file, "bin", true, "", map[string]string{
+		"codex-x86_64-pc-windows-msvc.exe": "codex.exe",
+	})
+	if err != nil {
+		t.Fatalf("outputPath(): %v", err)
+	}
+	want := filepath.Join("bin", "codex.exe")
+	if got != want {
+		t.Fatalf("expected renamed extract-all output path %q, got %q", want, got)
+	}
+}
+
+func TestOutputPathRejectsUnsafeRenameFileTarget(t *testing.T) {
+	file := ExtractedFile{Name: "codex.exe", mode: 0o666}
+	_, err := outputPath(file, "bin", true, "", map[string]string{
+		"codex.exe": "../codex.exe",
+	})
+	if err == nil || !strings.Contains(err.Error(), "unsafe archive path") {
+		t.Fatalf("expected unsafe archive path error, got %v", err)
+	}
+}
+
 func TestOutputPathRejectsArchivePathTraversalForExtractAll(t *testing.T) {
 	file := ExtractedFile{Name: "../evil.exe", mode: 0o644}
 	if _, err := outputPath(file, "dist", true, ""); err == nil {

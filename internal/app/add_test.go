@@ -38,6 +38,7 @@ func TestAddPackage(t *testing.T) {
 		DisableSSL:  true,
 		All:         true,
 		IsGUI:       true,
+		RenameFiles: map[string]string{"fzf-linux-amd64": "fzf"},
 	}
 
 	if err := svc.AddPackage("junegunn/fzf", "", opts); err != nil {
@@ -77,6 +78,7 @@ func TestAddPackage(t *testing.T) {
 	if pkg.IsGUI == nil || !*pkg.IsGUI {
 		t.Fatalf("expected is_gui to be persisted, got %#v", pkg.IsGUI)
 	}
+	assert.Eq(t, map[string]string{"fzf-linux-amd64": "fzf"}, pkg.RenameFiles)
 	assert.Eq(t, "Command-line fuzzy finder", *pkg.Desc)
 }
 

@@ -721,6 +721,7 @@ repo = "solidiquis/erdtree"
 name = "erd"
 file = "erd"
 asset_filters = ["musl"]
+rename_files = { "erdtree" = "erd" }
 `)
 	runner := &fakeRunner{
 		result: RunResult{
@@ -752,6 +753,7 @@ asset_filters = ["musl"]
 	if len(runner.opts.Asset) != 1 || runner.opts.Asset[0] != "musl" {
 		t.Fatalf("expected package asset filter to be merged, got %#v", runner.opts.Asset)
 	}
+	assert.Eq(t, map[string]string{"erdtree": "erd"}, runner.opts.RenameFiles)
 }
 
 func TestInstallTargetAllowsCLINameToOverrideManagedPackageName(t *testing.T) {

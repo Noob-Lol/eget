@@ -108,6 +108,7 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 		To:     "~/.local/bin",
 		File:   "tool",
 		Asset:  "linux",
+		Rename: "tool-linux-amd64=tool",
 		Source: true,
 		All:    true,
 		Quiet:  true,
@@ -120,12 +121,14 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	if installOpts.Name != "tool" {
 		t.Fatalf("expected install name to propagate, got %q", installOpts.Name)
 	}
+	assert.Eq(t, map[string]string{"tool-linux-amd64": "tool"}, installOpts.RenameFiles)
 
 	downloadOpts := installOptionsFromDownload(&DownloadOptions{
 		Tag:    "nightly",
 		System: "linux/amd64",
 		To:     "~/.cache/downloads",
 		Asset:  "linux",
+		Rename: "tool-linux-amd64=tool",
 		Source: true,
 		Quiet:  true,
 	})
@@ -143,6 +146,7 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 		To:     "~/.local/bin",
 		File:   "tool",
 		Asset:  "linux",
+		Rename: "tool-linux-amd64=tool",
 		Source: true,
 		All:    true,
 		Quiet:  true,
@@ -150,6 +154,7 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	if addOpts.CacheDir != "" {
 		t.Fatalf("expected add cache dir to stay empty, got %q", addOpts.CacheDir)
 	}
+	assert.Eq(t, map[string]string{"tool-linux-amd64": "tool"}, addOpts.RenameFiles)
 
 	updateOpts := installOptionsFromUpdate(&UpdateOptions{
 		Tag:    "nightly",

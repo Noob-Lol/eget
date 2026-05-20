@@ -154,6 +154,7 @@ func TestUpdatePackageUpdatesInstalledOnlySourceForgeTarget(t *testing.T) {
 						"source_path":  "KeePass 2.x",
 						"asset":        []string{"zip", "^REG:Source"},
 						"extract_file": "KeePass.exe",
+						"rename_files": map[string]string{"KeePass.exe": "keepass.exe"},
 					},
 				},
 			}}, nil
@@ -171,6 +172,7 @@ func TestUpdatePackageUpdatesInstalledOnlySourceForgeTarget(t *testing.T) {
 	assert.Eq(t, "KeePass 2.x", installer.options[0].SourcePath)
 	assert.Eq(t, []string{"zip", "^REG:Source"}, installer.options[0].Asset)
 	assert.Eq(t, "KeePass.exe", installer.options[0].ExtractFile)
+	assert.Eq(t, map[string]string{"KeePass.exe": "keepass.exe"}, installer.options[0].RenameFiles)
 }
 
 func TestUpdatePackageRejectsUnknownPlainWords(t *testing.T) {

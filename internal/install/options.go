@@ -46,6 +46,7 @@ type Options struct {
 	BatchConcurrencySet bool
 	UpgradeOnly         bool
 	Asset               []string
+	RenameFiles         map[string]string
 	Hash                bool
 	Verify              string
 	DisableSSL          bool
