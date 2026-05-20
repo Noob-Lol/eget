@@ -32,14 +32,20 @@ eget uninstall claude
 
 不新增：
 
-- `post_install`、`pre_install`、shell hook、PowerShell 脚本执行或任意命令执行。
+- `post_install`、`pre_install`、shell hook、PowerShell 脚本执行或任意 shell 命令执行。
 - PATH、shell profile、系统环境变量修改。
 - 多版本 SDK 语义。SDK 仍属于 `eget sdk`；URL template package 是普通单当前版本 package。
 - 任意网页自动抓取和解析。
 - 新的 lock file。
 - 新的独立命令族。
 
-像 Claude Code 这种脚本最后会执行 `claude.exe install latest`。这个行为涉及执行下载产物，安全边界不同于“下载、校验、放置文件”。因此首版只解决可更新下载源，不把 installer action 混进来。后续如需支持，应单独设计显式 opt-in 的 install action。
+像 Claude Code 这种脚本最后会执行下载后的临时二进制：
+
+```bash
+claude install latest
+```
+
+因此如果目标是完整安装 Claude Code，首版需要支持一个受控的 `run-asset` installer action。它不是通用 `post_install`：只能执行刚下载并校验通过的 asset 本身，参数使用数组传递，不经过 shell，不允许任意命令字符串。
 
 ## 推荐方案
 
@@ -102,6 +108,10 @@ libc_map = { glibc = "", musl = "-musl" }
 checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
 checksum_format = "json"
 checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
+
+install_action = "run-asset"
+install_args = ["install", "latest"]
+install_cleanup = true
 ```
 
 普通归档包示例：
@@ -165,6 +175,10 @@ checksum_url_template = ""
 checksum_format = ""
 checksum_json_path = ""
 checksum_regex = ""
+
+install_action = ""
+install_args = []
+install_cleanup = true
 ```
 
 字段语义：
@@ -182,6 +196,9 @@ checksum_regex = ""
 - `checksum_format`: checksum 响应格式，支持 `json`、`text`、`sha256sum`。设置 `checksum_url_template` 时必填。
 - `checksum_json_path`: `checksum_format = "json"` 时使用的点路径。
 - `checksum_regex`: 可选。用于从 text 或 sha256sum 内容中提取 checksum。
+- `install_action`: 可选。为空时走默认下载/提取/放置流程；`run-asset` 表示校验后执行下载到本地的 asset。
+- `install_args`: `run-asset` 的参数数组，不经过 shell。支持同一套模板变量。
+- `install_cleanup`: `run-asset` 执行完成后是否删除临时 asset，默认 `true`。
 
 首版建议完整支持：
 
@@ -313,6 +330,63 @@ checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 
 如果用户同时配置了 `verify_sha256`，显式 checksum 优先，跳过 `checksum_url_template` 请求。
 
+## Installer Action
+
+为了完整支持 Claude Code 这类“下载 installer binary，再让它自安装”的独立站包，需要新增受控 installer action：
+
+```toml
+install_action = "run-asset"
+install_args = ["install", "latest"]
+install_cleanup = true
+```
+
+`run-asset` 的语义：
+
+1. 先完成 latest 解析、URL 渲染、下载和 checksum 校验。
+2. 将下载到的 asset 写入临时文件或复用安全缓存文件。
+3. 如果目标平台需要可执行权限，在运行前设置 executable bit。
+4. 使用 `exec.Command(assetPath, installArgs...)` 运行，不经过 shell。
+5. 命令 stdout/stderr 直连当前进程 stdout/stderr，方便用户看到 installer 输出。
+6. 命令退出码非 0 时，整个 install 失败。
+7. `install_cleanup = true` 时删除临时 asset；复用缓存文件时不删除全局下载缓存。
+8. installed store 记录 source、version、asset URL 和 `install_mode = "run-asset"`。
+
+安全约束：
+
+- 只能执行当前下载并校验通过的 asset 本身。
+- `install_args` 必须是数组，不能是 shell 字符串。
+- 不支持 `cmd /c`、`sh -c`、管道、重定向、环境变量展开等 shell 行为。
+- `run-asset` 默认要求存在 checksum：`verify_sha256`、`checksum_url_template` 或后续显式允许的等价校验来源。没有 checksum 时应报错，而不是执行未校验下载产物。
+- `update --all` 可以执行 `run-asset`，但输出应清晰显示正在运行 installer action，避免用户误以为只是解压文件。
+
+Claude Code 的完整配置因此是：
+
+```toml
+[packages.claude]
+repo = "template:claude"
+latest_url = "https://downloads.claude.ai/claude-code-releases/latest"
+latest_format = "text"
+url_template = "https://downloads.claude.ai/claude-code-releases/{version}/{os}-{arch}{libc}/claude{ext}"
+os_map = { windows = "win32", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "x64", arm64 = "arm64" }
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+libc_map = { glibc = "", musl = "-musl" }
+checksum_url_template = "https://downloads.claude.ai/claude-code-releases/{version}/manifest.json"
+checksum_format = "json"
+checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
+install_action = "run-asset"
+install_args = ["install", "latest"]
+install_cleanup = true
+```
+
+这会复刻官方脚本的核心流程：
+
+```text
+latest -> manifest checksum -> download binary -> verify -> run `claude install latest` -> cleanup
+```
+
+它不会由 eget 自己修改 shell profile；这些副作用由 Claude installer binary 自己承担。
+
 ## 安装数据流
 
 现有主链路保持不变：
@@ -331,7 +405,8 @@ template:<id>
   -> 现有 detector 选择唯一 candidate
   -> 现有 download/cache/proxy/chunk 路径
   -> 可选 checksum manifest 校验
-  -> 现有 extractor/file/rename 路径
+  -> install_action 为空时走现有 extractor/file/rename 路径
+  -> install_action = run-asset 时执行校验后的 asset
   -> installed store 记录 selected version
 ```
 
@@ -373,6 +448,9 @@ type URLTemplateOptions struct {
     ChecksumFormat      string
     ChecksumJSONPath    string
     ChecksumRegex       string
+    InstallAction       string
+    InstallArgs         []string
+    InstallCleanup      bool
 }
 
 type Options struct {
@@ -443,6 +521,12 @@ eget install --template ...
 
 `eget add` 对 `template:<id>` 不做自动推导。用户应手动写 `[packages.<name>]`，或后续通过专门 helper 生成配置。
 
+对于 `install_action = "run-asset"` 的 package，CLI 输出应明确区分普通提取和 installer action：
+
+```text
+Running installer asset: claude install latest
+```
+
 ## 错误处理
 
 需要给出明确错误：
@@ -453,6 +537,9 @@ eget install --template ...
 - `system` 格式非法。
 - Linux libc 检测失败时不报错，除非模板使用了 `{libc}` 且 `libc_map` 没有可用默认值。
 - template 引用了未知变量。
+- `install_action` 不为空且不是 `run-asset`。
+- `run-asset` 缺少 checksum 来源。
+- `run-asset` 的 asset 运行失败或退出码非 0。
 - latest 响应解析后版本为空。
 - `version_regex` 不匹配 latest 响应。
 - JSON path 不存在或不是字符串。
@@ -463,13 +550,19 @@ eget install --template ...
 
 ## 安全边界
 
-URL template package 只做：
+URL template package 默认只做：
 
 ```text
 fetch metadata -> download asset -> verify -> extract/place file
 ```
 
-不执行下载产物。
+如果显式配置：
+
+```toml
+install_action = "run-asset"
+```
+
+则允许执行“当前下载并校验通过的 asset 本身”。这仍不等价于通用 `post_install`，因为它不允许任意命令字符串、不经过 shell，也不允许执行非当前下载产物。
 
 未来如要支持 `post_install`，必须另起设计，并至少包含：
 
@@ -498,7 +591,8 @@ fetch metadata -> download asset -> verify -> extract/place file
 - `os_map` / `arch_map` 与 SDK 配置语义一致。
 - Claude Code 示例直接在 `url_template` 和 `checksum_json_path` 中使用 `{os}-{arch}{libc}`。
 - Linux musl 使用 `{libc}` 表达，不新增 `platform_template`。
-- 首版不执行 post-install 脚本。
+- Claude Code 使用 `install_action = "run-asset"` 完整复刻官方 installer binary 流程。
+- 首版不执行通用 post-install 脚本。
 
 ## 测试策略
 
@@ -514,6 +608,9 @@ fetch metadata -> download asset -> verify -> extract/place file
 - 解析 sha256sum 文本。
 - latest version 为空时报错。
 - checksum path 缺失时报错。
+- `run-asset` 缺少 checksum 来源时报错。
+- `run-asset` 使用参数数组运行下载 asset，不经过 shell。
+- `run-asset` 命令失败时 install 失败。
 
 App 层测试：
 
@@ -523,12 +620,15 @@ App 层测试：
 - `update <name>` 在 latest 不同时重新安装。
 - `update --all` 包含 URL template managed packages。
 - 直接 URL package 不获得 URL template update 行为。
+- `run-asset` 安装成功后记录 `install_mode = "run-asset"` 和 selected version。
 
 Install 层测试：
 
 - 渲染后的 URL 进入现有 download/extract 路径。
 - 显式 `verify_sha256` 优先于 checksum manifest。
 - checksum manifest 失败时不会执行提取。
+- `run-asset` 在 checksum 成功后执行临时 asset。
+- `run-asset` 在 checksum 失败时不会执行 asset。
 
 因为该改动触达 MVP install/update 主链路，完成实现后必须运行：
 
