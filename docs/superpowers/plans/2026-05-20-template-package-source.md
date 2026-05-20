@@ -923,7 +923,7 @@ git commit -m "feat(update): check template package latest"
 - Modify: `internal/source/urltemplate/finder.go`
 - Optional: `internal/client/network.go`
 
-- [ ] **Step 1: 固定缓存决策**
+- [x] **Step 1: 固定缓存决策**
 
 不要把任意 `latest_url` / `checksum_url_template` 自动加入 API cache 分类。原因：这些 URL 是任意站点 metadata，不是已知 provider API。
 
@@ -934,7 +934,7 @@ template metadata 请求必须复用现有 HTTP client，所以仍获得：
 - ghproxy 不生效，除非 URL 是 GitHub 下载/API 形态
 - 现有 proxy notice 行为
 
-- [ ] **Step 2: 添加代码注释**
+- [x] **Step 2: 添加代码注释**
 
 在 `internal/source/urltemplate/finder.go` latest/checksum 请求处添加：
 
@@ -944,7 +944,7 @@ template metadata 请求必须复用现有 HTTP client，所以仍获得：
 // classification because arbitrary metadata URLs are not provider APIs.
 ```
 
-- [ ] **Step 3: 运行 tests**
+- [x] **Step 3: 运行 tests**
 
 Run:
 
@@ -954,7 +954,7 @@ go test ./internal/client ./internal/source/urltemplate
 
 Expected: PASS.
 
-- [ ] **Step 4: 提交或跳过**
+- [x] **Step 4: 提交或跳过**
 
 如果只有注释或无需代码变化，可合并到前一提交；如果单独提交：
 
