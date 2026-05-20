@@ -1067,7 +1067,7 @@ git commit -m "docs add template package source"
 **Files:**
 - No planned source files unless verification finds issues.
 
-- [ ] **Step 1: focused tests**
+- [x] **Step 1: focused tests**
 
 Run:
 
@@ -1077,7 +1077,7 @@ go test ./internal/source/urltemplate ./internal/config ./internal/install ./int
 
 Expected: PASS.
 
-- [ ] **Step 2: full tests**
+- [x] **Step 2: full tests**
 
 Run:
 
@@ -1087,7 +1087,7 @@ go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 3: 检查工作区**
+- [x] **Step 3: 检查工作区**
 
 Run:
 
@@ -1098,7 +1098,7 @@ git diff --stat
 
 Expected: 只剩有意变更。不要包含无关的 `docs/TODO.md`。
 
-- [ ] **Step 4: 验证 run-asset 覆盖**
+- [x] **Step 4: 验证 run-asset 覆盖**
 
 Run:
 
@@ -1108,7 +1108,7 @@ go test ./internal/install -run RunAsset
 
 Expected: PASS，且测试覆盖 checksum 成功后才调用 fake asset runner。
 
-- [ ] **Step 5: 如有验证修复则提交**
+- [x] **Step 5: 如有验证修复则提交**
 
 如果 full test 后没有新变更，不创建空提交。如果有修复：
 
