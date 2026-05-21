@@ -38,6 +38,7 @@ type Options struct {
 	System              string
 	ExtractFile         string
 	All                 bool
+	StripComponents     int
 	Quiet               bool
 	DownloadOnly        bool
 	FallbackVersions    int

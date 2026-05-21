@@ -124,6 +124,8 @@ repo = "inhere/markview"
 target = "~/.local/bin"
 tag = "nightly"
 asset_filters = ["windows"]
+extract_all = true
+strip_components = 1
 ```
 
 Common fields:
@@ -137,6 +139,7 @@ Common fields:
 - `asset_filters`: substrings used to match release assets.
 - `download_source`: download source archives instead of release assets.
 - `extract_all`: extract all files from the selected archive.
+- `strip_components`: number of leading archive path segments to remove when extracting all files.
 - `is_gui`: install as GUI package, using `gui_target` semantics.
 - `quiet`: reduce output for this package.
 - `upgrade_only`: only update when an installed package already exists.

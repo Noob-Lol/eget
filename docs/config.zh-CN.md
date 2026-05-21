@@ -124,6 +124,8 @@ repo = "inhere/markview"
 target = "~/.local/bin"
 tag = "nightly"
 asset_filters = ["windows"]
+extract_all = true
+strip_components = 1
 ```
 
 常用字段：
@@ -137,6 +139,7 @@ asset_filters = ["windows"]
 - `asset_filters`: 用于匹配 release asset 的子串列表。
 - `download_source`: 下载源码归档，而不是 release asset。
 - `extract_all`: 解压选中归档中的全部文件。
+- `strip_components`: 解压全部文件时剥离归档内路径前缀层数。
 - `is_gui`: 按 GUI package 处理，使用 `gui_target` 相关语义。
 - `quiet`: 减少当前 package 的输出。
 - `upgrade_only`: 仅当 package 已安装时才更新。

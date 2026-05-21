@@ -59,6 +59,8 @@ eget install --asset "REG:\\.deb$" owner/repo
 eget install --asset "PRE:codex,SUF:.zip" openai/codex
 # 解压全部文件，并重命名其中一个解压文件
 eget install --extract-all --rename "codex-x86_64-pc-windows-msvc.exe=codex.exe" openai/codex
+# 解压全部文件，并剥离归档顶层目录
+eget download --extract-all --strip-components 1 --asset "windows,zip" ventoy/Ventoy
 # 安装到指定目录
 eget install --to ~/.local/bin/fzf junegunn/fzf
 ```
@@ -273,6 +275,7 @@ eget config set global.target ~/.local/bin
 - `--rename`: 使用逗号分隔的 `from=to` 映射重命名解压文件，例如 `--rename "tool-windows-amd64.exe=tool.exe"`。可配合 `--file` 和 `--extract-all` 使用，并会被 `install --add` 持久化。
 - `--source`: 下载源码归档而不是预构建二进制。
 - `--extract-all`, `--ea`: 提取归档中的全部文件，而不是只选择一个目标文件。
+- `--strip-components N`: 解压全部文件时剥离归档内路径前 `N` 层，适用于归档内容被版本号顶层目录包裹的场景。
 - `--chunk N`: 控制单个下载文件的 HTTP Range 分片并发。`0` 表示自动，`1` 表示单连接下载，大于 `1` 表示最多使用该数量的分片。
 - `--quiet`: 精简常规输出，适用于脚本或批处理场景。
 

@@ -292,6 +292,58 @@ func TestSystem7zExtractorExtractAllToSkipsListAndRunsSevenZipOnce(t *testing.T)
 	assert.Eq(t, "bmp", string(data))
 }
 
+func TestSystem7zExtractorExtractAllToWithOptionsStripsComponents(t *testing.T) {
+	tmp := t.TempDir()
+	origRunner := runSystem7zCommand
+	defer func() { runSystem7zCommand = origRunner }()
+
+	runSystem7zCommand = func(exe string, args ...string) ([]byte, error) {
+		outDir := ""
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "-o") {
+				outDir = strings.TrimPrefix(arg, "-o")
+			}
+		}
+		if outDir == "" {
+			t.Fatal("expected output dir")
+		}
+		files := map[string]string{
+			"ventoy-1.1.12/Ventoy2Disk.exe": "exe",
+			"ventoy-1.1.12/boot/boot.img":   "boot",
+		}
+		for name, content := range files {
+			extracted := filepath.Join(outDir, filepath.FromSlash(name))
+			if err := os.MkdirAll(filepath.Dir(extracted), 0o755); err != nil {
+				return nil, err
+			}
+			if err := os.WriteFile(extracted, []byte(content), 0o644); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	}
+
+	chooser, err := NewFileChooser("*")
+	if err != nil {
+		t.Fatalf("new chooser: %v", err)
+	}
+	extractor := NewSystem7zExtractor("ventoy.zip", "ventoy", chooser, "7z")
+	files, err := extractor.ExtractAllToWithOptions([]byte("archive"), tmp, ArchiveExtractOptions{StripComponents: 1})
+	if err != nil {
+		t.Fatalf("extract all with strip: %v", err)
+	}
+
+	assert.Eq(t, 2, len(files))
+	data, err := os.ReadFile(filepath.Join(tmp, "Ventoy2Disk.exe"))
+	if err != nil {
+		t.Fatalf("read stripped file: %v", err)
+	}
+	assert.Eq(t, "exe", string(data))
+	if _, err := os.Stat(filepath.Join(tmp, "ventoy-1.1.12")); !os.IsNotExist(err) {
+		t.Fatalf("expected stripped root directory to be absent, stat err=%v", err)
+	}
+}
+
 func TestCopyExtractedPathPreservesDirectoryTimestampAfterChildren(t *testing.T) {
 	root := t.TempDir()
 	src := filepath.Join(root, "src")

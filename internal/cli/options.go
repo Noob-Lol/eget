@@ -19,6 +19,7 @@ func installOptionsFromInstall(opts *InstallOptions) install.Options {
 		System:              opts.System,
 		ExtractFile:         opts.File,
 		All:                 opts.All,
+		StripComponents:     opts.StripComponents,
 		IsGUI:               opts.GUI,
 		Quiet:               opts.Quiet,
 		FallbackVersions:    opts.FallbackVersions,
@@ -79,6 +80,7 @@ func installOptionsFromDownload(opts *DownloadOptions) install.Options {
 	base.FallbackVersions = opts.FallbackVersions
 	base.ChunkConcurrency = opts.ChunkConcurrency
 	base.ChunkConcurrencySet = opts.ChunkConcurrency >= 0
+	base.StripComponents = opts.StripComponents
 	if hasMultipleFilePatterns(opts.File) {
 		base.All = true
 	}
@@ -95,6 +97,7 @@ func installOptionsFromAdd(opts *AddOptions) install.Options {
 		System:              opts.System,
 		ExtractFile:         opts.File,
 		All:                 opts.All,
+		StripComponents:     opts.StripComponents,
 		IsGUI:               opts.GUI,
 		Quiet:               opts.Quiet,
 		ChunkConcurrency:    opts.ChunkConcurrency,

@@ -1,6 +1,7 @@
 package install
 
 import (
+	"archive/zip"
 	"bytes"
 	"errors"
 	"fmt"
@@ -789,6 +790,7 @@ func (f fakeInstallExtractor) Extract([]byte, bool) (ExtractedFile, []ExtractedF
 type fakeDirectAllExtractor struct {
 	extractCalled bool
 	files         []string
+	strip         int
 }
 
 func (f *fakeDirectAllExtractor) Extract([]byte, bool) (ExtractedFile, []ExtractedFile, error) {
@@ -798,6 +800,11 @@ func (f *fakeDirectAllExtractor) Extract([]byte, bool) (ExtractedFile, []Extract
 
 func (f *fakeDirectAllExtractor) ExtractAllTo([]byte, string) ([]string, error) {
 	return f.files, nil
+}
+
+func (f *fakeDirectAllExtractor) ExtractAllToWithOptions(data []byte, output string, opts ArchiveExtractOptions) ([]string, error) {
+	f.strip = opts.StripComponents
+	return f.ExtractAllTo(data, output)
 }
 
 func TestRunExtractAllUsesDirectExtractorWithoutListing(t *testing.T) {
@@ -846,6 +853,115 @@ func TestRunExtractAllUsesDirectExtractorWithoutListing(t *testing.T) {
 	if len(result.ExtractedFiles) != 1 {
 		t.Fatalf("expected extracted files, got %#v", result.ExtractedFiles)
 	}
+}
+
+func TestRunExtractAllPassesStripComponentsToDirectExtractor(t *testing.T) {
+	assetURL := "https://example.com/ventoy.zip"
+	outputDir := t.TempDir()
+	direct := &fakeDirectAllExtractor{
+		files: []string{filepath.Join(outputDir, "Ventoy2Disk.exe")},
+	}
+
+	svc := NewService()
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return direct
+	}
+	svc.System7zPathResolver = func(configured string) string {
+		return ""
+	}
+	svc.GlobChooserFactory = func(pattern string) (any, error) {
+		return NewFileChooser(pattern)
+	}
+	svc.NoVerifierFactory = func() Verifier {
+		return &fakeVerifier{}
+	}
+
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("zip")),
+		}, nil
+	}
+
+	runner := NewRunner(svc)
+	runner.Stderr = io.Discard
+	_, err := runner.Run(assetURL, Options{All: true, Output: outputDir, StripComponents: 1})
+	if err != nil {
+		t.Fatalf("run extract-all: %v", err)
+	}
+
+	assert.Eq(t, 1, direct.strip)
+}
+
+func TestRunExtractAllStripsComponentsFromZipArchive(t *testing.T) {
+	assetURL := "https://example.com/ventoy.zip"
+	archive := zipBytes(t, map[string]string{
+		"ventoy-1.1.12/Ventoy2Disk.exe": "exe",
+		"ventoy-1.1.12/boot/boot.img":   "boot",
+	})
+	outputDir := t.TempDir()
+
+	svc := NewDefaultService(nil, nil)
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(archive)),
+		}, nil
+	}
+
+	runner := NewRunner(svc)
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+	result, err := runner.Run(assetURL, Options{All: true, Output: outputDir, StripComponents: 1})
+	if err != nil {
+		t.Fatalf("run extract-all: %v", err)
+	}
+
+	assert.Eq(t, 2, len(result.ExtractedFiles))
+	data, err := os.ReadFile(filepath.Join(outputDir, "Ventoy2Disk.exe"))
+	if err != nil {
+		t.Fatalf("read stripped exe: %v", err)
+	}
+	assert.Eq(t, "exe", string(data))
+	data, err = os.ReadFile(filepath.Join(outputDir, "boot", "boot.img"))
+	if err != nil {
+		t.Fatalf("read stripped boot file: %v", err)
+	}
+	assert.Eq(t, "boot", string(data))
+	if _, err := os.Stat(filepath.Join(outputDir, "ventoy-1.1.12")); !os.IsNotExist(err) {
+		t.Fatalf("expected stripped root directory to be absent, stat err=%v", err)
+	}
+}
+
+func zipBytes(t *testing.T, files map[string]string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	for name, content := range files {
+		header := &zip.FileHeader{Name: name, Method: zip.Store}
+		header.SetMode(0o644)
+		w, err := zw.CreateHeader(header)
+		if err != nil {
+			t.Fatalf("create zip file: %v", err)
+		}
+		if _, err := w.Write([]byte(content)); err != nil {
+			t.Fatalf("write zip file: %v", err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+	return buf.Bytes()
 }
 
 func TestRunQuietSuppressesInstallNotice(t *testing.T) {

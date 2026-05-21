@@ -254,6 +254,9 @@ func sectionToMap(section Section) map[string]any {
 	if section.ShowHash != nil {
 		data["show_hash"] = *section.ShowHash
 	}
+	if section.StripComponents != nil {
+		data["strip_components"] = *section.StripComponents
+	}
 	if section.Source != nil {
 		data["download_source"] = *section.Source
 	}

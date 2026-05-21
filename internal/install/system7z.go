@@ -179,6 +179,10 @@ func (e *System7zExtractor) extractAllToTempDir(data []byte) (string, error) {
 }
 
 func (e *System7zExtractor) ExtractAllTo(data []byte, output string) ([]string, error) {
+	return e.ExtractAllToWithOptions(data, output, ArchiveExtractOptions{})
+}
+
+func (e *System7zExtractor) ExtractAllToWithOptions(data []byte, output string, opts ArchiveExtractOptions) ([]string, error) {
 	tempDir, err := e.extractAllToTempDir(data)
 	if err != nil {
 		return nil, err
@@ -204,7 +208,14 @@ func (e *System7zExtractor) ExtractAllTo(data []byte, output string) ([]string, 
 		if err != nil {
 			return err
 		}
-		target, err := safeArchiveOutputPath(output, filepath.ToSlash(safeRel))
+		strippedRel, ok, err := stripArchivePath(filepath.ToSlash(safeRel), opts.StripComponents)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return nil
+		}
+		target, err := safeArchiveOutputPath(output, strippedRel)
 		if err != nil {
 			return err
 		}
@@ -223,6 +234,9 @@ func (e *System7zExtractor) ExtractAllTo(data []byte, output string) ([]string, 
 	})
 	if err != nil {
 		return nil, err
+	}
+	if opts.StripComponents > 0 && len(extracted) == 0 {
+		return nil, fmt.Errorf("extract: no files extracted")
 	}
 	return extracted, nil
 }

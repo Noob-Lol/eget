@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -171,6 +172,7 @@ func optionsFromInstalledEntry(entry storepkg.Entry) install.Options {
 	opts.ExtractFile, _ = stringOption(entry.Options, "extract_file", "file")
 	opts.Verify, _ = stringOption(entry.Options, "verify")
 	opts.All, _ = boolOption(entry.Options, "all", "extract_all")
+	opts.StripComponents, _ = intOption(entry.Options, "strip_components")
 	opts.IsGUI, _ = boolOption(entry.Options, "is_gui")
 	opts.Quiet, _ = boolOption(entry.Options, "quiet")
 	opts.DownloadOnly, _ = boolOption(entry.Options, "download_only")
@@ -222,6 +224,9 @@ func applyUpdateCLIOverrides(base, cli install.Options) install.Options {
 	if cli.All {
 		base.All = true
 	}
+	if cli.StripComponents > 0 {
+		base.StripComponents = cli.StripComponents
+	}
 	if cli.Quiet {
 		base.Quiet = true
 	}
@@ -267,6 +272,29 @@ func boolOption(values map[string]any, keys ...string) (bool, bool) {
 		}
 	}
 	return false, false
+}
+
+func intOption(values map[string]any, keys ...string) (int, bool) {
+	for _, key := range keys {
+		value, ok := values[key]
+		if !ok {
+			continue
+		}
+		switch typed := value.(type) {
+		case int:
+			return typed, true
+		case int64:
+			return int(typed), true
+		case float64:
+			return int(typed), true
+		case string:
+			parsed, err := strconv.Atoi(typed)
+			if err == nil {
+				return parsed, true
+			}
+		}
+	}
+	return 0, false
 }
 
 func stringSliceOption(values map[string]any, keys ...string) []string {

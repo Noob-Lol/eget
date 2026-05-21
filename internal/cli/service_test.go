@@ -103,17 +103,18 @@ func (f *fakeSDKService) ClearAllIndexes() error {
 
 func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	installOpts := installOptionsFromInstall(&InstallOptions{
-		Tag:    "nightly",
-		System: "linux/amd64",
-		To:     "~/.local/bin",
-		File:   "tool",
-		Asset:  "linux",
-		Rename: "tool-linux-amd64=tool",
-		Source: true,
-		All:    true,
-		Quiet:  true,
-		Add:    true,
-		Name:   "tool",
+		Tag:             "nightly",
+		System:          "linux/amd64",
+		To:              "~/.local/bin",
+		File:            "tool",
+		Asset:           "linux",
+		Rename:          "tool-linux-amd64=tool",
+		Source:          true,
+		All:             true,
+		Quiet:           true,
+		StripComponents: 1,
+		Add:             true,
+		Name:            "tool",
 	})
 	if installOpts.CacheDir != "" {
 		t.Fatalf("expected install cache dir to stay empty, got %q", installOpts.CacheDir)
@@ -122,15 +123,17 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 		t.Fatalf("expected install name to propagate, got %q", installOpts.Name)
 	}
 	assert.Eq(t, map[string]string{"tool-linux-amd64": "tool"}, installOpts.RenameFiles)
+	assert.Eq(t, 1, installOpts.StripComponents)
 
 	downloadOpts := installOptionsFromDownload(&DownloadOptions{
-		Tag:    "nightly",
-		System: "linux/amd64",
-		To:     "~/.cache/downloads",
-		Asset:  "linux",
-		Rename: "tool-linux-amd64=tool",
-		Source: true,
-		Quiet:  true,
+		Tag:             "nightly",
+		System:          "linux/amd64",
+		To:              "~/.cache/downloads",
+		Asset:           "linux",
+		Rename:          "tool-linux-amd64=tool",
+		Source:          true,
+		Quiet:           true,
+		StripComponents: 1,
 	})
 	if downloadOpts.CacheDir != "" {
 		t.Fatalf("expected download cache dir to stay empty, got %q", downloadOpts.CacheDir)
@@ -138,23 +141,26 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	if !downloadOpts.DownloadOnly {
 		t.Fatal("expected plain download options to default to raw download mode")
 	}
+	assert.Eq(t, 1, downloadOpts.StripComponents)
 
 	addOpts := installOptionsFromAdd(&AddOptions{
-		Name:   "tool",
-		Tag:    "nightly",
-		System: "linux/amd64",
-		To:     "~/.local/bin",
-		File:   "tool",
-		Asset:  "linux",
-		Rename: "tool-linux-amd64=tool",
-		Source: true,
-		All:    true,
-		Quiet:  true,
+		Name:            "tool",
+		Tag:             "nightly",
+		System:          "linux/amd64",
+		To:              "~/.local/bin",
+		File:            "tool",
+		Asset:           "linux",
+		Rename:          "tool-linux-amd64=tool",
+		Source:          true,
+		All:             true,
+		Quiet:           true,
+		StripComponents: 1,
 	})
 	if addOpts.CacheDir != "" {
 		t.Fatalf("expected add cache dir to stay empty, got %q", addOpts.CacheDir)
 	}
 	assert.Eq(t, map[string]string{"tool-linux-amd64": "tool"}, addOpts.RenameFiles)
+	assert.Eq(t, 1, addOpts.StripComponents)
 
 	updateOpts := installOptionsFromUpdate(&UpdateOptions{
 		Tag:    "nightly",

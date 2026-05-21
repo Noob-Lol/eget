@@ -26,19 +26,20 @@ func TestAddPackage(t *testing.T) {
 	}
 
 	opts := install.Options{
-		Output:      "~/.local/bin",
-		CacheDir:    "~/.cache/eget",
-		System:      "linux/amd64",
-		ExtractFile: "fzf",
-		Asset:       []string{"linux_amd64"},
-		Tag:         "nightly",
-		Verify:      "sha256:123",
-		Source:      true,
-		SourcePath:  "stable",
-		DisableSSL:  true,
-		All:         true,
-		IsGUI:       true,
-		RenameFiles: map[string]string{"fzf-linux-amd64": "fzf"},
+		Output:          "~/.local/bin",
+		CacheDir:        "~/.cache/eget",
+		System:          "linux/amd64",
+		ExtractFile:     "fzf",
+		Asset:           []string{"linux_amd64"},
+		Tag:             "nightly",
+		Verify:          "sha256:123",
+		Source:          true,
+		SourcePath:      "stable",
+		DisableSSL:      true,
+		All:             true,
+		StripComponents: 1,
+		IsGUI:           true,
+		RenameFiles:     map[string]string{"fzf-linux-amd64": "fzf"},
 	}
 
 	if err := svc.AddPackage("junegunn/fzf", "", opts); err != nil {
@@ -77,6 +78,9 @@ func TestAddPackage(t *testing.T) {
 	}
 	if pkg.IsGUI == nil || !*pkg.IsGUI {
 		t.Fatalf("expected is_gui to be persisted, got %#v", pkg.IsGUI)
+	}
+	if pkg.StripComponents == nil || *pkg.StripComponents != 1 {
+		t.Fatalf("expected strip_components to be persisted, got %#v", pkg.StripComponents)
 	}
 	assert.Eq(t, map[string]string{"fzf-linux-amd64": "fzf"}, pkg.RenameFiles)
 	assert.Eq(t, "Command-line fuzzy finder", *pkg.Desc)

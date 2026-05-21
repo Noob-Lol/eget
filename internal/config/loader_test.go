@@ -199,6 +199,7 @@ github_token = "token"
 asset_filters = ["linux", "!arm"]
 download_only = true
 extract_all = true
+strip_components = 1
 is_gui = true
 `)
 
@@ -229,6 +230,9 @@ is_gui = true
 	}
 	if repo.ExtractAll == nil || !*repo.ExtractAll {
 		t.Fatalf("expected repo extract_all=true, got %#v", repo.ExtractAll)
+	}
+	if repo.StripComponents == nil || *repo.StripComponents != 1 {
+		t.Fatalf("expected repo strip_components=1, got %#v", repo.StripComponents)
 	}
 	if repo.IsGUI == nil || !*repo.IsGUI {
 		t.Fatalf("expected repo is_gui=true, got %#v", repo.IsGUI)

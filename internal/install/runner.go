@@ -58,6 +58,10 @@ type downloadBodyResult struct {
 	ModTime time.Time
 }
 
+type directAllExtractorWithOptions interface {
+	ExtractAllToWithOptions([]byte, string, ArchiveExtractOptions) ([]string, error)
+}
+
 func NewRunner(service *Service) *InstallRunner {
 	return &InstallRunner{
 		Service:                service,
@@ -199,7 +203,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 				IsGUI:       opts.IsGUI,
 				InstallMode: opts.InstallMode,
 			}
-			paths, err := direct.ExtractAllTo(downloaded.Body, effectiveOutput(opts))
+			paths, err := extractAllTo(direct, downloaded.Body, effectiveOutput(opts), opts.StripComponents)
 			if err != nil {
 				return RunResult{}, err
 			}
@@ -304,6 +308,16 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	}
 
 	return result, nil
+}
+
+func extractAllTo(extractor DirectAllExtractor, body []byte, output string, stripComponents int) ([]string, error) {
+	if withOptions, ok := extractor.(directAllExtractorWithOptions); ok {
+		return withOptions.ExtractAllToWithOptions(body, output, ArchiveExtractOptions{StripComponents: stripComponents})
+	}
+	if stripComponents > 0 {
+		return nil, fmt.Errorf("strip-components is not supported for this extractor")
+	}
+	return extractor.ExtractAllTo(body, output)
 }
 
 func validateInstallAction(opts Options) error {

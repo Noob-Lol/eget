@@ -223,6 +223,37 @@ func TestMergeInstallOptionsChunkConcurrencyPrecedence(t *testing.T) {
 	assert.Eq(t, 2, merged.ChunkConcurrency)
 }
 
+func TestMergeInstallOptionsStripComponentsPrecedence(t *testing.T) {
+	globalStrip := 1
+	repoStrip := 2
+	pkgStrip := 3
+	cliStrip := 4
+
+	merged := MergeInstallOptions(
+		Section{StripComponents: &globalStrip},
+		Section{StripComponents: &repoStrip},
+		Section{StripComponents: &pkgStrip},
+		CLIOverrides{StripComponents: &cliStrip},
+	)
+	assert.Eq(t, 4, merged.StripComponents)
+
+	merged = MergeInstallOptions(
+		Section{StripComponents: &globalStrip},
+		Section{StripComponents: &repoStrip},
+		Section{StripComponents: &pkgStrip},
+		CLIOverrides{},
+	)
+	assert.Eq(t, 3, merged.StripComponents)
+
+	merged = MergeInstallOptions(
+		Section{StripComponents: &globalStrip},
+		Section{StripComponents: &repoStrip},
+		Section{},
+		CLIOverrides{},
+	)
+	assert.Eq(t, 2, merged.StripComponents)
+}
+
 func TestMergeInstallOptionsMergesSys7zPath(t *testing.T) {
 	globalPath := "C:/global/7z.exe"
 	repoPath := "C:/repo/7z.exe"

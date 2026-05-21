@@ -17,6 +17,7 @@ type Section struct {
 	RenameFiles          map[string]string `toml:"rename_files" mapstructure:"rename_files"`
 	Repo                 *string           `toml:"repo" mapstructure:"repo"`
 	ShowHash             *bool             `toml:"show_hash" mapstructure:"show_hash"`
+	StripComponents      *int              `toml:"strip_components" mapstructure:"strip_components"`
 	Source               *bool             `toml:"download_source" mapstructure:"download_source"`
 	SourcePath           *string           `toml:"source_path" mapstructure:"source_path"`
 	Sys7zPath            *string           `toml:"sys7z_path" mapstructure:"sys7z_path"`
@@ -100,6 +101,7 @@ type Merged struct {
 	Quiet               bool
 	RenameFiles         map[string]string
 	ShowHash            bool
+	StripComponents     int
 	Source              bool
 	SourcePath          string
 	Sys7zPath           string
@@ -140,6 +142,7 @@ type CLIOverrides struct {
 	Quiet            *bool
 	RenameFiles      *map[string]string
 	ShowHash         *bool
+	StripComponents  *int
 	Source           *bool
 	SourcePath       *string
 	System           *string

@@ -10,6 +10,7 @@ type AddOptions struct {
 	File             string
 	Asset            string
 	Rename           string
+	StripComponents  int
 	Source           bool
 	All              bool
 	GUI              bool
@@ -29,6 +30,7 @@ func newAddCmd(handler CommandHandler) (*gcli.Command, func()) {
 		c.StrOpt(&opts.File, "file", "", "", "File to extract")
 		c.StrOpt(&opts.Asset, "asset", "", "", "Asset filter")
 		c.StrOpt(&opts.Rename, "rename", "", "", "Rename extracted files, comma separated from=to pairs")
+		c.IntOpt(&opts.StripComponents, "strip-components", "", 0, "Strip leading archive path components when extracting all files")
 		c.BoolOpt(&opts.Source, "source", "", false, "Download source archive")
 		c.BoolOpt(&opts.All, "extract-all", "ea", false, "Extract all files")
 		c.BoolOpt(&opts.GUI, "gui", "", false, "Add as GUI application")

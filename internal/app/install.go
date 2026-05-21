@@ -508,6 +508,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		Quiet:            boolOpt(cli.Quiet),
 		RenameFiles:      mapOpt(cli.RenameFiles),
 		ShowHash:         boolOpt(cli.Hash),
+		StripComponents:  intOpt(cli.StripComponents, cli.StripComponents > 0),
 		Source:           boolOpt(cli.Source),
 		SourcePath:       stringOpt(cli.SourcePath),
 		System:           stringOpt(cli.System),
@@ -593,6 +594,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		System:              merged.System,
 		ExtractFile:         merged.File,
 		All:                 merged.ExtractAll,
+		StripComponents:     merged.StripComponents,
 		Quiet:               merged.Quiet,
 		DownloadOnly:        merged.DownloadOnly,
 		FallbackVersions:    cli.FallbackVersions,
@@ -722,6 +724,9 @@ func extractOptionsMap(opts install.Options, isGUI bool) map[string]interface{} 
 	}
 	if opts.All {
 		recorded["all"] = true
+	}
+	if opts.StripComponents > 0 {
+		recorded["strip_components"] = opts.StripComponents
 	}
 	if opts.Quiet {
 		recorded["quiet"] = true

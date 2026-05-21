@@ -59,6 +59,8 @@ eget install --asset "REG:\\.deb$" owner/repo
 eget install --asset "PRE:codex,SUF:.zip" openai/codex
 # Extract all files and rename one extracted file
 eget install --extract-all --rename "codex-x86_64-pc-windows-msvc.exe=codex.exe" openai/codex
+# Extract all files and strip the archive top-level directory
+eget download --extract-all --strip-components 1 --asset "windows,zip" ventoy/Ventoy
 # Install to a custom directory
 eget install --to ~/.local/bin/fzf junegunn/fzf
 ```
@@ -273,6 +275,7 @@ The target argument accepted by `install` and `download` can be:
 - `--rename`: Rename extracted files with comma-separated `from=to` pairs, for example `--rename "tool-windows-amd64.exe=tool.exe"`. This works with `--file` and `--extract-all`, and is persisted by `install --add`.
 - `--source`: Download the source archive instead of a prebuilt binary release.
 - `--extract-all`, `--ea`: Extract all files from the archive instead of selecting a single target file.
+- `--strip-components N`: Remove `N` leading archive path components when extracting all files, useful for archives that wrap contents in a versioned top-level directory.
 - `--chunk N`: Control HTTP Range chunk concurrency for one downloaded file. `0` means auto, `1` means single-connection download, and values greater than `1` request up to that many chunks.
 - `--quiet`: Reduce normal command output for scripting or batch use.
 

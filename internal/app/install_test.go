@@ -847,6 +847,12 @@ func TestExtractOptionsMapKeepsGuiTargetForGUIInstall(t *testing.T) {
 	assert.Eq(t, true, got["is_gui"])
 }
 
+func TestExtractOptionsMapKeepsStripComponents(t *testing.T) {
+	got := extractOptionsMap(install.Options{StripComponents: 1}, false)
+
+	assert.Eq(t, 1, got["strip_components"])
+}
+
 func TestInstallTargetAppliesManagedPackageOptionsWhenTargetIsRepo(t *testing.T) {
 	cfg := mustLoadFromString(t, `
 [packages.erd]
@@ -855,6 +861,7 @@ name = "erd"
 file = "erd"
 asset_filters = ["musl"]
 rename_files = { "erdtree" = "erd" }
+strip_components = 1
 `)
 	runner := &fakeRunner{
 		result: RunResult{
@@ -887,6 +894,7 @@ rename_files = { "erdtree" = "erd" }
 		t.Fatalf("expected package asset filter to be merged, got %#v", runner.opts.Asset)
 	}
 	assert.Eq(t, map[string]string{"erdtree": "erd"}, runner.opts.RenameFiles)
+	assert.Eq(t, 1, runner.opts.StripComponents)
 }
 
 func TestInstallTargetAllowsCLINameToOverrideManagedPackageName(t *testing.T) {

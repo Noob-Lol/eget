@@ -39,6 +39,9 @@ func TestPathGetAndSet(t *testing.T) {
 	if err := SetByPath(cfg, "packages.fzf.chunk_concurrency", "2"); err != nil {
 		t.Fatalf("set packages.fzf.chunk_concurrency: %v", err)
 	}
+	if err := SetByPath(cfg, "packages.fzf.strip_components", "1"); err != nil {
+		t.Fatalf("set packages.fzf.strip_components: %v", err)
+	}
 	if err := SetByPath(cfg, "packages.fzf.asset_filters", "linux,amd64"); err != nil {
 		t.Fatalf("set packages.fzf.asset_filters: %v", err)
 	}
@@ -89,6 +92,9 @@ func TestPathGetAndSet(t *testing.T) {
 	}
 	if pkg.ChunkConcurrency == nil || *pkg.ChunkConcurrency != 2 {
 		t.Fatalf("expected package chunk_concurrency to be parsed, got %#v", pkg.ChunkConcurrency)
+	}
+	if pkg.StripComponents == nil || *pkg.StripComponents != 1 {
+		t.Fatalf("expected package strip_components to be parsed, got %#v", pkg.StripComponents)
 	}
 	if pkg.Desc == nil || *pkg.Desc != "Command-line fuzzy finder" {
 		t.Fatalf("expected package desc to be parsed, got %#v", pkg.Desc)

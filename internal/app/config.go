@@ -247,6 +247,9 @@ func sectionFromInstallOptions(repo, name string, opts install.Options) cfgpkg.S
 	if opts.All {
 		section.ExtractAll = util.BoolPtr(true)
 	}
+	if opts.StripComponents > 0 {
+		section.StripComponents = &opts.StripComponents
+	}
 	if opts.IsGUI {
 		section.IsGUI = util.BoolPtr(true)
 	}

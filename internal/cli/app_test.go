@@ -213,6 +213,45 @@ func TestMain_ExtractAllFlagBindsInstallDownloadAndAdd(t *testing.T) {
 	}
 }
 
+func TestMain_StripComponentsFlagBindsInstallDownloadAndAdd(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"install", []string{"install", "--extract-all", "--strip-components", "1", "inhere/markview"}, "install"},
+		{"download", []string{"download", "--extract-all", "--strip-components", "1", "inhere/markview"}, "download"},
+		{"add", []string{"add", "--extract-all", "--strip-components", "1", "inhere/markview"}, "add"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]commandCall, 0, 1)
+			handler := func(name string, options any) error {
+				calls = append(calls, commandCall{name: name, options: options})
+				return nil
+			}
+
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			err := newApp(handler, &stdout, &stderr).RunWithArgs(tt.args)
+			assert.NoErr(t, err)
+			assert.Eq(t, 1, len(calls))
+			assert.Eq(t, tt.want, calls[0].name)
+			switch opts := calls[0].options.(type) {
+			case *InstallOptions:
+				assert.Eq(t, 1, opts.StripComponents)
+			case *DownloadOptions:
+				assert.Eq(t, 1, opts.StripComponents)
+			case *AddOptions:
+				assert.Eq(t, 1, opts.StripComponents)
+			default:
+				t.Fatalf("unexpected options type %T", calls[0].options)
+			}
+		})
+	}
+}
+
 func TestMain_GUIFlagBindsInstallAndAdd(t *testing.T) {
 	tests := []struct {
 		name string

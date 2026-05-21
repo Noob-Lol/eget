@@ -184,10 +184,11 @@ func TestUpdatePackageUpdatesInstalledOnlySourceForgeTarget(t *testing.T) {
 					Repo: "sourceforge:keepass",
 					Tag:  "2.58",
 					Options: map[string]any{
-						"source_path":  "KeePass 2.x",
-						"asset":        []string{"zip", "^REG:Source"},
-						"extract_file": "KeePass.exe",
-						"rename_files": map[string]string{"KeePass.exe": "keepass.exe"},
+						"source_path":      "KeePass 2.x",
+						"asset":            []string{"zip", "^REG:Source"},
+						"extract_file":     "KeePass.exe",
+						"strip_components": 1,
+						"rename_files":     map[string]string{"KeePass.exe": "keepass.exe"},
 					},
 				},
 			}}, nil
@@ -206,6 +207,7 @@ func TestUpdatePackageUpdatesInstalledOnlySourceForgeTarget(t *testing.T) {
 	assert.Eq(t, "KeePass 2.x", installer.options[0].SourcePath)
 	assert.Eq(t, []string{"zip", "^REG:Source"}, installer.options[0].Asset)
 	assert.Eq(t, "KeePass.exe", installer.options[0].ExtractFile)
+	assert.Eq(t, 1, installer.options[0].StripComponents)
 	assert.Eq(t, map[string]string{"KeePass.exe": "keepass.exe"}, installer.options[0].RenameFiles)
 }
 
