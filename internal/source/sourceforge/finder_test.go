@@ -15,6 +15,12 @@ type fakeGetter struct {
 	requests  []string
 }
 
+type fakeHTTPGetterFunc func(url string) (*http.Response, error)
+
+func (f fakeHTTPGetterFunc) Get(url string) (*http.Response, error) {
+	return f(url)
+}
+
 func (g *fakeGetter) Get(url string) (*http.Response, error) {
 	g.requests = append(g.requests, url)
 	return htmlResponse(g.responses[url]), nil
@@ -23,6 +29,13 @@ func (g *fakeGetter) Get(url string) (*http.Response, error) {
 func htmlResponse(body string) *http.Response {
 	return &http.Response{
 		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}
+}
+
+func statusResponse(status int, body string) *http.Response {
+	return &http.Response{
+		StatusCode: status,
 		Body:       io.NopCloser(strings.NewReader(body)),
 	}
 }
@@ -82,6 +95,35 @@ net.sf.files = {
 
 	assert.NoErr(t, err)
 	assert.Eq(t, []string{"https://downloads.sourceforge.net/project/winmerge/stable/2.16.56/WinMerge-2.16.56-x64-Setup.exe"}, urls)
+}
+
+func TestFinderFallsBackToRSSWhenFilesPageIsForbidden(t *testing.T) {
+	getter := fakeHTTPGetterFunc(func(rawURL string) (*http.Response, error) {
+		switch rawURL {
+		case "https://sourceforge.net/projects/victoria-ssd-hdd/files/":
+			return statusResponse(http.StatusForbidden, "cf challenge"), nil
+		case "https://sourceforge.net/projects/victoria-ssd-hdd/rss?path=/":
+			return htmlResponse(`<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:media="http://video.search.yahoo.com/mrss/" version="2.0">
+  <channel>
+    <item>
+      <title><![CDATA[/Victoria537.zip]]></title>
+      <link>https://sourceforge.net/projects/victoria-ssd-hdd/files/Victoria537.zip/download</link>
+      <pubDate>Mon, 20 Oct 2025 01:21:41 UT</pubDate>
+      <media:content url="https://sourceforge.net/projects/victoria-ssd-hdd/files/Victoria537.zip/download" />
+    </item>
+  </channel>
+</rss>`), nil
+		default:
+			t.Fatalf("unexpected request %s", rawURL)
+			return nil, nil
+		}
+	})
+
+	urls, err := Finder{Project: "victoria-ssd-hdd", Getter: getter}.Find()
+
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"https://downloads.sourceforge.net/project/victoria-ssd-hdd/Victoria537.zip"}, urls)
 }
 
 func TestFinderEscapesSourcePathURLSegments(t *testing.T) {
@@ -185,6 +227,45 @@ net.sf.files = {
 	assert.Eq(t, "/stable/2.16.44", info.Path)
 	assert.Eq(t, 2, info.AssetsCount)
 	assert.Eq(t, time.Date(2026, 2, 3, 9, 21, 40, 0, time.UTC), info.PublishedAt)
+}
+
+func TestLatestVersionFallsBackToLatestDownloadableFile(t *testing.T) {
+	getter := fakeHTTPGetterFunc(func(rawURL string) (*http.Response, error) {
+		switch rawURL {
+		case "https://sourceforge.net/projects/victoria-ssd-hdd/files/":
+			return statusResponse(http.StatusForbidden, "cf challenge"), nil
+		case "https://sourceforge.net/projects/victoria-ssd-hdd/rss?path=/":
+			return htmlResponse(`<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:media="http://video.search.yahoo.com/mrss/" version="2.0">
+  <channel>
+    <item>
+      <title><![CDATA[/Victoria536.zip]]></title>
+      <link>https://sourceforge.net/projects/victoria-ssd-hdd/files/Victoria536.zip/download</link>
+      <pubDate>Mon, 01 Sep 2025 01:21:41 UT</pubDate>
+      <media:content url="https://sourceforge.net/projects/victoria-ssd-hdd/files/Victoria536.zip/download" />
+    </item>
+    <item>
+      <title><![CDATA[/Victoria537.zip]]></title>
+      <link>https://sourceforge.net/projects/victoria-ssd-hdd/files/Victoria537.zip/download</link>
+      <pubDate>Mon, 20 Oct 2025 01:21:41 UT</pubDate>
+      <media:content url="https://sourceforge.net/projects/victoria-ssd-hdd/files/Victoria537.zip/download" />
+    </item>
+  </channel>
+</rss>`), nil
+		default:
+			t.Fatalf("unexpected request %s", rawURL)
+			return nil, nil
+		}
+	})
+
+	info, err := LatestVersion("victoria-ssd-hdd", "", getter)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "Victoria537.zip", info.Tag)
+	assert.Eq(t, "Victoria537", info.Version)
+	assert.Eq(t, "Victoria537.zip", info.Path)
+	assert.Eq(t, 2, info.AssetsCount)
+	assert.Eq(t, time.Date(2025, 10, 20, 1, 21, 41, 0, time.UTC), info.PublishedAt)
 }
 
 func TestLatestVersionUsesModifiedColumnTime(t *testing.T) {

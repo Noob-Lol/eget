@@ -141,6 +141,7 @@ eget query --action assets --tag v1.2.3 owner/repo
 
 # query SourceForge latest version or assets
 eget query sourceforge:winmerge
+eget query https://sourceforge.net/projects/victoria-ssd-hdd
 eget query --action assets sourceforge:winmerge/stable
 eget query --action assets --tag 2.16.44 sourceforge:winmerge/stable
 ```
@@ -194,11 +195,11 @@ The target argument accepted by `install` and `download` can be:
 - GitHub repository URL, for example `https://github.com/owner/repo`
 - GitLab target, for example `gitlab:fdroid/fdroidserver` or `gitlab:gitlab.gnome.org/GNOME/gtk`
 - Gitea/Forgejo target, for example `gitea:codeberg.org/forgejo/forgejo`
-- SourceForge target, for example `sourceforge:winmerge` or `sourceforge:winmerge/stable`
+- SourceForge target, for example `sourceforge:winmerge`, `sourceforge:winmerge/stable`, or `https://sourceforge.net/projects/winmerge`
 - Direct download URL, for example `https://example.com/file.tar.gz`
 - Local file path, for example `file:///path/to/file`
 
-> Note: GitLab and Gitea/Forgejo support currently covers `install`, `download`, and `update` for release assets. SourceForge also supports `query latest` and `query assets`. Search parity, private repository authentication, and automatic provider detection from arbitrary web URLs are not provided.
+> Note: GitLab and Gitea/Forgejo support currently covers `install`, `download`, and `update` for release assets. SourceForge also supports `query latest` and `query assets`. Search parity and private repository authentication are not provided.
 
 ## Available Commands
 
@@ -309,7 +310,7 @@ The target argument accepted by `install` and `download` can be:
 - `--json`, `-j`: Output JSON for scripting or automation.
 - `--prerelease`, `-p`: Include prerelease entries for `latest` and `releases`.
 
-SourceForge query targets use `sourceforge:<project>` or `sourceforge:<project>/<path>` and currently support only `latest` and `assets`. `info`, `releases`, `--limit`, and `--prerelease` remain GitHub-only.
+SourceForge query targets use `sourceforge:<project>`, `sourceforge:<project>/<path>`, `sf:<project>`, or SourceForge project URLs such as `https://sourceforge.net/projects/winmerge`. They currently support `latest`, `releases`, and `assets`; `info` remains GitHub-only.
 
 `search` options:
 

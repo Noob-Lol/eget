@@ -141,6 +141,7 @@ eget query --action assets --tag v1.2.3 owner/repo
 
 # 查询 SourceForge 最新版本或 assets
 eget query sourceforge:winmerge
+eget query https://sourceforge.net/projects/victoria-ssd-hdd
 eget query --action assets sourceforge:winmerge/stable
 eget query --action assets --tag 2.16.44 sourceforge:winmerge/stable
 ```
@@ -194,11 +195,11 @@ eget config set global.target ~/.local/bin
 - GitHub 仓库 URL，例如 `https://github.com/owner/repo`
 - GitLab 目标，例如 `gitlab:fdroid/fdroidserver` 或 `gitlab:gitlab.gnome.org/GNOME/gtk`
 - Gitea/Forgejo 目标，例如 `gitea:codeberg.org/forgejo/forgejo`
-- SourceForge 目标，例如 `sourceforge:winmerge` 或 `sourceforge:winmerge/stable`
+- SourceForge 目标，例如 `sourceforge:winmerge`、`sourceforge:winmerge/stable` 或 `https://sourceforge.net/projects/winmerge`
 - 直接下载 URL，例如 `https://example.com/file.tar.gz`
 - 本地文件路径，例如 `file:///path/to/file`
 
-> 注意：GitLab 和 Gitea/Forgejo 目前支持通过 release assets 进行 `install`、`download` 和 `update`。SourceForge 还支持 `query latest` 和 `query assets`。暂不支持 search 对齐、私有仓库认证，也不会从任意网页 URL 自动识别 provider。
+> 注意：GitLab 和 Gitea/Forgejo 目前支持通过 release assets 进行 `install`、`download` 和 `update`。SourceForge 还支持 `query latest` 和 `query assets`。暂不支持 search 对齐和私有仓库认证。
 
 ## 当前命令
 
@@ -309,7 +310,7 @@ eget config set global.target ~/.local/bin
 - `--json`, `-j`: 使用 JSON 输出结果，方便脚本处理。
 - `--prerelease`, `-p`: 在 `latest` / `releases` 中包含预发布版本。
 
-SourceForge 查询目标使用 `sourceforge:<project>` 或 `sourceforge:<project>/<path>`，目前只支持 `latest` 和 `assets`。`info`、`releases`、`--limit` 和 `--prerelease` 仍仅适用于 GitHub。
+SourceForge 查询目标使用 `sourceforge:<project>`、`sourceforge:<project>/<path>`、`sf:<project>` 或 `https://sourceforge.net/projects/winmerge` 这类 SourceForge 项目 URL。目前支持 `latest`、`releases` 和 `assets`；`info` 仍仅适用于 GitHub。
 
 `search` 支持选项：
 

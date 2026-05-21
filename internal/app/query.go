@@ -146,7 +146,7 @@ func (s QueryService) querySourceForge(opts QueryOptions, action string) (QueryR
 			return QueryResult{}, err
 		}
 		release := QueryRelease{
-			Tag:         latest.Version,
+			Tag:         sourceForgeReleaseTag(latest),
 			Name:        latest.Version,
 			PublishedAt: latest.PublishedAt,
 			AssetsCount: latest.AssetsCount,

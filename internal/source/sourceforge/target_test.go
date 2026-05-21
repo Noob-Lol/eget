@@ -18,6 +18,9 @@ func TestParseTarget(t *testing.T) {
 		{name: "project with path", input: "sourceforge:winmerge/stable", wantProject: "winmerge", wantPath: "stable", wantNorm: "sourceforge:winmerge"},
 		{name: "nested path", input: "sourceforge:winmerge/stable/2.16.44", wantProject: "winmerge", wantPath: "stable/2.16.44", wantNorm: "sourceforge:winmerge"},
 		{name: "sf alias with path", input: "sf:winmerge/stable", wantProject: "winmerge", wantPath: "stable", wantNorm: "sourceforge:winmerge"},
+		{name: "project url", input: "https://sourceforge.net/projects/victoria-ssd-hdd", wantProject: "victoria-ssd-hdd", wantNorm: "sourceforge:victoria-ssd-hdd"},
+		{name: "project files url", input: "https://sourceforge.net/projects/victoria-ssd-hdd/files/", wantProject: "victoria-ssd-hdd", wantNorm: "sourceforge:victoria-ssd-hdd"},
+		{name: "project files url with path", input: "https://sourceforge.net/projects/keepass/files/Translations%202.x/", wantProject: "keepass", wantPath: "Translations 2.x", wantNorm: "sourceforge:keepass"},
 		{name: "empty project", input: "sourceforge:", wantErr: "sourceforge project is required"},
 		{name: "not sourceforge", input: "junegunn/fzf", wantErr: "invalid SourceForge target"},
 	}

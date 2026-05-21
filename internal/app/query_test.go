@@ -95,6 +95,25 @@ func TestQueryServiceSourceForgeAliasNormalizesRepo(t *testing.T) {
 	assert.Eq(t, "sourceforge:project/files", result.Repo)
 }
 
+func TestQueryServiceSourceForgeProjectURLNormalizesRepo(t *testing.T) {
+	svc := QueryService{
+		SourceForgeLatest: func(project, sourcePath string) (sourcesf.LatestInfo, error) {
+			assert.Eq(t, "victoria-ssd-hdd", project)
+			assert.Eq(t, "", sourcePath)
+			return sourcesf.LatestInfo{Tag: "Victoria537.zip", Version: "Victoria537"}, nil
+		},
+	}
+
+	result, err := svc.Query(QueryOptions{Repo: "https://sourceforge.net/projects/victoria-ssd-hdd"})
+	if err != nil {
+		t.Fatalf("Query(): %v", err)
+	}
+
+	assert.Eq(t, "sourceforge:victoria-ssd-hdd", result.Repo)
+	assert.Eq(t, "Victoria537.zip", result.Latest.Tag)
+	assert.Eq(t, "Victoria537", result.Latest.Name)
+}
+
 func TestQueryServiceSourceForgeAssets(t *testing.T) {
 	svc := QueryService{
 		SourceForgeAssets: func(project, sourcePath, tag string) ([]string, error) {

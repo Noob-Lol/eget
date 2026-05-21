@@ -128,6 +128,9 @@ func LatestVersion(project, sourcePath string, getter HTTPGetter) (LatestInfo, e
 		return LatestInfo{}, err
 	}
 	if len(versions) == 0 {
+		if info, ok := latestDownloadableFileInfo(files); ok {
+			return info, nil
+		}
 		return LatestInfo{}, fmt.Errorf("could not determine SourceForge latest version for %s", project)
 	}
 	return releaseInfo(finder, versions[0])
@@ -209,6 +212,43 @@ func releaseInfoFromVersionFile(versionFile File) LatestInfo {
 	}
 }
 
+func latestDownloadableFileInfo(files []File) (LatestInfo, bool) {
+	var latest File
+	count := 0
+	for _, file := range files {
+		if file.Type != TypeFile || file.DownloadURL == "" {
+			continue
+		}
+		count++
+		if latest.DownloadURL == "" || file.PublishedAt.After(latest.PublishedAt) {
+			latest = file
+		}
+	}
+	if latest.DownloadURL == "" {
+		return LatestInfo{}, false
+	}
+	name := sourceForgeReleaseTag(latest)
+	return LatestInfo{
+		Tag:         name,
+		Version:     versionFromFilename(name),
+		Path:        strings.Trim(latest.FullPath, "/"),
+		PublishedAt: latest.PublishedAt,
+		AssetsCount: count,
+	}, true
+}
+
+func versionFromFilename(name string) string {
+	base := path.Base(strings.Trim(name, "/"))
+	ext := path.Ext(base)
+	if ext != "" {
+		base = strings.TrimSuffix(base, ext)
+	}
+	if version := VersionFromText(base); version != "" {
+		return version
+	}
+	return base
+}
+
 func sourceForgeReleaseTag(file File) string {
 	if file.Name != "" {
 		return file.Name
@@ -261,6 +301,10 @@ func (f Finder) list(sourcePath string) ([]File, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		files, rssErr := f.listRSS(sourcePath)
+		if rssErr == nil {
+			return files, nil
+		}
 		return nil, fmt.Errorf("sourceforge files page returned status %d", resp.StatusCode)
 	}
 
@@ -269,7 +313,37 @@ func (f Finder) list(sourcePath string) ([]File, error) {
 		return nil, err
 	}
 	verbosef("sourceforge finder response: %s", truncateBody(body))
-	return ParseFilesPage(body)
+	files, err := ParseFilesPage(body)
+	if err == nil {
+		return files, nil
+	}
+	files, rssErr := f.listRSS(sourcePath)
+	if rssErr == nil {
+		return files, nil
+	}
+	return nil, err
+}
+
+func (f Finder) listRSS(sourcePath string) ([]File, error) {
+	u := "https://sourceforge.net/projects/" + strings.Trim(f.Project, "/") + "/rss?path=/"
+	if sourcePath != "" {
+		u = "https://sourceforge.net/projects/" + strings.Trim(f.Project, "/") + "/rss?path=" + url.QueryEscape("/"+strings.Trim(sourcePath, "/"))
+	}
+	verbosef("sourceforge rss request: %s", u)
+	resp, err := f.Getter.Get(u)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("sourceforge rss returned status %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	verbosef("sourceforge rss response: %s", truncateBody(body))
+	return ParseRSSFilesPage(body)
 }
 
 func downloadableURLs(files []File) []string {

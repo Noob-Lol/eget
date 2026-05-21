@@ -193,6 +193,24 @@ func TestGetWithOptionsDoesNotUseAPICacheForDownloads(t *testing.T) {
 	assert.Eq(t, 1, calls)
 }
 
+func TestGetWithOptionsSetsSourceForgeBrowserUserAgent(t *testing.T) {
+	var gotUA string
+	restoreHTTPDo := SetHTTPDoForTest(func(client *http.Client, req *http.Request) (*http.Response, error) {
+		gotUA = req.Header.Get("User-Agent")
+		return jsonResponse(http.StatusOK, "200 OK", `<html></html>`), nil
+	})
+	defer restoreHTTPDo()
+
+	resp, err := GetWithOptions("https://sourceforge.net/projects/victoria-ssd-hdd/files/", Options{})
+	if err != nil {
+		t.Fatalf("GetWithOptions(): %v", err)
+	}
+	defer resp.Body.Close()
+
+	assert.True(t, strings.Contains(gotUA, "Mozilla/5.0"))
+	assert.False(t, strings.Contains(gotUA, "Go-http-client"))
+}
+
 func TestGitHubClientSearchParsesResponse(t *testing.T) {
 	client := NewGitHubClientWithGetter(Options{}, func(rawURL string, opts Options) (*http.Response, error) {
 		body := `{"total_count":2,"items":[{"full_name":"BurntSushi/ripgrep","description":"fast search","html_url":"https://github.com/BurntSushi/ripgrep","homepage":"https://example.com","language":"Rust","stargazers_count":12,"forks_count":3,"open_issues_count":1,"updated_at":"2026-04-22T10:00:00Z","archived":false,"private":false}]}`
