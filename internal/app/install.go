@@ -389,8 +389,7 @@ func (s Service) DownloadTarget(target string, opts install.Options) (RunResult,
 	if err := validateRawConcurrencyOptions(opts); err != nil {
 		return RunResult{}, err
 	}
-	var err error
-	opts, err = s.resolveInstallOptions(target, opts, true)
+	runTarget, _, opts, err := s.resolveInstallRequest(target, opts, true)
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -399,7 +398,7 @@ func (s Service) DownloadTarget(target string, opts install.Options) (RunResult,
 	}
 	opts = normalizeExtractionOptions(opts)
 	opts.DownloadOnly = opts.ExtractFile == "" && !opts.All
-	return s.Runner.Run(target, opts)
+	return s.Runner.Run(runTarget, opts)
 }
 
 func normalizeExtractionOptions(opts install.Options) install.Options {

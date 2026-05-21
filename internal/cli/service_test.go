@@ -409,6 +409,45 @@ func TestHandleInstallAcceptsManagedPackageName(t *testing.T) {
 	}
 }
 
+func TestHandleDownloadAcceptsManagedTemplatePackageName(t *testing.T) {
+	runner := &fakeRunnerForCLI{
+		result: app.RunResult{
+			URL:   "https://example.com/1.2.3/win32-x64/claude.exe",
+			Tool:  "claude",
+			Asset: "claude.exe",
+		},
+	}
+	svc := &cliService{
+		appService: app.Service{
+			Runner: runner,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["claude"] = cfgpkg.Section{
+					Repo:         util.StringPtr("template:claude"),
+					LatestURL:    util.StringPtr("https://example.com/latest"),
+					LatestFormat: util.StringPtr("text"),
+					URLTemplate:  util.StringPtr("https://example.com/{version}/{os}-{arch}/claude{ext}"),
+					OSMap:        map[string]string{"windows": "win32"},
+					ArchMap:      map[string]string{"amd64": "x64"},
+					ExtMap:       map[string]string{"windows": ".exe"},
+				}
+				return cfg, nil
+			},
+		},
+	}
+
+	err := svc.handle("download", &DownloadOptions{Target: "claude"})
+	if err != nil {
+		t.Fatalf("handle download: %v", err)
+	}
+
+	assert.Eq(t, []string{"template:claude"}, runner.targets)
+	opts := runner.optsByTarget["template:claude"]
+	assert.True(t, opts.DownloadOnly)
+	assert.Eq(t, "https://example.com/latest", opts.URLTemplate.LatestURL)
+	assert.Eq(t, "https://example.com/{version}/{os}-{arch}/claude{ext}", opts.URLTemplate.URLTemplate)
+}
+
 func TestHandleInstallInstallsMultipleTargets(t *testing.T) {
 	runner := &fakeRunnerForCLI{
 		result: app.RunResult{

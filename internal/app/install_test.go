@@ -406,6 +406,45 @@ func TestDownloadTargetWithAllRunsExtractionFlow(t *testing.T) {
 	}
 }
 
+func TestDownloadTargetAcceptsManagedTemplatePackageName(t *testing.T) {
+	cfg := mustLoadFromString(t, `
+[packages.claude]
+repo = "template:claude"
+latest_url = "https://example.com/latest"
+latest_format = "text"
+url_template = "https://example.com/{version}/{os}-{arch}/claude{ext}"
+os_map = { windows = "win32" }
+arch_map = { amd64 = "x64" }
+ext_map = { windows = ".exe" }
+`)
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:   "https://example.com/1.2.3/win32-x64/claude.exe",
+			Tool:  "claude",
+			Asset: "claude.exe",
+		},
+	}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.DownloadTarget("claude", install.Options{})
+	if err != nil {
+		t.Fatalf("download template package: %v", err)
+	}
+
+	assert.Eq(t, "template:claude", runner.target)
+	assert.True(t, runner.opts.DownloadOnly)
+	assert.Eq(t, "https://example.com/latest", runner.opts.URLTemplate.LatestURL)
+	assert.Eq(t, "https://example.com/{version}/{os}-{arch}/claude{ext}", runner.opts.URLTemplate.URLTemplate)
+	assert.Eq(t, map[string]string{"windows": "win32"}, runner.opts.URLTemplate.OSMap)
+	assert.Eq(t, map[string]string{"amd64": "x64"}, runner.opts.URLTemplate.ArchMap)
+	assert.Eq(t, map[string]string{"windows": ".exe"}, runner.opts.URLTemplate.ExtMap)
+}
+
 func TestInstallTargetUsesGuiTargetForPortableGUI(t *testing.T) {
 	runner := &fakeRunner{
 		result: RunResult{
