@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,8 @@ import (
 	"sync"
 	"time"
 )
+
+var errDownloadRangeReturnedOK = errors.New("download range returned ok")
 
 type DownloadFileResult struct {
 	Path         string
@@ -226,13 +229,23 @@ func downloadFileParallel(rawURL, target, partPath, metaPath string, remote down
 	closeProgress()
 	closeErr := file.Close()
 	close(errCh)
+	restartSingle := false
 	for err := range errCh {
 		if err != nil {
+			if errors.Is(err, errDownloadRangeReturnedOK) {
+				restartSingle = true
+				continue
+			}
 			return DownloadFileResult{}, err
 		}
 	}
 	if closeErr != nil {
 		return DownloadFileResult{}, closeErr
+	}
+	if restartSingle {
+		_ = os.Remove(partPath)
+		_ = os.Remove(metaPath)
+		return downloadFileSingle(rawURL, target, partPath, metaPath, getbar, opts)
 	}
 	if fileSize(partPath) != remote.Size {
 		return DownloadFileResult{}, fmt.Errorf("download size mismatch: expected %d, got %d", remote.Size, fileSize(partPath))
@@ -286,6 +299,9 @@ func downloadFileChunk(rawURL string, file *os.File, chunk downloadChunkMeta, pr
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusPartialContent {
+		if resp.StatusCode == http.StatusOK {
+			return fmt.Errorf("download range %s: %w", rangeHeader, errDownloadRangeReturnedOK)
+		}
 		return fmt.Errorf("download range %s returned status %d", rangeHeader, resp.StatusCode)
 	}
 	buf := make([]byte, 256*1024)

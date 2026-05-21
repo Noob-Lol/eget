@@ -271,7 +271,7 @@ git commit -m "feat(download): resume missing file chunks"
 - Test: `internal/client/network_download_test.go`
 - Update: `docs/plans/resumable-parallel-download-plan.md`
 
-- [ ] **Step 1: 写失败测试：Range 返回 200 时回退单连接重下**
+- [x] **Step 1: 写失败测试：Range 返回 200 时回退单连接重下**
 
 测试名称：`TestDownloadFileRestartsWhenRangeChunkReturnsOK`
 
@@ -291,7 +291,7 @@ go test ./internal/client -run TestDownloadFileRestartsWhenRangeChunkReturnsOK
 
 Expected: FAIL。
 
-- [ ] **Step 2: 写失败测试：某个分片失败后保留状态**
+- [x] **Step 2: 写失败测试：某个分片失败后保留状态**
 
 测试名称：`TestDownloadFileKeepsCompletedChunksWhenOneChunkFails`
 
@@ -311,7 +311,7 @@ go test ./internal/client -run TestDownloadFileKeepsCompletedChunksWhenOneChunkF
 
 Expected: FAIL。
 
-- [ ] **Step 3: 实现 fallback 和失败保留规则**
+- [x] **Step 3: 实现 fallback 和失败保留规则**
 
 实现：
 
@@ -328,7 +328,7 @@ go test ./internal/client
 
 Expected: PASS。
 
-- [ ] **Step 4: 提交 Task 3**
+- [x] **Step 4: 提交 Task 3**
 
 Run:
 

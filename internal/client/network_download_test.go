@@ -189,6 +189,100 @@ func TestDownloadFileResumesOnlyMissingChunks(t *testing.T) {
 	assert.Eq(t, body, saved)
 }
 
+func TestDownloadFileRestartsWhenRangeChunkReturnsOK(t *testing.T) {
+	body := bytes.Repeat([]byte("o"), 12*1024*1024)
+	origMinSize := resumableDownloadMinSize
+	resumableDownloadMinSize = 256 * 1024
+	defer func() { resumableDownloadMinSize = origMinSize }()
+
+	var sawRange atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("ETag", `"ok-v1"`)
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		if r.Method == http.MethodHead {
+			return
+		}
+		if r.Header.Get("Range") != "" {
+			sawRange.Store(true)
+		}
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+
+	target := filepath.Join(t.TempDir(), "tool.zip")
+	chunks := planDownloadChunks(int64(len(body)), 3)
+	assert.Nil(t, os.WriteFile(target+".part", make([]byte, len(body)), 0o644))
+	assert.Nil(t, saveDownloadFileMeta(target+".meta.json", downloadFileMeta{
+		Schema:    2,
+		URL:       server.URL + "/tool.zip",
+		Size:      int64(len(body)),
+		ETag:      `"ok-v1"`,
+		ChunkSize: minChunkSize,
+		Chunks:    chunks,
+	}))
+
+	result, err := DownloadFile(server.URL+"/tool.zip", target, nil, Options{ChunkConcurrency: 3})
+
+	assert.Nil(t, err)
+	assert.True(t, sawRange.Load())
+	assert.False(t, result.Resumed)
+	saved, readErr := os.ReadFile(target)
+	assert.Nil(t, readErr)
+	assert.Eq(t, body, saved)
+	_, statErr := os.Stat(target + ".part")
+	assert.True(t, os.IsNotExist(statErr))
+}
+
+func TestDownloadFileKeepsCompletedChunksWhenOneChunkFails(t *testing.T) {
+	body := bytes.Repeat([]byte("f"), 12*1024*1024)
+	origMinSize := resumableDownloadMinSize
+	resumableDownloadMinSize = 256 * 1024
+	defer func() { resumableDownloadMinSize = origMinSize }()
+
+	chunks := planDownloadChunks(int64(len(body)), 3)
+	failedRange := fmt.Sprintf("bytes=%d-%d", chunks[2].Start, chunks[2].End)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("ETag", `"fail-v1"`)
+		if r.Method == http.MethodHead {
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+			return
+		}
+		rangeHeader := r.Header.Get("Range")
+		start, end := parseTestRange(t, rangeHeader)
+		w.Header().Set("Content-Length", strconv.Itoa(end-start+1))
+		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, len(body)))
+		w.WriteHeader(http.StatusPartialContent)
+		if rangeHeader == failedRange {
+			_, _ = w.Write(body[start : start+1024])
+			return
+		}
+		_, _ = w.Write(body[start : end+1])
+	}))
+	defer server.Close()
+
+	target := filepath.Join(t.TempDir(), "tool.zip")
+	_, err := DownloadFile(server.URL+"/tool.zip", target, nil, Options{ChunkConcurrency: 3})
+
+	assert.NotNil(t, err)
+	_, statErr := os.Stat(target + ".part")
+	assert.Nil(t, statErr)
+	meta, ok := loadDownloadFileMeta(target + ".meta.json")
+	assert.True(t, ok)
+	done := 0
+	notDone := 0
+	for _, chunk := range meta.Chunks {
+		if chunk.Done {
+			done++
+		} else {
+			notDone++
+		}
+	}
+	assert.True(t, done > 0)
+	assert.True(t, notDone > 0)
+}
+
 func TestDownloadFileResumesLargeRangeDownload(t *testing.T) {
 	body := bytes.Repeat([]byte("r"), 768*1024)
 	partSize := len(body) / 2
