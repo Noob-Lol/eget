@@ -177,17 +177,8 @@ func downloadFileSingle(rawURL, target, partPath, metaPath string, getbar func(i
 }
 
 func downloadFileParallel(rawURL, target, partPath, metaPath string, remote downloadFileRemote, getbar func(int64) io.Writer, opts Options, chunks int) (DownloadFileResult, error) {
-	meta := downloadFileMeta{
-		Schema:       2,
-		URL:          rawURL,
-		Size:         remote.Size,
-		ETag:         remote.ETag,
-		LastModified: remote.LastModified,
-		ChunkSize:    minChunkSize,
-		Chunks:       planDownloadChunks(remote.Size, chunks),
-		UpdatedAt:    time.Now(),
-	}
-	if err := saveDownloadFileMeta(metaPath, meta); err != nil {
+	meta, resumed, err := loadOrCreateDownloadFileMeta(rawURL, remote, partPath, metaPath, chunks)
+	if err != nil {
 		return DownloadFileResult{}, err
 	}
 	file, err := os.OpenFile(partPath, os.O_CREATE|os.O_WRONLY, 0o644)
@@ -201,15 +192,33 @@ func downloadFileParallel(rawURL, target, partPath, metaPath string, remote down
 
 	bar := downloadProgressWriter(getbar, remote.Size)
 	progressWriter, closeProgress := concurrentProgressWriter(bar)
+	var metaMu sync.Mutex
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(meta.Chunks))
 	for _, chunk := range meta.Chunks {
+		if chunk.Done {
+			continue
+		}
 		chunk := chunk
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			if err := downloadFileChunk(rawURL, file, chunk, progressWriter, opts); err != nil {
 				errCh <- err
+				return
+			}
+			metaMu.Lock()
+			for i := range meta.Chunks {
+				if meta.Chunks[i].Start == chunk.Start && meta.Chunks[i].End == chunk.End {
+					meta.Chunks[i].Done = true
+					break
+				}
+			}
+			meta.UpdatedAt = time.Now()
+			saveErr := saveDownloadFileMeta(metaPath, meta)
+			metaMu.Unlock()
+			if saveErr != nil {
+				errCh <- saveErr
 			}
 		}()
 	}
@@ -235,7 +244,38 @@ func downloadFileParallel(rawURL, target, partPath, metaPath string, remote down
 	if finisher, ok := bar.(progressFinisher); ok {
 		finisher.Finish()
 	}
-	return DownloadFileResult{Path: target, Parallel: true, Size: remote.Size, ETag: remote.ETag, LastModified: remote.LastModified}, nil
+	return DownloadFileResult{Path: target, Resumed: resumed, Parallel: true, Size: remote.Size, ETag: remote.ETag, LastModified: remote.LastModified}, nil
+}
+
+func loadOrCreateDownloadFileMeta(rawURL string, remote downloadFileRemote, partPath, metaPath string, chunks int) (downloadFileMeta, bool, error) {
+	if meta, ok := loadDownloadFileMeta(metaPath); ok && metaMatchesDownloadFile(meta, rawURL, remote, chunks) && fileSize(partPath) > 0 {
+		return meta, true, nil
+	}
+	_ = os.Remove(partPath)
+	meta := downloadFileMeta{
+		Schema:       2,
+		URL:          rawURL,
+		Size:         remote.Size,
+		ETag:         remote.ETag,
+		LastModified: remote.LastModified,
+		ChunkSize:    minChunkSize,
+		Chunks:       planDownloadChunks(remote.Size, chunks),
+		UpdatedAt:    time.Now(),
+	}
+	return meta, false, saveDownloadFileMeta(metaPath, meta)
+}
+
+func metaMatchesDownloadFile(meta downloadFileMeta, rawURL string, remote downloadFileRemote, chunks int) bool {
+	if meta.Schema != 2 || meta.URL != rawURL || meta.Size != remote.Size || len(meta.Chunks) != chunks {
+		return false
+	}
+	if remote.ETag != "" && meta.ETag != "" && remote.ETag != meta.ETag {
+		return false
+	}
+	if remote.LastModified != "" && meta.LastModified != "" && remote.LastModified != meta.LastModified {
+		return false
+	}
+	return true
 }
 
 func downloadFileChunk(rawURL string, file *os.File, chunk downloadChunkMeta, progressWriter io.Writer, opts Options) error {

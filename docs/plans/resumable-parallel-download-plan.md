@@ -216,7 +216,7 @@ git commit -m "feat(download): add parallel resumable file chunks"
 - Test: `internal/client/network_download_test.go`
 - Update: `docs/plans/resumable-parallel-download-plan.md`
 
-- [ ] **Step 1: 写失败测试：已完成分片不重复请求**
+- [x] **Step 1: 写失败测试：已完成分片不重复请求**
 
 测试名称：`TestDownloadFileResumesOnlyMissingChunks`
 
@@ -237,7 +237,7 @@ go test ./internal/client -run TestDownloadFileResumesOnlyMissingChunks
 
 Expected: FAIL。当前实现还没有按 chunk meta 跳过已完成分片。
 
-- [ ] **Step 2: 实现 meta 恢复逻辑**
+- [x] **Step 2: 实现 meta 恢复逻辑**
 
 实现：
 
@@ -255,7 +255,7 @@ go test ./internal/client -run TestDownloadFileResumesOnlyMissingChunks
 
 Expected: PASS。
 
-- [ ] **Step 3: 提交 Task 2**
+- [x] **Step 3: 提交 Task 2**
 
 Run:
 

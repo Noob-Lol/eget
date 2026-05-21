@@ -132,6 +132,63 @@ func TestDownloadFileUsesParallelRangeChunksForLargeFiles(t *testing.T) {
 	assert.True(t, len(unique) >= 3)
 }
 
+func TestDownloadFileResumesOnlyMissingChunks(t *testing.T) {
+	body := bytes.Repeat([]byte("m"), 12*1024*1024)
+	origMinSize := resumableDownloadMinSize
+	resumableDownloadMinSize = 256 * 1024
+	defer func() { resumableDownloadMinSize = origMinSize }()
+
+	chunks := planDownloadChunks(int64(len(body)), 3)
+	var requested atomic.Int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("ETag", `"missing-v1"`)
+		if r.Method == http.MethodHead {
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+			return
+		}
+		rangeHeader := r.Header.Get("Range")
+		if rangeHeader == fmt.Sprintf("bytes=%d-%d", chunks[0].Start, chunks[0].End) ||
+			rangeHeader == fmt.Sprintf("bytes=%d-%d", chunks[1].Start, chunks[1].End) {
+			t.Fatalf("completed chunk requested again: %s", rangeHeader)
+		}
+		assert.Eq(t, fmt.Sprintf("bytes=%d-%d", chunks[2].Start, chunks[2].End), rangeHeader)
+		requested.Add(1)
+		start, end := parseTestRange(t, rangeHeader)
+		w.Header().Set("Content-Length", strconv.Itoa(end-start+1))
+		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, len(body)))
+		w.WriteHeader(http.StatusPartialContent)
+		_, _ = w.Write(body[start : end+1])
+	}))
+	defer server.Close()
+
+	target := filepath.Join(t.TempDir(), "tool.zip")
+	part := make([]byte, len(body))
+	copy(part[chunks[0].Start:chunks[0].End+1], body[chunks[0].Start:chunks[0].End+1])
+	copy(part[chunks[1].Start:chunks[1].End+1], body[chunks[1].Start:chunks[1].End+1])
+	assert.Nil(t, os.WriteFile(target+".part", part, 0o644))
+	chunks[0].Done = true
+	chunks[1].Done = true
+	assert.Nil(t, saveDownloadFileMeta(target+".meta.json", downloadFileMeta{
+		Schema:    2,
+		URL:       server.URL + "/tool.zip",
+		Size:      int64(len(body)),
+		ETag:      `"missing-v1"`,
+		ChunkSize: minChunkSize,
+		Chunks:    chunks,
+	}))
+
+	result, err := DownloadFile(server.URL+"/tool.zip", target, nil, Options{ChunkConcurrency: 3})
+
+	assert.Nil(t, err)
+	assert.True(t, result.Resumed)
+	assert.True(t, result.Parallel)
+	assert.Eq(t, int64(1), requested.Load())
+	saved, readErr := os.ReadFile(target)
+	assert.Nil(t, readErr)
+	assert.Eq(t, body, saved)
+}
+
 func TestDownloadFileResumesLargeRangeDownload(t *testing.T) {
 	body := bytes.Repeat([]byte("r"), 768*1024)
 	partSize := len(body) / 2
