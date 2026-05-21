@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/goutil/x/ccolor"
@@ -81,13 +82,13 @@ func TestDownloadBodyUsesCacheWhenAvailable(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	runner := &InstallRunner{Stdout: &stdout, Stderr: &stderr}
-	body, err := runner.downloadBody(url, Options{CacheDir: cacheDir})
+	downloaded, err := runner.downloadBody(url, Options{CacheDir: cacheDir})
 	if err != nil {
 		t.Fatalf("download body: %v", err)
 	}
 
-	if string(body) != "cached-data" {
-		t.Fatalf("expected cached data, got %q", string(body))
+	if string(downloaded.Body) != "cached-data" {
+		t.Fatalf("expected cached data, got %q", string(downloaded.Body))
 	}
 	if calls != 0 {
 		t.Fatalf("expected no network calls, got %d", calls)
@@ -115,12 +116,12 @@ func TestDownloadBodyWritesCacheAfterDownload(t *testing.T) {
 	}
 
 	runner := &InstallRunner{Stderr: io.Discard}
-	body, err := runner.downloadBody(url, Options{CacheDir: cacheDir})
+	downloaded, err := runner.downloadBody(url, Options{CacheDir: cacheDir})
 	if err != nil {
 		t.Fatalf("download body: %v", err)
 	}
-	if string(body) != "network-data" {
-		t.Fatalf("expected network data, got %q", string(body))
+	if string(downloaded.Body) != "network-data" {
+		t.Fatalf("expected network data, got %q", string(downloaded.Body))
 	}
 
 	saved, err := os.ReadFile(cachePath)
@@ -155,12 +156,12 @@ func TestDownloadBodyUsesCacheMetadata(t *testing.T) {
 	}
 
 	runner := &InstallRunner{Stderr: io.Discard}
-	body, err := runner.downloadBody(url, Options{CacheDir: cacheDir, CacheName: "gomi", CacheVersion: "v1.6.3"})
+	downloaded, err := runner.downloadBody(url, Options{CacheDir: cacheDir, CacheName: "gomi", CacheVersion: "v1.6.3"})
 	if err != nil {
 		t.Fatalf("download body: %v", err)
 	}
-	if string(body) != "cached-data" {
-		t.Fatalf("expected cached data, got %q", string(body))
+	if string(downloaded.Body) != "cached-data" {
+		t.Fatalf("expected cached data, got %q", string(downloaded.Body))
 	}
 	if calls != 0 {
 		t.Fatalf("expected no network calls, got %d", calls)
@@ -224,12 +225,44 @@ func TestDownloadBodyResumesLargeCachedDownload(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Eq(t, fmt.Sprintf("bytes=%d-%d", chunkStart, chunkEnd), gotRange.Load())
-	assert.Eq(t, body, got)
+	assert.Eq(t, body, got.Body)
 	saved, readErr := os.ReadFile(cachePath)
 	assert.Nil(t, readErr)
 	assert.Eq(t, body, saved)
 	_, statErr := os.Stat(cachePath + ".part")
 	assert.True(t, os.IsNotExist(statErr))
+}
+
+func TestRunDownloadOnlyPreservesLastModifiedTimestamp(t *testing.T) {
+	modTime := time.Date(2026, 4, 30, 11, 32, 59, 0, time.UTC)
+	body := []byte("asset-data")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Last-Modified", modTime.Format(http.TimeFormat))
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+
+	outputDir := t.TempDir()
+	runner := NewRunner(NewDefaultService(nil, nil))
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+
+	result, err := runner.Run(server.URL+"/rufus-4.14p.exe", Options{
+		DownloadOnly: true,
+		Output:       outputDir,
+		CacheDir:     t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("download asset: %v", err)
+	}
+
+	assert.Eq(t, 1, len(result.ExtractedFiles))
+	info, err := os.Stat(result.ExtractedFiles[0])
+	if err != nil {
+		t.Fatalf("stat downloaded file: %v", err)
+	}
+	assert.Eq(t, modTime, info.ModTime().UTC())
 }
 
 func TestDownloadPrintsProxyNoticeForRemoteRequest(t *testing.T) {

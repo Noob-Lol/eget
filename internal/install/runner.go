@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -12,6 +13,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/gookit/cliui/progress"
 	"github.com/gookit/goutil/x/ccolor"
@@ -49,6 +51,11 @@ type InstallRunner struct {
 	AssetRunner            func(path string, args []string, stdout, stderr io.Writer) error
 	Stdout                 io.Writer
 	Stderr                 io.Writer
+}
+
+type downloadBodyResult struct {
+	Body    []byte
+	ModTime time.Time
 }
 
 func NewRunner(service *Service) *InstallRunner {
@@ -128,7 +135,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 		return RunResult{}, err
 	}
 
-	body, err := r.downloadBody(url, opts)
+	downloaded, err := r.downloadBody(url, opts)
 	if err != nil {
 		return RunResult{}, fmt.Errorf("%s (URL: %s)", err, url)
 	}
@@ -140,7 +147,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 		return RunResult{}, err
 	}
 	verbosef("verifier: checksum_asset=%t verify_arg=%t", sumAsset != "", opts.Verify != "")
-	if err := verifier.Verify(body); err != nil {
+	if err := verifier.Verify(downloaded.Body); err != nil {
 		return RunResult{}, err
 	}
 	if opts.Verify == "" && sumAsset != "" {
@@ -152,11 +159,11 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	}
 
 	if opts.DownloadOnly && opts.ExtractFile == "" && !opts.All {
-		return r.extractDownloadedBody(url, tool, body, opts, output)
+		return r.extractDownloadedBody(url, tool, downloaded, opts, output)
 	}
 
 	if opts.URLTemplate.InstallAction == InstallActionRunAsset {
-		assetPath, err := r.materializeRunAsset(body, url, opts)
+		assetPath, err := r.materializeRunAsset(downloaded.Body, url, opts)
 		if err != nil {
 			return RunResult{}, err
 		}
@@ -173,10 +180,10 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 		}, nil
 	}
 
-	return r.extractDownloadedBody(url, tool, body, opts, output)
+	return r.extractDownloadedBody(url, tool, downloaded, opts, output)
 }
 
-func (r *InstallRunner) extractDownloadedBody(url, tool string, body []byte, opts Options, output io.Writer) (RunResult, error) {
+func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downloadBodyResult, opts Options, output io.Writer) (RunResult, error) {
 	extractor, err := SelectExtractorAs[Extractor](r.Service, url, tool, &opts)
 	if err != nil {
 		return RunResult{}, err
@@ -192,7 +199,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, body []byte, opt
 				IsGUI:       opts.IsGUI,
 				InstallMode: opts.InstallMode,
 			}
-			paths, err := direct.ExtractAllTo(body, effectiveOutput(opts))
+			paths, err := direct.ExtractAllTo(downloaded.Body, effectiveOutput(opts))
 			if err != nil {
 				return RunResult{}, err
 			}
@@ -207,7 +214,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, body []byte, opt
 		}
 	}
 
-	bin, bins, err := extractor.Extract(body, opts.All)
+	bin, bins, err := extractor.Extract(downloaded.Body, opts.All)
 	if len(bins) != 0 && err != nil && !opts.All {
 		bin, opts.All, err = r.resolveExtractedFile(bins, opts)
 		if err != nil {
@@ -242,7 +249,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, body []byte, opt
 		InstallMode: opts.InstallMode,
 	}
 	if opts.InstallMode == InstallModeInstaller {
-		installerPath, err := r.materializeInstallerFile(body, url, bin, opts)
+		installerPath, err := r.materializeInstallerFile(downloaded.Body, url, bin, opts)
 		if err != nil {
 			return RunResult{}, err
 		}
@@ -268,6 +275,11 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, body []byte, opt
 		}
 		verbosef("extract output: %s", out)
 		ccolor.Fprintf(output, "✅ Extracted <info>%s</> to <cyan>%s</>\n", file.ArchiveName, out)
+		if out != "-" && !downloaded.ModTime.IsZero() {
+			if err := applyModTime(out, downloaded.ModTime); err != nil {
+				return "", err
+			}
+		}
 		return out, nil
 	}
 
@@ -493,7 +505,7 @@ func installerMaterializePath(opts Options, file ExtractedFile) string {
 	return filepath.Join(dir, "installers", filepath.Base(name))
 }
 
-func (r *InstallRunner) downloadBody(url string, opts Options) ([]byte, error) {
+func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResult, error) {
 	cachePath := CacheFilePathWithMeta(opts.CacheDir, url, CacheMeta{Name: opts.CacheName, Version: opts.CacheVersion})
 	output := r.Stdout
 	if output == nil || opts.Quiet {
@@ -502,18 +514,30 @@ func (r *InstallRunner) downloadBody(url string, opts Options) ([]byte, error) {
 	if cachePath != "" && !IsLocalFile(url) {
 		if data, err := os.ReadFile(cachePath); err == nil {
 			ccolor.Fprintf(output, " - Using cached file <cyan>%s</>\n", filepath.Base(cachePath))
-			return data, nil
+			return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath)}, nil
 		}
-		if _, err := DownloadFile(url, cachePath, r.downloadProgress(opts), opts); err != nil {
-			return nil, err
+		result, err := DownloadFile(url, cachePath, r.downloadProgress(opts), opts)
+		if err != nil {
+			return downloadBodyResult{}, err
 		}
-		return os.ReadFile(cachePath)
+		modTime := parseHTTPTime(result.LastModified)
+		if !modTime.IsZero() {
+			_ = applyModTime(cachePath, modTime)
+		}
+		data, err := os.ReadFile(cachePath)
+		if err != nil {
+			return downloadBodyResult{}, err
+		}
+		if modTime.IsZero() {
+			modTime = fileModTime(cachePath)
+		}
+		return downloadBodyResult{Body: data, ModTime: modTime}, nil
 	}
 
 	buf := &bytes.Buffer{}
 	err := Download(url, buf, r.downloadProgress(opts), opts)
 	if err != nil {
-		return nil, err
+		return downloadBodyResult{}, err
 	}
 
 	body := buf.Bytes()
@@ -522,7 +546,26 @@ func (r *InstallRunner) downloadBody(url string, opts Options) ([]byte, error) {
 			_ = os.WriteFile(cachePath, body, 0o644)
 		}
 	}
-	return body, nil
+	return downloadBodyResult{Body: body}, nil
+}
+
+func parseHTTPTime(value string) time.Time {
+	if value == "" {
+		return time.Time{}
+	}
+	parsed, err := http.ParseTime(value)
+	if err != nil {
+		return time.Time{}
+	}
+	return parsed
+}
+
+func fileModTime(path string) time.Time {
+	info, err := os.Stat(path)
+	if err != nil {
+		return time.Time{}
+	}
+	return info.ModTime()
 }
 
 func (r *InstallRunner) downloadProgress(opts Options) func(int64) io.Writer {
