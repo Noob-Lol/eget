@@ -94,7 +94,7 @@ func Download(url string, out io.Writer, getbar func(size int64) io.Writer, opts
 	return client.Download(url, out, getbar, ClientOptions(opts))
 }
 
-func DownloadFile(url, target string, getbar func(size int64) io.Writer, opts Options) error {
+func DownloadFile(url, target string, getbar func(size int64) io.Writer, opts Options) (client.DownloadFileResult, error) {
 	restoreDownloadGet := client.SetDownloadGetWithOptionsForTest(func(url string, clientOpts client.Options) (*http.Response, error) {
 		return downloadGetWithOptions(url, opts)
 	})

@@ -345,7 +345,7 @@ git commit -m "fix(download): handle parallel resume fallbacks"
 - Test: `internal/install/runner_test.go`
 - Update: `docs/plans/resumable-parallel-download-plan.md`
 
-- [ ] **Step 1: 调整 install wrapper 返回 `DownloadFileResult`**
+- [x] **Step 1: 调整 install wrapper 返回 `DownloadFileResult`**
 
 实现：
 
@@ -363,7 +363,7 @@ go test ./internal/install
 
 Expected: PASS。
 
-- [ ] **Step 2: 增加 install 并发续传集成测试**
+- [x] **Step 2: 增加 install 并发续传集成测试**
 
 测试名称：`TestDownloadBodyResumesMissingParallelChunks`
 
@@ -382,7 +382,7 @@ go test ./internal/install -run TestDownloadBodyResumesMissingParallelChunks
 
 Expected: PASS。
 
-- [ ] **Step 3: 提交 Task 4**
+- [x] **Step 3: 提交 Task 4**
 
 Run:
 

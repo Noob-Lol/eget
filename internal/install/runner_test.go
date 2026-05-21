@@ -168,8 +168,10 @@ func TestDownloadBodyUsesCacheMetadata(t *testing.T) {
 }
 
 func TestDownloadBodyResumesLargeCachedDownload(t *testing.T) {
-	body := bytes.Repeat([]byte("r"), 768*1024)
-	partSize := len(body) / 2
+	body := bytes.Repeat([]byte("r"), 12*1024*1024)
+	chunkSize := 4 * 1024 * 1024
+	chunkStart := 2 * chunkSize
+	chunkEnd := len(body) - 1
 
 	var gotRange atomic.Value
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -182,10 +184,13 @@ func TestDownloadBodyResumesLargeCachedDownload(t *testing.T) {
 		rangeHeader := r.Header.Get("Range")
 		gotRange.Store(rangeHeader)
 		if rangeHeader != "" {
-			w.Header().Set("Content-Length", strconv.Itoa(len(body)-partSize))
-			w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", partSize, len(body)-1, len(body)))
+			if rangeHeader != fmt.Sprintf("bytes=%d-%d", chunkStart, chunkEnd) {
+				t.Fatalf("unexpected range %q", rangeHeader)
+			}
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)-chunkStart))
+			w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", chunkStart, chunkEnd, len(body)))
 			w.WriteHeader(http.StatusPartialContent)
-			_, _ = w.Write(body[partSize:])
+			_, _ = w.Write(body[chunkStart:])
 			return
 		}
 		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
@@ -196,15 +201,29 @@ func TestDownloadBodyResumesLargeCachedDownload(t *testing.T) {
 
 	cacheDir := t.TempDir()
 	cachePath := CacheFilePathWithMeta(cacheDir, downloadURL, CacheMeta{})
-	assert.Nil(t, os.WriteFile(cachePath+".part", body[:partSize], 0o644))
-	meta := fmt.Sprintf("{\n  \"schema\": 1,\n  \"url\": %q,\n  \"size\": %d,\n  \"etag\": %q\n}\n", downloadURL, len(body), `"install-resume-v1"`)
+	part := make([]byte, len(body))
+	copy(part[:chunkStart], body[:chunkStart])
+	assert.Nil(t, os.WriteFile(cachePath+".part", part, 0o644))
+	meta := fmt.Sprintf(`{
+  "schema": 2,
+  "url": %q,
+  "size": %d,
+  "etag": %q,
+  "chunk_size": %d,
+  "chunks": [
+    {"start": 0, "end": %d, "done": true},
+    {"start": %d, "end": %d, "done": true},
+    {"start": %d, "end": %d, "done": false}
+  ]
+}
+`, downloadURL, len(body), `"install-resume-v1"`, chunkSize, chunkSize-1, chunkSize, chunkStart-1, chunkStart, chunkEnd)
 	assert.Nil(t, os.WriteFile(cachePath+".meta.json", []byte(meta), 0o644))
 
 	runner := &InstallRunner{Stderr: io.Discard}
 	got, err := runner.downloadBody(downloadURL, Options{CacheDir: cacheDir})
 
 	assert.Nil(t, err)
-	assert.Eq(t, fmt.Sprintf("bytes=%d-", partSize), gotRange.Load())
+	assert.Eq(t, fmt.Sprintf("bytes=%d-%d", chunkStart, chunkEnd), gotRange.Load())
 	assert.Eq(t, body, got)
 	saved, readErr := os.ReadFile(cachePath)
 	assert.Nil(t, readErr)

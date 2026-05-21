@@ -63,13 +63,18 @@ func DownloadFile(rawURL, target string, getbar func(size int64) io.Writer, opts
 	partPath := target + ".part"
 	metaPath := target + ".meta.json"
 	remote, remoteOK := probeDownloadFile(rawURL, opts)
-	if remoteOK && remote.Size > resumableDownloadMinSize && remote.AcceptRange {
+	if remoteOK && remote.AcceptRange && (remote.Size > resumableDownloadMinSize || hasParallelDownloadFileMeta(metaPath)) {
 		chunks := effectiveFileChunkCount(opts.ChunkConcurrency, remote.Size)
 		if chunks > 1 {
 			return downloadFileParallel(rawURL, target, partPath, metaPath, remote, getbar, opts, chunks)
 		}
 	}
 	return downloadFileSingle(rawURL, target, partPath, metaPath, getbar, opts)
+}
+
+func hasParallelDownloadFileMeta(metaPath string) bool {
+	meta, ok := loadDownloadFileMeta(metaPath)
+	return ok && meta.Schema == 2 && len(meta.Chunks) > 0
 }
 
 func downloadLocalFile(rawURL, target string) (DownloadFileResult, error) {

@@ -496,7 +496,7 @@ func (r *InstallRunner) downloadBody(url string, opts Options) ([]byte, error) {
 			ccolor.Fprintf(output, " - Using cached file <cyan>%s</>\n", filepath.Base(cachePath))
 			return data, nil
 		}
-		if err := DownloadFile(url, cachePath, r.downloadProgress(opts), opts); err != nil {
+		if _, err := DownloadFile(url, cachePath, r.downloadProgress(opts), opts); err != nil {
 			return nil, err
 		}
 		return os.ReadFile(cachePath)
