@@ -151,6 +151,10 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 		ccolor.Fprintln(output, "<error>Checksum verified</>")
 	}
 
+	if opts.DownloadOnly && opts.ExtractFile == "" && !opts.All {
+		return r.extractDownloadedBody(url, tool, body, opts, output)
+	}
+
 	if opts.URLTemplate.InstallAction == InstallActionRunAsset {
 		assetPath, err := r.materializeRunAsset(body, url, opts)
 		if err != nil {
@@ -169,6 +173,10 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 		}, nil
 	}
 
+	return r.extractDownloadedBody(url, tool, body, opts, output)
+}
+
+func (r *InstallRunner) extractDownloadedBody(url, tool string, body []byte, opts Options, output io.Writer) (RunResult, error) {
 	extractor, err := SelectExtractorAs[Extractor](r.Service, url, tool, &opts)
 	if err != nil {
 		return RunResult{}, err
