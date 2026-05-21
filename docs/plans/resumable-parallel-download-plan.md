@@ -398,7 +398,7 @@ git commit -m "feat(install): use parallel resumable cache downloads"
 - Test: `internal/sdk/download_test.go`
 - Update: `docs/plans/resumable-parallel-download-plan.md`
 
-- [ ] **Step 1: 写失败测试：SDK 使用并发分片下载**
+- [x] **Step 1: 写失败测试：SDK 使用并发分片下载**
 
 测试名称：`TestDownloadArchiveUsesParallelClientDownload`
 
@@ -418,7 +418,7 @@ go test ./internal/sdk -run TestDownloadArchiveUsesParallelClientDownload
 
 Expected: FAIL。当前 SDK 是单连接续传。
 
-- [ ] **Step 2: 修改 `DownloadArchive()` 调用 client**
+- [x] **Step 2: 修改 `DownloadArchive()` 调用 client**
 
 实现：
 
@@ -456,7 +456,7 @@ go test ./internal/sdk
 
 Expected: PASS。
 
-- [ ] **Step 3: 调整旧 SDK 续传测试**
+- [x] **Step 3: 调整旧 SDK 续传测试**
 
 实现：
 
@@ -472,7 +472,7 @@ go test ./internal/sdk
 
 Expected: PASS。
 
-- [ ] **Step 4: 提交 Task 5**
+- [x] **Step 4: 提交 Task 5**
 
 Run:
 
