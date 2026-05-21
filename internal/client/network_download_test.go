@@ -68,7 +68,7 @@ func TestDownloadFileKeepsPartForLargeRangeDownloadFailure(t *testing.T) {
 	defer server.Close()
 
 	target := filepath.Join(t.TempDir(), "tool.zip")
-	err := DownloadFile(server.URL, target, nil, Options{ChunkConcurrency: 1})
+	_, err := DownloadFile(server.URL, target, nil, Options{ChunkConcurrency: 1})
 
 	assert.NotNil(t, err)
 	partInfo, statErr := os.Stat(target + ".part")
@@ -78,6 +78,58 @@ func TestDownloadFileKeepsPartForLargeRangeDownloadFailure(t *testing.T) {
 	assert.Nil(t, statErr)
 	_, statErr = os.Stat(target)
 	assert.True(t, os.IsNotExist(statErr))
+}
+
+func TestDownloadFileUsesParallelRangeChunksForLargeFiles(t *testing.T) {
+	body := bytes.Repeat([]byte("p"), 12*1024*1024)
+	origMinSize := resumableDownloadMinSize
+	resumableDownloadMinSize = 256 * 1024
+	defer func() { resumableDownloadMinSize = origMinSize }()
+
+	var rangeRequests atomic.Int64
+	seenRanges := make(chan string, 8)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("ETag", `"parallel-v1"`)
+		if r.Method == http.MethodHead {
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+			return
+		}
+		rangeHeader := r.Header.Get("Range")
+		if rangeHeader == "" {
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+			_, _ = w.Write(body)
+			return
+		}
+		rangeRequests.Add(1)
+		seenRanges <- rangeHeader
+		start, end := parseTestRange(t, rangeHeader)
+		w.Header().Set("Content-Length", strconv.Itoa(end-start+1))
+		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, len(body)))
+		w.WriteHeader(http.StatusPartialContent)
+		_, _ = w.Write(body[start : end+1])
+	}))
+	defer server.Close()
+
+	target := filepath.Join(t.TempDir(), "tool.zip")
+	result, err := DownloadFile(server.URL+"/tool.zip", target, nil, Options{ChunkConcurrency: 3})
+
+	assert.Nil(t, err)
+	assert.True(t, result.Parallel)
+	assert.False(t, result.Resumed)
+	assert.True(t, rangeRequests.Load() >= 3)
+	saved, readErr := os.ReadFile(target)
+	assert.Nil(t, readErr)
+	assert.Eq(t, body, saved)
+	_, statErr := os.Stat(target + ".part")
+	assert.True(t, os.IsNotExist(statErr))
+
+	close(seenRanges)
+	unique := map[string]struct{}{}
+	for rangeHeader := range seenRanges {
+		unique[rangeHeader] = struct{}{}
+	}
+	assert.True(t, len(unique) >= 3)
 }
 
 func TestDownloadFileResumesLargeRangeDownload(t *testing.T) {
@@ -119,7 +171,7 @@ func TestDownloadFileResumesLargeRangeDownload(t *testing.T) {
 		ETag:   `"resume-v1"`,
 	}))
 
-	err := DownloadFile(server.URL, target, nil, Options{ChunkConcurrency: 1})
+	_, err := DownloadFile(server.URL, target, nil, Options{ChunkConcurrency: 1})
 
 	assert.Nil(t, err)
 	assert.Eq(t, fmt.Sprintf("bytes=%d-", partSize), gotRange.Load())
@@ -149,7 +201,7 @@ func TestDownloadFileRemovesPartWhenLargeDownloadCannotResume(t *testing.T) {
 	defer server.Close()
 
 	target := filepath.Join(t.TempDir(), "tool.zip")
-	err := DownloadFile(server.URL, target, nil, Options{ChunkConcurrency: 1})
+	_, err := DownloadFile(server.URL, target, nil, Options{ChunkConcurrency: 1})
 
 	assert.NotNil(t, err)
 	assert.Eq(t, "", gotRange.Load())

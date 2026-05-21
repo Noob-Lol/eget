@@ -123,7 +123,7 @@ type downloadChunkMeta struct {
 - Test: `internal/client/network_download_test.go`
 - Update: `docs/plans/resumable-parallel-download-plan.md`
 
-- [ ] **Step 1: 写失败测试：首次大文件使用多个 Range 分片**
+- [x] **Step 1: 写失败测试：首次大文件使用多个 Range 分片**
 
 测试名称：`TestDownloadFileUsesParallelRangeChunksForLargeFiles`
 
@@ -148,7 +148,7 @@ go test ./internal/client -run TestDownloadFileUsesParallelRangeChunksForLargeFi
 
 Expected: FAIL。当前 `DownloadFile()` 是单连接续传，不会并发分片。
 
-- [ ] **Step 2: 新增 meta v2 和分片规划 helper**
+- [x] **Step 2: 新增 meta v2 和分片规划 helper**
 
 实现：
 
@@ -177,7 +177,7 @@ go test ./internal/client -run TestDownloadFileUsesParallelRangeChunksForLargeFi
 
 Expected: 仍 FAIL，直到分片下载实现完成。
 
-- [ ] **Step 3: 实现并发分片写 `.part`**
+- [x] **Step 3: 实现并发分片写 `.part`**
 
 实现：
 
@@ -200,7 +200,7 @@ go test ./internal/client -run TestDownloadFileUsesParallelRangeChunksForLargeFi
 
 Expected: PASS。
 
-- [ ] **Step 4: 提交 Task 1**
+- [x] **Step 4: 提交 Task 1**
 
 Run:
 
