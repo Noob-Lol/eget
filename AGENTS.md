@@ -16,8 +16,6 @@
 
 <!-- PROCESSING WORKS:START -->
 
-- [ ] 并发分片断点续传实现：[docs/plans/resumable-parallel-download-plan.md](docs/plans/resumable-parallel-download-plan.md)
-
 <!-- PROCESSING WORKS:END -->
 
 ## 核心原则

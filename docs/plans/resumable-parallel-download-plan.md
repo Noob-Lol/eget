@@ -486,7 +486,7 @@ git commit -m "feat(sdk): reuse resumable parallel downloader"
 **Files:**
 - Modify: `docs/plans/resumable-parallel-download-plan.md`
 
-- [ ] **Step 1: 聚焦测试**
+- [x] **Step 1: 聚焦测试**
 
 Run:
 
@@ -496,7 +496,7 @@ go test ./internal/client ./internal/install ./internal/sdk
 
 Expected: PASS。
 
-- [ ] **Step 2: 全量测试**
+- [x] **Step 2: 全量测试**
 
 Run:
 
@@ -506,7 +506,7 @@ go test ./...
 
 Expected: PASS。
 
-- [ ] **Step 3: 更新计划 checkbox 并提交**
+- [x] **Step 3: 更新计划 checkbox 并提交**
 
 Run:
 
