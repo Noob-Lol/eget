@@ -123,6 +123,8 @@ eget sdk install --force go@1.22.0
 eget sdk list
 eget sdk list --json
 eget sdk remove go@1.22.0
+eget sdk config add --all
+eget sdk config add --all --mirror
 eget sdk index refresh go
 eget sdk index show go
 ```
@@ -411,6 +413,13 @@ strip_components = 1
 os_map = { windows = "win", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "x64", arm64 = "arm64", 386 = "x86" }
 ext_map = { windows = "zip", linux = "tar.xz", darwin = "tar.gz" }
+```
+
+也可以通过内置模板快速写入 SDK 配置：
+
+```bash
+eget sdk config add --all
+eget sdk config add --all --mirror
 ```
 
 创建默认配置：

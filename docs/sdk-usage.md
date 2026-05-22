@@ -180,6 +180,32 @@ SDK 安装记录默认写入：
 
 这个 store 和 package 安装记录 `installed.toml` 分开，避免多版本 SDK 语义污染普通单版本工具记录。
 
+## 内置 SDK 配置模板
+
+可以通过 `eget sdk config add` 写入内置 SDK 配置模板，避免手写 `[sdk.<name>]`。
+
+默认使用官方源：
+
+```bash
+eget sdk config add go
+eget sdk config add node
+eget sdk config add jdk
+eget sdk config add --all
+```
+
+使用内置镜像源：
+
+```bash
+eget sdk config add jdk --mirror
+eget sdk config add --all --mirror
+```
+
+已存在的 SDK 配置默认不会覆盖。需要覆盖时使用：
+
+```bash
+eget sdk config add jdk --force
+```
+
 ## SDK 配置字段
 
 每个 SDK 用 `[sdk.<name>]` 配置：

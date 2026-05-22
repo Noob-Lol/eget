@@ -208,6 +208,13 @@ install_args = ["install", "latest"]
 
 使用 `[sdk.<name>]` 配置 SDK 归档下载。
 
+也可以通过内置模板快速写入 SDK 配置：
+
+```bash
+eget sdk config add --all
+eget sdk config add --all --mirror
+```
+
 示例：
 
 ```toml

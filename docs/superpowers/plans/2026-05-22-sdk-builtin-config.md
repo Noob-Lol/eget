@@ -943,7 +943,7 @@ git commit -m "feat: wire sdk config add handler"
 - Modify: `README.md`
 - Modify: `README.zh-CN.md`
 
-- [ ] **Step 1: 更新文档**
+- [x] **Step 1: 更新文档**
 
 在 `docs/sdk-usage.md` 增加一节：
 
@@ -999,7 +999,7 @@ eget sdk config add --all --mirror
 ```
 ````
 
-- [ ] **Step 2: 运行完整测试**
+- [x] **Step 2: 运行完整测试**
 
 Run:
 
@@ -1009,7 +1009,7 @@ go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 3: 使用临时配置做命令冒烟测试**
+- [x] **Step 3: 使用临时配置做命令冒烟测试**
 
 Run:
 
@@ -1038,7 +1038,7 @@ Expected output contains:
 ✓ Refreshed SDK index: jdk
 ```
 
-- [ ] **Step 4: 清理临时目录**
+- [x] **Step 4: 清理临时目录**
 
 Run:
 
@@ -1048,7 +1048,7 @@ if (-not ($target.Path.StartsWith((Resolve-Path .).Path))) { throw "unexpected t
 Remove-Item -LiteralPath $target.Path -Recurse -Force
 ```
 
-- [ ] **Step 5: 提交 Task 5**
+- [x] **Step 5: 提交 Task 5**
 
 Run:
 

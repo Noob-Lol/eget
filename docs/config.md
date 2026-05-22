@@ -208,6 +208,13 @@ Fields:
 
 Use `[sdk.<name>]` to configure SDK archive downloads.
 
+You can also write built-in SDK templates with:
+
+```bash
+eget sdk config add --all
+eget sdk config add --all --mirror
+```
+
 Example:
 
 ```toml
