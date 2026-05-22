@@ -117,6 +117,29 @@ func TestParseHTMLIndexUsesCustomFilenamePattern(t *testing.T) {
 	assert.Eq(t, "zip", index.Items[0].Files[0].Ext)
 }
 
+func TestParseHTMLIndexForOfficialJDKArchiveLinks(t *testing.T) {
+	body := strings.NewReader(`
+<a href="https://download.java.net/java/GA/jdk21.0.2/openjdk-21.0.2_linux-x64_bin.tar.gz">jdk</a>
+<a href="https://download.java.net/java/GA/jdk21.0.2/openjdk-21.0.2_windows-x64_bin.zip">jdk</a>
+`)
+
+	index, err := ParseHTMLIndex(body, HTMLParseOptions{
+		SDK:             "jdk",
+		SourceURL:       "https://jdk.java.net/archive/",
+		FilenamePattern: "openjdk-{version}_{os}-{arch}_bin.{ext}",
+	})
+	if err != nil {
+		t.Fatalf("parse jdk html index: %v", err)
+	}
+
+	assert.Eq(t, 1, len(index.Items))
+	assert.Eq(t, "21.0.2", index.Items[0].Version)
+	linuxFile := indexFileByOS(t, index.Items[0].Files, "linux")
+	assert.Eq(t, "x64", linuxFile.Arch)
+	assert.Eq(t, "tar.gz", linuxFile.Ext)
+	assert.Eq(t, "https://download.java.net/java/GA/jdk21.0.2/openjdk-21.0.2_linux-x64_bin.tar.gz", linuxFile.URL)
+}
+
 func TestParseHTMLIndexErrorsWhenNoFilesMatch(t *testing.T) {
 	_, err := ParseHTMLIndex(strings.NewReader(`<a href="README.txt">README</a>`), HTMLParseOptions{
 		SDK:       "go",

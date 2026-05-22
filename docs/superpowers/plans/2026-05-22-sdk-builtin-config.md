@@ -44,7 +44,7 @@
 - Create: `internal/sdk/builtin_config_test.go`
 - Modify: `internal/sdk/html_index_test.go`
 
-- [ ] **Step 1: 编写失败测试：模板查找和别名解析**
+- [x] **Step 1: 编写失败测试：模板查找和别名解析**
 
 创建 `internal/sdk/builtin_config_test.go`：
 
@@ -99,7 +99,7 @@ func TestBuiltinOfficialAndMirrorTemplatesUseExpectedURLs(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 编写失败测试：官方 JDK HTML index 解析**
+- [x] **Step 2: 编写失败测试：官方 JDK HTML index 解析**
 
 在 `internal/sdk/html_index_test.go` 追加：
 
@@ -128,7 +128,7 @@ func TestParseHTMLIndexForOfficialJDKArchiveLinks(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 运行测试确认失败**
+- [x] **Step 3: 运行测试确认失败**
 
 Run:
 
@@ -141,7 +141,7 @@ Expected:
 - 编译失败，提示 `BuiltinConfigOfficial`、`BuiltinConfigMirror`、`FindBuiltinConfig`、`BuiltinConfigNames` 未定义。
 - 如果执行到 HTML parser 测试，该测试应基于现有 parser 通过。
 
-- [ ] **Step 4: 实现内置模板注册表**
+- [x] **Step 4: 实现内置模板注册表**
 
 创建 `internal/sdk/builtin_config.go`：
 
@@ -325,7 +325,7 @@ func sdkIntPtr(value int) *int {
 }
 ```
 
-- [ ] **Step 5: 运行 SDK 测试确认通过**
+- [x] **Step 5: 运行 SDK 测试确认通过**
 
 Run:
 
@@ -335,7 +335,7 @@ go test ./internal/sdk -run 'TestFindBuiltinConfig|TestBuiltinConfig|TestParseHT
 
 Expected: PASS.
 
-- [ ] **Step 6: 提交 Task 1**
+- [x] **Step 6: 提交 Task 1**
 
 Run:
 
