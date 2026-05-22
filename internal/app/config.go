@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/inherelab/eget/internal/client"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 	forge "github.com/inherelab/eget/internal/source/forge"
@@ -122,6 +123,7 @@ func (s ConfigService) ConfigInit() (string, error) {
 	target := "~/.local/bin"
 	cacheDir := "~/.cache/eget"
 	proxyURL := ""
+	userAgent := client.DefaultUserAgent
 	empty := ""
 	sys7zPath := ""
 	apiCacheEnable := false
@@ -134,6 +136,7 @@ func (s ConfigService) ConfigInit() (string, error) {
 	file.Global.Target = &target
 	file.Global.CacheDir = &cacheDir
 	file.Global.ProxyURL = &proxyURL
+	file.Global.UserAgent = &userAgent
 	file.Global.System = &empty
 	file.Global.Sys7zPath = &sys7zPath
 	file.Global.ChunkConcurrency = &chunkConcurrency

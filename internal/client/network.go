@@ -37,6 +37,7 @@ type Options struct {
 	GhproxyFallbacks  []string
 	DisableSSL        bool
 	ChunkConcurrency  int
+	UserAgent         string
 }
 
 type CacheMeta struct {
@@ -63,7 +64,7 @@ var proxyNoticeSeen = map[string]struct{}{}
 var downloadProgressFlushInterval = 500 * time.Millisecond
 var resumableDownloadMinSize int64 = 100 * 1024 * 1024
 
-const browserUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+const DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 
 func SetVerbose(enabled bool, writer io.Writer) {
 	verboseEnabled = enabled
@@ -144,12 +145,18 @@ func setAuthHeader(req *http.Request, disableSSL bool) error {
 	return nil
 }
 
-func setDefaultHeaders(req *http.Request) {
+func setDefaultHeaders(req *http.Request, opts Options) {
 	if req == nil || req.URL == nil {
 		return
 	}
-	if strings.EqualFold(req.URL.Hostname(), "sourceforge.net") && req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", browserUserAgent)
+	userAgent := opts.UserAgent
+	if userAgent == "" {
+		userAgent = DefaultUserAgent
+	}
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", userAgent)
+	}
+	if strings.EqualFold(req.URL.Hostname(), "sourceforge.net") && req.Header.Get("Accept") == "" {
 		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	}
 }
@@ -196,7 +203,7 @@ func GetWithOptions(rawURL string, opts Options) (*http.Response, error) {
 		if err := setAuthHeader(req, opts.DisableSSL); err != nil {
 			return nil, err
 		}
-		setDefaultHeaders(req)
+		setDefaultHeaders(req, opts)
 
 		if attemptURL != rawURL {
 			verbosef("ghproxy rewrite: %s -> %s", rawURL, attemptURL)
@@ -538,7 +545,7 @@ func requestWithOptions(method, rawURL, rangeHeader string, opts Options) (*http
 		if err := setAuthHeader(req, opts.DisableSSL); err != nil {
 			return nil, err
 		}
-		setDefaultHeaders(req)
+		setDefaultHeaders(req, opts)
 		if attemptURL != rawURL {
 			verbosef("ghproxy rewrite: %s -> %s", rawURL, attemptURL)
 		}

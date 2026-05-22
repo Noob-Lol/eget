@@ -16,6 +16,7 @@ func TestMergeInstallOptionsUsesGlobalValues(t *testing.T) {
 			ShowHash:     boolPtr(true),
 			CacheDir:     stringPtr("~/.cache/eget"),
 			ProxyURL:     stringPtr("http://127.0.0.1:7890"),
+			UserAgent:    stringPtr("global-agent"),
 			GuiTarget:    stringPtr("~/Applications"),
 			System:       stringPtr("linux/amd64"),
 			Target:       stringPtr("~/bin"),
@@ -37,6 +38,9 @@ func TestMergeInstallOptionsUsesGlobalValues(t *testing.T) {
 	}
 	if merged.ProxyURL != "http://127.0.0.1:7890" {
 		t.Fatalf("expected global proxy url to be applied, got %#v", merged)
+	}
+	if merged.UserAgent != "global-agent" {
+		t.Fatalf("expected global user_agent to be applied, got %#v", merged)
 	}
 	if merged.GuiTarget != "~/Applications" {
 		t.Fatalf("expected global gui_target to be applied, got %#v", merged)

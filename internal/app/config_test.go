@@ -55,6 +55,9 @@ func TestConfigInit(t *testing.T) {
 	if cfg.Global.ProxyURL == nil || *cfg.Global.ProxyURL != "" {
 		t.Fatalf("expected default global.proxy_url, got %#v", cfg.Global.ProxyURL)
 	}
+	if cfg.Global.UserAgent == nil || *cfg.Global.UserAgent == "" {
+		t.Fatalf("expected default global.user_agent, got %#v", cfg.Global.UserAgent)
+	}
 	if cfg.Global.Sys7zPath == nil || *cfg.Global.Sys7zPath != "" {
 		t.Fatalf("expected default global.sys7z_path, got %#v", cfg.Global.Sys7zPath)
 	}
@@ -150,6 +153,18 @@ target = "~/.local/bin"
 	}
 	if value != "http://127.0.0.1:7890" {
 		t.Fatalf("expected updated global.proxy_url, got %q", value)
+	}
+
+	if err := svc.ConfigSet("global.user_agent", "custom-agent/1.0"); err != nil {
+		t.Fatalf("config set user_agent: %v", err)
+	}
+
+	value, err = svc.ConfigGet("global.user_agent")
+	if err != nil {
+		t.Fatalf("config get updated global.user_agent: %v", err)
+	}
+	if value != "custom-agent/1.0" {
+		t.Fatalf("expected updated global.user_agent, got %q", value)
 	}
 
 	if err := svc.ConfigSet("global.target", "~/.local/bin"); err != nil {

@@ -1,6 +1,7 @@
 [global]
 cache_dir = "~/.cache/eget"
 proxy_url = ""
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 system = ""
 target = "~/.local/bin"
 gui_target = "~/Applications"
@@ -111,11 +112,13 @@ ext_map = { windows = "zip", linux = "tar.gzz", darwin = "tar.gz" }
 aliases = ["java"]
 target = "jdk/openjdk-{version}"
 # mirror1: https://mirrors.huaweicloud.com/openjdk/
-# mirror2: https://mirrors.tuna.tsinghua.edu.cn/Adoptium/ 目录层级比较深
-# mirror3: https://api.azul.com/metadata/v1/zulu/packages # json 格式，需要解析 json 数据
+# target = "jdk/zulu-{version}"
+# mirror2: https://api.azul.com/metadata/v1/zulu/packages # json 格式，需要解析 json 数据
 index_url = "https://mirrors.huaweicloud.com/openjdk/"
 index_format = "html"
-url_template = "https://mirrors.huaweicloud.com/openjdk/{version}/jdk-{version}-linux-x64_bin.gz"
-filename_path_prefix = "/jdk/"
-filename_pattern = "jdk-{version}-linux-x64_bin.gz"
+url_template = "https://mirrors.huaweicloud.com/openjdk/{version}/openjdk-{version}_{os}-{arch}_bin.{ext}"
+filename_pattern = "openjdk-{version}_{os}-{arch}_bin.{ext}"
 strip_components = 1
+arch_map = { amd64 = "x64", arm64 = "aarch64"}
+os_map = { darwin = "macos" }
+ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }

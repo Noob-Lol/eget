@@ -224,6 +224,64 @@ func TestServiceRefreshShowListAndClearIndex(t *testing.T) {
 	assert.Err(t, err)
 }
 
+func TestServiceRefreshIndexUsesBrowserHeaders(t *testing.T) {
+	root := t.TempDir()
+	var userAgent string
+	var accept string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userAgent = r.Header.Get("User-Agent")
+		accept = r.Header.Get("Accept")
+		_, _ = io.WriteString(w, `<a href="go1.21.1.linux-amd64.zip">go</a>`)
+	}))
+	defer server.Close()
+	cfg := testSDKConfig(root)
+	goSDK := cfg.SDK["go"]
+	goSDK.IndexURL = stringPtr(server.URL + "/golang/")
+	cfg.SDK["go"] = goSDK
+	svc := Service{
+		Config:     cfg,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+	}
+
+	_, err := svc.RefreshIndex(context.Background(), "go")
+	if err != nil {
+		t.Fatalf("refresh index: %v", err)
+	}
+
+	assert.Eq(t, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", userAgent)
+	assert.Contains(t, accept, "text/html")
+}
+
+func TestServiceRefreshIndexUsesConfiguredUserAgent(t *testing.T) {
+	root := t.TempDir()
+	var userAgent string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userAgent = r.Header.Get("User-Agent")
+		_, _ = io.WriteString(w, `<a href="go1.21.1.linux-amd64.zip">go</a>`)
+	}))
+	defer server.Close()
+	cfg := testSDKConfig(root)
+	cfg.Global.UserAgent = stringPtr("custom-agent/1.0")
+	goSDK := cfg.SDK["go"]
+	goSDK.IndexURL = stringPtr(server.URL + "/golang/")
+	cfg.SDK["go"] = goSDK
+	svc := Service{
+		Config:     cfg,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+	}
+
+	_, err := svc.RefreshIndex(context.Background(), "go")
+	if err != nil {
+		t.Fatalf("refresh index: %v", err)
+	}
+
+	assert.Eq(t, "custom-agent/1.0", userAgent)
+}
+
 func TestServiceSearchIndexMatchesKeywordsAndExcludes(t *testing.T) {
 	root := t.TempDir()
 	cfg := testSDKConfig(root)

@@ -44,6 +44,7 @@ target = "~/.local/bin"
 gui_target = "~/Applications"
 cache_dir = "~/.cache/eget"
 proxy_url = ""
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 system = ""
 sys7z_path = ""
 chunk_concurrency = 0
@@ -59,6 +60,7 @@ Fields:
 - `gui_target`: default install directory for portable GUI applications.
 - `cache_dir`: default cache root. Raw downloads, API cache files, SDK downloads, and SDK indexes are derived from this directory.
 - `proxy_url`: HTTP-layer proxy for remote requests. GitHub lookups and remote downloads both use it.
+- `user_agent`: default HTTP `User-Agent`. When empty, eget uses the built-in browser UA; configured values override the default.
 - `system`: default target platform in `GOOS/GOARCH` form, for example `windows/amd64`.
 - `sys7z_path`: optional 7z executable path. When empty, eget searches `PATH` for `7z`, `7zz`, then `7za`.
 - `chunk_concurrency`: default remote download chunk concurrency. `0` means the built-in default behavior.

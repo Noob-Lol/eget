@@ -44,6 +44,7 @@ target = "~/.local/bin"
 gui_target = "~/Applications"
 cache_dir = "~/.cache/eget"
 proxy_url = ""
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 system = ""
 sys7z_path = ""
 chunk_concurrency = 0
@@ -59,6 +60,7 @@ sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 - `gui_target`: 免安装 GUI 应用默认安装目录。
 - `cache_dir`: 缓存根目录。原始下载缓存、API cache、SDK 下载缓存和 SDK index 都基于此目录派生。
 - `proxy_url`: HTTP 层代理。GitHub 查询和远程下载都会使用它。
+- `user_agent`: HTTP 请求默认 `User-Agent`。为空时使用内置浏览器 UA；配置后覆盖默认值。
 - `system`: 默认目标平台，格式为 `GOOS/GOARCH`，例如 `windows/amd64`。
 - `sys7z_path`: 可选 7z 可执行文件路径。为空时会从 `PATH` 依次查找 `7z`、`7zz`、`7za`。
 - `chunk_concurrency`: 远程下载分块并发数。`0` 表示使用内置默认行为。

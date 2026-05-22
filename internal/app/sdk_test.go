@@ -17,6 +17,7 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 
 	cacheDir := filepath.Join(tmp, "cache")
 	proxyURL := "http://127.0.0.1:7890"
+	userAgent := "custom-agent/1.0"
 	apiCacheEnable := true
 	apiCacheTime := 180
 	disableSSL := true
@@ -27,6 +28,7 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 	cfg := cfgpkg.NewFile()
 	cfg.Global.CacheDir = &cacheDir
 	cfg.Global.ProxyURL = &proxyURL
+	cfg.Global.UserAgent = &userAgent
 	cfg.Global.DisableSSL = &disableSSL
 	cfg.Global.ChunkConcurrency = &chunkConcurrency
 	cfg.ApiCache.Enable = &apiCacheEnable
@@ -45,6 +47,7 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 	assert.Eq(t, filepath.Join(cacheDir, "sdk-index"), service.IndexCache.Dir)
 	assert.Eq(t, wantStorePath, service.Store.Path)
 	assert.Eq(t, proxyURL, service.ClientOpts.ProxyURL)
+	assert.Eq(t, userAgent, service.ClientOpts.UserAgent)
 	assert.True(t, service.ClientOpts.APICacheEnabled)
 	assert.Eq(t, filepath.Join(cacheDir, "api-cache"), service.ClientOpts.APICacheDir)
 	assert.Eq(t, apiCacheTime, service.ClientOpts.APICacheTime)

@@ -5,6 +5,7 @@ type Section struct {
 	AssetFilters         []string          `toml:"asset_filters" mapstructure:"asset_filters"`
 	CacheDir             *string           `toml:"cache_dir" mapstructure:"cache_dir"`
 	ProxyURL             *string           `toml:"proxy_url" mapstructure:"proxy_url"`
+	UserAgent            *string           `toml:"user_agent" mapstructure:"user_agent"`
 	DownloadOnly         *bool             `toml:"download_only" mapstructure:"download_only"`
 	Desc                 *string           `toml:"desc" mapstructure:"desc"`
 	File                 *string           `toml:"file" mapstructure:"file"`
@@ -92,6 +93,7 @@ type Merged struct {
 	AssetFilters        []string
 	CacheDir            string
 	ProxyURL            string
+	UserAgent           string
 	DownloadOnly        bool
 	File                string
 	GithubToken         string

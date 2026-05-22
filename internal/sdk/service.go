@@ -107,7 +107,7 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 		SDK:        cfg.Name,
 		Version:    version,
 		Filename:   filename,
-		ClientOpts: s.ClientOpts,
+		ClientOpts: s.effectiveClientOptions(),
 	})
 	if err != nil {
 		return InstallResult{}, err
@@ -495,7 +495,8 @@ func countIndexFiles(index Index) int {
 }
 
 func (s Service) fetchIndex(ctx context.Context, rawURL string) (io.ReadCloser, error) {
-	httpClient, err := newDownloadHTTPClient(s.ClientOpts)
+	clientOpts := s.effectiveClientOptions()
+	httpClient, err := newDownloadHTTPClient(clientOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -503,6 +504,12 @@ func (s Service) fetchIndex(ctx context.Context, rawURL string) (io.ReadCloser, 
 	if err != nil {
 		return nil, err
 	}
+	userAgent := clientOpts.UserAgent
+	if userAgent == "" {
+		userAgent = client.DefaultUserAgent
+	}
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -524,6 +531,14 @@ func (s Service) resolveConfig(name string) (Config, error) {
 		goarch = runtime.GOARCH
 	}
 	return ResolveConfig(s.Config, name, ResolveConfigOptions{GOOS: goos, GOARCH: goarch})
+}
+
+func (s Service) effectiveClientOptions() client.Options {
+	opts := s.ClientOpts
+	if opts.UserAgent == "" && s.Config != nil && s.Config.Global.UserAgent != nil {
+		opts.UserAgent = *s.Config.Global.UserAgent
+	}
+	return opts
 }
 
 func (s Service) resolveVersionAndFile(target Target, cfg Config) (string, IndexFile, error) {

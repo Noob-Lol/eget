@@ -385,6 +385,7 @@ func TestLoadFileReadsSDKSections(t *testing.T) {
 [global]
 sdk_target = "~/sdks"
 sdk_ext_map = { windows = "zip", linux = "tar.gz" }
+user_agent = "custom-agent/1.0"
 
 [sdk.go]
 aliases = ["golang"]
@@ -410,6 +411,7 @@ ext_map = { windows = "zip", linux = "tar.gz" }
 		t.Fatalf("expected global.sdk_target, got %#v", cfg.Global.SDKTarget)
 	}
 	assert.Eq(t, "tar.gz", cfg.Global.SDKExtMap["linux"])
+	assert.Eq(t, "custom-agent/1.0", *cfg.Global.UserAgent)
 	got := cfg.SDK["go"]
 	assert.Eq(t, []string{"golang"}, got.Aliases)
 	assert.Eq(t, "gosdk/go{version}", *got.Target)

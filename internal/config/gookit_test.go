@@ -30,6 +30,9 @@ func TestPathGetAndSet(t *testing.T) {
 	if err := SetByPath(cfg, "global.batch_concurrency", "3"); err != nil {
 		t.Fatalf("set global.batch_concurrency: %v", err)
 	}
+	if err := SetByPath(cfg, "global.user_agent", "custom-agent/1.0"); err != nil {
+		t.Fatalf("set global.user_agent: %v", err)
+	}
 	if err := SetByPath(cfg, "packages.fzf.repo", "junegunn/fzf"); err != nil {
 		t.Fatalf("set packages.fzf.repo: %v", err)
 	}
@@ -71,6 +74,10 @@ func TestPathGetAndSet(t *testing.T) {
 	batch, ok := GetByPath(cfg, "global.batch_concurrency")
 	if !ok || batch != 3 {
 		t.Fatalf("expected global.batch_concurrency to be 3, got %#v ok=%t", batch, ok)
+	}
+	userAgent, ok := GetByPath(cfg, "global.user_agent")
+	if !ok || userAgent != "custom-agent/1.0" {
+		t.Fatalf("expected global.user_agent to be set, got %#v ok=%t", userAgent, ok)
 	}
 	repo, ok := GetByPath(cfg, "packages.fzf.repo")
 	if !ok || repo != "junegunn/fzf" {
@@ -239,6 +246,19 @@ func TestDumpConfigStringIncludesSys7zPath(t *testing.T) {
 	assert.Contains(t, text, `sys7z_path = "C:/Program Files/7-Zip/7z.exe"`)
 }
 
+func TestDumpConfigStringIncludesUserAgent(t *testing.T) {
+	userAgent := "custom-agent/1.0"
+	cfg := NewFile()
+	cfg.Global.UserAgent = &userAgent
+
+	text, err := dumpConfigString(cfg)
+	if err != nil {
+		t.Fatalf("dump config string: %v", err)
+	}
+
+	assert.Contains(t, text, `user_agent = "custom-agent/1.0"`)
+}
+
 func TestDumpConfigStringIncludesIgnoreUpdatePackages(t *testing.T) {
 	cfg := NewFile()
 	cfg.Global.IgnoreUpdatePackages = []string{"fzf", "rg"}
@@ -335,12 +355,14 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	cfg := NewFile()
 	target := "~/.local/bin"
 	sdkTarget := "~/sdks"
+	userAgent := "custom-agent/1.0"
 	quiet := true
 	cacheTime := 300
 	repo := "junegunn/fzf"
 	sdkStrip := 1
 	cfg.Global.Target = &target
 	cfg.Global.SDKTarget = &sdkTarget
+	cfg.Global.UserAgent = &userAgent
 	cfg.Global.SDKExtMap = map[string]string{"windows": "zip", "linux": "tar.gz"}
 	cfg.Global.Quiet = &quiet
 	cfg.ApiCache.CacheTime = &cacheTime
@@ -373,6 +395,9 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	}
 	if loaded.Global.SDKTarget == nil || *loaded.Global.SDKTarget != "~/sdks" {
 		t.Fatalf("expected round-trip global.sdk_target, got %#v", loaded.Global.SDKTarget)
+	}
+	if loaded.Global.UserAgent == nil || *loaded.Global.UserAgent != "custom-agent/1.0" {
+		t.Fatalf("expected round-trip global.user_agent, got %#v", loaded.Global.UserAgent)
 	}
 	assert.Eq(t, "tar.gz", loaded.Global.SDKExtMap["linux"])
 	if loaded.Global.Quiet == nil || !*loaded.Global.Quiet {

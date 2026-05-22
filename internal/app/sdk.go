@@ -50,6 +50,9 @@ func sdkClientOptionsFromConfig(cfg *cfgpkg.File) client.Options {
 	if cfg.Global.ProxyURL != nil {
 		opts.ProxyURL = *cfg.Global.ProxyURL
 	}
+	if cfg.Global.UserAgent != nil {
+		opts.UserAgent = *cfg.Global.UserAgent
+	}
 	if cfg.Global.DisableSSL != nil {
 		opts.DisableSSL = *cfg.Global.DisableSSL
 	}

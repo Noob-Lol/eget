@@ -1336,6 +1336,25 @@ func TestResolveInstallOptionsPassesGlobalSys7zPath(t *testing.T) {
 	assert.Contains(t, filepath.ToSlash(opts.Sys7zPath), "bin/7z")
 }
 
+func TestResolveInstallOptionsUsesGlobalUserAgent(t *testing.T) {
+	cfg := cfgpkg.NewFile()
+	userAgent := "custom-agent/1.0"
+	cfg.Global.UserAgent = &userAgent
+
+	svc := Service{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	opts, err := svc.resolveInstallOptions("owner/repo", install.Options{}, false)
+	if err != nil {
+		t.Fatalf("resolve install options: %v", err)
+	}
+
+	assert.Eq(t, "custom-agent/1.0", opts.UserAgent)
+}
+
 func waitForMaxActive(t *testing.T, current func() int, want int) {
 	t.Helper()
 	deadline := time.After(time.Second)
