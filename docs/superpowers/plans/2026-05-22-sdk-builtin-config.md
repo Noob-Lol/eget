@@ -352,7 +352,7 @@ git commit -m "feat: add builtin sdk config templates"
 - Create: `internal/app/sdk_config.go`
 - Create: `internal/app/sdk_config_test.go`
 
-- [ ] **Step 1: 编写失败测试：ConfigService 写入 SDK 配置**
+- [x] **Step 1: 编写失败测试：ConfigService 写入 SDK 配置**
 
 创建 `internal/app/sdk_config_test.go`：
 
@@ -473,7 +473,7 @@ func appStringPtr(value string) *string {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -483,7 +483,7 @@ go test ./internal/app -run TestAddSDKConfig -count=1
 
 Expected: 编译失败，提示 `AddSDKConfig`、`SDKConfigAddOptions`、`SDKConfigActionAdded` 等未定义。
 
-- [ ] **Step 3: 实现 ConfigService.AddSDKConfig**
+- [x] **Step 3: 实现 ConfigService.AddSDKConfig**
 
 创建 `internal/app/sdk_config.go`：
 
@@ -577,7 +577,7 @@ func (s ConfigService) AddSDKConfig(opts SDKConfigAddOptions) (SDKConfigAddResul
 }
 ```
 
-- [ ] **Step 4: 运行 app 测试确认通过**
+- [x] **Step 4: 运行 app 测试确认通过**
 
 Run:
 
@@ -587,7 +587,7 @@ go test ./internal/app -run TestAddSDKConfig -count=1
 
 Expected: PASS.
 
-- [ ] **Step 5: 提交 Task 2**
+- [x] **Step 5: 提交 Task 2**
 
 Run:
 
