@@ -38,6 +38,7 @@
   - 没有添加config 的 package, 但是 installed 里的 package 也会记录描述信息，方便查看
 - [x] 新增命令 show 用于显示 package 详情: 配置信息+installed 信息, 包括版本, 安装路径, 状态, 项目主页URL 等
 - [x] 增强 asset filters 支持平台前缀规则，只会在当前平台生效。例如: `windows:zip`, `linux:tar.gz`, `darwin:tar.gz`
+- [x] sdk 内置 go, node, jdk 的配置模板，方便快速配置后使用。默认不初始化到配置，需要通过 ？ 初始化到配置的 sdk 下。
 
 ## search 结果展示 ✅
 

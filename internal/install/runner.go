@@ -270,7 +270,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	}
 
 	extract := func(file ExtractedFile) (string, error) {
-		out, err := outputPath(file, effectiveOutput(opts), opts.All, opts.Name, opts.RenameFiles)
+		out, err := outputPath(file, effectiveOutput(opts), opts.All, opts.Name, opts.OutputExplicit, opts.RenameFiles)
 		if err != nil {
 			return "", err
 		}
@@ -808,7 +808,7 @@ func checksumAsset(asset string, assets []string) string {
 	return ""
 }
 
-func outputPath(file ExtractedFile, output string, all bool, preferredName string, renameFiles ...map[string]string) (string, error) {
+func outputPath(file ExtractedFile, output string, all bool, preferredName string, outputExplicit bool, renameFiles ...map[string]string) (string, error) {
 	mode := file.Mode()
 	renamed := renamedOutputName(file, firstRenameMap(renameFiles))
 	out := resolvedOutputName(firstNonEmpty(renamed, file.Name), mode, preferredName)
@@ -836,7 +836,14 @@ func outputPath(file ExtractedFile, output string, all bool, preferredName strin
 		return filepath.Join(output, out), nil
 	}
 	if output != "" {
-		out = output
+		if outputExplicit {
+			out = output
+		} else {
+			if err := os.MkdirAll(output, 0o755); err != nil {
+				return "", err
+			}
+			return filepath.Join(output, out), nil
+		}
 	}
 	if os.Getenv("EGET_BIN") != "" && !strings.ContainsRune(out, os.PathSeparator) && mode&0o111 != 0 && !file.Dir {
 		return filepath.Join(os.Getenv("EGET_BIN"), out), nil

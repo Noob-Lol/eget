@@ -579,6 +579,62 @@ func TestRunTemplateFinderResolvesChecksumVarsForVerifier(t *testing.T) {
 	assert.Eq(t, []string{filepath.Join(outputDir, "claude.exe")}, result.ExtractedFiles)
 }
 
+func TestRunTreatsConfiguredOutputAsDirectoryWhenMissing(t *testing.T) {
+	assetURL := "https://example.com/mutagen_linux_amd64_v0.18.1.tar.gz"
+	origDownloadGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origDownloadGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		assert.Eq(t, assetURL, url)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("archive-data")),
+		}, nil
+	}
+
+	svc := NewService()
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	svc.NoVerifierFactory = func() Verifier {
+		return &fakeVerifier{}
+	}
+	svc.BinaryChooserFactory = func(tool string) any {
+		return &fakeChooser{name: "mutagen"}
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		return fakeInstallExtractor{file: ExtractedFile{
+			Name:        "mutagen",
+			ArchiveName: "mutagen",
+			mode:        0o755,
+			Extract: func(to string) error {
+				if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
+					return err
+				}
+				return os.WriteFile(to, []byte("binary-data"), 0o755)
+			},
+		}}
+	}
+
+	outputDir := filepath.Join(t.TempDir(), "bin")
+	runner := NewRunner(svc)
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+
+	result, err := runner.Run(assetURL, Options{Output: outputDir})
+	if err != nil {
+		t.Fatalf("run install: %v", err)
+	}
+
+	want := filepath.Join(outputDir, "mutagen")
+	assert.Eq(t, []string{want}, result.ExtractedFiles)
+	data, err := os.ReadFile(want)
+	assert.NoErr(t, err)
+	assert.Eq(t, "binary-data", string(data))
+	info, err := os.Stat(outputDir)
+	assert.NoErr(t, err)
+	assert.True(t, info.IsDir())
+}
+
 func TestRunAssetRunsVerifiedDownloadedAsset(t *testing.T) {
 	assetURL := "https://example.com/1.2.3/win32-x64/claude.exe"
 	origDownloadGetWithOptions := downloadGetWithOptions
@@ -1610,7 +1666,7 @@ func TestGetWithOptionsFallsBackToNextGhproxyHost(t *testing.T) {
 
 func TestOutputPathUsesHeuristicExecutableRename(t *testing.T) {
 	file := ExtractedFile{Name: "chlog-windows-amd64.exe", mode: 0o666}
-	got, err := outputPath(file, "", false, "")
+	got, err := outputPath(file, "", false, "", false)
 	if err != nil {
 		t.Fatalf("outputPath(): %v", err)
 	}
@@ -1621,7 +1677,7 @@ func TestOutputPathUsesHeuristicExecutableRename(t *testing.T) {
 
 func TestOutputPathUsesPreferredNameForExecutable(t *testing.T) {
 	file := ExtractedFile{Name: "chlog-windows-amd64.exe", mode: 0o666}
-	got, err := outputPath(file, "", false, "chlog")
+	got, err := outputPath(file, "", false, "chlog", false)
 	if err != nil {
 		t.Fatalf("outputPath(): %v", err)
 	}
@@ -1632,7 +1688,7 @@ func TestOutputPathUsesPreferredNameForExecutable(t *testing.T) {
 
 func TestOutputPathUsesPreferredNameWithExplicitExtension(t *testing.T) {
 	file := ExtractedFile{Name: "chlog-windows-amd64.exe", mode: 0o666}
-	got, err := outputPath(file, "", false, "custom-name.exe")
+	got, err := outputPath(file, "", false, "custom-name.exe", false)
 	if err != nil {
 		t.Fatalf("outputPath(): %v", err)
 	}
@@ -1641,9 +1697,21 @@ func TestOutputPathUsesPreferredNameWithExplicitExtension(t *testing.T) {
 	}
 }
 
+func TestOutputPathKeepsExplicitFileOutput(t *testing.T) {
+	file := ExtractedFile{Name: "chlog-windows-amd64.exe", mode: 0o666}
+	outputFile := filepath.Join(t.TempDir(), "custom-tool")
+	got, err := outputPath(file, outputFile, false, "", true)
+	if err != nil {
+		t.Fatalf("outputPath(): %v", err)
+	}
+	if got != outputFile {
+		t.Fatalf("expected explicit file output %q, got %q", outputFile, got)
+	}
+}
+
 func TestOutputPathKeepsArchiveDirectoriesForExtractAll(t *testing.T) {
 	file := ExtractedFile{Name: "Far/7-ZipEng.hlf", mode: 0o644}
-	got, err := outputPath(file, "dist", true, "")
+	got, err := outputPath(file, "dist", true, "", false)
 	if err != nil {
 		t.Fatalf("outputPath(): %v", err)
 	}
@@ -1655,7 +1723,7 @@ func TestOutputPathKeepsArchiveDirectoriesForExtractAll(t *testing.T) {
 
 func TestOutputPathAppliesRenameFileForExtractAll(t *testing.T) {
 	file := ExtractedFile{Name: "codex-x86_64-pc-windows-msvc.exe", mode: 0o666}
-	got, err := outputPath(file, "bin", true, "", map[string]string{
+	got, err := outputPath(file, "bin", true, "", false, map[string]string{
 		"codex-x86_64-pc-windows-msvc.exe": "codex.exe",
 	})
 	if err != nil {
@@ -1669,7 +1737,7 @@ func TestOutputPathAppliesRenameFileForExtractAll(t *testing.T) {
 
 func TestOutputPathRejectsUnsafeRenameFileTarget(t *testing.T) {
 	file := ExtractedFile{Name: "codex.exe", mode: 0o666}
-	_, err := outputPath(file, "bin", true, "", map[string]string{
+	_, err := outputPath(file, "bin", true, "", false, map[string]string{
 		"codex.exe": "../codex.exe",
 	})
 	if err == nil || !strings.Contains(err.Error(), "unsafe archive path") {
@@ -1679,7 +1747,7 @@ func TestOutputPathRejectsUnsafeRenameFileTarget(t *testing.T) {
 
 func TestOutputPathRejectsArchivePathTraversalForExtractAll(t *testing.T) {
 	file := ExtractedFile{Name: "../evil.exe", mode: 0o644}
-	if _, err := outputPath(file, "dist", true, ""); err == nil {
+	if _, err := outputPath(file, "dist", true, "", false); err == nil {
 		t.Fatal("expected archive path traversal to be rejected")
 	}
 }
