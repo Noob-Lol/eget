@@ -18,7 +18,7 @@ type SDKConfigAddOptions struct {
 	Name   string
 	All    bool
 	Force  bool
-	Mirror bool
+	Mirror string
 }
 
 type SDKConfigAddResult struct {
@@ -37,8 +37,8 @@ func (s ConfigService) AddSDKConfig(opts SDKConfigAddOptions) (SDKConfigAddResul
 		return SDKConfigAddResult{}, fmt.Errorf("sdk config add requires exactly one of <name> or --all")
 	}
 	source := sdk.BuiltinConfigOfficial
-	if opts.Mirror {
-		source = sdk.BuiltinConfigMirror
+	if strings.TrimSpace(opts.Mirror) != "" {
+		source = sdk.BuiltinConfigSource(strings.TrimSpace(opts.Mirror))
 	}
 
 	cfg, err := s.load()
@@ -55,9 +55,15 @@ func (s ConfigService) AddSDKConfig(opts SDKConfigAddOptions) (SDKConfigAddResul
 	} else {
 		builtin, ok := sdk.FindBuiltinConfig(opts.Name, source)
 		if !ok {
+			if source != sdk.BuiltinConfigOfficial {
+				return SDKConfigAddResult{}, fmt.Errorf("unknown built-in SDK config %q for mirror %q; available mirrors: %s", opts.Name, source, strings.Join(sdk.BuiltinMirrorNames(), ", "))
+			}
 			return SDKConfigAddResult{}, fmt.Errorf("unknown built-in SDK config %q; available: %s", opts.Name, strings.Join(sdk.BuiltinConfigNames(), ", "))
 		}
 		builtins = []sdk.BuiltinConfig{builtin}
+	}
+	if len(builtins) == 0 {
+		return SDKConfigAddResult{}, fmt.Errorf("unknown built-in SDK config source %q; available mirrors: %s", source, strings.Join(sdk.BuiltinMirrorNames(), ", "))
 	}
 
 	result := SDKConfigAddResult{Items: make([]SDKConfigAddItem, 0, len(builtins))}

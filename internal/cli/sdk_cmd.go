@@ -41,7 +41,7 @@ type SDKConfigOptions struct {
 	Name   string
 	All    bool
 	Force  bool
-	Mirror bool
+	Mirror string
 }
 
 func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
@@ -59,7 +59,8 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
   eget sdk remove go@1.22.0
   eget sdk search go 1.22 amd64 ^windows
   eget sdk search --sort desc node REG:^22
-  eget sdk config add jdk --mirror
+  eget sdk config add jdk --mirror huawei
+  eget sdk config add jdk --mirror zulu
   eget sdk config add --all
   eget sdk index refresh go`
 	cmd.Subs = []*gcli.Command{
@@ -189,7 +190,7 @@ func newSDKConfigAddCmd(opts *SDKConfigOptions, handler CommandHandler) *gcli.Co
 	cmd.Config = func(c *gcli.Command) {
 		c.BoolOpt(&opts.All, "all", "a", false, "Add all built-in SDK configs")
 		c.BoolOpt(&opts.Force, "force", "f", false, "Overwrite existing SDK config")
-		c.BoolOpt(&opts.Mirror, "mirror", "m", false, "Use built-in mirror source instead of official source")
+		c.StrOpt(&opts.Mirror, "mirror", "m", "", "Use named built-in mirror source: mirror, aliyun, huawei, zulu")
 		c.AddArg("name", "Built-in SDK name or alias", false)
 	}
 	cmd.Func = func(c *gcli.Command, args []string) error {
@@ -208,15 +209,34 @@ func newSDKConfigAddCmd(opts *SDKConfigOptions, handler CommandHandler) *gcli.Co
 }
 
 func applySDKConfigAddTrailingFlags(opts *SDKConfigOptions, args []string) error {
-	for _, arg := range args {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
 		switch arg {
 		case "--all", "-a":
 			opts.All = true
 		case "--force", "-f":
 			opts.Force = true
 		case "--mirror", "-m":
-			opts.Mirror = true
+			if i+1 >= len(args) || strings.HasPrefix(args[i+1], "-") {
+				return fmt.Errorf("%s requires a value", arg)
+			}
+			i++
+			opts.Mirror = args[i]
 		default:
+			if value, ok := strings.CutPrefix(arg, "--mirror="); ok {
+				if value == "" {
+					return fmt.Errorf("--mirror requires a value")
+				}
+				opts.Mirror = value
+				continue
+			}
+			if value, ok := strings.CutPrefix(arg, "-m="); ok {
+				if value == "" {
+					return fmt.Errorf("-m requires a value")
+				}
+				opts.Mirror = value
+				continue
+			}
 			if strings.HasPrefix(arg, "-") {
 				return fmt.Errorf("option provided but not defined: %s", arg)
 			}

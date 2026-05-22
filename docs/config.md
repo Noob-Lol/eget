@@ -212,7 +212,8 @@ You can also write built-in SDK templates with:
 
 ```bash
 eget sdk config add --all
-eget sdk config add --all --mirror
+eget sdk config add --all --mirror mirror
+eget sdk config add jdk --mirror zulu
 ```
 
 Example:
@@ -236,7 +237,7 @@ Fields:
 - `url_template`: archive download URL template.
 - `index_url`: remote HTML or JSON index URL.
 - `index_format`: index format, usually `html` or `json`.
-- `index_parser`: JSON index parser. Currently supported values are `go-json` and `node-json`.
+- `index_parser`: JSON index parser. Currently supported values are `go-json`, `node-json`, and `zulu-json`.
 - `index_path_prefix`: path prefix filter for HTML index links.
 - `filename_pattern`: archive filename pattern used by HTML index parsing.
 - `strip_components`: number of leading archive path segments to remove during extraction.

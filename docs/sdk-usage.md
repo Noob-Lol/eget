@@ -196,8 +196,11 @@ eget sdk config add --all
 使用内置镜像源：
 
 ```bash
-eget sdk config add jdk --mirror
-eget sdk config add --all --mirror
+eget sdk config add go --mirror aliyun
+eget sdk config add node --mirror aliyun
+eget sdk config add jdk --mirror huawei
+eget sdk config add jdk --mirror zulu
+eget sdk config add --all --mirror mirror
 ```
 
 已存在的 SDK 配置默认不会覆盖。需要覆盖时使用：
@@ -229,7 +232,7 @@ ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 - `url_template`: 归档下载 URL 模板。
 - `index_url`: 远端 HTML 或 JSON index 地址。
 - `index_format`: index 格式，当前常用 `html` 或 `json`。
-- `index_parser`: JSON index 解析器，当前支持 `go-json` 和 `node-json`。
+- `index_parser`: JSON index 解析器，当前支持 `go-json`、`node-json` 和 `zulu-json`。
 - `index_path_prefix`: HTML index 链接路径前缀过滤。
 - `filename_pattern`: HTML index 归档文件名模板。
 - `strip_components`: 解压时剥离归档内路径前缀层数。
@@ -284,6 +287,7 @@ index_parser = "go-json"
 
 - `go-json`: Go release JSON
 - `node-json`: Node release JSON
+- `zulu-json`: Azul Zulu package JSON
 
 如果某个 SDK 的 JSON 结构不兼容内置 parser，需要后续扩展 parser 后才能直接使用 JSON index。
 

@@ -7,6 +7,9 @@ type BuiltinConfigSource string
 const (
 	BuiltinConfigOfficial BuiltinConfigSource = "official"
 	BuiltinConfigMirror   BuiltinConfigSource = "mirror"
+	BuiltinConfigAliyun   BuiltinConfigSource = "aliyun"
+	BuiltinConfigHuawei   BuiltinConfigSource = "huawei"
+	BuiltinConfigZulu     BuiltinConfigSource = "zulu"
 )
 
 type BuiltinConfig struct {
@@ -18,10 +21,18 @@ type BuiltinConfig struct {
 
 func BuiltinConfigs(source BuiltinConfigSource) []BuiltinConfig {
 	switch source {
+	case BuiltinConfigOfficial:
+		return cloneBuiltinConfigs(builtinOfficialConfigs())
 	case BuiltinConfigMirror:
 		return cloneBuiltinConfigs(builtinMirrorConfigs())
+	case BuiltinConfigAliyun:
+		return cloneBuiltinConfigs(builtinAliyunConfigs())
+	case BuiltinConfigHuawei:
+		return cloneBuiltinConfigs(builtinHuaweiConfigs())
+	case BuiltinConfigZulu:
+		return cloneBuiltinConfigs(builtinZuluConfigs())
 	default:
-		return cloneBuiltinConfigs(builtinOfficialConfigs())
+		return nil
 	}
 }
 
@@ -41,6 +52,10 @@ func FindBuiltinConfig(name string, source BuiltinConfigSource) (BuiltinConfig, 
 
 func BuiltinConfigNames() []string {
 	return []string{"go", "node", "jdk"}
+}
+
+func BuiltinMirrorNames() []string {
+	return []string{string(BuiltinConfigMirror), string(BuiltinConfigAliyun), string(BuiltinConfigHuawei), string(BuiltinConfigZulu)}
 }
 
 func builtinOfficialConfigs() []BuiltinConfig {
@@ -97,21 +112,50 @@ func builtinOfficialConfigs() []BuiltinConfig {
 }
 
 func builtinMirrorConfigs() []BuiltinConfig {
-	items := builtinOfficialConfigs()
-	items[0].Source = BuiltinConfigMirror
+	items := append(builtinAliyunConfigs(), builtinHuaweiConfigs()...)
+	for i := range items {
+		items[i].Source = BuiltinConfigMirror
+	}
+	return items
+}
+
+func builtinAliyunConfigs() []BuiltinConfig {
+	items := builtinOfficialConfigs()[:2]
+	items[0].Source = BuiltinConfigAliyun
 	items[0].Section.URLTemplate = sdkStringPtr("https://mirrors.aliyun.com/golang/go{version}.{os}-{arch}.{ext}")
 	items[0].Section.IndexURL = sdkStringPtr("https://mirrors.aliyun.com/golang/")
 
-	items[1].Source = BuiltinConfigMirror
+	items[1].Source = BuiltinConfigAliyun
 	items[1].Section.URLTemplate = sdkStringPtr("https://mirrors.aliyun.com/nodejs-release/v{version}/node-v{version}-{os}-{arch}.{ext}")
 	items[1].Section.IndexURL = sdkStringPtr("https://mirrors.aliyun.com/nodejs-release/")
 	items[1].Section.IndexPathPrefix = sdkStringPtr("/nodejs-release/")
 
-	items[2].Source = BuiltinConfigMirror
-	items[2].Section.URLTemplate = sdkStringPtr("https://mirrors.huaweicloud.com/openjdk/{version}/openjdk-{version}_{os}-{arch}_bin.{ext}")
-	items[2].Section.IndexURL = sdkStringPtr("https://mirrors.huaweicloud.com/openjdk/")
-
 	return items
+}
+
+func builtinHuaweiConfigs() []BuiltinConfig {
+	item := builtinOfficialConfigs()[2]
+	item.Source = BuiltinConfigHuawei
+	item.Section.URLTemplate = sdkStringPtr("https://mirrors.huaweicloud.com/openjdk/{version}/openjdk-{version}_{os}-{arch}_bin.{ext}")
+	item.Section.IndexURL = sdkStringPtr("https://mirrors.huaweicloud.com/openjdk/")
+
+	return []BuiltinConfig{item}
+}
+
+func builtinZuluConfigs() []BuiltinConfig {
+	item := builtinOfficialConfigs()[2]
+	item.Source = BuiltinConfigZulu
+	item.Section.Target = sdkStringPtr("jdk/zulu-{version}")
+	item.Section.URLTemplate = nil
+	item.Section.IndexURL = sdkStringPtr("https://api.azul.com/metadata/v1/zulu/packages?java_package_type=jdk&release_status=ga&availability_type=CA")
+	item.Section.IndexFormat = sdkStringPtr("json")
+	item.Section.IndexParser = sdkStringPtr("zulu-json")
+	item.Section.FilenamePattern = nil
+	item.Section.OSMap = map[string]string{"windows": "win", "darwin": "macosx"}
+	item.Section.ArchMap = map[string]string{"amd64": "x64", "arm64": "aarch64"}
+	item.Section.ExtMap = map[string]string{"windows": "zip", "linux": "tar.gz", "darwin": "tar.gz"}
+
+	return []BuiltinConfig{item}
 }
 
 func cloneBuiltinConfigs(items []BuiltinConfig) []BuiltinConfig {

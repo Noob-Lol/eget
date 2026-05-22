@@ -36,7 +36,7 @@ func TestAddSDKConfigAddsMirrorTemplateByAlias(t *testing.T) {
 		Save: func(path string, file *cfgpkg.File) error { return nil },
 	}
 
-	result, err := svc.AddSDKConfig(SDKConfigAddOptions{Name: "java", Mirror: true})
+	result, err := svc.AddSDKConfig(SDKConfigAddOptions{Name: "java", Mirror: "huawei"})
 	assert.NoErr(t, err)
 	assert.Eq(t, "jdk", result.Items[0].Name)
 	assert.Eq(t, "https://mirrors.huaweicloud.com/openjdk/", *cfg.SDK["jdk"].IndexURL)
@@ -68,7 +68,7 @@ func TestAddSDKConfigForceUpdatesExisting(t *testing.T) {
 		Save: func(path string, file *cfgpkg.File) error { return nil },
 	}
 
-	result, err := svc.AddSDKConfig(SDKConfigAddOptions{Name: "jdk", Force: true, Mirror: true})
+	result, err := svc.AddSDKConfig(SDKConfigAddOptions{Name: "jdk", Force: true, Mirror: "huawei"})
 	assert.NoErr(t, err)
 	assert.Eq(t, SDKConfigActionUpdated, result.Items[0].Action)
 	assert.Eq(t, "jdk/openjdk-{version}", *cfg.SDK["jdk"].Target)
@@ -83,13 +83,30 @@ func TestAddSDKConfigAllSkipsExistingAndAddsMissing(t *testing.T) {
 		Save: func(path string, file *cfgpkg.File) error { return nil },
 	}
 
-	result, err := svc.AddSDKConfig(SDKConfigAddOptions{All: true, Mirror: true})
+	result, err := svc.AddSDKConfig(SDKConfigAddOptions{All: true, Mirror: "mirror"})
 	assert.NoErr(t, err)
 	assert.Eq(t, 3, len(result.Items))
 	assert.Eq(t, SDKConfigActionSkipped, result.Items[0].Action)
 	assert.Eq(t, "custom-go", *cfg.SDK["go"].Target)
 	assert.Eq(t, "https://mirrors.aliyun.com/nodejs-release/", *cfg.SDK["node"].IndexURL)
 	assert.Eq(t, "https://mirrors.huaweicloud.com/openjdk/", *cfg.SDK["jdk"].IndexURL)
+}
+
+func TestAddSDKConfigAddsNamedZuluMirror(t *testing.T) {
+	cfg := cfgpkg.NewFile()
+	svc := ConfigService{
+		Load: func() (*cfgpkg.File, error) { return cfg, nil },
+		Save: func(path string, file *cfgpkg.File) error { return nil },
+	}
+
+	result, err := svc.AddSDKConfig(SDKConfigAddOptions{Name: "java", Mirror: "zulu"})
+	assert.NoErr(t, err)
+	assert.Eq(t, "jdk", result.Items[0].Name)
+	assert.Eq(t, "zulu", result.Items[0].Source)
+	assert.Eq(t, "jdk/zulu-{version}", *cfg.SDK["jdk"].Target)
+	assert.Eq(t, "zulu-json", *cfg.SDK["jdk"].IndexParser)
+	assert.Eq(t, "https://api.azul.com/metadata/v1/zulu/packages?java_package_type=jdk&release_status=ga&availability_type=CA", *cfg.SDK["jdk"].IndexURL)
+	assert.Eq(t, "win", cfg.SDK["jdk"].OSMap["windows"])
 }
 
 func TestAddSDKConfigValidatesInput(t *testing.T) {
@@ -107,6 +124,10 @@ func TestAddSDKConfigValidatesInput(t *testing.T) {
 	_, err = svc.AddSDKConfig(SDKConfigAddOptions{Name: "ruby"})
 	assert.Err(t, err)
 	assert.True(t, strings.Contains(err.Error(), "available: go, node, jdk"))
+
+	_, err = svc.AddSDKConfig(SDKConfigAddOptions{Name: "go", Mirror: "huawei"})
+	assert.Err(t, err)
+	assert.True(t, strings.Contains(err.Error(), "available mirrors"))
 }
 
 func appStringPtr(value string) *string {

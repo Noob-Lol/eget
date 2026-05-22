@@ -112,8 +112,6 @@ ext_map = { windows = "zip", linux = "tar.gzz", darwin = "tar.gz" }
 aliases = ["java"]
 target = "jdk/openjdk-{version}"
 # mirror1: https://mirrors.huaweicloud.com/openjdk/
-# target = "jdk/zulu-{version}"
-# mirror2: https://api.azul.com/metadata/v1/zulu/packages # json 格式，需要解析 json 数据
 index_url = "https://mirrors.huaweicloud.com/openjdk/"
 index_format = "html"
 url_template = "https://mirrors.huaweicloud.com/openjdk/{version}/openjdk-{version}_{os}-{arch}_bin.{ext}"
@@ -122,3 +120,6 @@ strip_components = 1
 arch_map = { amd64 = "x64", arm64 = "aarch64"}
 os_map = { darwin = "macos" }
 ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
+
+# Azul Zulu JDK uses a JSON index and can be added with:
+# eget sdk config add jdk --mirror zulu

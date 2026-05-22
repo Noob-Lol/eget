@@ -124,7 +124,8 @@ eget sdk list
 eget sdk list --json
 eget sdk remove go@1.22.0
 eget sdk config add --all
-eget sdk config add --all --mirror
+eget sdk config add --all --mirror mirror
+eget sdk config add jdk --mirror zulu
 eget sdk index refresh go
 eget sdk index show go
 ```
@@ -419,7 +420,8 @@ ext_map = { windows = "zip", linux = "tar.xz", darwin = "tar.gz" }
 
 ```bash
 eget sdk config add --all
-eget sdk config add --all --mirror
+eget sdk config add --all --mirror mirror
+eget sdk config add jdk --mirror zulu
 ```
 
 创建默认配置：

@@ -22,6 +22,8 @@ func ParseJSONIndex(body io.Reader, parser string, opts JSONParseOptions) (Index
 		return parseGoJSONIndex(body, opts)
 	case "node-json":
 		return parseNodeJSONIndex(body, opts)
+	case "zulu-json":
+		return parseZuluJSONIndex(body, opts)
 	default:
 		return Index{}, fmt.Errorf("unsupported sdk json index parser %q", parser)
 	}
@@ -139,6 +141,79 @@ func parseNodeFileDescriptor(value string) (string, string, string, bool) {
 	default:
 		return "", "", "", false
 	}
+}
+
+type zuluJSONPackage struct {
+	DownloadURL string `json:"download_url"`
+	Name        string `json:"name"`
+	JavaVersion []int  `json:"java_version"`
+}
+
+func parseZuluJSONIndex(body io.Reader, opts JSONParseOptions) (Index, error) {
+	var packages []zuluJSONPackage
+	if err := json.NewDecoder(body).Decode(&packages); err != nil {
+		return Index{}, err
+	}
+
+	byVersion := make(map[string]*IndexItem)
+	order := make([]string, 0)
+	for _, pkg := range packages {
+		version := zuluJavaVersion(pkg.JavaVersion)
+		osName, arch, ext, ok := parseZuluFilename(pkg.Name)
+		if version == "" || pkg.DownloadURL == "" || !ok {
+			continue
+		}
+		item := byVersion[version]
+		if item == nil {
+			item = &IndexItem{Version: version, Stable: true}
+			byVersion[version] = item
+			order = append(order, version)
+		}
+		item.Files = append(item.Files, IndexFile{
+			OS:       osName,
+			Arch:     arch,
+			Ext:      ext,
+			URL:      pkg.DownloadURL,
+			Filename: pkg.Name,
+		})
+	}
+
+	items := make([]IndexItem, 0, len(order))
+	for _, version := range order {
+		item := byVersion[version]
+		if len(item.Files) > 0 {
+			items = append(items, *item)
+		}
+	}
+	if len(items) == 0 {
+		return Index{}, fmt.Errorf("no sdk files found in json index")
+	}
+	return newIndex(opts.SDK, opts.SourceURL, opts.Now, items), nil
+}
+
+func zuluJavaVersion(values []int) string {
+	if len(values) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(values))
+	for _, value := range values {
+		parts = append(parts, fmt.Sprint(value))
+	}
+	return strings.Join(parts, ".")
+}
+
+func parseZuluFilename(filename string) (string, string, string, bool) {
+	ext := archiveExt(filename)
+	if ext != "tar.gz" && ext != "zip" {
+		return "", "", "", false
+	}
+	name := strings.TrimSuffix(filename, "."+ext)
+	platform := name[strings.LastIndex(name, "-")+1:]
+	osName, arch, found := strings.Cut(platform, "_")
+	if !found || osName == "" || arch == "" {
+		return "", "", "", false
+	}
+	return osName, arch, ext, true
 }
 
 func archiveExt(filename string) string {

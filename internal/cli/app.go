@@ -254,14 +254,16 @@ var commandFlagSpecs = map[string]flagSpec{
 			"config": {
 				subs: map[string]flagSpec{
 					"add": {
-						bools: setOf("all", "a", "force", "f", "mirror", "m"),
+						bools:  setOf("all", "a", "force", "f"),
+						values: setOf("mirror", "m"),
 					},
 				},
 			},
 			"cfg": {
 				subs: map[string]flagSpec{
 					"add": {
-						bools: setOf("all", "a", "force", "f", "mirror", "m"),
+						bools:  setOf("all", "a", "force", "f"),
+						values: setOf("mirror", "m"),
 					},
 				},
 			},
@@ -378,7 +380,14 @@ func validateKnownFlags(args []string) error {
 			continue
 		}
 		if spec.values[name] {
-			if !strings.Contains(arg, "=") {
+			if strings.Contains(arg, "=") {
+				if (name == "mirror" || name == "m") && strings.HasSuffix(arg, "=") {
+					return fmt.Errorf("%s requires a value", strings.SplitN(arg, "=", 2)[0])
+				}
+			} else {
+				if (name == "mirror" || name == "m") && (i+1 >= len(args) || strings.HasPrefix(args[i+1], "-")) {
+					return fmt.Errorf("%s requires a value", arg)
+				}
 				i++
 			}
 			continue

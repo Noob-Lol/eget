@@ -222,7 +222,7 @@ func TestMain_SDKConfigAddRoutesAndBindsOptions(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "--mirror", "--force", "java"})
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "--mirror", "zulu", "--force", "java"})
 	assert.NoErr(t, err)
 	assert.Eq(t, 1, len(calls))
 	assert.Eq(t, "sdk.config.add", calls[0].name)
@@ -230,7 +230,7 @@ func TestMain_SDKConfigAddRoutesAndBindsOptions(t *testing.T) {
 	assert.True(t, ok)
 	assert.Eq(t, "add", opts.Action)
 	assert.Eq(t, "java", opts.Name)
-	assert.True(t, opts.Mirror)
+	assert.Eq(t, "zulu", opts.Mirror)
 	assert.True(t, opts.Force)
 	assert.False(t, opts.All)
 }
@@ -244,13 +244,13 @@ func TestMain_SDKConfigAddAllRoutesAndBindsOptions(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "--all", "--mirror"})
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "--all", "--mirror", "mirror"})
 	assert.NoErr(t, err)
 	assert.Eq(t, 1, len(calls))
 	opts, ok := calls[0].options.(*SDKConfigOptions)
 	assert.True(t, ok)
 	assert.True(t, opts.All)
-	assert.True(t, opts.Mirror)
+	assert.Eq(t, "mirror", opts.Mirror)
 	assert.Eq(t, "", opts.Name)
 }
 
@@ -263,7 +263,7 @@ func TestMain_SDKConfigAddAllowsFlagsAfterName(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "jdk", "--mirror", "--force"})
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "jdk", "--mirror", "huawei", "--force"})
 	if err != nil {
 		t.Fatalf("expected sdk config add to allow trailing flags, got %v", err)
 	}
@@ -272,9 +272,34 @@ func TestMain_SDKConfigAddAllowsFlagsAfterName(t *testing.T) {
 	opts, ok := calls[0].options.(*SDKConfigOptions)
 	assert.True(t, ok)
 	assert.Eq(t, "jdk", opts.Name)
-	assert.True(t, opts.Mirror)
+	assert.Eq(t, "huawei", opts.Mirror)
 	assert.True(t, opts.Force)
 	assert.False(t, opts.All)
+}
+
+func TestMain_SDKConfigAddRejectsMirrorWithoutValue(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{"before name", []string{"sdk", "config", "add", "--mirror", "--force", "java"}},
+		{"after name", []string{"sdk", "config", "add", "jdk", "--mirror"}},
+		{"empty value", []string{"sdk", "config", "add", "--mirror=", "java"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			err := newApp(func(string, any) error {
+				t.Fatal("handler should not run")
+				return nil
+			}, &stdout, &stderr).RunWithArgs(tt.args)
+
+			assert.Err(t, err)
+			assert.Contains(t, err.Error(), "--mirror requires a value")
+		})
+	}
 }
 
 func TestMain_SDKConfigAddRejectsNameAndAll(t *testing.T) {

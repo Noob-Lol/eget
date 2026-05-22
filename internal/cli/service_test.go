@@ -964,14 +964,14 @@ func TestHandleSDKConfigAddPrintsResult(t *testing.T) {
 	ccolor.SetOutput(&out)
 	defer ccolor.SetOutput(os.Stdout)
 
-	err := svc.handle("sdk.config.add", &SDKConfigOptions{Action: "add", Name: "jdk", Mirror: true})
+	err := svc.handle("sdk.config.add", &SDKConfigOptions{Action: "add", Name: "jdk", Mirror: "zulu"})
 	if err != nil {
 		t.Fatalf("handle sdk config add: %v", err)
 	}
 
 	got := ccolor.ClearCode(out.String())
-	assert.Contains(t, got, "Added SDK config: jdk (mirror)")
-	assert.Eq(t, "https://mirrors.huaweicloud.com/openjdk/", *cfg.SDK["jdk"].IndexURL)
+	assert.Contains(t, got, "Added SDK config: jdk (zulu)")
+	assert.Eq(t, "zulu-json", *cfg.SDK["jdk"].IndexParser)
 }
 
 func TestHandleSDKConfigAddAllPrintsSkippedAndAdded(t *testing.T) {
@@ -988,7 +988,7 @@ func TestHandleSDKConfigAddAllPrintsSkippedAndAdded(t *testing.T) {
 	ccolor.SetOutput(&out)
 	defer ccolor.SetOutput(os.Stdout)
 
-	err := svc.handle("sdk.config.add", &SDKConfigOptions{Action: "add", All: true, Mirror: true})
+	err := svc.handle("sdk.config.add", &SDKConfigOptions{Action: "add", All: true, Mirror: "mirror"})
 	if err != nil {
 		t.Fatalf("handle sdk config add all: %v", err)
 	}

@@ -212,7 +212,8 @@ install_args = ["install", "latest"]
 
 ```bash
 eget sdk config add --all
-eget sdk config add --all --mirror
+eget sdk config add --all --mirror mirror
+eget sdk config add jdk --mirror zulu
 ```
 
 示例：
@@ -236,7 +237,7 @@ ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 - `url_template`: 归档下载 URL 模板。
 - `index_url`: 远端 HTML 或 JSON index 地址。
 - `index_format`: index 格式，通常为 `html` 或 `json`。
-- `index_parser`: JSON index 解析器，当前支持 `go-json` 和 `node-json`。
+- `index_parser`: JSON index 解析器，当前支持 `go-json`、`node-json` 和 `zulu-json`。
 - `index_path_prefix`: HTML index 链接路径前缀过滤。
 - `filename_pattern`: HTML index 归档文件名模板。
 - `strip_components`: 解压时剥离归档内路径前缀层数。
