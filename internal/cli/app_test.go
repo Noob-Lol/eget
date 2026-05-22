@@ -213,6 +213,59 @@ func TestMain_ExtractAllFlagBindsInstallDownloadAndAdd(t *testing.T) {
 	}
 }
 
+func TestMain_SDKConfigAddRoutesAndBindsOptions(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "--mirror", "--force", "java"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	assert.Eq(t, "sdk.config.add", calls[0].name)
+	opts, ok := calls[0].options.(*SDKConfigOptions)
+	assert.True(t, ok)
+	assert.Eq(t, "add", opts.Action)
+	assert.Eq(t, "java", opts.Name)
+	assert.True(t, opts.Mirror)
+	assert.True(t, opts.Force)
+	assert.False(t, opts.All)
+}
+
+func TestMain_SDKConfigAddAllRoutesAndBindsOptions(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "--all", "--mirror"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	opts, ok := calls[0].options.(*SDKConfigOptions)
+	assert.True(t, ok)
+	assert.True(t, opts.All)
+	assert.True(t, opts.Mirror)
+	assert.Eq(t, "", opts.Name)
+}
+
+func TestMain_SDKConfigAddRejectsNameAndAll(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(func(string, any) error {
+		t.Fatal("handler should not run")
+		return nil
+	}, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "--all", "jdk"})
+
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), "requires exactly one")
+}
+
 func TestMain_StripComponentsFlagBindsInstallDownloadAndAdd(t *testing.T) {
 	tests := []struct {
 		name string

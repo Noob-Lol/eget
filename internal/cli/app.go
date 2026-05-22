@@ -251,6 +251,20 @@ var commandFlagSpecs = map[string]flagSpec{
 				bools:  setOf("json", "j"),
 				values: setOf("number", "n", "sort"),
 			},
+			"config": {
+				subs: map[string]flagSpec{
+					"add": {
+						bools: setOf("all", "a", "force", "f", "mirror", "m"),
+					},
+				},
+			},
+			"cfg": {
+				subs: map[string]flagSpec{
+					"add": {
+						bools: setOf("all", "a", "force", "f", "mirror", "m"),
+					},
+				},
+			},
 			"index": {
 				subs: map[string]flagSpec{
 					"list": {

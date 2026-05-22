@@ -605,7 +605,7 @@ git commit -m "feat: add sdk config writer service"
 - Modify: `internal/cli/app.go`
 - Modify: `internal/cli/app_test.go`
 
-- [ ] **Step 1: 编写失败测试：CLI 参数解析**
+- [x] **Step 1: 编写失败测试：CLI 参数解析**
 
 在 `internal/cli/app_test.go` 追加：
 
@@ -664,7 +664,7 @@ func TestMain_SDKConfigAddRejectsNameAndAll(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -674,7 +674,7 @@ go test ./internal/cli -run 'TestMain_SDKConfigAdd' -count=1
 
 Expected: 编译失败或运行失败，因为 `SDKConfigOptions` 和 `sdk config add` 命令尚未定义。
 
-- [ ] **Step 3: 增加 SDK config 命令树**
+- [x] **Step 3: 增加 SDK config 命令树**
 
 修改 `internal/cli/sdk_cmd.go`。
 
@@ -751,7 +751,7 @@ func newSDKConfigAddCmd(opts *SDKConfigOptions, handler CommandHandler) *gcli.Co
   eget sdk config add --all
 ```
 
-- [ ] **Step 4: 更新已知 flags 校验**
+- [x] **Step 4: 更新已知 flags 校验**
 
 修改 `internal/cli/app.go` 的 `commandFlagSpecs`。在 `"sdk"` 的 `subs` 里加入：
 
@@ -772,7 +772,7 @@ func newSDKConfigAddCmd(opts *SDKConfigOptions, handler CommandHandler) *gcli.Co
 },
 ```
 
-- [ ] **Step 5: 运行 CLI 解析测试确认通过**
+- [x] **Step 5: 运行 CLI 解析测试确认通过**
 
 Run:
 
@@ -782,7 +782,7 @@ go test ./internal/cli -run 'TestMain_SDKConfigAdd' -count=1
 
 Expected: PASS.
 
-- [ ] **Step 6: 提交 Task 3**
+- [x] **Step 6: 提交 Task 3**
 
 Run:
 

@@ -35,12 +35,21 @@ type SDKIndexOptions struct {
 	JSON   bool
 }
 
+type SDKConfigOptions struct {
+	Action string
+	Name   string
+	All    bool
+	Force  bool
+	Mirror bool
+}
+
 func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 	installOpts := &SDKInstallOptions{}
 	listOpts := &SDKListOptions{}
 	removeOpts := &SDKRemoveOptions{}
 	searchOpts := &SDKSearchOptions{Number: 20}
 	indexOpts := &SDKIndexOptions{}
+	configOpts := &SDKConfigOptions{}
 	cmd := gcli.NewCommand("sdk", "Download and manage SDK archives")
 	cmd.Help = `<info>Examples</>:
   eget sdk install go@1.22.0
@@ -49,12 +58,15 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
   eget sdk remove go@1.22.0
   eget sdk search go 1.22 amd64 ^windows
   eget sdk search --sort desc node REG:^22
+  eget sdk config add jdk --mirror
+  eget sdk config add --all
   eget sdk index refresh go`
 	cmd.Subs = []*gcli.Command{
 		newSDKInstallCmd(installOpts, handler),
 		newSDKListCmd(listOpts, handler),
 		newSDKRemoveCmd(removeOpts, handler),
 		newSDKSearchCmd(searchOpts, handler),
+		newSDKConfigCmd(configOpts, handler),
 		newSDKIndexCmd(indexOpts, handler),
 	}
 	return cmd, func() {
@@ -63,6 +75,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 		*removeOpts = SDKRemoveOptions{}
 		*searchOpts = SDKSearchOptions{Number: 20}
 		*indexOpts = SDKIndexOptions{}
+		*configOpts = SDKConfigOptions{}
 	}
 }
 
@@ -157,6 +170,38 @@ func newSDKIndexCmd(opts *SDKIndexOptions, handler CommandHandler) *gcli.Command
 			c.Aliases = []string{"build"}
 		}),
 		newSDKIndexActionCmd("clear", opts, handler, nil),
+	}
+	return cmd
+}
+
+func newSDKConfigCmd(opts *SDKConfigOptions, handler CommandHandler) *gcli.Command {
+	cmd := gcli.NewCommand("config", "Manage SDK config templates")
+	cmd.Aliases = []string{"cfg"}
+	cmd.Subs = []*gcli.Command{
+		newSDKConfigAddCmd(opts, handler),
+	}
+	return cmd
+}
+
+func newSDKConfigAddCmd(opts *SDKConfigOptions, handler CommandHandler) *gcli.Command {
+	cmd := gcli.NewCommand("add", "Add built-in SDK config template")
+	cmd.Config = func(c *gcli.Command) {
+		c.BoolOpt(&opts.All, "all", "a", false, "Add all built-in SDK configs")
+		c.BoolOpt(&opts.Force, "force", "f", false, "Overwrite existing SDK config")
+		c.BoolOpt(&opts.Mirror, "mirror", "m", false, "Use built-in mirror source instead of official source")
+		c.AddArg("name", "Built-in SDK name or alias", false)
+	}
+	cmd.Func = func(c *gcli.Command, args []string) error {
+		opts.Action = "add"
+		opts.Name = c.Arg("name").String()
+		if err := validateNoFlagArgs(append([]string{opts.Name}, args...)); err != nil {
+			return err
+		}
+		if (opts.Name == "") == !opts.All {
+			return fmt.Errorf("sdk config add requires exactly one of <name> or --all")
+		}
+		snapshot := *opts
+		return handler("sdk.config.add", &snapshot)
 	}
 	return cmd
 }
