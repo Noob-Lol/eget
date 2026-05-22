@@ -230,7 +230,7 @@ func (s Service) RefreshIndex(ctx context.Context, name string) (Index, error) {
 	s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshFetchStart, SDK: cfg.Name, URL: cfg.IndexURL})
 	body, err := s.fetchIndex(ctx, cfg.IndexURL)
 	if err != nil {
-		if cached, loadErr := s.IndexCache.Load(cfg.Name); loadErr == nil {
+		if cached, loadErr := s.IndexCache.LoadForSource(cfg.Name, cfg.IndexURL); loadErr == nil {
 			s.emitIndexRefresh(IndexRefreshEvent{Stage: IndexRefreshCacheHit, SDK: cfg.Name, URL: cfg.IndexURL, Err: err, Versions: len(cached.Items), Files: countIndexFiles(cached)})
 			return cached, nil
 		}
@@ -310,7 +310,7 @@ func (s Service) ShowIndex(name string) (Index, error) {
 	if err != nil {
 		return Index{}, err
 	}
-	return s.IndexCache.Load(cfg.Name)
+	return s.IndexCache.LoadForSource(cfg.Name, cfg.IndexURL)
 }
 
 func (s Service) ListIndexes() ([]CachedIndexInfo, error) {
@@ -325,7 +325,7 @@ func (s Service) SearchIndex(name string, opts SearchOptions) ([]SearchResult, e
 	if err != nil {
 		return nil, err
 	}
-	index, err := s.IndexCache.Load(cfg.Name)
+	index, err := s.IndexCache.LoadForSource(cfg.Name, cfg.IndexURL)
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +360,7 @@ func (s Service) ClearIndex(name string) error {
 	if err != nil {
 		return err
 	}
-	return s.IndexCache.Clear(cfg.Name)
+	return s.IndexCache.ClearForSource(cfg.Name, cfg.IndexURL)
 }
 
 func (s Service) ClearAllIndexes() error {
@@ -545,7 +545,7 @@ func (s Service) resolveVersionAndFile(target Target, cfg Config) (string, Index
 	if target.Kind == VersionExact && cfg.URLTemplate != "" {
 		return target.Version, IndexFile{}, nil
 	}
-	index, err := s.IndexCache.Load(cfg.Name)
+	index, err := s.IndexCache.LoadForSource(cfg.Name, cfg.IndexURL)
 	if err != nil {
 		return "", IndexFile{}, err
 	}

@@ -99,6 +99,55 @@ func TestServiceInstallUsesIndexForPrefixVersion(t *testing.T) {
 	assert.Eq(t, "1.21.13", result.Version)
 }
 
+func TestServiceInstallUsesIndexForConfiguredMirror(t *testing.T) {
+	root := t.TempDir()
+	archivePath := filepath.Join(root, "go.zip")
+	writeSDKZip(t, archivePath, map[string]string{"go/bin/go": "go"})
+	cfg := testSDKConfig(root)
+	goSDK := cfg.SDK["go"]
+	goSDK.IndexURL = stringPtr("https://mirror-b.example.com/golang/")
+	cfg.SDK["go"] = goSDK
+	svc := Service{
+		Config:     cfg,
+		Store:      Store{Path: filepath.Join(root, "sdk.installed.json")},
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+		Now:        time.Now,
+		Downloader: func(ctx context.Context, req DownloadRequest) (DownloadResult, error) {
+			assert.Eq(t, "https://mirror-b/go1.22.0.linux-amd64.zip", req.URL)
+			return DownloadResult{Path: archivePath}, nil
+		},
+	}
+	if err := svc.IndexCache.Save(Index{
+		Schema:    1,
+		SDK:       "go",
+		SourceURL: "https://mirror-a.example.com/golang/",
+		Items: []IndexItem{
+			{Version: "1.21.1", Stable: true, Files: []IndexFile{{OS: "linux", Arch: "amd64", Ext: "zip", URL: "https://mirror-a/go1.21.1.linux-amd64.zip", Filename: "go1.21.1.linux-amd64.zip"}}},
+		},
+	}); err != nil {
+		t.Fatalf("save first index: %v", err)
+	}
+	if err := svc.IndexCache.Save(Index{
+		Schema:    1,
+		SDK:       "go",
+		SourceURL: "https://mirror-b.example.com/golang/",
+		Items: []IndexItem{
+			{Version: "1.22.0", Stable: true, Files: []IndexFile{{OS: "linux", Arch: "amd64", Ext: "zip", URL: "https://mirror-b/go1.22.0.linux-amd64.zip", Filename: "go1.22.0.linux-amd64.zip"}}},
+		},
+	}); err != nil {
+		t.Fatalf("save second index: %v", err)
+	}
+
+	result, err := svc.Install(context.Background(), "go@latest", InstallOptions{})
+	if err != nil {
+		t.Fatalf("install sdk: %v", err)
+	}
+
+	assert.Eq(t, "1.22.0", result.Version)
+}
+
 func TestServiceInstallRejectsExistingPathUnlessForce(t *testing.T) {
 	root := t.TempDir()
 	archivePath := filepath.Join(root, "go.zip")

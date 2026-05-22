@@ -3,6 +3,7 @@ package sdk
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,8 +27,28 @@ func (c IndexCache) Path(name string) string {
 	return filepath.Join(c.Dir, safeName(name)+".json")
 }
 
+func (c IndexCache) PathForSource(name, sourceURL string) string {
+	host := indexSourceHost(sourceURL)
+	if host == "" {
+		return c.Path(name)
+	}
+	return filepath.Join(c.Dir, safeName(name)+"-"+safeName(host)+".json")
+}
+
 func (c IndexCache) Load(name string) (Index, error) {
-	data, err := os.ReadFile(c.Path(name))
+	return c.loadPath(c.Path(name))
+}
+
+func (c IndexCache) LoadForSource(name, sourceURL string) (Index, error) {
+	index, err := c.loadPath(c.PathForSource(name, sourceURL))
+	if err == nil || indexSourceHost(sourceURL) == "" || !os.IsNotExist(err) {
+		return index, err
+	}
+	return c.Load(name)
+}
+
+func (c IndexCache) loadPath(path string) (Index, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return Index{}, err
 	}
@@ -49,7 +70,7 @@ func (c IndexCache) Save(index Index) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(c.Path(index.SDK), append(data, '\n'), 0o644)
+	return os.WriteFile(c.PathForSource(index.SDK, index.SourceURL), append(data, '\n'), 0o644)
 }
 
 func (c IndexCache) Clear(name string) error {
@@ -58,6 +79,24 @@ func (c IndexCache) Clear(name string) error {
 		return nil
 	}
 	return err
+}
+
+func (c IndexCache) ClearForSource(name, sourceURL string) error {
+	paths := []string{c.PathForSource(name, sourceURL)}
+	legacyPath := c.Path(name)
+	if legacyPath != paths[0] {
+		paths = append(paths, legacyPath)
+	}
+	for _, path := range paths {
+		err := os.Remove(path)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c IndexCache) ClearAll() error {
@@ -92,8 +131,8 @@ func (c IndexCache) List() ([]CachedIndexInfo, error) {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
 		}
-		name := strings.TrimSuffix(entry.Name(), ".json")
-		index, err := c.Load(name)
+		path := filepath.Join(c.Dir, entry.Name())
+		index, err := c.loadPath(path)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +141,7 @@ func (c IndexCache) List() ([]CachedIndexInfo, error) {
 			Versions:  len(index.Items),
 			SourceURL: index.SourceURL,
 			FetchedAt: index.FetchedAt,
-			Path:      c.Path(name),
+			Path:      path,
 		})
 	}
 	sort.Slice(infos, func(i, j int) bool {
@@ -152,5 +191,18 @@ func safeName(name string) string {
 	name = strings.ReplaceAll(name, string(os.PathSeparator), "-")
 	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, "\\", "-")
+	name = strings.ReplaceAll(name, ":", "-")
 	return name
+}
+
+func indexSourceHost(sourceURL string) string {
+	sourceURL = strings.TrimSpace(sourceURL)
+	if sourceURL == "" {
+		return ""
+	}
+	parsed, err := url.Parse(sourceURL)
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(parsed.Hostname())
 }

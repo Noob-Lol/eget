@@ -24,9 +24,9 @@ func TestIndexCacheSaveLoadListAndClear(t *testing.T) {
 	if err := cache.Save(index); err != nil {
 		t.Fatalf("save index: %v", err)
 	}
-	assert.Eq(t, filepath.Join(cache.Dir, "go.json"), cache.Path("go"))
+	assert.Eq(t, filepath.Join(cache.Dir, "go-example.com.json"), cache.PathForSource("go", "https://example.com/golang/"))
 
-	loaded, err := cache.Load("go")
+	loaded, err := cache.LoadForSource("go", "https://example.com/golang/")
 	if err != nil {
 		t.Fatalf("load index: %v", err)
 	}
@@ -42,11 +42,39 @@ func TestIndexCacheSaveLoadListAndClear(t *testing.T) {
 	assert.Eq(t, 1, items[0].Versions)
 	assert.Eq(t, "https://example.com/golang/", items[0].SourceURL)
 
-	if err := cache.Clear("go"); err != nil {
+	if err := cache.ClearForSource("go", "https://example.com/golang/"); err != nil {
 		t.Fatalf("clear index: %v", err)
 	}
-	_, err = cache.Load("go")
+	_, err = cache.LoadForSource("go", "https://example.com/golang/")
 	assert.Err(t, err)
+}
+
+func TestIndexCacheUsesMirrorHostInFileName(t *testing.T) {
+	cache := IndexCache{Dir: t.TempDir()}
+	first := Index{Schema: 1, SDK: "jdk", SourceURL: "https://mirrors.huaweicloud.com/openjdk/", Items: []IndexItem{{Version: "21.0.2"}}}
+	second := Index{Schema: 1, SDK: "jdk", SourceURL: "https://download.java.net/java/GA/", Items: []IndexItem{{Version: "22"}}}
+
+	if err := cache.Save(first); err != nil {
+		t.Fatalf("save first index: %v", err)
+	}
+	if err := cache.Save(second); err != nil {
+		t.Fatalf("save second index: %v", err)
+	}
+
+	assert.Eq(t, filepath.Join(cache.Dir, "jdk-mirrors.huaweicloud.com.json"), cache.PathForSource("jdk", first.SourceURL))
+	assert.Eq(t, filepath.Join(cache.Dir, "jdk-download.java.net.json"), cache.PathForSource("jdk", second.SourceURL))
+
+	loadedFirst, err := cache.LoadForSource("jdk", first.SourceURL)
+	if err != nil {
+		t.Fatalf("load first index: %v", err)
+	}
+	loadedSecond, err := cache.LoadForSource("jdk", second.SourceURL)
+	if err != nil {
+		t.Fatalf("load second index: %v", err)
+	}
+
+	assert.Eq(t, "21.0.2", loadedFirst.Items[0].Version)
+	assert.Eq(t, "22", loadedSecond.Items[0].Version)
 }
 
 func TestSelectVersion(t *testing.T) {
