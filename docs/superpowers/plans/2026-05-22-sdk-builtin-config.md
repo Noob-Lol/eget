@@ -1061,7 +1061,7 @@ git commit -m "docs: document builtin sdk config command"
 
 ## 最终验证
 
-- [ ] Run:
+- [x] Run:
 
 ```bash
 go test ./...
@@ -1069,7 +1069,7 @@ go test ./...
 
 Expected: PASS.
 
-- [ ] Run:
+- [x] Run:
 
 ```bash
 git status --short
