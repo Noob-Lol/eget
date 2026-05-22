@@ -21,6 +21,7 @@ type CachedIndexInfo struct {
 	SourceURL string
 	FetchedAt time.Time
 	Path      string
+	Cached    bool
 }
 
 func (c IndexCache) Path(name string) string {
@@ -142,6 +143,7 @@ func (c IndexCache) List() ([]CachedIndexInfo, error) {
 			SourceURL: index.SourceURL,
 			FetchedAt: index.FetchedAt,
 			Path:      path,
+			Cached:    true,
 		})
 	}
 	sort.Slice(infos, func(i, j int) bool {

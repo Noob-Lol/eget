@@ -730,7 +730,13 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 		cols := []string{"Name", "Versions", "Source", "Updated At"}
 		rows := make([][]any, 0, len(infos))
 		for _, info := range infos {
-			rows = append(rows, []any{info.SDK, info.Versions, info.SourceURL, compactTime(info.FetchedAt)})
+			versions := any(info.Versions)
+			updatedAt := compactTime(info.FetchedAt)
+			if !info.Cached {
+				versions = "-"
+				updatedAt = "-"
+			}
+			rows = append(rows, []any{info.SDK, versions, info.SourceURL, updatedAt})
 		}
 		ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 		return nil

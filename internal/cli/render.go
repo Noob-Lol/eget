@@ -130,10 +130,11 @@ type sdkInstalledEntryDisplay struct {
 
 type sdkCachedIndexDisplay struct {
 	SDK       string `json:"sdk"`
-	Versions  int    `json:"versions"`
+	Versions  int    `json:"versions,omitempty"`
 	SourceURL string `json:"source_url,omitempty"`
 	FetchedAt string `json:"fetched_at,omitempty"`
 	Path      string `json:"path,omitempty"`
+	Cached    bool   `json:"cached"`
 }
 
 type sdkIndexSummaryDisplay struct {
@@ -348,6 +349,7 @@ func sdkCachedIndexesToDisplay(infos []sdk.CachedIndexInfo) []sdkCachedIndexDisp
 			SourceURL: info.SourceURL,
 			FetchedAt: compactTimeOmit(info.FetchedAt),
 			Path:      info.Path,
+			Cached:    info.Cached,
 		})
 	}
 	return items

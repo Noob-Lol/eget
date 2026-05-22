@@ -314,7 +314,42 @@ func (s Service) ShowIndex(name string) (Index, error) {
 }
 
 func (s Service) ListIndexes() ([]CachedIndexInfo, error) {
-	return s.IndexCache.List()
+	if s.Config == nil || len(s.Config.SDK) == 0 {
+		return []CachedIndexInfo{}, nil
+	}
+	names := make([]string, 0, len(s.Config.SDK))
+	for name, section := range s.Config.SDK {
+		if section.IndexURL == nil || strings.TrimSpace(*section.IndexURL) == "" {
+			continue
+		}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	infos := make([]CachedIndexInfo, 0, len(names))
+	for _, name := range names {
+		cfg, err := s.resolveConfig(name)
+		if err != nil {
+			return nil, err
+		}
+		info := CachedIndexInfo{
+			SDK:       cfg.Name,
+			SourceURL: cfg.IndexURL,
+			Path:      s.IndexCache.PathForSource(cfg.Name, cfg.IndexURL),
+		}
+		index, err := s.IndexCache.LoadForSource(cfg.Name, cfg.IndexURL)
+		if err == nil {
+			info.Versions = len(index.Items)
+			info.SourceURL = index.SourceURL
+			info.FetchedAt = index.FetchedAt
+			info.Path = s.IndexCache.PathForSource(index.SDK, index.SourceURL)
+			info.Cached = true
+		} else if !os.IsNotExist(err) {
+			return nil, err
+		}
+		infos = append(infos, info)
+	}
+	return infos, nil
 }
 
 func (s Service) SearchIndex(name string, opts SearchOptions) ([]SearchResult, error) {

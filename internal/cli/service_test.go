@@ -902,7 +902,7 @@ func TestHandleSDKIndexActions(t *testing.T) {
 			{Schema: 1, SDK: "go", SourceURL: "https://example.com/go", FetchedAt: now},
 		},
 		cachedIndexes: []sdk.CachedIndexInfo{
-			{SDK: "go", Versions: 3, SourceURL: "https://example.com/go", FetchedAt: now},
+			{SDK: "go", Versions: 3, SourceURL: "https://example.com/go", FetchedAt: now, Cached: true},
 		},
 	}
 	svc := &cliService{sdkService: fake}
@@ -930,6 +930,25 @@ func TestHandleSDKIndexActions(t *testing.T) {
 	assert.Contains(t, showOut, "Versions")
 	assert.Contains(t, showOut, "Latest Stable")
 	assert.NotContains(t, showOut, `"items"`)
+}
+
+func TestHandleSDKIndexListShowsConfiguredMissingCache(t *testing.T) {
+	fake := &fakeSDKService{
+		cachedIndexes: []sdk.CachedIndexInfo{
+			{SDK: "go", SourceURL: "https://go.dev/dl/"},
+		},
+	}
+	svc := &cliService{sdkService: fake}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	assert.NoErr(t, svc.handle("sdk.index.list", &SDKIndexOptions{Action: "list"}))
+	got := ccolor.ClearCode(out.String())
+	assert.Contains(t, got, "go")
+	assert.Contains(t, got, "https://go.dev/dl/")
+	assert.Contains(t, got, " - ")
 }
 
 func TestHandleSDKConfigAddPrintsResult(t *testing.T) {

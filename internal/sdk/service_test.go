@@ -273,6 +273,65 @@ func TestServiceRefreshShowListAndClearIndex(t *testing.T) {
 	assert.Err(t, err)
 }
 
+func TestServiceListIndexesUsesConfiguredSDKs(t *testing.T) {
+	root := t.TempDir()
+	cfg := testSDKConfig(root)
+	nodeSDK := cfg.SDK["go"]
+	nodeSDK.IndexURL = stringPtr("https://nodejs.org/dist/")
+	cfg.SDK["node"] = nodeSDK
+	jdkSDK := cfg.SDK["go"]
+	jdkSDK.IndexURL = stringPtr("https://mirrors.huaweicloud.com/openjdk/")
+	cfg.SDK["jdk"] = jdkSDK
+	svc := Service{
+		Config:     cfg,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+	}
+	err := svc.IndexCache.Save(Index{
+		Schema:    1,
+		SDK:       "jdk",
+		SourceURL: "https://mirrors.huaweicloud.com/openjdk/",
+		FetchedAt: time.Date(2026, 5, 22, 18, 48, 39, 0, time.UTC),
+		Items: []IndexItem{
+			{Version: "21.0.2", Stable: true},
+			{Version: "22.0.2", Stable: true},
+		},
+	})
+	if err != nil {
+		t.Fatalf("save configured index: %v", err)
+	}
+	err = svc.IndexCache.Save(Index{
+		Schema:    1,
+		SDK:       "jdk",
+		SourceURL: "https://old.example.com/openjdk/",
+		FetchedAt: time.Date(2026, 5, 22, 11, 55, 49, 0, time.UTC),
+		Items:     []IndexItem{{Version: "17.0.1", Stable: true}},
+	})
+	if err != nil {
+		t.Fatalf("save stale index: %v", err)
+	}
+
+	infos, err := svc.ListIndexes()
+	if err != nil {
+		t.Fatalf("list indexes: %v", err)
+	}
+
+	assert.Eq(t, 3, len(infos))
+	assert.Eq(t, "go", infos[0].SDK)
+	assert.False(t, infos[0].Cached)
+	assert.Eq(t, 0, infos[0].Versions)
+	assert.True(t, infos[0].FetchedAt.IsZero())
+	assert.Eq(t, "https://example.com/golang/", infos[0].SourceURL)
+	assert.Eq(t, "jdk", infos[1].SDK)
+	assert.True(t, infos[1].Cached)
+	assert.Eq(t, 2, infos[1].Versions)
+	assert.Eq(t, "https://mirrors.huaweicloud.com/openjdk/", infos[1].SourceURL)
+	assert.Eq(t, "node", infos[2].SDK)
+	assert.False(t, infos[2].Cached)
+	assert.Eq(t, "https://nodejs.org/dist/", infos[2].SourceURL)
+}
+
 func TestServiceRefreshIndexUsesBrowserHeaders(t *testing.T) {
 	root := t.TempDir()
 	var userAgent string
@@ -542,7 +601,11 @@ func TestServiceRefreshAllIndexes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list indexes: %v", err)
 	}
-	assert.Eq(t, 0, len(infos))
+	assert.Eq(t, 2, len(infos))
+	assert.Eq(t, "go", infos[0].SDK)
+	assert.False(t, infos[0].Cached)
+	assert.Eq(t, "node", infos[1].SDK)
+	assert.False(t, infos[1].Cached)
 }
 
 func TestServiceInstallFromLocalHTTPServer(t *testing.T) {
