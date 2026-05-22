@@ -799,7 +799,7 @@ git commit -m "feat: add sdk config cli command"
 - Modify: `internal/cli/handlers.go`
 - Modify: `internal/cli/service_test.go`
 
-- [ ] **Step 1: 编写失败测试：handler 输出**
+- [x] **Step 1: 编写失败测试：handler 输出**
 
 在 `internal/cli/service_test.go` 追加：
 
@@ -857,7 +857,7 @@ func cliStringPtr(value string) *string {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -867,7 +867,7 @@ go test ./internal/cli -run 'TestHandleSDKConfigAdd' -count=1
 
 Expected: 失败，原因是 `sdk.config.add` 还没有在 `cliService.handle` 中路由。
 
-- [ ] **Step 3: 增加 handler 路由和输出**
+- [x] **Step 3: 增加 handler 路由和输出**
 
 修改 `internal/cli/handlers.go`。
 
@@ -913,7 +913,7 @@ func (s *cliService) handleSDKConfig(opts *SDKConfigOptions) error {
 }
 ```
 
-- [ ] **Step 4: 运行 handler 测试确认通过**
+- [x] **Step 4: 运行 handler 测试确认通过**
 
 Run:
 
@@ -923,7 +923,7 @@ go test ./internal/cli -run 'TestHandleSDKConfigAdd' -count=1
 
 Expected: PASS.
 
-- [ ] **Step 5: 提交 Task 4**
+- [x] **Step 5: 提交 Task 4**
 
 Run:
 

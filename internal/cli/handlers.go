@@ -126,6 +126,9 @@ func (s *cliService) handle(name string, options any) error {
 	case "sdk.index.list", "sdk.index.show", "sdk.index.refresh", "sdk.index.clear":
 		opts := options.(*SDKIndexOptions)
 		return s.handleSDKIndex(opts)
+	case "sdk.config.add":
+		opts := options.(*SDKConfigOptions)
+		return s.handleSDKConfig(opts)
 	default:
 		return ErrNotImplemented
 	}
@@ -772,6 +775,36 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 	default:
 		return fmt.Errorf("sdk index action is required")
 	}
+}
+
+func (s *cliService) handleSDKConfig(opts *SDKConfigOptions) error {
+	if opts == nil || opts.Action != "add" {
+		return fmt.Errorf("sdk config action is required")
+	}
+	result, err := s.cfgService.AddSDKConfig(app.SDKConfigAddOptions{
+		Name:   opts.Name,
+		All:    opts.All,
+		Force:  opts.Force,
+		Mirror: opts.Mirror,
+	})
+	if err != nil {
+		return err
+	}
+	for _, item := range result.Items {
+		source := item.Source
+		if source == "" {
+			source = "official"
+		}
+		switch item.Action {
+		case app.SDKConfigActionAdded:
+			ccolor.Successf("✓ Added SDK config: %s (%s)\n", item.Name, source)
+		case app.SDKConfigActionUpdated:
+			ccolor.Successf("✓ Updated SDK config: %s (%s)\n", item.Name, source)
+		case app.SDKConfigActionSkipped:
+			ccolor.Infof("- Skipped SDK config: %s %s\n", item.Name, item.Reason)
+		}
+	}
+	return nil
 }
 
 func (s *cliService) sdkServiceWithIndexReporter() sdkCLIService {

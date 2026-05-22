@@ -932,6 +932,54 @@ func TestHandleSDKIndexActions(t *testing.T) {
 	assert.NotContains(t, showOut, `"items"`)
 }
 
+func TestHandleSDKConfigAddPrintsResult(t *testing.T) {
+	cfg := cfgpkg.NewFile()
+	svc := &cliService{
+		cfgService: app.ConfigService{
+			Load: func() (*cfgpkg.File, error) { return cfg, nil },
+			Save: func(path string, file *cfgpkg.File) error { return nil },
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handle("sdk.config.add", &SDKConfigOptions{Action: "add", Name: "jdk", Mirror: true})
+	if err != nil {
+		t.Fatalf("handle sdk config add: %v", err)
+	}
+
+	got := ccolor.ClearCode(out.String())
+	assert.Contains(t, got, "Added SDK config: jdk (mirror)")
+	assert.Eq(t, "https://mirrors.huaweicloud.com/openjdk/", *cfg.SDK["jdk"].IndexURL)
+}
+
+func TestHandleSDKConfigAddAllPrintsSkippedAndAdded(t *testing.T) {
+	cfg := cfgpkg.NewFile()
+	cfg.SDK["go"] = cfgpkg.SDKSection{Target: cliStringPtr("custom-go")}
+	svc := &cliService{
+		cfgService: app.ConfigService{
+			Load: func() (*cfgpkg.File, error) { return cfg, nil },
+			Save: func(path string, file *cfgpkg.File) error { return nil },
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handle("sdk.config.add", &SDKConfigOptions{Action: "add", All: true, Mirror: true})
+	if err != nil {
+		t.Fatalf("handle sdk config add all: %v", err)
+	}
+
+	got := ccolor.ClearCode(out.String())
+	assert.Contains(t, got, "Skipped SDK config: go already exists")
+	assert.Contains(t, got, "Added SDK config: node (mirror)")
+	assert.Contains(t, got, "Added SDK config: jdk (mirror)")
+}
+
 func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 	svc := &cliService{
 		listService: app.ListService{
@@ -2010,6 +2058,10 @@ type fakeConfigRecorderForCLI struct{}
 
 func (f *fakeConfigRecorderForCLI) AddPackage(repo, name string, opts install.Options) error {
 	return nil
+}
+
+func cliStringPtr(value string) *string {
+	return &value
 }
 
 type fakeQueryClientForCLI struct {
