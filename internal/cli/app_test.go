@@ -254,6 +254,29 @@ func TestMain_SDKConfigAddAllRoutesAndBindsOptions(t *testing.T) {
 	assert.Eq(t, "", opts.Name)
 }
 
+func TestMain_SDKConfigAddAllowsFlagsAfterName(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "config", "add", "jdk", "--mirror", "--force"})
+	if err != nil {
+		t.Fatalf("expected sdk config add to allow trailing flags, got %v", err)
+	}
+	assert.Eq(t, 1, len(calls))
+	assert.Eq(t, "sdk.config.add", calls[0].name)
+	opts, ok := calls[0].options.(*SDKConfigOptions)
+	assert.True(t, ok)
+	assert.Eq(t, "jdk", opts.Name)
+	assert.True(t, opts.Mirror)
+	assert.True(t, opts.Force)
+	assert.False(t, opts.All)
+}
+
 func TestMain_SDKConfigAddRejectsNameAndAll(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

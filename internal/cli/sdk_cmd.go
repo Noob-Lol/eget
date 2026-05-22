@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gookit/gcli/v3"
 )
@@ -194,7 +195,7 @@ func newSDKConfigAddCmd(opts *SDKConfigOptions, handler CommandHandler) *gcli.Co
 	cmd.Func = func(c *gcli.Command, args []string) error {
 		opts.Action = "add"
 		opts.Name = c.Arg("name").String()
-		if err := validateNoFlagArgs(append([]string{opts.Name}, args...)); err != nil {
+		if err := applySDKConfigAddTrailingFlags(opts, args); err != nil {
 			return err
 		}
 		if (opts.Name == "") == !opts.All {
@@ -204,6 +205,25 @@ func newSDKConfigAddCmd(opts *SDKConfigOptions, handler CommandHandler) *gcli.Co
 		return handler("sdk.config.add", &snapshot)
 	}
 	return cmd
+}
+
+func applySDKConfigAddTrailingFlags(opts *SDKConfigOptions, args []string) error {
+	for _, arg := range args {
+		switch arg {
+		case "--all", "-a":
+			opts.All = true
+		case "--force", "-f":
+			opts.Force = true
+		case "--mirror", "-m":
+			opts.Mirror = true
+		default:
+			if strings.HasPrefix(arg, "-") {
+				return fmt.Errorf("option provided but not defined: %s", arg)
+			}
+			return fmt.Errorf("unexpected argument: %s", arg)
+		}
+	}
+	return nil
 }
 
 func newSDKIndexActionCmd(action string, opts *SDKIndexOptions, handler CommandHandler, configure func(*gcli.Command)) *gcli.Command {
