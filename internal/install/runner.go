@@ -251,6 +251,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 		Asset:       path.Base(url),
 		IsGUI:       opts.IsGUI,
 		InstallMode: opts.InstallMode,
+		Version:     opts.URLTemplate.ResolvedVersion,
 	}
 	if opts.InstallMode == InstallModeInstaller {
 		installerPath, err := r.materializeInstallerFile(downloaded.Body, url, bin, opts)

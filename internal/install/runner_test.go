@@ -576,6 +576,7 @@ func TestRunTemplateFinderResolvesChecksumVarsForVerifier(t *testing.T) {
 
 	assert.Eq(t, "abc", verifierValue)
 	assert.Eq(t, assetURL, result.URL)
+	assert.Eq(t, "1.2.3", result.Version)
 	assert.Eq(t, []string{filepath.Join(outputDir, "claude.exe")}, result.ExtractedFiles)
 }
 
