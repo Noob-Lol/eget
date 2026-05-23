@@ -11,19 +11,19 @@ type Section struct {
 	File                 *string           `toml:"file" mapstructure:"file"`
 	GithubToken          *string           `toml:"github_token" mapstructure:"github_token"`
 	GuiTarget            *string           `toml:"gui_target" mapstructure:"gui_target"`
-	IgnoreUpdatePackages []string          `toml:"ignore_update_packages" mapstructure:"ignore_update_packages"`
+	IgnoreUpdatePackages []string          `toml:"ignore_update_packages,omitempty" mapstructure:"ignore_update_packages"`
 	IsGUI                *bool             `toml:"is_gui" mapstructure:"is_gui"`
 	Name                 *string           `toml:"name" mapstructure:"name"`
 	Quiet                *bool             `toml:"quiet" mapstructure:"quiet"`
-	RenameFiles          map[string]string `toml:"rename_files" mapstructure:"rename_files"`
+	RenameFiles          map[string]string `toml:"rename_files,omitempty" mapstructure:"rename_files"`
 	Repo                 *string           `toml:"repo" mapstructure:"repo"`
 	ShowHash             *bool             `toml:"show_hash" mapstructure:"show_hash"`
 	StripComponents      *int              `toml:"strip_components" mapstructure:"strip_components"`
 	Source               *bool             `toml:"download_source" mapstructure:"download_source"`
 	SourcePath           *string           `toml:"source_path" mapstructure:"source_path"`
 	Sys7zPath            *string           `toml:"sys7z_path" mapstructure:"sys7z_path"`
-	SDKTarget            *string           `toml:"sdk_target" mapstructure:"sdk_target"`
-	SDKExtMap            map[string]string `toml:"sdk_ext_map" mapstructure:"sdk_ext_map"`
+	SDKTarget            *string           `toml:"sdk_target,omitempty" mapstructure:"sdk_target"`
+	SDKExtMap            map[string]string `toml:"sdk_ext_map,omitempty" mapstructure:"sdk_ext_map"`
 	System               *string           `toml:"system" mapstructure:"system"`
 	Tag                  *string           `toml:"tag" mapstructure:"tag"`
 	Target               *string           `toml:"target" mapstructure:"target"`
@@ -34,10 +34,10 @@ type Section struct {
 	LatestFormat         *string           `toml:"latest_format" mapstructure:"latest_format"`
 	LatestJSONPath       *string           `toml:"latest_json_path" mapstructure:"latest_json_path"`
 	VersionRegex         *string           `toml:"version_regex" mapstructure:"version_regex"`
-	OSMap                map[string]string `toml:"os_map" mapstructure:"os_map"`
-	ArchMap              map[string]string `toml:"arch_map" mapstructure:"arch_map"`
-	ExtMap               map[string]string `toml:"ext_map" mapstructure:"ext_map"`
-	LibcMap              map[string]string `toml:"libc_map" mapstructure:"libc_map"`
+	OSMap                map[string]string `toml:"os_map,omitempty" mapstructure:"os_map"`
+	ArchMap              map[string]string `toml:"arch_map,omitempty" mapstructure:"arch_map"`
+	ExtMap               map[string]string `toml:"ext_map,omitempty" mapstructure:"ext_map"`
+	LibcMap              map[string]string `toml:"libc_map,omitempty" mapstructure:"libc_map"`
 	ChecksumURLTemplate  *string           `toml:"checksum_url_template" mapstructure:"checksum_url_template"`
 	ChecksumFormat       *string           `toml:"checksum_format" mapstructure:"checksum_format"`
 	ChecksumJSONPath     *string           `toml:"checksum_json_path" mapstructure:"checksum_json_path"`

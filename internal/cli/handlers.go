@@ -8,12 +8,14 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gookit/cliui/progress"
 	"github.com/gookit/cliui/show"
+	"github.com/gookit/cliui/show/lists"
 	"github.com/gookit/goutil/cliutil"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
@@ -522,14 +524,36 @@ func (s *cliService) handleConfig(opts *ConfigOptions) error {
 		if err != nil {
 			return err
 		}
+
+		showListConfig := func(opts *show.ListOptions) {
+			opts.TagName = "toml"
+			opts.FilterFunc = func(item *lists.Item) bool {
+				switch item.RftVal().Kind() {
+				case reflect.Map, reflect.Slice:
+					if item.RftVal().IsNil() || item.RftVal().Len() == 0 {
+						return false
+					}
+				}
+				return true
+			}
+		}
+
 		ccolor.Printf("# %s, exists: %v\n", info.Path, info.Exists)
 		show.MList(map[string]any{
 			"global":   cfg.Global,
 			"apiCache": cfg.ApiCache,
 			"ghproxy":  cfg.Ghproxy,
-		})
+		}, showListConfig)
+
+		// packages
+		ccolor.Grayln("---------------------------")
 		ccolor.Yellowln("📦 Configed Packages:")
-		show.MList(cfg.Packages)
+		show.MList(cfg.Packages, showListConfig)
+
+		// sdk
+		ccolor.Grayln("---------------------------")
+		ccolor.Yellowln("📦 Configed SDKs:")
+		show.MList(cfg.SDK, showListConfig)
 		return nil
 	case "get":
 		value, err := s.cfgService.ConfigGet(opts.Key)
