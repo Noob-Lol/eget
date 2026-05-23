@@ -111,6 +111,35 @@ func TestParseJSONIndexForZulu(t *testing.T) {
 	assert.Eq(t, "zip", winFile.Ext)
 }
 
+func TestParseJSONIndexForZuluSkipsVariantPackages(t *testing.T) {
+	body := strings.NewReader(`[
+  {
+    "download_url": "https://cdn.azul.com/zulu/bin/zulu21.44.17-ca-jdk21.0.8-linux_x64.tar.gz",
+    "java_version": [21, 0, 8],
+    "name": "zulu21.44.17-ca-jdk21.0.8-linux_x64.tar.gz"
+  },
+  {
+    "download_url": "https://cdn.azul.com/zulu/bin/zulu21.44.17-ca-fx-jdk21.0.8-linux_x64.tar.gz",
+    "java_version": [21, 0, 8],
+    "name": "zulu21.44.17-ca-fx-jdk21.0.8-linux_x64.tar.gz"
+  },
+  {
+    "download_url": "https://cdn.azul.com/zulu/bin/zulu21.44.17-ca-crac-jdk21.0.8-win_x64.zip",
+    "java_version": [21, 0, 8],
+    "name": "zulu21.44.17-ca-crac-jdk21.0.8-win_x64.zip"
+  }
+]`)
+
+	index, err := ParseJSONIndex(body, "zulu-json", JSONParseOptions{SDK: "jdk"})
+	if err != nil {
+		t.Fatalf("parse zulu json index: %v", err)
+	}
+
+	assert.Eq(t, 1, len(index.Items))
+	assert.Eq(t, 1, len(index.Items[0].Files))
+	assert.Eq(t, "zulu21.44.17-ca-jdk21.0.8-linux_x64.tar.gz", index.Items[0].Files[0].Filename)
+}
+
 func TestParseJSONIndexRejectsUnsupportedParser(t *testing.T) {
 	_, err := ParseJSONIndex(strings.NewReader(`[]`), "unknown", JSONParseOptions{})
 	assert.Err(t, err)

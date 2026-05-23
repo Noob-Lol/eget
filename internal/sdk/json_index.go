@@ -160,7 +160,7 @@ func parseZuluJSONIndex(body io.Reader, opts JSONParseOptions) (Index, error) {
 	for _, pkg := range packages {
 		version := zuluJavaVersion(pkg.JavaVersion)
 		osName, arch, ext, ok := parseZuluFilename(pkg.Name)
-		if version == "" || pkg.DownloadURL == "" || !ok {
+		if version == "" || pkg.DownloadURL == "" || !ok || !isZuluStandardJDKPackage(pkg.Name) {
 			continue
 		}
 		item := byVersion[version]
@@ -189,6 +189,10 @@ func parseZuluJSONIndex(body io.Reader, opts JSONParseOptions) (Index, error) {
 		return Index{}, fmt.Errorf("no sdk files found in json index")
 	}
 	return newIndex(opts.SDK, opts.SourceURL, opts.Now, items), nil
+}
+
+func isZuluStandardJDKPackage(filename string) bool {
+	return strings.Contains(filename, "-ca-jdk")
 }
 
 func zuluJavaVersion(values []int) string {

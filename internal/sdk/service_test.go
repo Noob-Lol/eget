@@ -390,6 +390,47 @@ func TestServiceRefreshIndexUsesConfiguredUserAgent(t *testing.T) {
 	assert.Eq(t, "custom-agent/1.0", userAgent)
 }
 
+func TestServiceRefreshJSONIndexFollowsPagination(t *testing.T) {
+	root := t.TempDir()
+	var pages []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pages = append(pages, r.URL.Query().Get("page"))
+		switch r.URL.Query().Get("page") {
+		case "", "1":
+			w.Header().Set("X-Pagination", `{"page":1,"next_page":2}`)
+			_, _ = io.WriteString(w, `[{"version":"go1.21.1","stable":true,"files":[{"filename":"go1.21.1.linux-amd64.tar.gz","os":"linux","arch":"amd64","kind":"archive"}]}]`)
+		case "2":
+			w.Header().Set("X-Pagination", `{"page":2}`)
+			_, _ = io.WriteString(w, `[{"version":"go1.22.0","stable":true,"files":[{"filename":"go1.22.0.linux-amd64.tar.gz","os":"linux","arch":"amd64","kind":"archive"}]}]`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	cfg := testSDKConfig(root)
+	goSDK := cfg.SDK["go"]
+	goSDK.IndexURL = stringPtr(server.URL + "/golang/?mode=json")
+	goSDK.IndexFormat = stringPtr("json")
+	goSDK.IndexParser = stringPtr("go-json")
+	cfg.SDK["go"] = goSDK
+	svc := Service{
+		Config:     cfg,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+	}
+
+	index, err := svc.RefreshIndex(context.Background(), "go")
+	if err != nil {
+		t.Fatalf("refresh index: %v", err)
+	}
+
+	assert.Eq(t, []string{"", "2"}, pages)
+	assert.Eq(t, 2, len(index.Items))
+	assert.Eq(t, "1.21.1", index.Items[0].Version)
+	assert.Eq(t, "1.22.0", index.Items[1].Version)
+}
+
 func TestServiceSearchIndexMatchesKeywordsAndExcludes(t *testing.T) {
 	root := t.TempDir()
 	cfg := testSDKConfig(root)
