@@ -18,6 +18,7 @@ func TestParseTarget(t *testing.T) {
 		{"go:latest", "go", "latest", VersionLatest},
 		{"go@1.21", "go", "1.21", VersionPrefix},
 		{"go:1.21", "go", "1.21", VersionPrefix},
+		{"jdk@21", "jdk", "21", VersionPrefix},
 		{"go@1.21.1", "go", "1.21.1", VersionExact},
 		{"go:1.21.1", "go", "1.21.1", VersionExact},
 	}

@@ -97,6 +97,12 @@ func TestSelectVersion(t *testing.T) {
 	}
 	assert.Eq(t, "1.21.13", item.Version)
 
+	item, err = SelectVersion(index, Target{Name: "go", Version: "1", Kind: VersionPrefix})
+	if err != nil {
+		t.Fatalf("select major prefix: %v", err)
+	}
+	assert.Eq(t, "1.22.2", item.Version)
+
 	item, err = SelectVersion(index, Target{Name: "go", Version: "1.21.1", Kind: VersionExact})
 	if err != nil {
 		t.Fatalf("select exact: %v", err)

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var versionPrefixPattern = regexp.MustCompile(`^\d+\.\d+$`)
+var versionPrefixPattern = regexp.MustCompile(`^\d+(?:\.\d+)?$`)
 
 func ParseTarget(input string) (Target, error) {
 	raw := strings.TrimSpace(input)
