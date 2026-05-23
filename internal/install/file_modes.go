@@ -59,6 +59,11 @@ func rename(file string, nameguess string) string {
 }
 
 func isDefinitelyNotExec(file string) bool {
+	base := strings.ToLower(filepath.Base(file))
+	switch base {
+	case "license", "copying", "notice", "readme", "changelog", "changes", "authors", "contributors":
+		return true
+	}
 	return strings.HasSuffix(file, ".deb") || strings.HasSuffix(file, ".1") || strings.HasSuffix(file, ".txt")
 }
 
