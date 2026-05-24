@@ -243,6 +243,20 @@ func GetWithOptions(rawURL string, opts Options) (*http.Response, error) {
 	return nil, lastErr
 }
 
+func ProbeLastModified(rawURL string, opts Options) string {
+	resp, err := requestWithOptions(http.MethodHead, rawURL, "", opts)
+	if err != nil {
+		verbosef("last-modified probe failed: %v", err)
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		verbosef("last-modified probe unsupported status: %s", resp.Status)
+		return ""
+	}
+	return resp.Header.Get("Last-Modified")
+}
+
 func NewHTTPGetter(opts Options) HTTPGetterFunc {
 	return HTTPGetterFunc(func(rawURL string) (*http.Response, error) {
 		return GetWithOptions(rawURL, opts)

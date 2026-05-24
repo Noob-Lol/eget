@@ -102,6 +102,54 @@ func TestDownloadBodyUsesCacheWhenAvailable(t *testing.T) {
 	}
 }
 
+func TestDownloadBodyRefreshesCachedModTimeFromRemote(t *testing.T) {
+	cacheDir := t.TempDir()
+	url := "https://github.com/pbatard/rufus/releases/download/v4.14/rufus-4.14p.exe"
+	cachePath := CacheFilePath(cacheDir, url)
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
+		t.Fatalf("mkdir cache dir: %v", err)
+	}
+	if err := os.WriteFile(cachePath, []byte("cached-data"), 0o644); err != nil {
+		t.Fatalf("write cache file: %v", err)
+	}
+	wrongTime := time.Date(2026, 5, 24, 13, 19, 24, 0, time.UTC)
+	remoteTime := time.Date(2026, 4, 30, 11, 32, 59, 0, time.UTC)
+	assert.Nil(t, applyModTime(cachePath, wrongTime))
+
+	origHTTPDo := httpDo
+	defer func() { httpDo = origHTTPDo }()
+	httpDo = func(client *http.Client, req *http.Request) (*http.Response, error) {
+		assert.Eq(t, http.MethodHead, req.Method)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Header:     http.Header{"Last-Modified": []string{remoteTime.Format(http.TimeFormat)}},
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	}
+
+	origDownloadGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origDownloadGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		t.Fatal("cache hit should not re-download body")
+		return nil, nil
+	}
+
+	var stdout bytes.Buffer
+	runner := &InstallRunner{Stdout: &stdout, Stderr: io.Discard}
+	downloaded, err := runner.downloadBody(url, Options{CacheDir: cacheDir})
+	if err != nil {
+		t.Fatalf("download body: %v", err)
+	}
+
+	assert.Eq(t, "cached-data", string(downloaded.Body))
+	assert.Eq(t, remoteTime, downloaded.ModTime)
+	assert.Eq(t, remoteTime, fileModTime(cachePath).UTC())
+	if got := stdout.String(); !strings.Contains(got, "Using cached file") {
+		t.Fatalf("expected cached-file notice, got %q", got)
+	}
+}
+
 func TestDownloadBodyRedownloadsHTMLCachedArchive(t *testing.T) {
 	cacheDir := t.TempDir()
 	url := "https://downloads.sourceforge.net/project/victoria-ssd-hdd/Victoria537.zip"

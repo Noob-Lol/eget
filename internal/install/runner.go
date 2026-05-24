@@ -530,8 +530,9 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 	if cachePath != "" && !IsLocalFile(url) {
 		if data, err := os.ReadFile(cachePath); err == nil {
 			if !isInvalidCachedDownload(cachePath, data) {
+				modTime := cachedDownloadModTime(url, cachePath, opts)
 				ccolor.Fprintf(output, " - Using cached file <cyan>%s</>\n", filepath.Base(cachePath))
-				return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath)}, nil
+				return downloadBodyResult{Body: data, ModTime: modTime}, nil
 			}
 			verbosef("discard invalid cached archive: %s", cachePath)
 		}
@@ -578,6 +579,16 @@ func isInvalidCachedDownload(cachePath string, data []byte) bool {
 	trimmed := bytes.TrimSpace(data)
 	lowerPrefix := strings.ToLower(string(trimmed[:min(len(trimmed), 64)]))
 	return strings.HasPrefix(lowerPrefix, "<!doctype html") || strings.HasPrefix(lowerPrefix, "<html")
+}
+
+func cachedDownloadModTime(rawURL, cachePath string, opts Options) time.Time {
+	if modTime := parseHTTPTime(ProbeLastModified(rawURL, opts)); !modTime.IsZero() {
+		if err := applyModTime(cachePath, modTime); err != nil {
+			verbosef("cached file modtime update failed: %v", err)
+		}
+		return modTime
+	}
+	return fileModTime(cachePath)
 }
 
 func parseHTTPTime(value string) time.Time {

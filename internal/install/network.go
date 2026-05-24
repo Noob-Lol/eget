@@ -108,6 +108,15 @@ func DownloadFile(url, target string, getbar func(size int64) io.Writer, opts Op
 	return client.DownloadFile(url, target, getbar, ClientOptions(opts))
 }
 
+func ProbeLastModified(url string, opts Options) string {
+	restoreHTTPDo := client.SetHTTPDoForTest(httpDo)
+	defer restoreHTTPDo()
+	restoreProxyNotice := client.SetProxyNoticeWriter(proxyNoticeWriter)
+	defer client.SetProxyNoticeWriter(restoreProxyNotice)
+	client.SetVerbose(verboseEnabled, verboseWriter)
+	return client.ProbeLastModified(url, ClientOptions(opts))
+}
+
 func verbosef(format string, args ...any) {
 	client.Verbosef(format, args...)
 }
