@@ -99,6 +99,59 @@ func TestServiceInstallUsesIndexForPrefixVersion(t *testing.T) {
 	assert.Eq(t, "1.21.13", result.Version)
 }
 
+func TestServiceInstallPassesDownloadProgress(t *testing.T) {
+	root := t.TempDir()
+	archivePath := filepath.Join(root, "go.zip")
+	writeSDKZip(t, archivePath, map[string]string{"go/bin/go": "go"})
+	cfg := testSDKConfig(root)
+	progressCalled := false
+	var startTarget string
+	var startVersion string
+	var startHost string
+	svc := Service{
+		Config:     cfg,
+		Store:      Store{Path: filepath.Join(root, "sdk.installed.json")},
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+		Now:        time.Now,
+		Downloader: func(ctx context.Context, req DownloadRequest) (DownloadResult, error) {
+			assert.NotNil(t, req.Progress)
+			progressCalled = true
+			return DownloadResult{Path: archivePath}, nil
+		},
+	}
+	if err := svc.IndexCache.Save(Index{
+		Schema:    1,
+		SDK:       "go",
+		SourceURL: "https://example.com/golang/",
+		Items: []IndexItem{{
+			Version: "1.21.1",
+			Stable:  true,
+			Files:   []IndexFile{{OS: "linux", Arch: "amd64", Ext: "zip", URL: "https://mirror/go1.21.1.linux-amd64.zip", Filename: "go1.21.1.linux-amd64.zip"}},
+		}},
+	}); err != nil {
+		t.Fatalf("save index: %v", err)
+	}
+
+	_, err := svc.Install(context.Background(), "go:1.21", InstallOptions{
+		Progress: func(size int64) io.Writer { return io.Discard },
+		OnStart: func(target string, version string, host string) {
+			startTarget = target
+			startVersion = version
+			startHost = host
+		},
+	})
+	if err != nil {
+		t.Fatalf("install sdk: %v", err)
+	}
+
+	assert.True(t, progressCalled)
+	assert.Eq(t, "go:1.21", startTarget)
+	assert.Eq(t, "1.21.1", startVersion)
+	assert.Eq(t, "mirror", startHost)
+}
+
 func TestServiceInstallUsesIndexForConfiguredMirror(t *testing.T) {
 	root := t.TempDir()
 	archivePath := filepath.Join(root, "go.zip")

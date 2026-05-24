@@ -51,6 +51,11 @@ type fakeSDKService struct {
 func (f *fakeSDKService) InstallMany(_ context.Context, targets []string, opts sdk.InstallOptions) ([]sdk.InstallResult, error) {
 	f.installTargets = append([]string(nil), targets...)
 	f.installOpts = opts
+	for _, target := range targets {
+		if opts.OnStart != nil {
+			opts.OnStart(target, "1.21.1", "example.com")
+		}
+	}
 	return f.installResults, f.err
 }
 
@@ -804,7 +809,9 @@ func TestHandleSDKInstallPrintsResults(t *testing.T) {
 	assert.NoErr(t, err)
 	assert.Eq(t, []string{"go@1.21.1"}, fake.installTargets)
 	assert.True(t, fake.installOpts.Force)
+	assert.NotNil(t, fake.installOpts.Progress)
 	got := out.String()
+	assert.Contains(t, got, "Install SDK go@1.21.1 -> 1.21.1 from example.com")
 	assert.Contains(t, got, "go@1.21.1")
 	assert.Contains(t, got, "/sdks/go1.21.1")
 	assert.Contains(t, got, "cached")

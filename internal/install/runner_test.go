@@ -351,6 +351,27 @@ func TestNewDownloadProgressUsesCoarseRedrawFrequency(t *testing.T) {
 	assert.True(t, p.RedrawFreq >= 256*1024)
 }
 
+func TestDownloadProgressLayoutAdaptsToTerminalWidth(t *testing.T) {
+	barWidth, format := downloadProgressLayout(120)
+	assert.Eq(t, 40, barWidth)
+	assert.Contains(t, format, "{@elapsed}/{@remaining}")
+	assert.NotContains(t, format, "{@estimated}")
+
+	barWidth, format = downloadProgressLayout(100)
+	assert.Eq(t, 32, barWidth)
+	assert.Contains(t, format, "{@elapsed}/{@remaining}")
+	assert.NotContains(t, format, "{@estimated}")
+
+	barWidth, format = downloadProgressLayout(80)
+	assert.Eq(t, 24, barWidth)
+	assert.Contains(t, format, "{@curSize}/{@maxSize}")
+	assert.NotContains(t, format, "{@elapsed}")
+	assert.NotContains(t, format, "{@remaining}")
+
+	barWidth, _ = downloadProgressLayout(60)
+	assert.Eq(t, 10, barWidth)
+}
+
 func TestEffectiveOutputUsesGuiTargetForPortableGUI(t *testing.T) {
 	opts := Options{Output: "C:/Tools", GuiTarget: "C:/Program/AITools", IsGUI: true, InstallMode: InstallModePortable}
 	got := effectiveOutput(opts)

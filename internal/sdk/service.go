@@ -37,7 +37,9 @@ type Service struct {
 }
 
 type InstallOptions struct {
-	Force bool
+	Force    bool
+	Progress func(size int64) io.Writer
+	OnStart  func(target string, version string, host string)
 }
 
 type InstallResult struct {
@@ -100,6 +102,13 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 	if filename == "" {
 		filename = filepath.Base(url)
 	}
+	if opts.OnStart != nil {
+		host := indexSourceHost(url)
+		if host == "" {
+			host = url
+		}
+		opts.OnStart(rawTarget, version, host)
+	}
 	download := s.Downloader
 	if download == nil {
 		download = DownloadArchive
@@ -111,6 +120,7 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 		Version:    version,
 		Filename:   filename,
 		ClientOpts: s.effectiveClientOptions(),
+		Progress:   opts.Progress,
 	})
 	if err != nil {
 		return InstallResult{}, err

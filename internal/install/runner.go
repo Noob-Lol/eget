@@ -17,6 +17,7 @@ import (
 
 	"github.com/gookit/cliui/progress"
 	"github.com/gookit/goutil/x/ccolor"
+	"github.com/gookit/goutil/x/termenv"
 	storepkg "github.com/inherelab/eget/internal/installed"
 	"github.com/inherelab/eget/internal/source/urltemplate"
 	"github.com/inherelab/eget/internal/util"
@@ -594,15 +595,41 @@ func (r *InstallRunner) downloadProgress(opts Options) func(int64) io.Writer {
 }
 
 func newDownloadProgress(out io.Writer, size int64) *progress.Progress {
+	return NewDownloadProgress(out, size)
+}
+
+func NewDownloadProgress(out io.Writer, size int64) *progress.Progress {
 	if out == nil {
 		out = io.Discard
 	}
-	p := progress.CustomBar(40, progress.BarStyles[0], size)
+	width, _ := termenv.GetTermSize()
+	barWidth, format := downloadProgressLayout(width)
+	p := progress.CustomBar(barWidth, progress.BarStyles[0], size)
 	p.Out = out
 	p.RedrawFreq = downloadProgressRedrawFreq
-	p.Format = "Downloading [{@bar}] <info>{@percent:4s}%</> {@curSize}/{@maxSize} ({@elapsed}/{@remaining} T:{@estimated})"
+	p.Format = format
 	p.Start()
 	return p
+}
+
+func downloadProgressLayout(termWidth int) (int, string) {
+	if termWidth <= 0 {
+		termWidth = 80
+	}
+	format := "Downloading [{@bar}] <info>{@percent:4s}%</> {@curSize}/{@maxSize}"
+	if termWidth >= 120 {
+		return 40, format + " ({@elapsed}/{@remaining})"
+	}
+	if termWidth >= 100 {
+		return 32, format + " ({@elapsed}/{@remaining})"
+	}
+	if termWidth >= 80 {
+		return 24, format
+	}
+	if termWidth >= 64 {
+		return 16, format
+	}
+	return 10, format
 }
 
 func (r *InstallRunner) resolveCandidate(target string, candidates []string, opts Options) (string, error) {

@@ -648,7 +648,13 @@ func (s *cliService) handleSDKInstall(opts *SDKInstallOptions) error {
 	if opts == nil || len(opts.Targets) == 0 {
 		return fmt.Errorf("sdk install target is required")
 	}
-	results, err := s.sdkService.InstallMany(context.Background(), opts.Targets, sdk.InstallOptions{Force: opts.Force})
+	results, err := s.sdkService.InstallMany(context.Background(), opts.Targets, sdk.InstallOptions{
+		Force:    opts.Force,
+		Progress: s.sdkDownloadProgress(),
+		OnStart: func(target string, version string, host string) {
+			ccolor.Printf(" - Install SDK %s -> %s from %s\n", target, version, host)
+		},
+	})
 	if err != nil {
 		return err
 	}
@@ -661,6 +667,12 @@ func (s *cliService) handleSDKInstall(opts *SDKInstallOptions) error {
 		ccolor.Successf("✓ Installed %s@%s -> %s\n", result.Name, result.Version, result.Path)
 	}
 	return nil
+}
+
+func (s *cliService) sdkDownloadProgress() func(int64) io.Writer {
+	return func(size int64) io.Writer {
+		return install.NewDownloadProgress(s.stderrWriter(), size)
+	}
 }
 
 func (s *cliService) handleSDKList(opts *SDKListOptions) error {
