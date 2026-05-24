@@ -529,8 +529,11 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 	}
 	if cachePath != "" && !IsLocalFile(url) {
 		if data, err := os.ReadFile(cachePath); err == nil {
-			ccolor.Fprintf(output, " - Using cached file <cyan>%s</>\n", filepath.Base(cachePath))
-			return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath)}, nil
+			if !isInvalidCachedDownload(cachePath, data) {
+				ccolor.Fprintf(output, " - Using cached file <cyan>%s</>\n", filepath.Base(cachePath))
+				return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath)}, nil
+			}
+			verbosef("discard invalid cached archive: %s", cachePath)
 		}
 		result, err := DownloadFile(url, cachePath, r.downloadProgress(opts), opts)
 		if err != nil {
@@ -563,6 +566,18 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 		}
 	}
 	return downloadBodyResult{Body: body}, nil
+}
+
+func isInvalidCachedDownload(cachePath string, data []byte) bool {
+	ext := strings.ToLower(filepath.Ext(cachePath))
+	switch ext {
+	case ".zip", ".gz", ".tgz", ".xz", ".bz2", ".zst", ".7z", ".rar":
+	default:
+		return false
+	}
+	trimmed := bytes.TrimSpace(data)
+	lowerPrefix := strings.ToLower(string(trimmed[:min(len(trimmed), 64)]))
+	return strings.HasPrefix(lowerPrefix, "<!doctype html") || strings.HasPrefix(lowerPrefix, "<html")
 }
 
 func parseHTTPTime(value string) time.Time {

@@ -151,9 +151,11 @@ func setDefaultHeaders(req *http.Request, opts Options) {
 	}
 	userAgent := opts.UserAgent
 	if userAgent == "" {
-		userAgent = DefaultUserAgent
+		if !isSourceForgeDownloadRequest(req.URL) {
+			userAgent = DefaultUserAgent
+		}
 	}
-	if req.Header.Get("User-Agent") == "" {
+	if userAgent != "" && req.Header.Get("User-Agent") == "" {
 		req.Header.Set("User-Agent", userAgent)
 	}
 	if strings.EqualFold(req.URL.Hostname(), "sourceforge.net") && req.Header.Get("Accept") == "" {
@@ -906,6 +908,20 @@ func isProviderMetadataRequest(u *url.URL) bool {
 	default:
 		return false
 	}
+}
+
+func isSourceForgeDownloadRequest(u *url.URL) bool {
+	if u == nil {
+		return false
+	}
+	if strings.EqualFold(u.Host, "downloads.sourceforge.net") {
+		return true
+	}
+	if !strings.EqualFold(u.Host, "sourceforge.net") {
+		return false
+	}
+	parts := strings.Split(strings.Trim(u.EscapedPath(), "/"), "/")
+	return len(parts) >= 4 && parts[0] == "projects" && parts[2] == "files" && strings.EqualFold(parts[len(parts)-1], "download")
 }
 
 func isGitLabAPIRequest(u *url.URL) bool {

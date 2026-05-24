@@ -102,6 +102,46 @@ func TestDownloadBodyUsesCacheWhenAvailable(t *testing.T) {
 	}
 }
 
+func TestDownloadBodyRedownloadsHTMLCachedArchive(t *testing.T) {
+	cacheDir := t.TempDir()
+	url := "https://downloads.sourceforge.net/project/victoria-ssd-hdd/Victoria537.zip"
+	cachePath := CacheFilePath(cacheDir, url)
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
+		t.Fatalf("mkdir cache dir: %v", err)
+	}
+	if err := os.WriteFile(cachePath, []byte("<!doctype html><html></html>"), 0o644); err != nil {
+		t.Fatalf("write cache file: %v", err)
+	}
+
+	calls := 0
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		calls++
+		return &http.Response{
+			StatusCode:    http.StatusOK,
+			Body:          io.NopCloser(strings.NewReader("zip-data")),
+			ContentLength: 8,
+		}, nil
+	}
+
+	var stdout bytes.Buffer
+	runner := &InstallRunner{Stdout: &stdout, Stderr: io.Discard}
+	downloaded, err := runner.downloadBody(url, Options{CacheDir: cacheDir})
+	if err != nil {
+		t.Fatalf("download body: %v", err)
+	}
+
+	assert.Eq(t, "zip-data", string(downloaded.Body))
+	assert.Eq(t, 1, calls)
+	saved, err := os.ReadFile(cachePath)
+	if err != nil {
+		t.Fatalf("read cache file: %v", err)
+	}
+	assert.Eq(t, "zip-data", string(saved))
+	assert.False(t, strings.Contains(stdout.String(), "Using cached file"))
+}
+
 func TestDownloadBodyWritesCacheAfterDownload(t *testing.T) {
 	cacheDir := t.TempDir()
 	url := "https://example.com/tool.tar.gz"
