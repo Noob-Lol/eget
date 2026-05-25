@@ -94,7 +94,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 		opts.CacheName = tool
 	}
 	targetKind := DetectTargetKind(target)
-	ccolor.Fprintf(output, "🚀 Install <info>%s</> from <info>%s</>\n", target, targetKind)
+	ccolor.Fprintf(output, "🚀 Install <info>%s</> from <info>%s</>\n", target, TargetKindDisplayName(targetKind))
 	// verbosef("target kind: %s", targetKind)
 	assets, err := finder.Find()
 	if err != nil {

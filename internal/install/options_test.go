@@ -60,3 +60,15 @@ func TestTargetHelpers(t *testing.T) {
 		t.Fatal("expected local file to be recognized")
 	}
 }
+
+func TestTargetKindDisplayNameUsesGithubForRepo(t *testing.T) {
+	if got := TargetKindDisplayName(TargetRepo); got != "github" {
+		t.Fatalf("TargetKindDisplayName(repo) = %q, want github", got)
+	}
+	if got := TargetKindDisplayName(TargetGitHubURL); got != "github" {
+		t.Fatalf("TargetKindDisplayName(github_url) = %q, want github", got)
+	}
+	if got := TargetKindDisplayName(TargetSourceForge); got != string(TargetSourceForge) {
+		t.Fatalf("TargetKindDisplayName(sourceforge) = %q, want sourceforge", got)
+	}
+}

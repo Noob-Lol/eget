@@ -133,6 +133,15 @@ func DetectTargetKind(target string) TargetKind {
 	}
 }
 
+func TargetKindDisplayName(kind TargetKind) string {
+	switch kind {
+	case TargetRepo, TargetGitHubURL:
+		return "github"
+	default:
+		return string(kind)
+	}
+}
+
 func isRepoTarget(target string) bool {
 	parts := strings.Split(target, "/")
 	return len(parts) == 2 && parts[0] != "" && parts[1] != ""
