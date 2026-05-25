@@ -580,6 +580,18 @@ func (s *cliService) handleConfig(opts *ConfigOptions) error {
 }
 
 func (s *cliService) handleUpdate(opts *UpdateOptions) error {
+	if opts.Self {
+		if opts.All {
+			return fmt.Errorf("update --self cannot be used with --all")
+		}
+		if len(opts.Targets) > 0 {
+			return fmt.Errorf("update --self cannot be used with target")
+		}
+		if opts.BatchConcurrency > 0 {
+			return fmt.Errorf("--batch can only be used with --all")
+		}
+		return fmt.Errorf("update --self is not implemented")
+	}
 	if opts.Check {
 		return s.handleList(&ListOptions{Outdated: true})
 	}

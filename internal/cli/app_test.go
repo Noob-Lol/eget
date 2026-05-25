@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 
@@ -160,6 +161,23 @@ func TestMain_UpdateBindsMultipleTargets(t *testing.T) {
 			assert.Eq(t, tt.want, opts.Targets)
 		})
 	}
+}
+
+func TestUpdateSelfFlagParses(t *testing.T) {
+	var got *UpdateOptions
+	app := newApp(func(name string, options any) error {
+		if name != "update" {
+			t.Fatalf("expected update command, got %q", name)
+		}
+		got = options.(*UpdateOptions)
+		return nil
+	}, io.Discard, io.Discard)
+
+	err := app.RunWithArgs([]string{"update", "--self"})
+
+	assert.NoErr(t, err)
+	assert.True(t, got.Self)
+	assert.Eq(t, 0, len(got.Targets))
 }
 
 func TestMain_ExtractAllFlagBindsInstallDownloadAndAdd(t *testing.T) {

@@ -118,7 +118,7 @@ The replacement path from `DownloadTarget` is the single extracted file. The ser
 - Modify: `internal/cli/handlers.go`
 - Test: `internal/cli/app_test.go`
 
-- [ ] **Step 1: Write failing CLI parse test**
+- [x] **Step 1: Write failing CLI parse test**
 
 Add a test that verifies `update --self` reaches the update handler with `Self: true` and no target.
 
@@ -141,7 +141,7 @@ func TestUpdateSelfFlagParses(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test and verify it fails**
+- [x] **Step 2: Run test and verify it fails**
 
 Run:
 
@@ -151,7 +151,7 @@ go test ./internal/cli -run TestUpdateSelfFlagParses -count=1
 
 Expected: FAIL because `UpdateOptions.Self` does not exist or `--self` is unknown.
 
-- [ ] **Step 3: Add the flag**
+- [x] **Step 3: Add the flag**
 
 Modify `internal/cli/update_cmd.go`:
 
@@ -187,7 +187,7 @@ Reset:
 *opts = UpdateOptions{ChunkConcurrency: -1, BatchConcurrency: -1}
 ```
 
-- [ ] **Step 4: Add validation tests**
+- [x] **Step 4: Add validation tests**
 
 Add tests around `handleUpdate` using a `cliService` with fake services:
 
@@ -207,7 +207,7 @@ func TestHandleUpdateSelfRejectsAll(t *testing.T) {
 }
 ```
 
-- [ ] **Step 5: Implement validation skeleton**
+- [x] **Step 5: Implement validation skeleton**
 
 Modify `handleUpdate` near the top:
 
@@ -226,7 +226,7 @@ if opts.Self {
 }
 ```
 
-- [ ] **Step 6: Run CLI tests**
+- [x] **Step 6: Run CLI tests**
 
 Run:
 
@@ -236,7 +236,7 @@ go test ./internal/cli -run "TestUpdateSelfFlagParses|TestHandleUpdateSelf" -cou
 
 Expected: parse/validation tests pass; valid `update --self` returns the temporary not-implemented error added in this task.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add internal/cli/update_cmd.go internal/cli/handlers.go internal/cli/app_test.go

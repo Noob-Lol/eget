@@ -1512,6 +1512,24 @@ func TestHandleUpdateRejectsUnimplementedDryRunAndInteractive(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateSelfRejectsTargets(t *testing.T) {
+	svc := &cliService{}
+
+	err := svc.handleUpdate(&UpdateOptions{Self: true, Targets: []string{"junegunn/fzf"}})
+
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), "update --self cannot be used with target")
+}
+
+func TestHandleUpdateSelfRejectsAll(t *testing.T) {
+	svc := &cliService{}
+
+	err := svc.handleUpdate(&UpdateOptions{Self: true, All: true})
+
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), "update --self cannot be used with --all")
+}
+
 func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {
 	installer := &fakeUpdateInstallerForCLI{}
 	svc := &cliService{
