@@ -250,7 +250,7 @@ git commit -m "feat(update): add self update flag"
 - Modify: `internal/cli/app.go`
 - Test: `internal/cli/app_test.go`
 
-- [ ] **Step 1: Write failing build info test**
+- [x] **Step 1: Write failing build info test**
 
 ```go
 func TestBuildInfoReturnsConfiguredValues(t *testing.T) {
@@ -264,7 +264,7 @@ func TestBuildInfoReturnsConfiguredValues(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test and verify it fails**
+- [x] **Step 2: Run test and verify it fails**
 
 ```bash
 go test ./internal/cli -run TestBuildInfoReturnsConfiguredValues -count=1
@@ -272,7 +272,7 @@ go test ./internal/cli -run TestBuildInfoReturnsConfiguredValues -count=1
 
 Expected: FAIL because `BuildInfo` does not exist.
 
-- [ ] **Step 3: Implement exported build info**
+- [x] **Step 3: Implement exported build info**
 
 Add to `internal/cli/app.go`:
 
@@ -288,7 +288,7 @@ func BuildInfo() Info {
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```bash
 go test ./internal/cli -run TestBuildInfoReturnsConfiguredValues -count=1
@@ -296,7 +296,7 @@ go test ./internal/cli -run TestBuildInfoReturnsConfiguredValues -count=1
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/cli/app.go internal/cli/app_test.go

@@ -23,6 +23,12 @@ var (
 
 type CommandHandler func(name string, options any) error
 
+type Info struct {
+	Version   string
+	GitHash   string
+	BuildTime string
+}
+
 type App struct {
 	inner     *gcli.App
 	commands  []*gcli.Command
@@ -37,6 +43,14 @@ func SetBuildInfo(versionStr, gitHashStr, buildTimeStr string) {
 	version = versionStr
 	gitHash = gitHashStr
 	buildTime = normalizeBuildTime(buildTimeStr)
+}
+
+func BuildInfo() Info {
+	return Info{
+		Version:   version,
+		GitHash:   gitHash,
+		BuildTime: buildTime,
+	}
 }
 
 func normalizeBuildTime(value string) string {

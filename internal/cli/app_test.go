@@ -53,6 +53,16 @@ func TestSetBuildInfoCompactsBuildTime(t *testing.T) {
 	}
 }
 
+func TestBuildInfoReturnsConfiguredValues(t *testing.T) {
+	SetBuildInfo("1.7.1", "abcdef12", "2026-05-25T10:20:30+08:00")
+
+	info := BuildInfo()
+
+	assert.Eq(t, "1.7.1", info.Version)
+	assert.Eq(t, "abcdef12", info.GitHash)
+	assert.Eq(t, "2026-05-25T10:20:30", info.BuildTime)
+}
+
 func TestMain_VersionUsesBuildInfo(t *testing.T) {
 	SetBuildInfo("v1.2.3", "abc123", "2026-05-16T10:11:12+08:00")
 	var stdout bytes.Buffer
