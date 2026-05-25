@@ -111,6 +111,7 @@ eget download --file go --to ~/go1.17.5 https://go.dev/dl/go1.17.5.linux-amd64.t
 eget download --file README.md,LICENSE --to ./dist owner/repo
 eget download --file "*.txt" owner/repo
 eget download --file "bin/*" owner/repo
+eget download --file "*.exe,^*x86*,^*.sig" owner/repo
 eget download --extract-all --to ./dist windirstat/windirstat
 ```
 
@@ -274,7 +275,7 @@ eget config set global.target ~/.local/bin
 - `--tag`: 指定发布版本标签；未提供时默认使用 `latest`。
 - `--system`: 指定目标系统与架构，例如 `windows/amd64`、`linux/arm64`。
 - `--to`: 指定安装或下载输出路径；可传目录，也可传完整文件路径。
-- `--file`: 指定归档内要提取的文件；支持逗号分隔多个文件或 glob 模式，例如 `README.md,LICENSE`。对 7z 可读取的 `.exe` 安装包使用时，需要系统 7z。
+- `--file`: 指定归档内要提取的文件；支持逗号分隔多个文件或 glob 模式，例如 `README.md,LICENSE`。排除可用 `^`，例如 `*.exe,^*x86*,^*.sig`；只有排除项时（如 `^*.sig`）表示匹配除被排除条目外的全部文件。对 7z 可读取的 `.exe` 安装包使用时，需要系统 7z。
 - `--asset`: 指定资源过滤关键词；可用逗号分隔多个过滤条件。支持 `REG:` 前缀正则，例如 `REG:\\.deb$`。支持 `PRE:` 和 `SUF:` 前缀/后缀匹配，例如 `PRE:codex` 或 `SUF:.zip`。排除可用 `^`，例如 `^REG:...` 或 `^SUF:.sha256`。过滤条件可用 Go OS 前缀限定目标系统，例如 `windows:zip`、`linux:tar.gz`、`darwin:SUF:.zip`；仅当当前 `--system` 的 OS 匹配时生效。
 - `--rename`: 使用逗号分隔的 `from=to` 映射重命名解压文件，例如 `--rename "tool-windows-amd64.exe=tool.exe"`。可配合 `--file` 和 `--extract-all` 使用，并会被 `install --add` 持久化。
 - `--source`: 下载源码归档而不是预构建二进制。
