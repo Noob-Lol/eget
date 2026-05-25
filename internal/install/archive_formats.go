@@ -9,8 +9,12 @@ import (
 	"io/fs"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/bodgit/sevenzip"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 )
 
 type TarArchive struct {
@@ -102,7 +106,7 @@ func (z *ZipArchive) Next() (File, error) {
 	if strings.HasSuffix(f.Name, "/") || strings.HasSuffix(f.Name, `\`) || f.FileInfo().IsDir() {
 		typ = TypeDir
 	}
-	name, err := safeArchiveRelativePath(f.Name)
+	name, err := safeArchiveRelativePath(zipFileName(f))
 	if err != nil {
 		return File{}, err
 	}
@@ -181,4 +185,42 @@ func (z *SevenZipArchive) WriteTo(w io.Writer) (int64, error) {
 
 func sevenZipModTime(f *sevenzip.File) time.Time {
 	return f.FileHeader.Modified.UTC()
+}
+
+func zipFileName(f *zip.File) string {
+	if f == nil || !f.NonUTF8 || utf8.ValidString(f.Name) {
+		return f.Name
+	}
+	raw := []byte(f.Name)
+	bestName := f.Name
+	bestScore := legacyZipNameScore(f.Name)
+	for _, enc := range []*charmap.Charmap{charmap.CodePage866, charmap.Windows1251} {
+		name, _, err := transform.String(enc.NewDecoder(), string(raw))
+		if err == nil && utf8.ValidString(name) {
+			if score := legacyZipNameScore(name); score > bestScore {
+				bestName = name
+				bestScore = score
+			}
+		}
+	}
+	return bestName
+}
+
+func legacyZipNameScore(name string) int {
+	score := 0
+	for _, r := range name {
+		switch {
+		case r == utf8.RuneError:
+			score -= 20
+		case unicode.Is(unicode.Cyrillic, r):
+			score += 4
+		case r >= 0x2500 && r <= 0x257F:
+			score -= 6
+		case r < 0x20:
+			score -= 10
+		case r < utf8.RuneSelf:
+			score++
+		}
+	}
+	return score
 }

@@ -168,6 +168,48 @@ func TestArchiveExtractorExtractAllToPreservesEmptyDirsAndTimestamps(t *testing.
 	}
 }
 
+func TestZipArchiveDecodesCP866CyrillicNames(t *testing.T) {
+	assertZipArchiveDecodesLegacyName(t, []byte{0x90, 0xe3, 0xe1, 0xe1, 0xaa, 0xa8, 0xa9}, "Русский")
+}
+
+func TestZipArchiveDecodesCP1251CyrillicNames(t *testing.T) {
+	assertZipArchiveDecodesLegacyName(t, []byte{0xd0, 0xf3, 0xf1, 0xf1, 0xea, 0xe8, 0xe9}, "Русский")
+}
+
+func assertZipArchiveDecodesLegacyName(t *testing.T, encoded []byte, decoded string) {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	header := &zip.FileHeader{Name: string(encoded) + `/readme.txt`}
+	header.NonUTF8 = true
+	w, err := zw.CreateHeader(header)
+	if err != nil {
+		t.Fatalf("create zip file: %v", err)
+	}
+	if _, err := w.Write([]byte("ok")); err != nil {
+		t.Fatalf("write zip file: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+
+	chooser, err := NewFileChooser("*")
+	if err != nil {
+		t.Fatalf("NewFileChooser: %v", err)
+	}
+	extractor := NewArchiveExtractor(chooser, NewZipArchive, nil)
+	output := t.TempDir()
+	paths, err := extractor.ExtractAllTo(buf.Bytes(), output)
+	if err != nil {
+		t.Fatalf("extract all: %v", err)
+	}
+
+	want := filepath.Join(output, decoded, "readme.txt")
+	if _, err := os.Stat(want); err != nil {
+		t.Fatalf("expected decoded Cyrillic file %q: %v; paths=%q", want, err, paths)
+	}
+}
+
 func TestArchiveExtractorExtractPreservesFileTimestamp(t *testing.T) {
 	fileTime := time.Date(2024, 3, 4, 5, 6, 8, 0, time.UTC)
 	var buf bytes.Buffer
