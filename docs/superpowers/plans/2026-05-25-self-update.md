@@ -1007,7 +1007,7 @@ git commit -m "docs: document self update"
 
 - No source edits unless tests reveal a bug.
 
-- [ ] **Step 1: Run focused tests**
+- [x] **Step 1: Run focused tests**
 
 ```bash
 go test ./internal/app ./internal/cli ./internal/install -count=1
@@ -1015,7 +1015,7 @@ go test ./internal/app ./internal/cli ./internal/install -count=1
 
 Expected: PASS.
 
-- [ ] **Step 2: Run full test suite**
+- [x] **Step 2: Run full test suite**
 
 ```bash
 go test ./...
@@ -1023,7 +1023,7 @@ go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 3: Manual smoke test with a local build**
+- [x] **Step 3: Manual smoke test with a local build**
 
 Build:
 
@@ -1042,7 +1042,7 @@ Expected:
 - If local build version matches latest release: prints already up to date.
 - If local build is dev or older: prints update available or performs no mutation because `--check` is set.
 
-- [ ] **Step 4: Manual smoke test for invalid combinations**
+- [x] **Step 4: Manual smoke test for invalid combinations**
 
 Run:
 
@@ -1053,7 +1053,7 @@ Run:
 
 Expected: both commands return validation errors.
 
-- [ ] **Step 5: Final commit if fixes were needed**
+- [x] **Step 5: Final commit if fixes were needed**
 
 Only if this task required changes:
 
