@@ -281,7 +281,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 		}
 		verbosef("extract output: %s", out)
 		ccolor.Fprintf(output, "✅ Extracted <info>%s</> to <cyan>%s</>\n", file.ArchiveName, out)
-		if out != "-" && !downloaded.ModTime.IsZero() {
+		if out != "-" && shouldApplyDownloadedModTime(file, url, opts, downloaded.ModTime) {
 			if err := applyModTime(out, downloaded.ModTime); err != nil {
 				return "", err
 			}
@@ -310,6 +310,13 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	}
 
 	return result, nil
+}
+
+func shouldApplyDownloadedModTime(file ExtractedFile, assetURL string, opts Options, modTime time.Time) bool {
+	if modTime.IsZero() || opts.ExtractFile != "" || opts.All {
+		return false
+	}
+	return file.ArchiveName == path.Base(assetURL)
 }
 
 func extractAllTo(extractor DirectAllExtractor, body []byte, output string, stripComponents int) ([]string, error) {

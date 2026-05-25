@@ -354,6 +354,59 @@ func TestRunDownloadOnlyPreservesLastModifiedTimestamp(t *testing.T) {
 	assert.Eq(t, modTime, info.ModTime().UTC())
 }
 
+func TestRunExtractFilePreservesArchiveDirectoryTimestamp(t *testing.T) {
+	dirTime := time.Date(2024, 4, 5, 6, 7, 8, 0, time.UTC)
+	remoteTime := time.Date(2026, 4, 30, 11, 32, 59, 0, time.UTC)
+	var body bytes.Buffer
+	zw := zip.NewWriter(&body)
+	dirHeader := &zip.FileHeader{Name: "CdmResource/", Method: zip.Store, Modified: dirTime}
+	dirHeader.SetMode(0o755 | os.ModeDir)
+	if _, err := zw.CreateHeader(dirHeader); err != nil {
+		t.Fatalf("create zip dir: %v", err)
+	}
+	fileHeader := &zip.FileHeader{Name: "CdmResource/resource.txt", Method: zip.Store, Modified: dirTime}
+	fileHeader.SetMode(0o644)
+	w, err := zw.CreateHeader(fileHeader)
+	if err != nil {
+		t.Fatalf("create zip file: %v", err)
+	}
+	if _, err := w.Write([]byte("resource")); err != nil {
+		t.Fatalf("write zip file: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Last-Modified", remoteTime.Format(http.TimeFormat))
+		w.Header().Set("Content-Length", strconv.Itoa(body.Len()))
+		_, _ = w.Write(body.Bytes())
+	}))
+	defer server.Close()
+
+	outputDir := t.TempDir()
+	runner := NewRunner(NewDefaultService(nil, nil))
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+
+	result, err := runner.Run(server.URL+"/app.zip", Options{
+		DownloadOnly: true,
+		ExtractFile:  "CdmResource",
+		Output:       outputDir,
+		CacheDir:     t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("extract directory: %v", err)
+	}
+
+	assert.Eq(t, 1, len(result.ExtractedFiles))
+	info, err := os.Stat(filepath.Join(outputDir, "CdmResource"))
+	if err != nil {
+		t.Fatalf("stat extracted directory: %v", err)
+	}
+	assert.Eq(t, dirTime, info.ModTime().UTC())
+}
+
 func TestDownloadPrintsProxyNoticeForRemoteRequest(t *testing.T) {
 	var notice bytes.Buffer
 	origNoticeWriter := proxyNoticeWriter
