@@ -177,6 +177,10 @@ eget list --gui
 # update fzf
 eget update fzf
 eget update --all
+# 更新 eget 自身
+eget update --self
+# 仅检查 eget 自身是否有新版本
+eget update --self --check
 ```
 
 ### 配置命令示例
@@ -253,6 +257,7 @@ eget config set global.target ~/.local/bin
 `update`(alias: `up`)
 
 - 先检查目标是否有新版本，再更新已配置或已安装的目标；也可通过 `--all` 更新全部托管包。
+- `update --self` 会检查 `inherelab/eget` release，下载当前 OS/arch 对应的 asset，并替换当前正在运行的 eget 可执行文件。Windows 下替换会延迟到当前进程退出后执行。
 
 `sdk`
 
@@ -299,6 +304,7 @@ eget config set global.target ~/.local/bin
 `update` 支持选项：
 
 - `--all`: 检查托管包，只更新已安装且有新版本的包。
+- `--self`: 更新当前 `eget` 可执行文件，而不是普通托管包。
 - 单目标 `update <target>` 要求目标已存在于 config 或 installed store；新目标请使用 `install`。
 - `--batch N`: 控制 `update --all` 的包任务并发。`0` 表示自动，`1` 表示串行，大于 `1` 表示最多同时处理该数量的包。
 - `--chunk N`: 控制 update 触发下载时的 HTTP Range 分片并发。

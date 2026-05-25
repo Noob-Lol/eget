@@ -950,7 +950,7 @@ git commit -m "feat(update): wire self update command"
 - Modify: `README.zh-CN.md`
 - Modify: `docs/architecture.md`
 
-- [ ] **Step 1: Update README command section**
+- [x] **Step 1: Update README command section**
 
 Add near the existing update command documentation:
 
@@ -968,7 +968,7 @@ Explain:
 `update --self` checks `inherelab/eget` releases, downloads the matching asset for the current OS/arch, and replaces the running executable. On Windows the replacement is deferred until the current process exits.
 ```
 
-- [ ] **Step 2: Update Chinese README**
+- [x] **Step 2: Update Chinese README**
 
 Add:
 
@@ -986,7 +986,7 @@ Explain:
 `update --self` 会检查 `inherelab/eget` release，下载当前 OS/arch 对应的 asset，并替换当前正在运行的 eget 可执行文件。Windows 下替换会延迟到当前进程退出后执行。
 ```
 
-- [ ] **Step 3: Update architecture doc**
+- [x] **Step 3: Update architecture doc**
 
 Add to update section:
 
@@ -994,7 +994,7 @@ Add to update section:
 `update --self` is a special update path. It does not read or write the normal installed package store. It resolves the current executable with `os.Executable()`, downloads the matching `inherelab/eget` release asset into a temporary directory, extracts the platform binary, and replaces the current executable. Windows uses a deferred helper script because a running `.exe` cannot be overwritten.
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add README.md README.zh-CN.md docs/architecture.md

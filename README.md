@@ -177,6 +177,10 @@ eget list --gui
 # update fzf
 eget update fzf
 eget update --all
+# update eget itself
+eget update --self
+# check whether eget itself has a newer release
+eget update --self --check
 ```
 
 ### Config Examples
@@ -253,6 +257,7 @@ The target argument accepted by `install` and `download` can be:
 `update` (alias: `up`)
 
 - Updates a configured or installed target after checking that a newer version exists, or all managed packages with `--all`.
+- `update --self` checks `inherelab/eget` releases, downloads the matching asset for the current OS/arch, and replaces the running executable. On Windows, replacement is deferred until the current process exits.
 
 `sdk`
 
@@ -299,6 +304,7 @@ The target argument accepted by `install` and `download` can be:
 `update` options:
 
 - `--all`: Check managed packages and update only outdated installed packages.
+- `--self`: Update the current `eget` executable instead of a managed package.
 - Single-target `update <target>` requires the target to already exist in config or the installed store. Use `install` for new targets.
 - `--batch N`: Control package task concurrency for `update --all`. `0` means auto, `1` means serial, and values greater than `1` process up to that many packages at once.
 - `--chunk N`: Control HTTP Range chunk concurrency for downloads triggered by update.
