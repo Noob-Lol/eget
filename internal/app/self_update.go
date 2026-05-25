@@ -40,6 +40,7 @@ type SelfUpdateService struct {
 	Replacer       ExecutableReplacer
 	RuntimeGOOS    string
 	RuntimeGOARCH  string
+	TempDir        func() (string, error)
 	ExecutablePath func() (string, error)
 }
 
@@ -57,8 +58,14 @@ func (s SelfUpdateService) Update(opts SelfUpdateOptions) (SelfUpdateResult, err
 
 	goos, goarch := s.runtimePlatform()
 	installOpts := opts.Install
+	output, err := s.tempDir()
+	if err != nil {
+		return SelfUpdateResult{}, err
+	}
 	installOpts.Tag = firstNonEmpty(opts.Tag, installOpts.Tag)
 	installOpts.System = selfUpdateSystem(goos, goarch)
+	installOpts.Output = output
+	installOpts.OutputExplicit = false
 	installOpts.Asset = selfUpdateAssetFilters(goos, goarch)
 	if len(opts.Asset) > 0 {
 		installOpts.Asset = append([]string(nil), opts.Asset...)
@@ -173,6 +180,13 @@ func (s SelfUpdateService) executablePath() (string, error) {
 		return s.ExecutablePath()
 	}
 	return os.Executable()
+}
+
+func (s SelfUpdateService) tempDir() (string, error) {
+	if s.TempDir != nil {
+		return s.TempDir()
+	}
+	return os.MkdirTemp("", "eget-self-update-*")
 }
 
 func (s SelfUpdateService) replacer() ExecutableReplacer {

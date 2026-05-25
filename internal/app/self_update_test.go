@@ -71,6 +71,35 @@ func TestSelfUpdateDownloadsExpectedPlatformAsset(t *testing.T) {
 	assert.Eq(t, []string{"PRE:eget-", "linux-amd64", "SUF:.zip"}, installer.opts.Asset)
 }
 
+func TestSelfUpdateDownloadsToTempDir(t *testing.T) {
+	replacement := filepath.Join(t.TempDir(), "eget")
+	assert.NoErr(t, os.WriteFile(replacement, []byte("new"), 0o755))
+	tempDir := filepath.Join(t.TempDir(), "self-update")
+	installer := &fakeSelfUpdateInstaller{
+		result: RunResult{ExtractedFiles: []string{replacement}},
+	}
+	svc := SelfUpdateService{
+		CurrentVersion: "1.7.1",
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v1.7.2"}, nil
+		},
+		Installer:      installer,
+		Replacer:       fakeSelfReplacer{},
+		RuntimeGOOS:    "linux",
+		RuntimeGOARCH:  "amd64",
+		TempDir:        func() (string, error) { return tempDir, nil },
+		ExecutablePath: func() (string, error) { return filepath.Join(t.TempDir(), "eget"), nil },
+	}
+
+	_, err := svc.Update(SelfUpdateOptions{
+		Install: install.Options{Output: filepath.Join(t.TempDir(), "configured-output"), OutputExplicit: true},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, tempDir, installer.opts.Output)
+	assert.False(t, installer.opts.OutputExplicit)
+}
+
 func TestSelfUpdateExtractFileUsesExeOnWindows(t *testing.T) {
 	assert.Eq(t, "eget-windows-amd64.exe", selfUpdateExtractFile("windows", "amd64"))
 }
