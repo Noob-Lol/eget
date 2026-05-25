@@ -63,14 +63,16 @@ func (s SelfUpdateService) Update(opts SelfUpdateOptions) (SelfUpdateResult, err
 		return SelfUpdateResult{}, err
 	}
 	installOpts.Tag = firstNonEmpty(opts.Tag, installOpts.Tag)
+	installOpts.Name = selfUpdateDownloadName(goos)
 	installOpts.System = selfUpdateSystem(goos, goarch)
 	installOpts.Output = output
 	installOpts.OutputExplicit = false
-	installOpts.Asset = selfUpdateAssetFilters(goos, goarch)
+	installOpts.DownloadOnly = true
+	installOpts.ExtractFile = ""
+	installOpts.Asset = selfUpdateAssetFilters()
 	if len(opts.Asset) > 0 {
 		installOpts.Asset = append([]string(nil), opts.Asset...)
 	}
-	installOpts.ExtractFile = selfUpdateExtractFile(goos, goarch)
 
 	downloaded, err := s.Installer.DownloadTarget(SelfUpdateRepo, installOpts)
 	if err != nil {
@@ -138,16 +140,15 @@ func selfUpdateSystem(goos, goarch string) string {
 	return goos + "/" + goarch
 }
 
-func selfUpdateAssetFilters(goos, goarch string) []string {
-	return []string{"PRE:eget-", goos + "-" + goarch, "SUF:.zip"}
+func selfUpdateAssetFilters() []string {
+	return []string{"PRE:eget-"}
 }
 
-func selfUpdateExtractFile(goos, goarch string) string {
-	name := "eget-" + goos + "-" + goarch
+func selfUpdateDownloadName(goos string) string {
 	if goos == "windows" {
-		name += ".exe"
+		return "eget.exe"
 	}
-	return name
+	return "eget"
 }
 
 func selfUpdateExecutableName(goos string) string {

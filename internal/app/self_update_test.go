@@ -67,8 +67,10 @@ func TestSelfUpdateDownloadsExpectedPlatformAsset(t *testing.T) {
 	assert.NoErr(t, err)
 	assert.Eq(t, SelfUpdateRepo, installer.target)
 	assert.Eq(t, "linux/amd64", installer.opts.System)
-	assert.Eq(t, "eget-linux-amd64", installer.opts.ExtractFile)
-	assert.Eq(t, []string{"PRE:eget-", "linux-amd64", "SUF:.zip"}, installer.opts.Asset)
+	assert.Eq(t, "", installer.opts.ExtractFile)
+	assert.True(t, installer.opts.DownloadOnly)
+	assert.Eq(t, "eget", installer.opts.Name)
+	assert.Eq(t, []string{"PRE:eget-"}, installer.opts.Asset)
 }
 
 func TestSelfUpdateDownloadsToTempDir(t *testing.T) {
@@ -100,8 +102,39 @@ func TestSelfUpdateDownloadsToTempDir(t *testing.T) {
 	assert.False(t, installer.opts.OutputExplicit)
 }
 
-func TestSelfUpdateExtractFileUsesExeOnWindows(t *testing.T) {
-	assert.Eq(t, "eget-windows-amd64.exe", selfUpdateExtractFile("windows", "amd64"))
+func TestSelfUpdateAssetFiltersUsePrefixOnly(t *testing.T) {
+	assert.Eq(t, []string{"PRE:eget-"}, selfUpdateAssetFilters())
+}
+
+func TestSelfUpdateDownloadNameUsesExeOnWindows(t *testing.T) {
+	assert.Eq(t, "eget.exe", selfUpdateDownloadName("windows"))
+}
+
+func TestSelfUpdateDownloadsWindowsExecutableAsset(t *testing.T) {
+	replacement := filepath.Join(t.TempDir(), "eget.exe")
+	assert.NoErr(t, os.WriteFile(replacement, []byte("new"), 0o755))
+	installer := &fakeSelfUpdateInstaller{
+		result: RunResult{ExtractedFiles: []string{replacement}},
+	}
+	svc := SelfUpdateService{
+		CurrentVersion: "1.7.1",
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v1.7.2"}, nil
+		},
+		Installer:      installer,
+		Replacer:       fakeSelfReplacer{},
+		RuntimeGOOS:    "windows",
+		RuntimeGOARCH:  "amd64",
+		ExecutablePath: func() (string, error) { return filepath.Join(t.TempDir(), "eget.exe"), nil },
+	}
+
+	_, err := svc.Update(SelfUpdateOptions{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "windows/amd64", installer.opts.System)
+	assert.Eq(t, "eget.exe", installer.opts.Name)
+	assert.True(t, installer.opts.DownloadOnly)
+	assert.Eq(t, "", installer.opts.ExtractFile)
 }
 
 func TestSelfUpdateReplacesExecutable(t *testing.T) {

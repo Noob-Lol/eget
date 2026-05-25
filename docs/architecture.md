@@ -144,7 +144,7 @@ The core implementation lives in `internal/sdk`:
 
 `update` checks latest version information before installing. `update --check` is equivalent to the outdated-check path; `update --all` updates managed packages with newer versions.
 
-`update --self` is a special update path. It does not read or write the normal installed package store. It resolves the current executable with `os.Executable()`, downloads the matching `inherelab/eget` release asset into the cache/temp install path, extracts the platform binary, and replaces the current executable. Windows uses a deferred helper script because a running `.exe` cannot be overwritten.
+`update --self` is a special update path. It does not read or write the normal installed package store. It resolves the current executable with `os.Executable()`, downloads the matching raw executable asset from `inherelab/eget` into a temporary self-update path, and replaces the current executable. Windows uses a deferred helper script because a running `.exe` cannot be overwritten.
 
 ## Config Command
 

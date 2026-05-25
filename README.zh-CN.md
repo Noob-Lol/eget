@@ -257,7 +257,7 @@ eget config set global.target ~/.local/bin
 `update`(alias: `up`)
 
 - 先检查目标是否有新版本，再更新已配置或已安装的目标；也可通过 `--all` 更新全部托管包。
-- `update --self` 会检查 `inherelab/eget` release，下载当前 OS/arch 对应的 asset，并替换当前正在运行的 eget 可执行文件。Windows 下替换会延迟到当前进程退出后执行。
+- `update --self` 会检查 `inherelab/eget` release，选择当前 OS/arch 对应的原始可执行文件 asset，并替换当前正在运行的 eget 可执行文件。Windows 下替换会延迟到当前进程退出后执行。
 
 `sdk`
 

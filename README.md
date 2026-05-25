@@ -257,7 +257,7 @@ The target argument accepted by `install` and `download` can be:
 `update` (alias: `up`)
 
 - Updates a configured or installed target after checking that a newer version exists, or all managed packages with `--all`.
-- `update --self` checks `inherelab/eget` releases, downloads the matching asset for the current OS/arch, and replaces the running executable. On Windows, replacement is deferred until the current process exits.
+- `update --self` checks `inherelab/eget` releases, selects the raw executable asset for the current OS/arch, and replaces the running executable. On Windows, replacement is deferred until the current process exits.
 
 `sdk`
 

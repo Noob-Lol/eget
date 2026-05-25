@@ -97,17 +97,16 @@ build-windows:
 	@echo "   → $(DIST_DIR)/$(APP)-windows-amd64.exe"
 
 .PHONY: release
-release: build-all ## Create release archives for all platforms
-	@echo "Creating release archives..."
+release: build-all ## Copy release assets for all platforms
+	@echo "Creating release assets..."
 	@mkdir -p release
 	@cd $(DIST_DIR) && \
-	zip ../release/$(APP)-$(VERSION)-linux-amd64.zip $(APP)-linux-amd64; \
-	zip ../release/$(APP)-$(VERSION)-linux-arm64.zip $(APP)-linux-arm64; \
-	zip ../release/$(APP)-$(VERSION)-darwin-amd64.zip $(APP)-darwin-amd64; \
-	zip ../release/$(APP)-$(VERSION)-darwin-arm64.zip $(APP)-darwin-arm64; \
-	zip ../release/$(APP)-$(VERSION)-windows-amd64.zip $(APP)-windows-amd64.exe; \
-	# zip ../release/$(APP)-$(VERSION)-windows-arm64.zip $(APP)-windows-arm64.exe; \
-	@echo "Release archives created in release/"
+	cp $(APP)-linux-amd64 ../release/$(APP)-$(VERSION)-linux-amd64; \
+	cp $(APP)-linux-arm64 ../release/$(APP)-$(VERSION)-linux-arm64; \
+	cp $(APP)-darwin-amd64 ../release/$(APP)-$(VERSION)-darwin-amd64; \
+	cp $(APP)-darwin-arm64 ../release/$(APP)-$(VERSION)-darwin-arm64; \
+	cp $(APP)-windows-amd64.exe ../release/$(APP)-$(VERSION)-windows-amd64.exe; \
+	@echo "Release assets created in release/"
 
 ## clean: remove build artifacts
 clean:
