@@ -205,6 +205,18 @@ func fileExists(path string) bool {
 }
 
 func (s *cliService) handleUninstall(opts *UninstallOptions) error {
+	if opts == nil || opts.Target == "" {
+		return fmt.Errorf("remove target is required")
+	}
+	if !opts.Yes {
+		confirmed, err := promptConfirmRemove(opts.Target)
+		if err != nil {
+			return err
+		}
+		if !confirmed {
+			return fmt.Errorf("remove cancelled")
+		}
+	}
 	result, err := s.uninstallService.Uninstall(opts.Target)
 	if err != nil {
 		return err

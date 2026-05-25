@@ -93,7 +93,15 @@ func readStdinLine() (string, error) {
 func promptConfirmOverwrite(path string) (bool, error) {
 	fmt.Fprintf(os.Stderr, "Config file already exists: %s\n", path)
 	fmt.Fprint(os.Stderr, "Overwrite it? [y/N]: ")
+	return promptConfirmDefaultNo()
+}
 
+func promptConfirmRemove(target string) (bool, error) {
+	fmt.Fprintf(os.Stderr, "Remove %s? [y/N]: ", target)
+	return promptConfirmDefaultNo()
+}
+
+func promptConfirmDefaultNo() (bool, error) {
 	answer, err := readStdinLine()
 	if err != nil {
 		return false, err

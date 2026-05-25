@@ -143,6 +143,25 @@ func TestMain_InstallBindsMultipleTargets(t *testing.T) {
 	}
 }
 
+func TestMain_RemoveBindsYesFlag(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"remove", "--yes", "gookit/gitw"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	assert.Eq(t, "uninstall", calls[0].name)
+	opts, ok := calls[0].options.(*UninstallOptions)
+	assert.True(t, ok)
+	assert.Eq(t, "gookit/gitw", opts.Target)
+	assert.True(t, opts.Yes)
+}
+
 func TestMain_UpdateBindsMultipleTargets(t *testing.T) {
 	tests := []struct {
 		name string
