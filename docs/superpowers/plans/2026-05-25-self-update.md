@@ -310,7 +310,7 @@ git commit -m "feat(cli): expose build info"
 - Create: `internal/app/self_update.go`
 - Create: `internal/app/self_update_test.go`
 
-- [ ] **Step 1: Write failing tests for version decisions**
+- [x] **Step 1: Write failing tests for version decisions**
 
 Tests:
 
@@ -349,7 +349,7 @@ func TestSelfUpdateReportsOutdatedWhenLatestDiffers(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test and verify it fails**
+- [x] **Step 2: Run test and verify it fails**
 
 ```bash
 go test ./internal/app -run TestSelfUpdate -count=1
@@ -357,7 +357,7 @@ go test ./internal/app -run TestSelfUpdate -count=1
 
 Expected: FAIL because `SelfUpdateService` is undefined.
 
-- [ ] **Step 3: Implement minimal types and version comparison**
+- [x] **Step 3: Implement minimal types and version comparison**
 
 Create `internal/app/self_update.go`:
 
@@ -422,7 +422,7 @@ func normalizeSelfVersion(value string) string {
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```bash
 go test ./internal/app -run TestSelfUpdate -count=1
@@ -430,7 +430,7 @@ go test ./internal/app -run TestSelfUpdate -count=1
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/app/self_update.go internal/app/self_update_test.go
@@ -444,7 +444,7 @@ git commit -m "feat(update): add self update version checks"
 - Modify: `internal/app/self_update.go`
 - Modify: `internal/app/self_update_test.go`
 
-- [ ] **Step 1: Write failing test for installer invocation**
+- [x] **Step 1: Write failing test for installer invocation**
 
 ```go
 type fakeSelfUpdateInstaller struct {
@@ -487,7 +487,7 @@ func TestSelfUpdateDownloadsExpectedPlatformAsset(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test and verify it fails**
+- [x] **Step 2: Run test and verify it fails**
 
 ```bash
 go test ./internal/app -run TestSelfUpdateDownloadsExpectedPlatformAsset -count=1
@@ -495,7 +495,7 @@ go test ./internal/app -run TestSelfUpdateDownloadsExpectedPlatformAsset -count=
 
 Expected: FAIL because installer/replacer fields and download flow do not exist.
 
-- [ ] **Step 3: Implement installer dependency and option builder**
+- [x] **Step 3: Implement installer dependency and option builder**
 
 Add:
 
@@ -564,7 +564,7 @@ result.Replacement = replacement
 return result, nil
 ```
 
-- [ ] **Step 4: Add helper tests for Windows naming**
+- [x] **Step 4: Add helper tests for Windows naming**
 
 ```go
 func TestSelfUpdateExtractFileUsesExeOnWindows(t *testing.T) {
@@ -572,7 +572,7 @@ func TestSelfUpdateExtractFileUsesExeOnWindows(t *testing.T) {
 }
 ```
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 ```bash
 go test ./internal/app -run "TestSelfUpdate|TestSelfUpdateExtractFile" -count=1
@@ -580,7 +580,7 @@ go test ./internal/app -run "TestSelfUpdate|TestSelfUpdateExtractFile" -count=1
 
 Expected: PASS except replacement tests deferred to next task if replacer is still stubbed.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/app/self_update.go internal/app/self_update_test.go
@@ -598,7 +598,7 @@ git commit -m "feat(update): prepare self update download"
 - Modify: `internal/app/self_update.go`
 - Modify: `internal/app/self_update_test.go`
 
-- [ ] **Step 1: Write failing non-Windows replacement test**
+- [x] **Step 1: Write failing non-Windows replacement test**
 
 In `internal/app/self_update_test.go`:
 
@@ -646,7 +646,7 @@ func TestSelfUpdateReplacesExecutable(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Implement replacement interfaces**
+- [x] **Step 2: Implement replacement interfaces**
 
 Create `internal/app/self_replace.go`:
 
@@ -695,7 +695,7 @@ func (DefaultExecutableReplacer) Replace(currentPath, replacementPath string) (S
 }
 ```
 
-- [ ] **Step 3: Wire replacement into service**
+- [x] **Step 3: Wire replacement into service**
 
 In `SelfUpdateService.Update`, after `result.Replacement = replacement`:
 
@@ -732,7 +732,7 @@ func (s SelfUpdateService) replacer() ExecutableReplacer {
 }
 ```
 
-- [ ] **Step 4: Write Windows command generation test**
+- [x] **Step 4: Write Windows command generation test**
 
 In `internal/app/self_replace_windows_test.go`:
 
@@ -747,7 +747,7 @@ func TestWindowsSelfReplaceScriptContainsQuotedPaths(t *testing.T) {
 }
 ```
 
-- [ ] **Step 5: Implement Windows deferred replacement**
+- [x] **Step 5: Implement Windows deferred replacement**
 
 Create `internal/app/self_replace_windows.go` with `//go:build windows`:
 
@@ -803,7 +803,7 @@ del /F /Q "%%~f0" >nul 2>nul
 }
 ```
 
-- [ ] **Step 6: Run app tests**
+- [x] **Step 6: Run app tests**
 
 ```bash
 go test ./internal/app -run "TestSelfUpdate|TestWindowsSelfReplaceScript" -count=1
@@ -811,7 +811,7 @@ go test ./internal/app -run "TestSelfUpdate|TestWindowsSelfReplaceScript" -count
 
 Expected: PASS on the current platform. Windows-only tests compile only on Windows if guarded by build tags.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add internal/app/self_update.go internal/app/self_update_test.go internal/app/self_replace.go internal/app/self_replace_default.go internal/app/self_replace_windows.go internal/app/self_replace_windows_test.go
