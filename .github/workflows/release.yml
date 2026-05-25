@@ -35,8 +35,8 @@ jobs:
 
       - name: Build bin package
         run: |
-          make build-all
-          ls -alh ./dist
+          make release
+          ls -alh dist release
           ./dist/eget-linux-amd64 -h
 
       - name: Generate changelog
@@ -58,8 +58,4 @@ jobs:
           body_path: changelog.md
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            dist/eget-darwin-amd64
-            dist/eget-darwin-arm64
-            dist/eget-linux-amd64
-            dist/eget-linux-arm64
-            dist/eget-windows-amd64.exe
+            release/*
