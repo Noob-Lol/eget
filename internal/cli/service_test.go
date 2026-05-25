@@ -964,7 +964,7 @@ func TestHandleSDKIndexActions(t *testing.T) {
 			{Schema: 1, SDK: "go", SourceURL: "https://example.com/go", FetchedAt: now},
 		},
 		cachedIndexes: []sdk.CachedIndexInfo{
-			{SDK: "go", Versions: 3, SourceURL: "https://example.com/go", FetchedAt: now, Cached: true},
+			{SDK: "go", Versions: 3, SourceURL: "https://example.com/sdks/go/releases/download/archive/index/list/with/a/very/long/path", FetchedAt: now, Cached: true},
 		},
 	}
 	svc := &cliService{sdkService: fake}
@@ -982,7 +982,10 @@ func TestHandleSDKIndexActions(t *testing.T) {
 	ccolor.SetOutput(&out)
 	defer ccolor.SetOutput(os.Stdout)
 	assert.NoErr(t, svc.handle("sdk.index.list", &SDKIndexOptions{Action: "list"}))
-	assert.Contains(t, out.String(), "go")
+	listOut := ccolor.ClearCode(out.String())
+	assert.Contains(t, listOut, "go")
+	assert.Contains(t, listOut, "...")
+	assert.NotContains(t, listOut, "/with/a/very/long/path")
 
 	out.Reset()
 	assert.NoErr(t, svc.handle("sdk.index.show", &SDKIndexOptions{Action: "show", Name: "go"}))

@@ -825,7 +825,7 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 				versions = "-"
 				updatedAt = "-"
 			}
-			rows = append(rows, []any{info.SDK, versions, info.SourceURL, updatedAt})
+			rows = append(rows, []any{info.SDK, versions, truncateTableText(info.SourceURL, 48), updatedAt})
 		}
 		ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 		return nil

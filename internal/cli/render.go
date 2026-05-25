@@ -162,6 +162,13 @@ func compactTimeOmit(value time.Time) string {
 	return value.Format(compactTimeLayout)
 }
 
+func truncateTableText(value string, max int) string {
+	if max <= 3 || len(value) <= max {
+		return value
+	}
+	return value[:max-3] + "..."
+}
+
 func listItemToDisplay(item app.ListItem) listItemDisplay {
 	return listItemDisplay{
 		Name:         item.Name,
