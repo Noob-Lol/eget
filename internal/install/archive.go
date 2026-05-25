@@ -103,8 +103,8 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 						return err
 					}
 					type link struct {
-						newname, oldname string
-						sym              bool
+						newname, oldname, archiveName string
+						sym                           bool
 					}
 					var extractedDirs []File
 					var links []link
@@ -149,9 +149,10 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 								return fmt.Errorf("extract: %w", err)
 							}
 							links = append(links, link{
-								newname: newname,
-								oldname: subf.LinkName,
-								sym:     subf.Type == TypeSymlink,
+								newname:     newname,
+								oldname:     subf.LinkName,
+								archiveName: subf.Name,
+								sym:         subf.Type == TypeSymlink,
 							})
 							continue
 						}
@@ -172,9 +173,12 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 						os.MkdirAll(filepath.Dir(l.newname), 0o755)
 						var err error
 						if l.sym {
-							err = os.Symlink(l.oldname, l.newname)
+							_, err = safeArchiveRelativeLinkOutputPath(to, l.newname, l.oldname)
+							if err == nil {
+								err = os.Symlink(l.oldname, l.newname)
+							}
 						} else {
-							oldname, pathErr := safeArchiveOutputPath(to, l.oldname)
+							oldname, pathErr := safeArchiveHardlinkOutputPath(to, l.archiveName, l.oldname, 0)
 							if pathErr != nil {
 								return fmt.Errorf("extract: %w", pathErr)
 							}
@@ -224,9 +228,10 @@ func (a *ArchiveExtractor) ExtractAllToWithOptions(data []byte, output string, o
 	var extracted []string
 	var dirs []File
 	var links []struct {
-		newname string
-		oldname string
-		sym     bool
+		newname     string
+		oldname     string
+		archiveName string
+		sym         bool
 	}
 	for {
 		f, err := ar.Next()
@@ -262,10 +267,11 @@ func (a *ArchiveExtractor) ExtractAllToWithOptions(data []byte, output string, o
 				return nil, fmt.Errorf("extract: %w", err)
 			}
 			links = append(links, struct {
-				newname string
-				oldname string
-				sym     bool
-			}{newname: target, oldname: f.LinkName, sym: f.Type == TypeSymlink})
+				newname     string
+				oldname     string
+				archiveName string
+				sym         bool
+			}{newname: target, oldname: f.LinkName, archiveName: f.Name, sym: f.Type == TypeSymlink})
 		default:
 			if err := writeArchiveEntry(ar, writer, target, f.Mode, f.ModTime); err != nil {
 				return nil, fmt.Errorf("extract: %w", err)
@@ -280,16 +286,12 @@ func (a *ArchiveExtractor) ExtractAllToWithOptions(data []byte, output string, o
 		}
 		var err error
 		if l.sym {
-			err = os.Symlink(l.oldname, l.newname)
+			_, err = safeArchiveRelativeLinkOutputPath(output, l.newname, l.oldname)
+			if err == nil {
+				err = os.Symlink(l.oldname, l.newname)
+			}
 		} else {
-			oldName, ok, stripErr := stripArchivePath(l.oldname, opts.StripComponents)
-			if stripErr != nil {
-				return nil, fmt.Errorf("extract: %w", stripErr)
-			}
-			if !ok {
-				return nil, fmt.Errorf("extract: linked target %q was stripped", l.oldname)
-			}
-			oldname, pathErr := safeArchiveOutputPath(output, oldName)
+			oldname, pathErr := safeArchiveHardlinkOutputPath(output, l.archiveName, l.oldname, opts.StripComponents)
 			if pathErr != nil {
 				return nil, fmt.Errorf("extract: %w", pathErr)
 			}

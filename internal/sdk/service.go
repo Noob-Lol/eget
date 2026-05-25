@@ -19,6 +19,7 @@ import (
 	"github.com/inherelab/eget/internal/client"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
+	"github.com/inherelab/eget/internal/util"
 )
 
 type DownloaderFunc func(context.Context, DownloadRequest) (DownloadResult, error)
@@ -699,10 +700,15 @@ func (s Service) resolveInstallPath(cfg Config, vars TemplateVars) (string, erro
 }
 
 func (s Service) sdkRoot(cfg Config) string {
+	root := "sdks"
 	if cfg.SDKTarget != "" {
-		return filepath.Clean(cfg.SDKTarget)
+		root = cfg.SDKTarget
 	}
-	return filepath.Clean("sdks")
+	expanded, err := util.Expand(root)
+	if err == nil && expanded != "" {
+		root = expanded
+	}
+	return filepath.Clean(root)
 }
 
 func (s Service) cacheDir() string {

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestNewFileChooserSupportsCommaSeparatedPatterns(t *testing.T) {
@@ -405,6 +407,49 @@ func TestArchiveExtractorExtractAllToWithOptionsStripsComponents(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "go")); !os.IsNotExist(err) {
 		t.Fatalf("expected stripped root directory to be absent, stat err=%v", err)
+	}
+}
+
+func TestArchiveExtractorExtractAllToWithOptionsAllowsSafeRelativeHardlinkTarget(t *testing.T) {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	if err := tw.WriteHeader(&tar.Header{Name: "zulu/legal/java.base/LICENSE", Mode: 0o644, Size: int64(len("license"))}); err != nil {
+		t.Fatalf("write tar file header: %v", err)
+	}
+	if _, err := tw.Write([]byte("license")); err != nil {
+		t.Fatalf("write tar file: %v", err)
+	}
+	if err := tw.WriteHeader(&tar.Header{Name: "zulu/legal/java.desktop/LICENSE", Typeflag: tar.TypeLink, Linkname: "../java.base/LICENSE", Mode: 0o644}); err != nil {
+		t.Fatalf("write tar link header: %v", err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatalf("close tar: %v", err)
+	}
+
+	extractor := NewArchiveExtractor(&GlobChooser{all: true, expr: "*"}, NewTarArchive, func(r io.Reader) (io.Reader, error) { return r, nil })
+	root := t.TempDir()
+	_, err := extractor.ExtractAllToWithOptions(buf.Bytes(), root, ArchiveExtractOptions{StripComponents: 1})
+	assert.NoErr(t, err)
+
+	data, err := os.ReadFile(filepath.Join(root, "legal", "java.desktop", "LICENSE"))
+	assert.NoErr(t, err)
+	assert.Eq(t, "license", string(data))
+}
+
+func TestArchiveExtractorExtractAllToWithOptionsRejectsEscapingRelativeHardlinkTarget(t *testing.T) {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	if err := tw.WriteHeader(&tar.Header{Name: "zulu/legal/java.desktop/LICENSE", Typeflag: tar.TypeLink, Linkname: "../../../evil", Mode: 0o644}); err != nil {
+		t.Fatalf("write tar link header: %v", err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatalf("close tar: %v", err)
+	}
+
+	extractor := NewArchiveExtractor(&GlobChooser{all: true, expr: "*"}, NewTarArchive, func(r io.Reader) (io.Reader, error) { return r, nil })
+	_, err := extractor.ExtractAllToWithOptions(buf.Bytes(), t.TempDir(), ArchiveExtractOptions{StripComponents: 1})
+	if err == nil || !strings.Contains(err.Error(), "unsafe archive path") {
+		t.Fatalf("expected unsafe archive path error, got %v", err)
 	}
 }
 

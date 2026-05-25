@@ -15,6 +15,7 @@ import (
 
 	"github.com/gookit/goutil/testutil/assert"
 	cfgpkg "github.com/inherelab/eget/internal/config"
+	"github.com/inherelab/eget/internal/util"
 )
 
 func TestServiceInstallExactVersionRecordsSDK(t *testing.T) {
@@ -97,6 +98,19 @@ func TestServiceInstallUsesIndexForPrefixVersion(t *testing.T) {
 	}
 
 	assert.Eq(t, "1.21.13", result.Version)
+}
+
+func TestServiceSDKRootExpandsTildeTarget(t *testing.T) {
+	cfg := Config{SDKTarget: "~/.local/sdk"}
+	svc := Service{}
+
+	expected, err := util.Expand("~/.local/sdk")
+	if err != nil {
+		t.Fatalf("expand expected sdk target: %v", err)
+	}
+
+	assert.Eq(t, filepath.Clean(expected), svc.sdkRoot(cfg))
+	assert.NotContains(t, svc.sdkRoot(cfg), "~")
 }
 
 func TestServiceInstallPassesDownloadProgress(t *testing.T) {
