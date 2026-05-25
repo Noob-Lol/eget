@@ -380,11 +380,6 @@ func printSDKIndexSummary(index sdk.Index) {
 	if len(platforms) > 0 {
 		ccolor.Print(cliutil.FormatTable([]string{"Platform", "Files"}, platforms, cliutil.MinimalStyle))
 	}
-
-	versions := sdkIndexVersionRows(index, 10)
-	if len(versions) > 0 {
-		ccolor.Print(cliutil.FormatTable([]string{"Version", "Stable", "Files"}, versions, cliutil.MinimalStyle))
-	}
 }
 
 func sdkIndexSummary(index sdk.Index) sdkIndexSummaryDisplay {

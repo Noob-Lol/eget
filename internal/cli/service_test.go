@@ -994,6 +994,9 @@ func TestHandleSDKIndexActions(t *testing.T) {
 	assert.Contains(t, showOut, "go")
 	assert.Contains(t, showOut, "Versions")
 	assert.Contains(t, showOut, "Latest Stable")
+	assert.NotContains(t, showOut, " true ")
+	assert.NotContains(t, showOut, " false ")
+	assert.NotContains(t, showOut, "Version | Stable | Files")
 	assert.NotContains(t, showOut, `"items"`)
 }
 
