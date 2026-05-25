@@ -9,6 +9,7 @@ eget.1
 /test/*
 !/test/test_eget.go
 !/test/eget.toml
+!/test/make_latest_test.sh
 .eget.toml
 .claude/
 .agents/
@@ -16,4 +17,3 @@ eget.1
 .xenv.toml
 dist/
 tmp/
-

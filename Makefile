@@ -15,7 +15,7 @@ LDFLAGS := -s -w \
 	-X main.GitHash=$(GIT_HASH) \
 	-X 'main.BuildTime=$(BUILD_TIME)'
 
-.PHONY: all build backend clean help
+.PHONY: all build backend clean help latest
 
 ## all: build (default)
 all: build
@@ -43,7 +43,17 @@ run: build
 DIST_DIR := dist
 
 ## build-all: cross-compile for all platforms
-build-all: build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows
+build-all: build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows latest
+
+## latest: generate latest.yaml release metadata
+latest:
+	@mkdir -p $(DIST_DIR)
+	@{ \
+		echo "name: $(APP)"; \
+		echo "version: $(VERSION)"; \
+		echo "released_at: $(BUILD_TIME)"; \
+	} > $(DIST_DIR)/latest.yaml
+	@echo "   → $(DIST_DIR)/latest.yaml"
 
 ## build-linux: compile for Linux amd64
 build-linux:
