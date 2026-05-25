@@ -155,22 +155,28 @@ func newCLIService() (*cliService, error) {
 		Install:    &appService,
 		LatestInfo: latestInfo,
 	}
+	selfUpdateService := app.SelfUpdateService{
+		CurrentVersion: BuildInfo().Version,
+		LatestInfo:     latestInfo,
+		Installer:      &appService,
+	}
 	sdkService, err := app.NewDefaultSDKService(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &cliService{
-		appService:       appService,
-		cfgService:       cfgService,
-		listService:      listService,
-		showService:      showService,
-		queryService:     queryService,
-		searchService:    searchService,
-		uninstallService: uninstallService,
-		updService:       updService,
-		sdkService:       sdkService,
-		stderr:           os.Stderr,
-		proxyURL:         defaultOpts.ProxyURL,
+		appService:        appService,
+		cfgService:        cfgService,
+		listService:       listService,
+		showService:       showService,
+		queryService:      queryService,
+		searchService:     searchService,
+		uninstallService:  uninstallService,
+		updService:        updService,
+		selfUpdateService: selfUpdateService,
+		sdkService:        sdkService,
+		stderr:            os.Stderr,
+		proxyURL:          defaultOpts.ProxyURL,
 	}, nil
 }
 

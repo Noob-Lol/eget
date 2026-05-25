@@ -590,7 +590,20 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		if opts.BatchConcurrency > 0 {
 			return fmt.Errorf("--batch can only be used with --all")
 		}
-		return fmt.Errorf("update --self is not implemented")
+		if s.selfUpdateService == nil {
+			return fmt.Errorf("self update service is required")
+		}
+		result, err := s.selfUpdateService.Update(app.SelfUpdateOptions{
+			CheckOnly: opts.Check,
+			Tag:       opts.Tag,
+			Asset:     splitAssetFilters(opts.Asset),
+			Install:   installOptionsFromUpdate(opts),
+		})
+		if err != nil {
+			return err
+		}
+		printSelfUpdateResult(result)
+		return nil
 	}
 	if opts.Check {
 		return s.handleList(&ListOptions{Outdated: true})
@@ -654,6 +667,22 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		}
 	}
 	return nil
+}
+
+func printSelfUpdateResult(result app.SelfUpdateResult) {
+	if !result.Outdated && !result.Updated {
+		ccolor.Cyanf("eget is already up to date: %s\n", result.CurrentVersion)
+		return
+	}
+	if result.Updated && result.Deferred {
+		ccolor.Successf("eget update downloaded. It will be replaced after this process exits: %s\n", result.LatestVersion)
+		return
+	}
+	if result.Updated {
+		ccolor.Successf("eget updated: %s -> %s\n", result.CurrentVersion, result.LatestVersion)
+		return
+	}
+	ccolor.Infof("eget update available: %s -> %s\n", result.CurrentVersion, result.LatestVersion)
 }
 
 func (s *cliService) handleSDKInstall(opts *SDKInstallOptions) error {

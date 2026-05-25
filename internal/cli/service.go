@@ -22,16 +22,21 @@ type sdkCLIService interface {
 	ClearAllIndexes() error
 }
 
+type selfUpdateCLIService interface {
+	Update(app.SelfUpdateOptions) (app.SelfUpdateResult, error)
+}
+
 type cliService struct {
-	appService       app.Service
-	cfgService       app.ConfigService
-	listService      app.ListService
-	showService      app.ShowService
-	queryService     app.QueryService
-	searchService    app.SearchService
-	uninstallService app.UninstallService
-	updService       app.UpdateService
-	sdkService       sdkCLIService
+	appService        app.Service
+	cfgService        app.ConfigService
+	listService       app.ListService
+	showService       app.ShowService
+	queryService      app.QueryService
+	searchService     app.SearchService
+	uninstallService  app.UninstallService
+	updService        app.UpdateService
+	selfUpdateService selfUpdateCLIService
+	sdkService        sdkCLIService
 
 	stderr             io.Writer
 	configPathResolver func() (string, error)

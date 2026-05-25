@@ -1530,6 +1530,20 @@ func TestHandleUpdateSelfRejectsAll(t *testing.T) {
 	assert.Contains(t, err.Error(), "update --self cannot be used with --all")
 }
 
+func TestHandleUpdateSelfRunsSelfUpdateService(t *testing.T) {
+	fake := &fakeSelfUpdateCLIService{
+		result: app.SelfUpdateResult{CurrentVersion: "1.7.1", LatestVersion: "v1.7.2", Updated: true},
+	}
+	svc := &cliService{selfUpdateService: fake, stderr: io.Discard}
+
+	err := svc.handleUpdate(&UpdateOptions{Self: true, Tag: "v1.7.2", Asset: "custom,linux", Quiet: true})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "v1.7.2", fake.opts.Tag)
+	assert.Eq(t, []string{"custom", "linux"}, fake.opts.Asset)
+	assert.True(t, fake.opts.Install.Quiet)
+}
+
 func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {
 	installer := &fakeUpdateInstallerForCLI{}
 	svc := &cliService{
@@ -2090,6 +2104,16 @@ func (f *fakeUpdateInstallerForCLI) InstallTarget(target string, opts install.Op
 	f.targets = append(f.targets, target)
 	f.options = append(f.options, opts)
 	return app.RunResult{}, nil
+}
+
+type fakeSelfUpdateCLIService struct {
+	opts   app.SelfUpdateOptions
+	result app.SelfUpdateResult
+}
+
+func (f *fakeSelfUpdateCLIService) Update(opts app.SelfUpdateOptions) (app.SelfUpdateResult, error) {
+	f.opts = opts
+	return f.result, nil
 }
 
 type fakeInstalledStoreForCLI struct{}

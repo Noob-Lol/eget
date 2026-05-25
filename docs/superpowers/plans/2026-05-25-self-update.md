@@ -827,7 +827,7 @@ git commit -m "feat(update): replace executable during self update"
 - Modify: `internal/cli/handlers.go`
 - Test: `internal/cli/service_test.go`
 
-- [ ] **Step 1: Define CLI-facing self update interface**
+- [x] **Step 1: Define CLI-facing self update interface**
 
 In `internal/cli/service.go`:
 
@@ -843,7 +843,7 @@ Add field:
 selfUpdateService selfUpdateCLIService
 ```
 
-- [ ] **Step 2: Write failing handler test**
+- [x] **Step 2: Write failing handler test**
 
 ```go
 type fakeSelfUpdateCLIService struct {
@@ -870,7 +870,7 @@ func TestHandleUpdateSelfRunsSelfUpdateService(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Implement handler call**
+- [x] **Step 3: Implement handler call**
 
 Replace the temporary not implemented branch:
 
@@ -911,7 +911,7 @@ func printSelfUpdateResult(result app.SelfUpdateResult) {
 }
 ```
 
-- [ ] **Step 4: Wire default service**
+- [x] **Step 4: Wire default service**
 
 In `internal/cli/wiring.go`, construct:
 
@@ -927,7 +927,7 @@ Assign to `cliService`.
 
 If the project uses a different existing latest-info function name, use that existing function rather than adding a duplicate.
 
-- [ ] **Step 5: Run CLI tests**
+- [x] **Step 5: Run CLI tests**
 
 ```bash
 go test ./internal/cli -run "TestHandleUpdateSelf|TestUpdateSelf" -count=1
@@ -935,7 +935,7 @@ go test ./internal/cli -run "TestHandleUpdateSelf|TestUpdateSelf" -count=1
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/cli/service.go internal/cli/wiring.go internal/cli/handlers.go internal/cli/service_test.go
