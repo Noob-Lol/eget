@@ -105,7 +105,7 @@ func newCLIService() (*cliService, error) {
 			if err != nil {
 				return app.LatestInfo{}, err
 			}
-			return app.LatestInfo{Tag: info.Version}, nil
+			return app.LatestInfo{Tag: info.Version, PublishedAt: info.PublishedAt}, nil
 		}
 		tag, publishedAt, err := githubClient.LatestReleaseInfo(repo)
 		return app.LatestInfo{Tag: tag, PublishedAt: publishedAt}, err

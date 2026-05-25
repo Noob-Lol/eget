@@ -378,6 +378,16 @@ tag = "nightly"
 asset_filters = ["windows"]
 rename_files = { "markview-windows-amd64.exe" = "markview.exe" }
 
+[packages.markview_mirror]
+repo = "template:markview"
+latest_url = "http://mirror.kdev.com/tools/markview/latest.yaml"
+latest_format = "yaml"
+url_template = "http://mirror.kdev.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
+os_map = { windows = "windows", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "amd64", arm64 = "arm64" }
+ext_map = { windows = ".zip", linux = ".tar.gz", darwin = ".tar.gz" }
+extract_file = "markview"
+
 [packages.claude]
 repo = "template:claude"
 latest_url = "https://downloads.claude.ai/claude-code-releases/latest"

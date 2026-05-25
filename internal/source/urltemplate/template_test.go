@@ -2,6 +2,7 @@ package urltemplate
 
 import (
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 )
@@ -44,6 +45,26 @@ func TestParseLatestTextAndJSON(t *testing.T) {
 	got, err = ParseLatest([]byte(`{"version":"1.2.4"}`), Config{LatestFormat: "json", LatestJSONPath: "version"})
 	assert.NoErr(t, err)
 	assert.Eq(t, "1.2.4", got)
+}
+
+func TestParseLatestYAML(t *testing.T) {
+	data := []byte("version: v1.2.5\nreleased_at: 2026-05-25T10:20:30+08:00\n")
+
+	got, err := ParseLatest(data, Config{LatestFormat: "yaml"})
+	assert.NoErr(t, err)
+	assert.Eq(t, "v1.2.5", got)
+
+	releasedAt, err := ParseLatestPublishedAt(data, Config{LatestFormat: "yaml"})
+	assert.NoErr(t, err)
+	if !releasedAt.Equal(time.Date(2026, 5, 25, 10, 20, 30, 0, time.FixedZone("", 8*60*60))) {
+		t.Fatalf("expected released_at instant to match, got %s", releasedAt)
+	}
+}
+
+func TestParseLatestYAMLRequiresVersion(t *testing.T) {
+	_, err := ParseLatest([]byte("released_at: 2026-05-25T10:20:30Z\n"), Config{LatestFormat: "yaml"})
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), `yaml path "version" not found`)
 }
 
 func TestExtractChecksumJSONPathWithRenderedPath(t *testing.T) {

@@ -178,10 +178,29 @@ install_action = "run-asset"
 install_args = ["install", "latest"]
 ```
 
+YAML latest metadata example:
+
+```yaml
+version: v1.2.3
+released_at: 2026-05-25T10:20:30+08:00
+```
+
+```toml
+[packages.markview]
+repo = "template:markview"
+latest_url = "http://mirror.kdev.com/tools/markview/latest.yaml"
+latest_format = "yaml"
+url_template = "http://mirror.kdev.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
+os_map = { windows = "windows", linux = "linux", darwin = "darwin" }
+arch_map = { amd64 = "amd64", arm64 = "arm64" }
+ext_map = { windows = ".zip", linux = ".tar.gz", darwin = ".tar.gz" }
+extract_file = "markview"
+```
+
 Fields:
 
 - `latest_url`: latest-version metadata URL.
-- `latest_format`: `text` or `json`; empty means `text`.
+- `latest_format`: `text`, `json`, or `yaml`; empty means `text`. YAML reads `version` and optional `released_at`.
 - `latest_json_path`: dot path used when `latest_format = "json"`.
 - `version_regex`: optional version extraction regex. If it has a capture group, the first group is used; otherwise the full match is used.
 - `url_template`: download URL template.

@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
+
+	gconfig "github.com/gookit/config/v2"
+	gyaml "github.com/gookit/config/v2/yaml"
 )
 
 type Config struct {
@@ -77,6 +81,17 @@ func ParseLatest(data []byte, cfg Config) (string, error) {
 	return strings.TrimSpace(value), nil
 }
 
+func ParseLatestPublishedAt(data []byte, cfg Config) (time.Time, error) {
+	if cfg.LatestFormat != "yaml" {
+		return time.Time{}, nil
+	}
+	value, err := ExtractYAMLPath(data, "released_at")
+	if err != nil {
+		return time.Time{}, nil
+	}
+	return parsePublishedAt(value), nil
+}
+
 func ParseChecksum(data []byte, cfg Config) (string, error) {
 	value, err := parseMetadata(data, cfg.ChecksumFormat, cfg.ChecksumJSONPath, cfg.ChecksumRegex, "checksum")
 	if err != nil {
@@ -111,6 +126,19 @@ func ExtractJSONPath(data []byte, path string) (string, error) {
 	}
 }
 
+func ExtractYAMLPath(data []byte, path string) (string, error) {
+	cfg := gconfig.New("urltemplate-yaml")
+	cfg.AddDriver(gyaml.Driver)
+	if err := cfg.LoadSources("yaml", data); err != nil {
+		return "", err
+	}
+	value := strings.TrimSpace(cfg.String(path))
+	if value == "" {
+		return "", fmt.Errorf("yaml path %q not found", path)
+	}
+	return value, nil
+}
+
 func parseMetadata(data []byte, format, jsonPath, regex, field string) (string, error) {
 	if format == "" {
 		format = "text"
@@ -125,6 +153,12 @@ func parseMetadata(data []byte, format, jsonPath, regex, field string) (string, 
 			return "", fmt.Errorf("%s json path is required", field)
 		}
 		value, err = ExtractJSONPath(data, jsonPath)
+	case "yaml":
+		path := "version"
+		if field == "checksum" {
+			path = "checksum"
+		}
+		value, err = ExtractYAMLPath(data, path)
 	default:
 		return "", fmt.Errorf("unsupported %s format %q", field, format)
 	}
@@ -150,6 +184,22 @@ func extractRegex(value, pattern, field string) (string, error) {
 		return matches[1], nil
 	}
 	return matches[0], nil
+}
+
+func parsePublishedAt(value string) time.Time {
+	value = strings.TrimSpace(value)
+	for _, layout := range []string{
+		time.RFC3339,
+		"2006-01-02 15:04:05 -0700 MST",
+		"2006-01-02 15:04:05 -0700",
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+	} {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed
+		}
+	}
+	return time.Time{}
 }
 
 func mappedValue(items map[string]string, key string) string {

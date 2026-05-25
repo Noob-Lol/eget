@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type HTTPGetter interface {
@@ -24,7 +25,8 @@ type Finder struct {
 }
 
 type LatestInfo struct {
-	Version string
+	Version     string
+	PublishedAt time.Time
 }
 
 func (f *Finder) Find() ([]string, error) {
@@ -85,7 +87,11 @@ func (f *Finder) Latest() (LatestInfo, error) {
 	if err != nil {
 		return LatestInfo{}, err
 	}
-	return LatestInfo{Version: version}, nil
+	publishedAt, err := ParseLatestPublishedAt(data, f.Config)
+	if err != nil {
+		return LatestInfo{}, err
+	}
+	return LatestInfo{Version: version, PublishedAt: publishedAt}, nil
 }
 
 func (f *Finder) Vars() map[string]string {

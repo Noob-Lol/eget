@@ -40,6 +40,7 @@
 - [ ] 新增 eget 自身管理命令 `pm`，可以添加一些自身管理命令。
   - `pm clean` 用于清理缓存，包括下载的文件、缓存的 API 响应等。默认清理3天前的缓存。
   - `pm serve` 命令，可以启动内网 server, 用于分享 package/sdk cache 文件到内网环境，方便多台机器共享下载资源。
+- [x] 基于 `latest.yaml 简版 + url template` 配置支持自定义站点的工具下载
 
 ## search 结果展示 ✅
 
