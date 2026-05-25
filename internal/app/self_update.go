@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/inherelab/eget/internal/install"
@@ -114,14 +115,84 @@ func (s SelfUpdateService) versionResult(opts SelfUpdateOptions) (SelfUpdateResu
 		return SelfUpdateResult{}, err
 	}
 	result.LatestVersion = latest.Tag
-	result.Outdated = normalizeSelfVersion(latest.Tag) != current
+	result.Outdated = selfVersionOutdated(current, latest.Tag)
 	return result, nil
+}
+
+func selfVersionOutdated(current, latest string) bool {
+	current = normalizeSelfVersion(current)
+	latest = normalizeSelfVersion(latest)
+	if current == latest {
+		return false
+	}
+	if base, ok := gitDescribeBaseVersion(current); ok {
+		current = base
+	}
+	currentVersion, currentOK := parseSelfSemver(current)
+	latestVersion, latestOK := parseSelfSemver(latest)
+	if currentOK && latestOK {
+		return currentVersion.lessThan(latestVersion)
+	}
+	return current != latest
 }
 
 func normalizeSelfVersion(value string) string {
 	value = strings.TrimSpace(value)
 	value = strings.TrimPrefix(value, "v")
 	return value
+}
+
+func gitDescribeBaseVersion(value string) (string, bool) {
+	parts := strings.Split(value, "-")
+	if len(parts) < 3 {
+		return "", false
+	}
+	if _, ok := parseSelfSemver(parts[0]); !ok {
+		return "", false
+	}
+	if _, err := strconv.Atoi(parts[1]); err != nil {
+		return "", false
+	}
+	if !strings.HasPrefix(parts[2], "g") || len(parts[2]) <= 1 {
+		return "", false
+	}
+	return parts[0], true
+}
+
+type selfSemver struct {
+	major int
+	minor int
+	patch int
+}
+
+func parseSelfSemver(value string) (selfSemver, bool) {
+	parts := strings.Split(value, ".")
+	if len(parts) != 3 {
+		return selfSemver{}, false
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return selfSemver{}, false
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return selfSemver{}, false
+	}
+	patch, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return selfSemver{}, false
+	}
+	return selfSemver{major: major, minor: minor, patch: patch}, true
+}
+
+func (v selfSemver) lessThan(other selfSemver) bool {
+	if v.major != other.major {
+		return v.major < other.major
+	}
+	if v.minor != other.minor {
+		return v.minor < other.minor
+	}
+	return v.patch < other.patch
 }
 
 func (s SelfUpdateService) runtimePlatform() (string, string) {

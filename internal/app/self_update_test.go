@@ -42,6 +42,40 @@ func TestSelfUpdateReportsOutdatedWhenLatestDiffers(t *testing.T) {
 	assert.Eq(t, "v1.7.2", result.LatestVersion)
 }
 
+func TestSelfUpdateDoesNotReportGitDescribeBuildFromLatestTagAsOutdated(t *testing.T) {
+	svc := SelfUpdateService{
+		CurrentVersion: "1.7.1-16-gc43a587",
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v1.7.1"}, nil
+		},
+	}
+
+	result, err := svc.Update(SelfUpdateOptions{CheckOnly: true})
+
+	assert.NoErr(t, err)
+	assert.False(t, result.Outdated)
+	assert.Eq(t, "v1.7.1", result.LatestVersion)
+}
+
+func TestSelfUpdateReportsGitDescribeBuildFromOlderTagAsOutdated(t *testing.T) {
+	svc := SelfUpdateService{
+		CurrentVersion: "1.7.0-3-gc43a587",
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v1.7.1"}, nil
+		},
+	}
+
+	result, err := svc.Update(SelfUpdateOptions{CheckOnly: true})
+
+	assert.NoErr(t, err)
+	assert.True(t, result.Outdated)
+	assert.Eq(t, "v1.7.1", result.LatestVersion)
+}
+
+func TestSelfUpdateDoesNotReportNewerReleaseBuildAsOutdated(t *testing.T) {
+	assert.False(t, selfVersionOutdated("v1.7.2", "v1.7.1"))
+}
+
 func TestSelfUpdateDownloadsExpectedPlatformAsset(t *testing.T) {
 	replacement := filepath.Join(t.TempDir(), "eget")
 	assert.NoErr(t, os.WriteFile(replacement, []byte("new"), 0o755))
