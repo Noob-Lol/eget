@@ -37,9 +37,9 @@
 - [x] 新增命令 show 用于显示 package 详情: 配置信息+installed 信息, 包括版本, 安装路径, 状态, 项目主页URL 等
 - [x] 增强 asset filters 支持平台前缀规则，只会在当前平台生效。例如: `windows:zip`, `linux:tar.gz`, `darwin:tar.gz`
 - [x] sdk 内置 go, node, jdk 的配置模板，方便快速配置后使用。默认不初始化到配置，通过 sdk config add 初始化到配置的 sdk 下。
-- [ ] 新增 eget 自身管理命令 `pm`，可以添加一些自身管理命令。
-  - `pm clean` 用于清理缓存，包括下载的文件、缓存的 API 响应等。默认清理3天前的缓存。
-  - `pm serve` 命令，可以启动内网 server, 用于分享 package/sdk cache 文件到内网环境，方便多台机器共享下载资源。
+- [ ] 新增 eget 缓存管理命令 `cache`，用于管理本机缓存和缓存共享。
+  - `cache clean` 用于清理缓存，包括下载的文件、缓存的 API 响应等。默认清理3天前的缓存。
+  - `cache serve` 命令，可以启动内网 server, 用于分享 package/sdk cache 文件到内网环境，方便多台机器共享下载资源。
 - [x] 基于 `latest.yaml 简版 + url template` 配置支持自定义站点的工具下载
 
 ## search 结果展示 ✅
