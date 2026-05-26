@@ -693,6 +693,9 @@ func (s Service) resolveInstallPath(cfg Config, vars TemplateVars) (string, erro
 	if err != nil {
 		return "", err
 	}
+	if expanded, err := util.Expand(rendered); err == nil && expanded != "" {
+		rendered = expanded
+	}
 	if filepath.IsAbs(rendered) {
 		return filepath.Clean(rendered), nil
 	}

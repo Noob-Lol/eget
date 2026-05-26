@@ -134,6 +134,22 @@ func TestServiceSDKRootUsesDefaultWhenTargetMissingOrEmpty(t *testing.T) {
 	}
 }
 
+func TestServiceResolveInstallPathExpandsTildeTargetTemplate(t *testing.T) {
+	svc := Service{}
+	cfg := Config{
+		SDKTarget:      "~/.local/sdk",
+		TargetTemplate: "~/app/jdk/zulu-{version}",
+	}
+
+	got, err := svc.resolveInstallPath(cfg, TemplateVars{Version: "21.0.11"})
+	assert.NoErr(t, err)
+	expected, err := util.Expand("~/app/jdk/zulu-21.0.11")
+	assert.NoErr(t, err)
+	assert.Eq(t, filepath.Clean(expected), got)
+	assert.NotContains(t, got, "~")
+	assert.NotContains(t, got, filepath.Join(".local", "sdk"))
+}
+
 func TestServiceInstallPassesDownloadProgress(t *testing.T) {
 	root := t.TempDir()
 	archivePath := filepath.Join(root, "go.zip")
