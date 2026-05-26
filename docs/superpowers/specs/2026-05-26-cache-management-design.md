@@ -87,13 +87,13 @@ global.cache_dir
 
 | 类型 | 默认路径 | 说明 |
 | --- | --- | --- |
-| `downloads` | `{cache_dir}` 根目录中排除已知子目录后的文件 | 普通 package/download 下载缓存 |
+| `pkg` | `{cache_dir}` 根目录中排除已知子目录后的文件 | 普通 package/download 下载缓存 |
 | `api` | `{cache_dir}/api-cache/` | GitHub/GitLab/Gitea/SourceForge 等 provider 元数据响应 |
-| `sdk-downloads` | `{cache_dir}/sdk-downloads/` | SDK 归档下载缓存 |
+| `sdk` | `{cache_dir}/sdk-downloads/` | SDK 归档下载缓存 |
 | `sdk-index` | `{cache_dir}/sdk-index/` | SDK index JSON 缓存 |
 | `partial` | 各缓存目录中的 `.part` 和下载状态文件 | 未完成下载状态 |
 
-普通下载缓存目前直接写在 `cache_dir` 根下，因此清理 `downloads` 时必须排除：
+普通 package 下载缓存目前直接写在 `cache_dir` 根下，因此清理 `pkg` 时必须排除：
 
 ```text
 api-cache/
@@ -101,7 +101,7 @@ sdk-downloads/
 sdk-index/
 ```
 
-避免 `--downloads` 间接删除 SDK/API 缓存。
+避免 `--pkg` 间接删除 SDK/API 缓存。
 
 ### 文件元信息
 
@@ -136,9 +136,9 @@ eget cache clean --all
 按类型选择：
 
 ```bash
-eget cache clean --downloads
+eget cache clean --pkg
 eget cache clean --api
-eget cache clean --sdk-downloads
+eget cache clean --sdk
 eget cache clean --sdk-index
 eget cache clean --partial
 ```
@@ -146,7 +146,7 @@ eget cache clean --partial
 组合使用：
 
 ```bash
-eget cache clean --downloads --sdk-downloads --older 30d
+eget cache clean --pkg --sdk --older 30d
 eget cache clean --api --all
 eget cache clean --partial --all
 ```
@@ -159,16 +159,16 @@ eget cache clean --partial --all
 | `--all` | false | 忽略时间条件，删除选中类型的全部缓存 |
 | `--dry-run` | false | 只打印将删除的内容，不实际删除 |
 | `--yes, -y` | false | 跳过大批量删除确认 |
-| `--downloads` | false | 选择普通下载缓存 |
+| `--pkg` | false | 选择普通 package/download 下载缓存 |
 | `--api` | false | 选择 API cache |
-| `--sdk-downloads` | false | 选择 SDK 下载缓存 |
+| `--sdk` | false | 选择 SDK 下载缓存 |
 | `--sdk-index` | false | 选择 SDK index |
 | `--partial` | false | 选择未完成下载状态 |
 
 如果用户没有指定任何类型，默认选择：
 
 ```text
-downloads + api + sdk-downloads + partial
+pkg + api + sdk + partial
 ```
 
 默认不选择 `sdk-index`。原因是 SDK index 通常体积小，但影响 `sdk install go@latest`、`sdk install go:1.22` 和 `sdk search` 的体验。清理 SDK index 应显式执行：
@@ -282,7 +282,7 @@ eget cache serve --host 0.0.0.0 --port 8686 --root all
 | --- | --- | --- |
 | `--host <host>` | `0.0.0.0` | 监听地址 |
 | `--port <port>` | `8686` | 监听端口，`0` 表示随机空闲端口 |
-| `--root <scope>` | `all` | 分享范围：`all/downloads/api/sdk/sdk-downloads/sdk-index` |
+| `--root <scope>` | `all` | 分享范围：`all/pkg/api/sdk/sdk-index` |
 | `--no-index` | false | 禁止目录列表 |
 | `--token <token>` | 空 | 可选 bearer token，后续阶段实现 |
 | `--manifest-ttl <duration>` | `30s` | manifest 扫描缓存时间，后续阶段实现 |
@@ -351,7 +351,7 @@ GET /files/{relpath}
   },
   "files": [
     {
-      "kind": "sdk-downloads",
+      "kind": "sdk",
       "path": "sdk-downloads/go/1.22.0/go1.22.0.windows-amd64.zip",
       "url": "/files/sdk-downloads/go/1.22.0/go1.22.0.windows-amd64.zip",
       "size": 123456,
@@ -637,8 +637,8 @@ type ServeOptions struct {
 
 - 新增 `eget cache clean` 命令。
 - 支持 `--older`、`--all`、`--dry-run`、`--yes`。
-- 支持 `--downloads`、`--api`、`--sdk-downloads`、`--sdk-index`、`--partial`。
-- 默认清理 `downloads + api + sdk-downloads + partial` 中 3 天前文件。
+- 支持 `--pkg`、`--api`、`--sdk`、`--sdk-index`、`--partial`。
+- 默认清理 `pkg + api + sdk + partial` 中 3 天前文件。
 - 输出清理摘要。
 
 验证：
@@ -740,7 +740,7 @@ github.com/gookit/goutil/testutil/assert
 CLI 层测试：
 
 - `eget cache clean --dry-run`
-- `eget cache clean --older 7d --downloads`
+- `eget cache clean --older 7d --pkg`
 - `eget cache serve --host 127.0.0.1 --port 0`
 
 HTTP server 可以使用 `httptest.Server` 测试 handler，不需要在单测中真实占用固定端口。
