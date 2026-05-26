@@ -415,24 +415,26 @@ GET /download/sha256:<url-hash>
 
 ### 配置
 
-新增全局配置：
+新增独立配置块：
 
 ```toml
-[global]
-cache_mirror_url = "http://192.168.1.10:8686"
-cache_mirror_timeout = 5
-cache_mirror_fallback = true
+[cache_mirror]
+enable = true
+url = "http://192.168.1.10:8686"
+timeout = 5
+fallback = true
 ```
 
 字段说明：
 
 | 字段 | 默认 | 说明 |
 | --- | --- | --- |
-| `cache_mirror_url` | 空 | 局域网 `cache serve` 地址 |
-| `cache_mirror_timeout` | `5` | mirror 请求超时秒数 |
-| `cache_mirror_fallback` | `true` | mirror 失败后是否回源下载 |
+| `enable` | false | 是否启用客户端自动 cache mirror |
+| `url` | 空 | 局域网 `cache serve` 地址 |
+| `timeout` | `5` | mirror 请求超时秒数 |
+| `fallback` | `true` | mirror 失败后是否回源下载 |
 
-不把 mirror 配置放在 `[cache]` 下，原因是它影响 `install/download/sdk` 的下载行为，属于全局下载策略。
+不把 mirror 配置放在 `[global]` 下，原因是 mirror 有独立的启用状态、地址、超时和 fallback 策略，后续还可能增加 token、manifest TTL、scope 等字段。独立 `[cache_mirror]` 更利于扩展，也能避免 `global` 继续膨胀。
 
 ### 下载流程
 
@@ -441,11 +443,11 @@ cache_mirror_fallback = true
 ```text
 1. 计算本地 cachePath。
 2. 如果本地完整 cache 命中，直接使用。
-3. 如果配置 cache_mirror_url：
+3. 如果启用 `[cache_mirror]` 且配置了 `url`：
    3.1 请求 mirror manifest 或 /download/{cache-key}。
    3.2 命中后下载到本地 cachePath。
    3.3 对已有 checksum 的 package 执行现有 checksum 校验。
-4. mirror 未命中或失败，且 cache_mirror_fallback=true，则回源下载。
+4. mirror 未命中或失败，且 `cache_mirror.fallback=true`，则回源下载。
 5. 回源下载成功后写入本地 cache。
 ```
 
@@ -610,7 +612,7 @@ type ServeOptions struct {
 
 `download/install` 不需要知道 `cache clean`。
 
-后续接入 `cache_mirror_url` 时，需要在下载逻辑中新增 mirror 尝试，但要保持：
+后续接入 `[cache_mirror]` 时，需要在下载逻辑中新增 mirror 尝试，但要保持：
 
 - 本地 cache 优先。
 - mirror 是回源前的优化。
@@ -620,7 +622,7 @@ type ServeOptions struct {
 
 `cache clean/serve` 使用现有 `global.cache_dir`。
 
-后续客户端自动 mirror 需要新增 `global.cache_mirror_url` 等字段，并同步更新：
+后续客户端自动 mirror 需要新增 `[cache_mirror]` 配置块，并同步更新：
 
 - `docs/config.md`
 - `docs/config.zh-CN.md`
@@ -685,7 +687,7 @@ type ServeOptions struct {
 
 实现：
 
-- 新增 `global.cache_mirror_url`、`cache_mirror_timeout`、`cache_mirror_fallback`。
+- 新增 `[cache_mirror]` 配置块，包含 `enable`、`url`、`timeout`、`fallback`。
 - install/download 在回源前尝试 mirror。
 - SDK download 在回源前尝试 mirror。
 - mirror 命中后写入本地 cache，后续流程仍走现有校验/解压/安装。
