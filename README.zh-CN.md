@@ -258,6 +258,7 @@ eget config set global.target ~/.local/bin
 
 - 先检查目标是否有新版本，再更新已配置或已安装的目标；也可通过 `--all` 更新全部托管包。
 - `update --self` 会检查 `inherelab/eget` release，选择当前 OS/arch 对应的原始可执行文件 asset，并替换当前正在运行的 eget 可执行文件。Windows 下替换会延迟到当前进程退出后执行。
+- `update --self --self-source <url>` 会从内部源更新 eget。内部源需要提供 `latest.yaml`，以及同目录下的原始平台文件，例如 `eget-linux-amd64` 和 `eget-windows-amd64.exe`。`<url>` 可以是目录地址，也可以直接是 `latest.yaml` 地址；也可通过 `EGET_SELF_UPDATE_SOURCE` 设置默认内部源。
 
 `sdk`
 
@@ -386,9 +387,9 @@ rename_files = { "markview-windows-amd64.exe" = "markview.exe" }
 
 [packages.markview_mirror]
 repo = "template:markview"
-latest_url = "http://mirror.kdev.com/tools/markview/latest.yaml"
+latest_url = "https://example.com/tools/markview/latest.yaml"
 latest_format = "yaml"
-url_template = "http://mirror.kdev.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
+url_template = "https://example.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
 os_map = { windows = "windows", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "amd64", arm64 = "arm64" }
 ext_map = { windows = ".zip", linux = ".tar.gz", darwin = ".tar.gz" }

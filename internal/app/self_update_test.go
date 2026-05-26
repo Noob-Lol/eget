@@ -72,6 +72,10 @@ func TestSelfUpdateReportsGitDescribeBuildFromOlderTagAsOutdated(t *testing.T) {
 	assert.Eq(t, "v1.7.1", result.LatestVersion)
 }
 
+func TestSelfUpdateDoesNotReportNewerGitDescribeBuildAsOutdated(t *testing.T) {
+	assert.False(t, selfVersionOutdated("1.7.1-18-gabcd1234", "1.7.1-17-g0b8e439"))
+}
+
 func TestSelfUpdateDoesNotReportNewerReleaseBuildAsOutdated(t *testing.T) {
 	assert.False(t, selfVersionOutdated("v1.7.2", "v1.7.1"))
 }
@@ -105,6 +109,39 @@ func TestSelfUpdateDownloadsExpectedPlatformAsset(t *testing.T) {
 	assert.True(t, installer.opts.DownloadOnly)
 	assert.Eq(t, "eget", installer.opts.Name)
 	assert.Eq(t, []string{"PRE:eget-"}, installer.opts.Asset)
+}
+
+func TestSelfUpdateDownloadsFromInternalSource(t *testing.T) {
+	replacement := filepath.Join(t.TempDir(), "eget")
+	assert.NoErr(t, os.WriteFile(replacement, []byte("new"), 0o755))
+	installer := &fakeSelfUpdateInstaller{
+		result: RunResult{ExtractedFiles: []string{replacement}},
+	}
+	svc := SelfUpdateService{
+		CurrentVersion: "1.7.1-17-g0b8e439",
+		SourceLatestInfo: func(source string, opts install.Options) (LatestInfo, error) {
+			assert.Eq(t, "http://mirror.kdev.com/tools/eget/", source)
+			return LatestInfo{Tag: "1.7.1-18-gabcd1234"}, nil
+		},
+		Installer:     installer,
+		Replacer:      fakeSelfReplacer{},
+		RuntimeGOOS:   "linux",
+		RuntimeGOARCH: "amd64",
+		ExecutablePath: func() (string, error) {
+			return filepath.Join(t.TempDir(), "eget"), nil
+		},
+	}
+
+	result, err := svc.Update(SelfUpdateOptions{Source: "http://mirror.kdev.com/tools/eget/"})
+
+	assert.NoErr(t, err)
+	assert.True(t, result.Updated)
+	assert.Eq(t, "1.7.1-18-gabcd1234", result.LatestVersion)
+	assert.Eq(t, "http://mirror.kdev.com/tools/eget/eget-linux-amd64", installer.target)
+	assert.Eq(t, "eget", installer.opts.Name)
+	assert.Eq(t, "all", installer.opts.System)
+	assert.True(t, installer.opts.DownloadOnly)
+	assert.Eq(t, 0, len(installer.opts.Asset))
 }
 
 func TestSelfUpdateDownloadsToTempDir(t *testing.T) {

@@ -8,6 +8,7 @@ type UpdateOptions struct {
 	DryRun           bool
 	Interactive      bool
 	Self             bool
+	SelfSource       string
 	Tag              string
 	System           string
 	To               string
@@ -30,6 +31,7 @@ func newUpdateCmd(handler CommandHandler) (*gcli.Command, func()) {
 		c.BoolOpt(&opts.DryRun, "dry-run", "", false, "Preview updates without changes")
 		c.BoolOpt(&opts.Interactive, "interactive", "", false, "Interactively choose packages")
 		c.BoolOpt(&opts.Self, "self", "", false, "Update eget itself")
+		c.StrOpt(&opts.SelfSource, "self-source", "", "", "Self update source base URL or latest.yaml URL")
 		c.StrOpt(&opts.Tag, "tag", "", "", "Release tag")
 		c.StrOpt(&opts.System, "system", "", "", "Target system")
 		c.StrOpt(&opts.To, "to", "", "", "Install destination")

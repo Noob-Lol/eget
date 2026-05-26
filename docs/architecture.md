@@ -144,7 +144,9 @@ The core implementation lives in `internal/sdk`:
 
 `update` checks latest version information before installing. `update --check` is equivalent to the outdated-check path; `update --all` updates managed packages with newer versions.
 
-`update --self` is a special update path. It does not read or write the normal installed package store. It resolves the current executable with `os.Executable()`, downloads the matching raw executable asset from `inherelab/eget` into a temporary self-update path, and replaces the current executable. Windows uses a deferred helper script because a running `.exe` cannot be overwritten.
+`update --self` is a special update path. It does not read or write the normal installed package store. By default, it resolves the current executable with `os.Executable()`, downloads the matching raw executable asset from `inherelab/eget` into a temporary self-update path, and replaces the current executable. Windows uses a deferred helper script because a running `.exe` cannot be overwritten.
+
+`update --self --self-source <url>` switches self update to an internal raw-binary source. The source can be a base directory URL or a direct `latest.yaml` URL. eget reads the YAML `version` from `latest.yaml`, builds the current-platform asset URL in the same directory as `eget-{os}-{arch}` plus `.exe` on Windows, downloads it as a direct URL, and then uses the same executable replacement flow.
 
 ## Config Command
 

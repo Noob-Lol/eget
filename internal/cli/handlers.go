@@ -608,6 +608,7 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		result, err := s.selfUpdateService.Update(app.SelfUpdateOptions{
 			CheckOnly: opts.Check,
 			Tag:       opts.Tag,
+			Source:    s.selfUpdateSource(opts),
 			Asset:     splitAssetFilters(opts.Asset),
 			Install:   installOptionsFromUpdate(opts),
 		})
@@ -679,6 +680,20 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		}
 	}
 	return nil
+}
+
+func (s *cliService) selfUpdateSource(opts *UpdateOptions) string {
+	if opts != nil && opts.SelfSource != "" {
+		return opts.SelfSource
+	}
+	lookupEnv := os.LookupEnv
+	if s != nil && s.lookupEnv != nil {
+		lookupEnv = s.lookupEnv
+	}
+	if value, ok := lookupEnv("EGET_SELF_UPDATE_SOURCE"); ok {
+		return strings.TrimSpace(value)
+	}
+	return ""
 }
 
 func printSelfUpdateResult(result app.SelfUpdateResult) {

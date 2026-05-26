@@ -258,6 +258,7 @@ The target argument accepted by `install` and `download` can be:
 
 - Updates a configured or installed target after checking that a newer version exists, or all managed packages with `--all`.
 - `update --self` checks `inherelab/eget` releases, selects the raw executable asset for the current OS/arch, and replaces the running executable. On Windows, replacement is deferred until the current process exits.
+- `update --self --self-source <url>` updates from an internal source that exposes `latest.yaml` plus raw platform files such as `eget-linux-amd64` and `eget-windows-amd64.exe`. `<url>` may be either the base directory or the `latest.yaml` URL. You can also set `EGET_SELF_UPDATE_SOURCE`.
 
 `sdk`
 
@@ -386,9 +387,9 @@ rename_files = { "markview-windows-amd64.exe" = "markview.exe" }
 
 [packages.markview_mirror]
 repo = "template:markview"
-latest_url = "http://mirror.kdev.com/tools/markview/latest.yaml"
+latest_url = "https://example.com/tools/markview/latest.yaml"
 latest_format = "yaml"
-url_template = "http://mirror.kdev.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
+url_template = "https://example.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
 os_map = { windows = "windows", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "amd64", arm64 = "arm64" }
 ext_map = { windows = ".zip", linux = ".tar.gz", darwin = ".tar.gz" }

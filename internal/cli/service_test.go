@@ -1605,6 +1605,39 @@ func TestHandleUpdateSelfRunsSelfUpdateService(t *testing.T) {
 	assert.True(t, fake.opts.Install.Quiet)
 }
 
+func TestHandleUpdateSelfPassesSourceFromFlag(t *testing.T) {
+	fake := &fakeSelfUpdateCLIService{
+		result: app.SelfUpdateResult{CurrentVersion: "1.7.1", LatestVersion: "1.7.1-18-gabcd1234", Updated: true},
+	}
+	svc := &cliService{selfUpdateService: fake, stderr: io.Discard}
+
+	err := svc.handleUpdate(&UpdateOptions{Self: true, SelfSource: "http://mirror.kdev.com/tools/eget/"})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "http://mirror.kdev.com/tools/eget/", fake.opts.Source)
+}
+
+func TestHandleUpdateSelfPassesSourceFromEnv(t *testing.T) {
+	fake := &fakeSelfUpdateCLIService{
+		result: app.SelfUpdateResult{CurrentVersion: "1.7.1", LatestVersion: "1.7.1-18-gabcd1234", Updated: true},
+	}
+	svc := &cliService{
+		selfUpdateService: fake,
+		stderr:            io.Discard,
+		lookupEnv: func(key string) (string, bool) {
+			if key == "EGET_SELF_UPDATE_SOURCE" {
+				return "http://mirror.kdev.com/tools/eget/", true
+			}
+			return "", false
+		},
+	}
+
+	err := svc.handleUpdate(&UpdateOptions{Self: true})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "http://mirror.kdev.com/tools/eget/", fake.opts.Source)
+}
+
 func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {
 	installer := &fakeUpdateInstallerForCLI{}
 	svc := &cliService{

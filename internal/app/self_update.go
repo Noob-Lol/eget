@@ -2,13 +2,18 @@ package app
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/inherelab/eget/internal/install"
+	"github.com/inherelab/eget/internal/source/urltemplate"
 )
 
 const SelfUpdateRepo = "inherelab/eget"
@@ -20,6 +25,7 @@ type SelfUpdateInstaller interface {
 type SelfUpdateOptions struct {
 	CheckOnly bool
 	Tag       string
+	Source    string
 	Asset     []string
 	Install   install.Options
 }
@@ -35,14 +41,15 @@ type SelfUpdateResult struct {
 }
 
 type SelfUpdateService struct {
-	CurrentVersion string
-	LatestInfo     LatestInfoFunc
-	Installer      SelfUpdateInstaller
-	Replacer       ExecutableReplacer
-	RuntimeGOOS    string
-	RuntimeGOARCH  string
-	TempDir        func() (string, error)
-	ExecutablePath func() (string, error)
+	CurrentVersion   string
+	LatestInfo       LatestInfoFunc
+	SourceLatestInfo func(source string, opts install.Options) (LatestInfo, error)
+	Installer        SelfUpdateInstaller
+	Replacer         ExecutableReplacer
+	RuntimeGOOS      string
+	RuntimeGOARCH    string
+	TempDir          func() (string, error)
+	ExecutablePath   func() (string, error)
 }
 
 func (s SelfUpdateService) Update(opts SelfUpdateOptions) (SelfUpdateResult, error) {
@@ -63,6 +70,7 @@ func (s SelfUpdateService) Update(opts SelfUpdateOptions) (SelfUpdateResult, err
 	if err != nil {
 		return SelfUpdateResult{}, err
 	}
+	downloadTarget := SelfUpdateRepo
 	installOpts.Tag = firstNonEmpty(opts.Tag, installOpts.Tag)
 	installOpts.Name = selfUpdateDownloadName(goos)
 	installOpts.System = selfUpdateSystem(goos, goarch)
@@ -74,8 +82,14 @@ func (s SelfUpdateService) Update(opts SelfUpdateOptions) (SelfUpdateResult, err
 	if len(opts.Asset) > 0 {
 		installOpts.Asset = append([]string(nil), opts.Asset...)
 	}
+	if opts.Source != "" {
+		downloadTarget = selfUpdateSourceAssetURL(opts.Source, goos, goarch)
+		installOpts.System = "all"
+		installOpts.Asset = nil
+		installOpts.Tag = ""
+	}
 
-	downloaded, err := s.Installer.DownloadTarget(SelfUpdateRepo, installOpts)
+	downloaded, err := s.Installer.DownloadTarget(downloadTarget, installOpts)
 	if err != nil {
 		return SelfUpdateResult{}, err
 	}
@@ -107,6 +121,15 @@ func (s SelfUpdateService) versionResult(opts SelfUpdateOptions) (SelfUpdateResu
 		result.Outdated = true
 		return result, nil
 	}
+	if opts.Source != "" {
+		latest, err := s.sourceLatestInfo(opts.Source, opts.Install)
+		if err != nil {
+			return SelfUpdateResult{}, err
+		}
+		result.LatestVersion = latest.Tag
+		result.Outdated = selfVersionOutdated(current, latest.Tag)
+		return result, nil
+	}
 	if s.LatestInfo == nil {
 		return SelfUpdateResult{}, fmt.Errorf("latest info checker is required")
 	}
@@ -125,13 +148,19 @@ func selfVersionOutdated(current, latest string) bool {
 	if current == latest {
 		return false
 	}
-	if base, ok := gitDescribeBaseVersion(current); ok {
-		current = base
-	}
-	currentVersion, currentOK := parseSelfSemver(current)
-	latestVersion, latestOK := parseSelfSemver(latest)
+	currentVersion, currentDescribe, currentOK := parseSelfVersion(current)
+	latestVersion, latestDescribe, latestOK := parseSelfVersion(latest)
 	if currentOK && latestOK {
-		return currentVersion.lessThan(latestVersion)
+		if currentVersion.semver != latestVersion.semver {
+			return currentVersion.semver.lessThan(latestVersion.semver)
+		}
+		if latestDescribe && !currentDescribe {
+			return true
+		}
+		if currentDescribe && latestDescribe {
+			return currentVersion.commits < latestVersion.commits
+		}
+		return false
 	}
 	return current != latest
 }
@@ -143,20 +172,40 @@ func normalizeSelfVersion(value string) string {
 }
 
 func gitDescribeBaseVersion(value string) (string, bool) {
+	info, ok := parseSelfGitDescribe(value)
+	return info.semver.String(), ok
+}
+
+type selfVersion struct {
+	semver  selfSemver
+	commits int
+}
+
+func parseSelfVersion(value string) (selfVersion, bool, bool) {
+	if info, ok := parseSelfGitDescribe(value); ok {
+		return info, true, true
+	}
+	semver, ok := parseSelfSemver(value)
+	return selfVersion{semver: semver}, false, ok
+}
+
+func parseSelfGitDescribe(value string) (selfVersion, bool) {
 	parts := strings.Split(value, "-")
 	if len(parts) < 3 {
-		return "", false
+		return selfVersion{}, false
 	}
-	if _, ok := parseSelfSemver(parts[0]); !ok {
-		return "", false
+	semver, ok := parseSelfSemver(parts[0])
+	if !ok {
+		return selfVersion{}, false
 	}
-	if _, err := strconv.Atoi(parts[1]); err != nil {
-		return "", false
+	commits, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return selfVersion{}, false
 	}
 	if !strings.HasPrefix(parts[2], "g") || len(parts[2]) <= 1 {
-		return "", false
+		return selfVersion{}, false
 	}
-	return parts[0], true
+	return selfVersion{semver: semver, commits: commits}, true
 }
 
 type selfSemver struct {
@@ -195,6 +244,10 @@ func (v selfSemver) lessThan(other selfSemver) bool {
 	return v.patch < other.patch
 }
 
+func (v selfSemver) String() string {
+	return fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
+}
+
 func (s SelfUpdateService) runtimePlatform() (string, string) {
 	goos := s.RuntimeGOOS
 	if goos == "" {
@@ -227,6 +280,71 @@ func selfUpdateExecutableName(goos string) string {
 		return "eget.exe"
 	}
 	return "eget"
+}
+
+func selfUpdateSourceAssetURL(source, goos, goarch string) string {
+	base := selfUpdateSourceBaseURL(source)
+	return base + path.Base("eget-"+goos+"-"+goarch+selfUpdateSourceAssetExt(goos))
+}
+
+func selfUpdateSourceAssetExt(goos string) string {
+	if goos == "windows" {
+		return ".exe"
+	}
+	return ""
+}
+
+func selfUpdateSourceLatestURL(source string) string {
+	source = strings.TrimSpace(source)
+	if strings.HasSuffix(source, "/latest.yaml") {
+		return source
+	}
+	return strings.TrimRight(source, "/") + "/latest.yaml"
+}
+
+func selfUpdateSourceBaseURL(source string) string {
+	latestURL := selfUpdateSourceLatestURL(source)
+	parsed, err := url.Parse(latestURL)
+	if err != nil {
+		return strings.TrimRight(source, "/") + "/"
+	}
+	parsed.Path = path.Dir(parsed.Path) + "/"
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
+func (s SelfUpdateService) sourceLatestInfo(source string, opts install.Options) (LatestInfo, error) {
+	if s.SourceLatestInfo != nil {
+		return s.SourceLatestInfo(source, opts)
+	}
+	return fetchSelfUpdateSourceLatestInfo(source, opts)
+}
+
+func fetchSelfUpdateSourceLatestInfo(source string, opts install.Options) (LatestInfo, error) {
+	getter := install.NewHTTPGetter(opts)
+	resp, err := getter.Get(selfUpdateSourceLatestURL(source))
+	if err != nil {
+		return LatestInfo{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return LatestInfo{}, fmt.Errorf("fetch self update metadata: %s", resp.Status)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return LatestInfo{}, err
+	}
+	cfg := urltemplate.Config{LatestFormat: "yaml"}
+	version, err := urltemplate.ParseLatest(data, cfg)
+	if err != nil {
+		return LatestInfo{}, err
+	}
+	publishedAt, err := urltemplate.ParseLatestPublishedAt(data, cfg)
+	if err != nil {
+		return LatestInfo{}, err
+	}
+	return LatestInfo{Tag: version, PublishedAt: publishedAt}, nil
 }
 
 func singleSelfUpdateReplacement(result RunResult, expectedName string) (string, error) {

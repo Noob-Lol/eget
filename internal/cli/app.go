@@ -236,7 +236,7 @@ var commandFlagSpecs = map[string]flagSpec{
 	},
 	"update": {
 		bools:  setOf("all", "A", "check", "dry-run", "interactive", "self", "source", "quiet"),
-		values: setOf("tag", "system", "to", "file", "asset", "a", "chunk", "batch"),
+		values: setOf("self-source", "tag", "system", "to", "file", "asset", "a", "chunk", "batch"),
 	},
 	"query": {
 		bools:  setOf("json", "j", "prerelease", "p"),
