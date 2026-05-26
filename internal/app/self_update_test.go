@@ -106,9 +106,35 @@ func TestSelfUpdateDownloadsExpectedPlatformAsset(t *testing.T) {
 	assert.Eq(t, SelfUpdateRepo, installer.target)
 	assert.Eq(t, "linux/amd64", installer.opts.System)
 	assert.Eq(t, "", installer.opts.ExtractFile)
-	assert.True(t, installer.opts.DownloadOnly)
+	assert.False(t, installer.opts.DownloadOnly)
 	assert.Eq(t, "eget", installer.opts.Name)
-	assert.Eq(t, []string{"PRE:eget-"}, installer.opts.Asset)
+	assert.Eq(t, 0, len(installer.opts.Asset))
+}
+
+func TestSelfUpdateAllowsExplicitAssetOverride(t *testing.T) {
+	replacement := filepath.Join(t.TempDir(), "eget")
+	assert.NoErr(t, os.WriteFile(replacement, []byte("new"), 0o755))
+	installer := &fakeSelfUpdateInstaller{
+		result: RunResult{ExtractedFiles: []string{replacement}},
+	}
+	svc := SelfUpdateService{
+		CurrentVersion: "1.7.1",
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v1.7.2"}, nil
+		},
+		Installer:     installer,
+		RuntimeGOOS:   "linux",
+		RuntimeGOARCH: "amd64",
+		ExecutablePath: func() (string, error) {
+			return filepath.Join(t.TempDir(), "eget"), nil
+		},
+		Replacer: fakeSelfReplacer{},
+	}
+
+	_, err := svc.Update(SelfUpdateOptions{Asset: []string{"REG:eget_.*linux_amd64"}})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"REG:eget_.*linux_amd64"}, installer.opts.Asset)
 }
 
 func TestSelfUpdateDownloadsFromInternalSource(t *testing.T) {
@@ -173,8 +199,8 @@ func TestSelfUpdateDownloadsToTempDir(t *testing.T) {
 	assert.False(t, installer.opts.OutputExplicit)
 }
 
-func TestSelfUpdateAssetFiltersUsePrefixOnly(t *testing.T) {
-	assert.Eq(t, []string{"PRE:eget-"}, selfUpdateAssetFilters())
+func TestSelfUpdateAssetFiltersDefaultToPlatformSelection(t *testing.T) {
+	assert.Eq(t, 0, len(selfUpdateAssetFilters()))
 }
 
 func TestSelfUpdateDownloadNameUsesExeOnWindows(t *testing.T) {
@@ -204,7 +230,7 @@ func TestSelfUpdateDownloadsWindowsExecutableAsset(t *testing.T) {
 	assert.NoErr(t, err)
 	assert.Eq(t, "windows/amd64", installer.opts.System)
 	assert.Eq(t, "eget.exe", installer.opts.Name)
-	assert.True(t, installer.opts.DownloadOnly)
+	assert.False(t, installer.opts.DownloadOnly)
 	assert.Eq(t, "", installer.opts.ExtractFile)
 }
 

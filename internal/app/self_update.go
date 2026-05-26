@@ -76,9 +76,9 @@ func (s SelfUpdateService) Update(opts SelfUpdateOptions) (SelfUpdateResult, err
 	installOpts.System = selfUpdateSystem(goos, goarch)
 	installOpts.Output = output
 	installOpts.OutputExplicit = false
-	installOpts.DownloadOnly = true
+	installOpts.DownloadOnly = false
 	installOpts.ExtractFile = ""
-	installOpts.Asset = selfUpdateAssetFilters()
+	installOpts.Asset = nil
 	if len(opts.Asset) > 0 {
 		installOpts.Asset = append([]string(nil), opts.Asset...)
 	}
@@ -87,6 +87,7 @@ func (s SelfUpdateService) Update(opts SelfUpdateOptions) (SelfUpdateResult, err
 		installOpts.System = "all"
 		installOpts.Asset = nil
 		installOpts.Tag = ""
+		installOpts.DownloadOnly = true
 	}
 
 	downloaded, err := s.Installer.DownloadTarget(downloadTarget, installOpts)
@@ -265,7 +266,7 @@ func selfUpdateSystem(goos, goarch string) string {
 }
 
 func selfUpdateAssetFilters() []string {
-	return []string{"PRE:eget-"}
+	return nil
 }
 
 func selfUpdateDownloadName(goos string) string {
