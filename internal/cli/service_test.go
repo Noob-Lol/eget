@@ -53,6 +53,16 @@ type fakeUninstallStoreForCLI struct {
 	removeKeys []string
 }
 
+func writeCLIFile(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", filepath.Dir(path), err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
 func (f *fakeUninstallStoreForCLI) Load() (*storepkg.Config, error) {
 	return f.cfg, nil
 }
@@ -787,6 +797,28 @@ func TestNewCLIServiceWiresReleaseInfo(t *testing.T) {
 	if sdkService.IndexCache.Dir == "" {
 		t.Fatal("expected sdk index cache dir to be configured")
 	}
+}
+
+func TestNewCLIServiceLoadsDotenvBeforeConfig(t *testing.T) {
+	tmp := t.TempDir()
+	xdgHome := filepath.Join(tmp, ".config")
+	configDir := filepath.Join(xdgHome, "eget")
+	writeCLIFile(t, filepath.Join(configDir, ".env"), "PROXY_URL=http://127.0.0.1:7890\nEGET_SELF_UPDATE_SOURCE=https://example.com/tools/eget/\n")
+	writeCLIFile(t, filepath.Join(configDir, "eget.toml"), `
+[global]
+proxy_url = "${PROXY_URL}"
+`)
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+	t.Setenv("XDG_CONFIG_HOME", xdgHome)
+	t.Setenv("PROXY_URL", "")
+	t.Setenv("EGET_SELF_UPDATE_SOURCE", "")
+
+	svc, err := newCLIService()
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "http://127.0.0.1:7890", svc.proxyURL)
+	assert.Eq(t, "https://example.com/tools/eget/", os.Getenv("EGET_SELF_UPDATE_SOURCE"))
 }
 
 func TestConfigureVerboseUpdatesVerboseLoggers(t *testing.T) {
@@ -1611,10 +1643,10 @@ func TestHandleUpdateSelfPassesSourceFromFlag(t *testing.T) {
 	}
 	svc := &cliService{selfUpdateService: fake, stderr: io.Discard}
 
-	err := svc.handleUpdate(&UpdateOptions{Self: true, SelfSource: "http://mirror.kdev.com/tools/eget/"})
+	err := svc.handleUpdate(&UpdateOptions{Self: true, SelfSource: "https://example.com/tools/eget/"})
 
 	assert.NoErr(t, err)
-	assert.Eq(t, "http://mirror.kdev.com/tools/eget/", fake.opts.Source)
+	assert.Eq(t, "https://example.com/tools/eget/", fake.opts.Source)
 }
 
 func TestHandleUpdateSelfPassesSourceFromEnv(t *testing.T) {
@@ -1626,7 +1658,7 @@ func TestHandleUpdateSelfPassesSourceFromEnv(t *testing.T) {
 		stderr:            io.Discard,
 		lookupEnv: func(key string) (string, bool) {
 			if key == "EGET_SELF_UPDATE_SOURCE" {
-				return "http://mirror.kdev.com/tools/eget/", true
+				return "https://example.com/tools/eget/", true
 			}
 			return "", false
 		},
@@ -1635,7 +1667,7 @@ func TestHandleUpdateSelfPassesSourceFromEnv(t *testing.T) {
 	err := svc.handleUpdate(&UpdateOptions{Self: true})
 
 	assert.NoErr(t, err)
-	assert.Eq(t, "http://mirror.kdev.com/tools/eget/", fake.opts.Source)
+	assert.Eq(t, "https://example.com/tools/eget/", fake.opts.Source)
 }
 
 func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {

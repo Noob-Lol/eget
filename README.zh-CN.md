@@ -273,6 +273,7 @@ eget config set global.target ~/.local/bin
 `config`(alias: `cfg`)
 
 - 支持 `init`、`list` / `ls`、`get KEY`、`set KEY VALUE`。
+- 读取 `eget.toml` 前会加载可选的 `~/.config/eget/.env`，因此配置值可以继续写成 `github_token = "${GITHUB_TOKEN}"`、`proxy_url = "${PROXY_URL}"`，敏感信息无需直接写进配置文件。
 
 ## 主要选项
 

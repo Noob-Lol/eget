@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,6 +20,9 @@ import (
 )
 
 func newCLIService() (*cliService, error) {
+	if err := cfgpkg.LoadDotenv(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to load dotenv: %v\n", err)
+	}
 	cfg, err := cfgpkg.Load()
 	if err != nil {
 		return nil, err

@@ -120,7 +120,7 @@ func TestSelfUpdateDownloadsFromInternalSource(t *testing.T) {
 	svc := SelfUpdateService{
 		CurrentVersion: "1.7.1-17-g0b8e439",
 		SourceLatestInfo: func(source string, opts install.Options) (LatestInfo, error) {
-			assert.Eq(t, "http://mirror.kdev.com/tools/eget/", source)
+			assert.Eq(t, "https://example.com/tools/eget/", source)
 			return LatestInfo{Tag: "1.7.1-18-gabcd1234"}, nil
 		},
 		Installer:     installer,
@@ -132,12 +132,12 @@ func TestSelfUpdateDownloadsFromInternalSource(t *testing.T) {
 		},
 	}
 
-	result, err := svc.Update(SelfUpdateOptions{Source: "http://mirror.kdev.com/tools/eget/"})
+	result, err := svc.Update(SelfUpdateOptions{Source: "https://example.com/tools/eget/"})
 
 	assert.NoErr(t, err)
 	assert.True(t, result.Updated)
 	assert.Eq(t, "1.7.1-18-gabcd1234", result.LatestVersion)
-	assert.Eq(t, "http://mirror.kdev.com/tools/eget/eget-linux-amd64", installer.target)
+	assert.Eq(t, "https://example.com/tools/eget/eget-linux-amd64", installer.target)
 	assert.Eq(t, "eget", installer.opts.Name)
 	assert.Eq(t, "all", installer.opts.System)
 	assert.True(t, installer.opts.DownloadOnly)

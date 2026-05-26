@@ -23,6 +23,34 @@ By default, this writes:
 ~/.config/eget/eget.toml
 ```
 
+`eget` also loads dotenv variables from:
+
+```text
+~/.config/eget/.env
+```
+
+If `XDG_CONFIG_HOME` is set, the dotenv path follows the same config directory:
+
+```text
+$XDG_CONFIG_HOME/eget/.env
+```
+
+The dotenv file is optional. It is loaded before `eget.toml`, so config values can reference secrets or internal settings through gookit/config env expansion:
+
+```dotenv
+GITHUB_TOKEN=...
+PROXY_URL=http://127.0.0.1:7890
+EGET_SELF_UPDATE_SOURCE=https://example.com/tools/eget/
+```
+
+```toml
+[global]
+github_token = "${GITHUB_TOKEN}"
+proxy_url = "${PROXY_URL}"
+```
+
+Keep `.env` out of version control.
+
 ## Sections
 
 Supported sections:
@@ -188,9 +216,9 @@ released_at: 2026-05-25T10:20:30+08:00
 ```toml
 [packages.markview]
 repo = "template:markview"
-latest_url = "http://mirror.kdev.com/tools/markview/latest.yaml"
+latest_url = "https://example.com/tools/markview/latest.yaml"
 latest_format = "yaml"
-url_template = "http://mirror.kdev.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
+url_template = "https://example.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
 os_map = { windows = "windows", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "amd64", arm64 = "arm64" }
 ext_map = { windows = ".zip", linux = ".tar.gz", darwin = ".tar.gz" }

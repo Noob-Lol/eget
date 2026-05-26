@@ -273,6 +273,7 @@ The target argument accepted by `install` and `download` can be:
 `config` (alias: `cfg`)
 
 - Supports `init`, `list` / `ls`, `get KEY`, and `set KEY VALUE`.
+- Loads optional dotenv variables from `~/.config/eget/.env` before reading `eget.toml`, so config values such as `github_token = "${GITHUB_TOKEN}"` and `proxy_url = "${PROXY_URL}"` can reference secrets without storing them directly in the config file.
 
 ## Main Options
 

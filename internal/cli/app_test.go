@@ -219,11 +219,11 @@ func TestUpdateSelfSourceFlagParses(t *testing.T) {
 		return nil
 	}, io.Discard, io.Discard)
 
-	err := app.RunWithArgs([]string{"update", "--self", "--self-source", "http://mirror.kdev.com/tools/eget/"})
+	err := app.RunWithArgs([]string{"update", "--self", "--self-source", "https://example.com/tools/eget/"})
 
 	assert.NoErr(t, err)
 	assert.True(t, got.Self)
-	assert.Eq(t, "http://mirror.kdev.com/tools/eget/", got.SelfSource)
+	assert.Eq(t, "https://example.com/tools/eget/", got.SelfSource)
 }
 
 func TestMain_ExtractAllFlagBindsInstallDownloadAndAdd(t *testing.T) {

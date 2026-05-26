@@ -23,6 +23,34 @@ eget config init
 ~/.config/eget/eget.toml
 ```
 
+`eget` 还会加载同目录下的 dotenv 文件：
+
+```text
+~/.config/eget/.env
+```
+
+如果设置了 `XDG_CONFIG_HOME`，dotenv 路径也会跟随配置目录：
+
+```text
+$XDG_CONFIG_HOME/eget/.env
+```
+
+`.env` 文件是可选的。它会在 `eget.toml` 之前加载，因此配置文件可以继续通过 gookit/config 的环境变量展开引用敏感信息或内部配置：
+
+```dotenv
+GITHUB_TOKEN=...
+PROXY_URL=http://127.0.0.1:7890
+EGET_SELF_UPDATE_SOURCE=https://example.com/tools/eget/
+```
+
+```toml
+[global]
+github_token = "${GITHUB_TOKEN}"
+proxy_url = "${PROXY_URL}"
+```
+
+不要把 `.env` 提交到版本库。
+
 ## 配置块
 
 支持的配置块：
@@ -188,9 +216,9 @@ released_at: 2026-05-25T10:20:30+08:00
 ```toml
 [packages.markview]
 repo = "template:markview"
-latest_url = "http://mirror.kdev.com/tools/markview/latest.yaml"
+latest_url = "https://example.com/tools/markview/latest.yaml"
 latest_format = "yaml"
-url_template = "http://mirror.kdev.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
+url_template = "https://example.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
 os_map = { windows = "windows", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "amd64", arm64 = "arm64" }
 ext_map = { windows = ".zip", linux = ".tar.gz", darwin = ".tar.gz" }
