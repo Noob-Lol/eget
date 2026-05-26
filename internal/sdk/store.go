@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	cfgpkg "github.com/inherelab/eget/internal/config"
+	"github.com/inherelab/eget/internal/util"
 )
 
 type Store struct {
@@ -15,11 +15,11 @@ type Store struct {
 }
 
 func DefaultStorePath() (string, error) {
-	cfgPath, err := cfgpkg.ResolveWritablePath()
+	home, err := util.Home()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(filepath.Dir(cfgPath), "sdk.installed.json"), nil
+	return filepath.Join(home, ".config", "eget", "sdk.installed.json"), nil
 }
 
 func (s Store) Load() (InstalledStore, error) {

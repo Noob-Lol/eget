@@ -21,6 +21,19 @@ func TestStoreLoadInitializesMissingFile(t *testing.T) {
 	assert.Eq(t, 0, len(loaded.Installed))
 }
 
+func TestDefaultStorePathUsesHomeConfigDir(t *testing.T) {
+	home := t.TempDir()
+	customConfig := filepath.Join(t.TempDir(), "custom", "eget.toml")
+	xdgConfig := filepath.Join(t.TempDir(), "xdg")
+	t.Setenv("HOME", home)
+	t.Setenv("EGET_CONFIG", customConfig)
+	t.Setenv("XDG_CONFIG_HOME", xdgConfig)
+
+	path, err := DefaultStorePath()
+	assert.NoErr(t, err)
+	assert.Eq(t, filepath.Join(home, ".config", "eget", "sdk.installed.json"), path)
+}
+
 func TestStoreRecordListAndRemove(t *testing.T) {
 	store := Store{Path: filepath.Join(t.TempDir(), "sdk.installed.json")}
 	now := time.Date(2026, 5, 17, 13, 0, 0, 0, time.UTC)
