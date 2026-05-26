@@ -46,6 +46,9 @@ func TestConfigInit(t *testing.T) {
 	if cfg.Global.Target == nil || *cfg.Global.Target != "~/.local/bin" {
 		t.Fatalf("expected default global.target, got %#v", cfg.Global.Target)
 	}
+	if cfg.Global.SDKTarget == nil || *cfg.Global.SDKTarget != "~/.local/sdks" {
+		t.Fatalf("expected default global.sdk_target, got %#v", cfg.Global.SDKTarget)
+	}
 	if cfg.Global.System == nil || *cfg.Global.System != "" {
 		t.Fatalf("expected empty global.system, got %#v", cfg.Global.System)
 	}

@@ -310,6 +310,21 @@ func TestDownloadTargetRunsWithoutRecordingInstalledState(t *testing.T) {
 	}
 }
 
+func TestDownloadTargetDoesNotUseDefaultInstallTarget(t *testing.T) {
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	_, err := svc.DownloadTarget("https://example.com/tool.tar.gz", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "", runner.opts.Output)
+}
+
 func TestDownloadTargetForwardsFallbackVersions(t *testing.T) {
 	runner := &fakeRunner{
 		result: RunResult{
@@ -595,6 +610,46 @@ proxy_url = "http://127.0.0.1:7890"
 	}
 	if expected := filepath.Join(expectedCache, "api-cache"); runner.opts.APICacheDir != expected {
 		t.Fatalf("expected derived api cache dir, got %q", runner.opts.APICacheDir)
+	}
+}
+
+func TestInstallTargetUsesDefaultTargetWhenGlobalTargetMissingOrEmpty(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *cfgpkg.File
+	}{
+		{
+			name: "missing",
+			cfg:  cfgpkg.NewFile(),
+		},
+		{
+			name: "empty",
+			cfg: func() *cfgpkg.File {
+				cfg := cfgpkg.NewFile()
+				cfg.Global.Target = util.StringPtr("")
+				return cfg
+			}(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := &fakeRunner{}
+			svc := Service{
+				Runner: runner,
+				LoadConfig: func() (*cfgpkg.File, error) {
+					return tt.cfg, nil
+				},
+			}
+
+			_, err := svc.InstallTarget("junegunn/fzf", install.Options{})
+
+			assert.NoErr(t, err)
+			expectedTarget, err := util.Expand("~/.local/bin")
+			assert.NoErr(t, err)
+			assert.Eq(t, expectedTarget, runner.opts.Output)
+			assert.False(t, runner.opts.OutputExplicit)
+		})
 	}
 }
 

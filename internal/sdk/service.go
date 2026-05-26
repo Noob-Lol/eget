@@ -700,7 +700,7 @@ func (s Service) resolveInstallPath(cfg Config, vars TemplateVars) (string, erro
 }
 
 func (s Service) sdkRoot(cfg Config) string {
-	root := "sdks"
+	root := "~/.local/sdks"
 	if cfg.SDKTarget != "" {
 		root = cfg.SDKTarget
 	}

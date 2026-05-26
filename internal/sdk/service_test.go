@@ -113,6 +113,27 @@ func TestServiceSDKRootExpandsTildeTarget(t *testing.T) {
 	assert.NotContains(t, svc.sdkRoot(cfg), "~")
 }
 
+func TestServiceSDKRootUsesDefaultWhenTargetMissingOrEmpty(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+	}{
+		{name: "missing", cfg: Config{}},
+		{name: "empty", cfg: Config{SDKTarget: ""}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := Service{}
+
+			expected, err := util.Expand("~/.local/sdks")
+			assert.NoErr(t, err)
+			assert.Eq(t, filepath.Clean(expected), svc.sdkRoot(tt.cfg))
+			assert.NotContains(t, svc.sdkRoot(tt.cfg), "~")
+		})
+	}
+}
+
 func TestServiceInstallPassesDownloadProgress(t *testing.T) {
 	root := t.TempDir()
 	archivePath := filepath.Join(root, "go.zip")

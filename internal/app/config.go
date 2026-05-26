@@ -121,6 +121,7 @@ func (s ConfigService) ConfigInit() (string, error) {
 
 	file := cfgpkg.NewFile()
 	target := "~/.local/bin"
+	sdkTarget := "~/.local/sdks"
 	cacheDir := "~/.cache/eget"
 	proxyURL := ""
 	userAgent := client.DefaultUserAgent
@@ -134,6 +135,7 @@ func (s ConfigService) ConfigInit() (string, error) {
 	chunkConcurrency := 0
 	batchConcurrency := 0
 	file.Global.Target = &target
+	file.Global.SDKTarget = &sdkTarget
 	file.Global.CacheDir = &cacheDir
 	file.Global.ProxyURL = &proxyURL
 	file.Global.UserAgent = &userAgent

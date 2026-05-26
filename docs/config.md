@@ -78,7 +78,7 @@ sys7z_path = ""
 chunk_concurrency = 0
 batch_concurrency = 0
 ignore_update_packages = []
-sdk_target = "~/sdks"
+sdk_target = "~/.local/sdks"
 sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 ```
 

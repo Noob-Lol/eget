@@ -9,7 +9,7 @@ sys7z_path = ""
 chunk_concurrency = 0
 batch_concurrency = 0
 # SDK install root and default archive extensions by Go OS name.
-sdk_target = "~/sdks"
+sdk_target = "~/.local/sdks"
 sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
 # 配置 provider 元数据请求缓存策略

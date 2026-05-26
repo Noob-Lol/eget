@@ -378,7 +378,7 @@ target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
 proxy_url = "http://127.0.0.1:7890"
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
-sdk_target = "~/sdks"
+sdk_target = "~/.local/sdks"
 
 [packages.markview]
 repo = "inhere/markview"

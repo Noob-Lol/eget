@@ -162,7 +162,7 @@ SDK 相关全局配置放在 `[global]`：
 ```toml
 [global]
 cache_dir = "~/.cache/eget"
-sdk_target = "~/sdks"
+sdk_target = "~/.local/sdks"
 sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 ```
 

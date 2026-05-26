@@ -90,7 +90,7 @@ dev = ["dev1", "dev2"]
 
 ```toml
 [global]
-sdk_target = "~/sdks"
+sdk_target = "~/.local/sdks"
 sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
 [sdk.go]

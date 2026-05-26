@@ -70,6 +70,7 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 	if err != nil {
 		return RunResult{}, err
 	}
+	opts = applyDefaultInstallTarget(opts)
 	if err := validateConcurrencyOptions(opts); err != nil {
 		return RunResult{}, err
 	}
@@ -99,6 +100,22 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 	}
 
 	return result, nil
+}
+
+func applyDefaultInstallTarget(opts install.Options) install.Options {
+	if opts.Output == "" {
+		opts.Output = defaultInstallTarget()
+		opts.OutputExplicit = false
+	}
+	return opts
+}
+
+func defaultInstallTarget() string {
+	target, err := util.Expand("~/.local/bin")
+	if err != nil || target == "" {
+		return "~/.local/bin"
+	}
+	return target
 }
 
 func (s Service) InstallAllPackages(cli install.Options) ([]InstallAllResult, error) {
@@ -142,6 +159,7 @@ func (s Service) InstallAllPackages(cli install.Options) ([]InstallAllResult, er
 		if err := validateConcurrencyOptions(opts); err != nil {
 			return nil, err
 		}
+		opts = applyDefaultInstallTarget(opts)
 		opts = normalizeExtractionOptions(opts)
 		result, err := s.installResolvedTarget(runTarget, recordTarget, opts)
 		if err != nil {
@@ -187,6 +205,7 @@ func (s Service) installAllPackagesConcurrent(cfg *cfgpkg.File, names []string, 
 					sendFirstError(errCh, err, cancel)
 					continue
 				}
+				opts = applyDefaultInstallTarget(opts)
 				opts = normalizeExtractionOptions(opts)
 				result, err := s.installResolvedTarget(runTarget, recordTarget, opts)
 				if err != nil {
