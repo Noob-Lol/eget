@@ -451,7 +451,7 @@ git commit -m "feat(cache): add cache model and safety helpers"
 - Modify: `internal/app/cache/service.go`
 - Modify: `internal/app/cache/cache_test.go`
 
-- [ ] **Step 1: 写失败测试：扫描分类和默认 kind**
+- [x] **Step 1: 写失败测试：扫描分类和默认 kind**
 
 追加到 `internal/app/cache/cache_test.go`：
 
@@ -500,7 +500,7 @@ func writeCacheTestFile(t *testing.T, path, body string) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -510,7 +510,7 @@ go test ./internal/app/cache -run 'ScanClassifies|DefaultCleanKinds' -v
 
 Expected: FAIL，提示 `Scan`、`CacheScanOptions` 或 `normalizeKinds` 未定义。
 
-- [ ] **Step 3: 实现扫描、分类和 kind 过滤**
+- [x] **Step 3: 实现扫描、分类和 kind 过滤**
 
 在 `internal/app/cache/service.go` 追加：
 
@@ -666,7 +666,7 @@ func ValidRoot(root string) bool {
 
 `os` 用于 `os.DirEntry` 和 `os.ModeSymlink`，不要误换成 `io/fs`。
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run:
 
@@ -676,12 +676,12 @@ go test ./internal/app/cache -run 'ScanClassifies|DefaultCleanKinds' -v
 
 Expected: PASS。
 
-- [ ] **Step 5: 写失败测试：dry-run、older、all、sdk-index 显式清理**
+- [x] **Step 5: 写失败测试：dry-run、older、all、sdk-index 显式清理**
 
 追加到 `internal/app/cache/cache_test.go`：
 
 ```go
-func TestServiceCleanDryRunDoesNotRemoveFiles(t *testing.T) {
+func TestServicePreviewCleanDoesNotRemoveFiles(t *testing.T) {
 	cacheDir := t.TempDir()
 	oldFile := filepath.Join(cacheDir, "old.zip")
 	writeCacheTestFile(t, oldFile, "old")
@@ -691,7 +691,7 @@ func TestServiceCleanDryRunDoesNotRemoveFiles(t *testing.T) {
 	service := Service{Now: func() time.Time {
 		return time.Date(2026, 5, 26, 10, 0, 0, 0, time.UTC)
 	}}
-	result, err := service.Clean(cacheDir, CleanOptions{Older: 3 * 24 * time.Hour, DryRun: true})
+	result, err := service.PreviewClean(cacheDir, CleanOptions{Older: 3 * 24 * time.Hour})
 
 	assert.NoErr(t, err)
 	assert.Eq(t, 1, result.MatchedFiles)
@@ -788,7 +788,7 @@ func fileExistsForTest(path string) bool {
 }
 ```
 
-- [ ] **Step 6: 运行测试确认失败**
+- [x] **Step 6: 运行测试确认失败**
 
 Run:
 
@@ -798,7 +798,7 @@ go test ./internal/app/cache -run 'Clean' -v
 
 Expected: FAIL，提示 `Clean` 或 `PreviewClean` 未定义。
 
-- [ ] **Step 7: 实现 PreviewClean 和 Clean**
+- [x] **Step 7: 实现 PreviewClean 和 Clean**
 
 在 `internal/app/cache/service.go` 追加：
 
@@ -880,7 +880,7 @@ func removeEmptyParents(root, dir string) {
 }
 ```
 
-- [ ] **Step 8: 运行 app 缓存测试**
+- [x] **Step 8: 运行 app 缓存测试**
 
 Run:
 
@@ -890,7 +890,7 @@ go test ./internal/app/cache -run 'Cache|Clean' -v
 
 Expected: PASS。
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add internal/app/cache/model.go internal/app/cache/service.go internal/app/cache/cache_test.go

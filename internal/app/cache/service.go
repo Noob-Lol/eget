@@ -2,6 +2,8 @@ package cache
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -14,6 +16,11 @@ import (
 type Service struct {
 	Config *cfgpkg.File
 	Now    func() time.Time
+}
+
+type CacheScanOptions struct {
+	Kinds []Kind
+	Root  string
 }
 
 func ParseOlderDuration(value string) (time.Duration, error) {
@@ -110,4 +117,215 @@ func ensurePathInDir(root, path string) error {
 		return fmt.Errorf("path %q is outside cache dir", path)
 	}
 	return nil
+}
+
+func (s Service) Scan(cacheDir string, opts CacheScanOptions) ([]Entry, error) {
+	if cacheDir == "" {
+		resolved, err := s.ResolveCacheDir()
+		if err != nil {
+			return nil, err
+		}
+		cacheDir = resolved
+	}
+
+	selected := cacheKindSet(normalizeScanKinds(opts.Kinds))
+	root := strings.TrimSpace(opts.Root)
+
+	var entries []Entry
+	err := filepath.WalkDir(cacheDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil || path == cacheDir || d.IsDir() {
+			return nil
+		}
+
+		info, statErr := d.Info()
+		if statErr != nil {
+			return nil
+		}
+		if info.Mode().IsDir() || (!info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0) {
+			return nil
+		}
+		if err := ensurePathInDir(cacheDir, path); err != nil {
+			return nil
+		}
+
+		rel, relErr := filepath.Rel(cacheDir, path)
+		if relErr != nil {
+			return nil
+		}
+		rel = filepath.ToSlash(rel)
+		kind, partial := classifyEntry(rel)
+		if !selected[kind] {
+			return nil
+		}
+		if root != "" && !cacheRootAllows(root, kind) {
+			return nil
+		}
+
+		entries = append(entries, Entry{
+			Kind:      kind,
+			Path:      path,
+			RelPath:   rel,
+			Size:      info.Size(),
+			ModTime:   info.ModTime(),
+			IsPartial: partial,
+		})
+		return nil
+	})
+	return entries, err
+}
+
+func (s Service) PreviewClean(cacheDir string, opts CleanOptions) (CleanResult, error) {
+	opts.DryRun = true
+	return s.clean(cacheDir, opts)
+}
+
+func (s Service) Clean(cacheDir string, opts CleanOptions) (CleanResult, error) {
+	opts.DryRun = false
+	return s.clean(cacheDir, opts)
+}
+
+func (s Service) clean(cacheDir string, opts CleanOptions) (CleanResult, error) {
+	if cacheDir == "" {
+		resolved, err := s.ResolveCacheDir()
+		if err != nil {
+			return CleanResult{}, err
+		}
+		cacheDir = resolved
+	}
+	if err := validateCacheDirForMutation(cacheDir); err != nil {
+		return CleanResult{}, err
+	}
+	if opts.Older == 0 {
+		opts.Older = 3 * 24 * time.Hour
+	}
+
+	entries, err := s.Scan(cacheDir, CacheScanOptions{Kinds: normalizeKinds(opts.Kinds)})
+	if err != nil {
+		return CleanResult{}, err
+	}
+
+	cutoff := s.now().Add(-opts.Older)
+	result := CleanResult{CacheDir: cacheDir}
+	for _, entry := range entries {
+		if !opts.All && !entry.ModTime.Before(cutoff) {
+			continue
+		}
+		result.MatchedFiles++
+		result.MatchedSize += entry.Size
+		if opts.DryRun {
+			continue
+		}
+		if err := ensurePathInDir(cacheDir, entry.Path); err != nil {
+			result.Skipped = append(result.Skipped, CleanSkip{Path: entry.Path, Reason: err.Error()})
+			continue
+		}
+		if err := os.Remove(entry.Path); err != nil {
+			result.Skipped = append(result.Skipped, CleanSkip{Path: entry.Path, Reason: err.Error()})
+			continue
+		}
+		result.RemovedFiles++
+		result.RemovedSize += entry.Size
+		removeEmptyParents(cacheDir, filepath.Dir(entry.Path))
+	}
+	return result, nil
+}
+
+func normalizeScanKinds(kinds []Kind) []Kind {
+	if len(kinds) == 0 {
+		return []Kind{KindPkg, KindAPI, KindSDK, KindSDKIndex, KindPartial}
+	}
+	return dedupeKinds(kinds)
+}
+
+func normalizeKinds(kinds []Kind) []Kind {
+	if len(kinds) == 0 {
+		return append([]Kind(nil), defaultCacheCleanKinds...)
+	}
+	return dedupeKinds(kinds)
+}
+
+func dedupeKinds(kinds []Kind) []Kind {
+	seen := map[Kind]bool{}
+	out := make([]Kind, 0, len(kinds))
+	for _, kind := range kinds {
+		if kind == "" || seen[kind] {
+			continue
+		}
+		seen[kind] = true
+		out = append(out, kind)
+	}
+	return out
+}
+
+func cacheKindSet(kinds []Kind) map[Kind]bool {
+	set := make(map[Kind]bool, len(kinds))
+	for _, kind := range kinds {
+		set[kind] = true
+	}
+	return set
+}
+
+func classifyEntry(rel string) (Kind, bool) {
+	base := path.Base(rel)
+	if strings.HasSuffix(base, ".part") || strings.HasSuffix(base, ".meta.json") {
+		return KindPartial, true
+	}
+
+	switch {
+	case strings.HasPrefix(rel, "api-cache/"):
+		return KindAPI, false
+	case strings.HasPrefix(rel, "sdk-downloads/"):
+		return KindSDK, false
+	case strings.HasPrefix(rel, "sdk-index/"):
+		return KindSDKIndex, false
+	default:
+		return KindPkg, false
+	}
+}
+
+func cacheRootAllows(root string, kind Kind) bool {
+	switch strings.TrimSpace(root) {
+	case "", "all":
+		return kind != KindPartial
+	case "pkg":
+		return kind == KindPkg
+	case "api":
+		return kind == KindAPI
+	case "sdk":
+		return kind == KindSDK
+	case "sdk-index":
+		return kind == KindSDKIndex
+	default:
+		return false
+	}
+}
+
+func ValidRoot(root string) bool {
+	switch strings.TrimSpace(root) {
+	case "", "all", "pkg", "api", "sdk", "sdk-index":
+		return true
+	default:
+		return false
+	}
+}
+
+func removeEmptyParents(root, dir string) {
+	rootAbs, err := filepath.Abs(root)
+	if err != nil {
+		return
+	}
+
+	for {
+		dirAbs, err := filepath.Abs(dir)
+		if err != nil || filepath.Clean(dirAbs) == filepath.Clean(rootAbs) {
+			return
+		}
+		if ensurePathInDir(rootAbs, dirAbs) != nil {
+			return
+		}
+		if err := os.Remove(dirAbs); err != nil {
+			return
+		}
+		dir = filepath.Dir(dirAbs)
+	}
 }
