@@ -1795,7 +1795,7 @@ git commit -m "feat(cache): wire cache command handlers"
 - Create: `internal/cli/cache_cmd_test.go`
 - Modify: `internal/cli/handlers.go`
 
-- [ ] **Step 1: 写失败测试：clean 输出 dry-run 摘要**
+- [x] **Step 1: 写失败测试：clean 输出 dry-run 摘要**
 
 创建 `internal/cli/cache_cmd_test.go`：
 
@@ -1901,7 +1901,7 @@ func fileExistsCLI(path string) bool {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认行为**
+- [x] **Step 2: 运行测试确认行为**
 
 Run:
 
@@ -1911,7 +1911,7 @@ go test ./internal/cli -run HandleCacheCleanDryRun -v
 
 Expected: PASS，并确认大批量清理在非 TTY 且未传 `--yes` 时不会删除文件。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add internal/cli/cache_cmd_test.go internal/cli/handlers.go
