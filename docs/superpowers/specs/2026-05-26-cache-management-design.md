@@ -1,5 +1,9 @@
 # eget 缓存管理命令 cache 设计
 
+## 相关文档
+
+- Phase 1+2 实现计划：[2026-05-26-cache-management-phase1+2.md](../plans/2026-05-26-cache-management-phase1+2.md)
+
 ## 背景
 
 `eget` 已经支持普通 package 下载/安装、SDK 多版本安装、API cache、断点续传和并发下载。缓存能力目前分散在几个主链路中：
@@ -516,19 +520,23 @@ eget cache serve --host 127.0.0.1
 
 ## 内部架构
 
-建议新增 app 层服务：
+建议新增 app/cache 子包承载缓存功能主体逻辑：
 
 ```text
-internal/app/cache.go
+internal/app/cache/model.go
+internal/app/cache/service.go
+internal/app/cache/server.go
 ```
 
 职责：
 
+- 定义缓存条目、清理选项、serve 选项和 manifest DTO。
 - 解析 cache dir。
 - 扫描缓存。
 - 根据清理条件生成候选。
 - 执行删除。
 - 生成 manifest。
+- 提供只读 HTTP handler。
 
 建议新增 CLI 文件：
 
@@ -544,26 +552,14 @@ internal/cli/cache_cmd.go
 
 `handlers.go` 只保留参数校验、调用 service、格式化输出，不承载核心清理和扫描逻辑。
 
-建议新增 serve 层：
-
-```text
-internal/app/cache_server.go
-```
-
-或如果代码量较大，独立内部包：
-
-```text
-internal/cache/
-```
-
-首期更推荐放在 `internal/app`，因为服务逻辑还比较小，且项目当前多数命令业务都在 `internal/app`。
+不建议把 `cache.go`、`cache_server.go` 继续放在 `internal/app` 根目录。当前 `internal/app` 已经承载较多命令服务，自更新等历史功能也有继续拆分的空间；`cache` 从第一期就包含扫描、清理、manifest、HTTP 服务和路径安全逻辑，放入 `internal/app/cache` 子包更利于控制文件数量和后续扩展。
 
 ### 数据结构
 
 核心类型：
 
 ```go
-type CacheService struct {
+type Service struct {
     Config *config.File
     Now    func() time.Time
 }
@@ -573,7 +569,7 @@ type CleanOptions struct {
     All          bool
     DryRun       bool
     Yes          bool
-    Kinds        []CacheKind
+    Kinds        []Kind
 }
 
 type CleanResult struct {
@@ -717,7 +713,7 @@ type ServeOptions struct {
 
 ### 单元测试
 
-重点测试 `internal/app` 服务层：
+重点测试 `internal/app/cache` 子包：
 
 - cache dir 解析。
 - cache entry 扫描分类。

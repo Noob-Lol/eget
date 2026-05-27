@@ -41,6 +41,9 @@
   - `cache clean` 用于清理缓存，包括下载的文件、缓存的 API 响应等。默认清理3天前的缓存。
   - `cache serve` 命令，可以启动内网 server, 用于分享 package/sdk cache 文件到内网环境，方便多台机器共享下载资源。
 - [x] 基于 `latest.yaml 简版 + url template` 配置支持自定义站点的工具下载
+- [ ] ux 体验优化
+  - 核心命令帮助信息都加上各种 example 示例说明
+  - eget update --self --check 命令, 先显示一下从哪个 host 检测的更新
 
 ## search 结果展示 ✅
 
