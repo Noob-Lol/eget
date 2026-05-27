@@ -87,7 +87,7 @@ eget cache serve --manifest-ttl
 - Create: `internal/app/cache/service.go`
 - Create: `internal/app/cache/cache_test.go`
 
-- [ ] **Step 1: 写失败测试：duration 解析**
+- [x] **Step 1: 写失败测试：duration 解析**
 
 在 `internal/app/cache/cache_test.go` 增加：
 
@@ -135,7 +135,7 @@ func TestParseOlderDurationRejectsInvalidInput(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -145,7 +145,7 @@ go test ./internal/app/cache -run OlderDuration -v
 
 Expected: FAIL，提示 `ParseOlderDuration` 未定义。
 
-- [ ] **Step 3: 实现基础类型**
+- [x] **Step 3: 实现基础类型**
 
 创建 `internal/app/cache/model.go`：
 
@@ -216,7 +216,7 @@ type ServeOptions struct {
 }
 ```
 
-- [ ] **Step 4: 实现 duration 解析**
+- [x] **Step 4: 实现 duration 解析**
 
 创建 `internal/app/cache/service.go`：
 
@@ -256,7 +256,7 @@ func ParseOlderDuration(value string) (time.Duration, error) {
 }
 ```
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run:
 
@@ -266,7 +266,7 @@ go test ./internal/app/cache -run OlderDuration -v
 
 Expected: PASS。
 
-- [ ] **Step 6: 写失败测试：cache dir 解析和危险目录拒绝**
+- [x] **Step 6: 写失败测试：cache dir 解析和危险目录拒绝**
 
 追加到 `internal/app/cache/cache_test.go`：
 
@@ -326,7 +326,7 @@ import (
 )
 ```
 
-- [ ] **Step 7: 运行测试确认失败**
+- [x] **Step 7: 运行测试确认失败**
 
 Run:
 
@@ -336,7 +336,7 @@ go test ./internal/app/cache -run 'ResolveCacheDir|DangerousCacheDir' -v
 
 Expected: FAIL，提示 `Service`、`ResolveCacheDir`、`validateCacheDirForMutation` 未定义。
 
-- [ ] **Step 8: 实现 cache dir 解析和危险目录校验**
+- [x] **Step 8: 实现 cache dir 解析和危险目录校验**
 
 修改 `internal/app/cache/service.go` 的 import，并追加：
 
@@ -428,7 +428,7 @@ func ensurePathInDir(root, path string) error {
 
 如果 `os` 尚未使用，先不要引入；实际实现中以 `go test` 编译结果为准删除未使用 import。
 
-- [ ] **Step 9: 运行测试确认通过**
+- [x] **Step 9: 运行测试确认通过**
 
 Run:
 
@@ -438,7 +438,7 @@ go test ./internal/app/cache -run 'OlderDuration|ResolveCacheDir|DangerousCacheD
 
 Expected: PASS。
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add internal/app/cache/model.go internal/app/cache/service.go internal/app/cache/cache_test.go
