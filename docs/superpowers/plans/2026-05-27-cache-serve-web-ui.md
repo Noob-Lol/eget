@@ -17,7 +17,7 @@
 - Create: `internal/app/cache/ui.go`
 - Create: `internal/app/cache/ui_test.go`
 
-- [ ] **Step 1: 写失败测试：`GET /` 返回 HTML 文件列表**
+- [x] **Step 1: 写失败测试：`GET /` 返回 HTML 文件列表**
 
 Run:
 
@@ -27,7 +27,7 @@ go test ./internal/app/cache -run TestCacheServeUI -count=1
 
 Expected: FAIL，因为根路径当前返回 404。
 
-- [ ] **Step 2: 实现根路径路由和 UI 渲染**
+- [x] **Step 2: 实现根路径路由和 UI 渲染**
 
 要求：
 
@@ -36,7 +36,7 @@ Expected: FAIL，因为根路径当前返回 404。
 - 文件列表包含 kind、相对路径、大小、修改时间和下载链接。
 - HTML 自动转义路径内容。
 
-- [ ] **Step 3: 运行 app cache 测试**
+- [x] **Step 3: 运行 app cache 测试**
 
 Run:
 
@@ -46,7 +46,7 @@ go test ./internal/app/cache -count=1
 
 Expected: PASS。
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add internal/app/cache/server.go internal/app/cache/ui.go internal/app/cache/ui_test.go docs/superpowers/plans/2026-05-27-cache-serve-web-ui.md
