@@ -904,7 +904,7 @@ git commit -m "feat(cache): implement cache clean service"
 - Create: `internal/app/cache/server_test.go`
 - Modify: `internal/app/cache/model.go`
 
-- [ ] **Step 1: 写失败测试：healthz 和 manifest**
+- [x] **Step 1: 写失败测试：healthz 和 manifest**
 
 创建 `internal/app/cache/server_test.go`：
 
@@ -963,7 +963,7 @@ func TestCacheServerManifest(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -973,7 +973,7 @@ go test ./internal/app/cache -run 'CacheServerHealthz|CacheServerManifest' -v
 
 Expected: FAIL，提示 `NewHandler` 和 `Manifest` 未定义。
 
-- [ ] **Step 3: 实现 healthz 和 manifest handler**
+- [x] **Step 3: 实现 healthz 和 manifest handler**
 
 创建 `internal/app/cache/server.go`：
 
@@ -1097,7 +1097,7 @@ func cacheBaseURL(r *http.Request) string {
 }
 ```
 
-- [ ] **Step 4: 扩展 ServeOptions 传入版本号**
+- [x] **Step 4: 扩展 ServeOptions 传入版本号**
 
 在 `internal/app/cache/model.go` 中把 `ServeOptions` 改为：
 
@@ -1125,7 +1125,7 @@ import (
 )
 ```
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run:
 
@@ -1135,7 +1135,7 @@ go test ./internal/app/cache -run 'CacheServerHealthz|CacheServerManifest' -v
 
 Expected: PASS。
 
-- [ ] **Step 6: 写失败测试：文件下载、HEAD、Range、no-index 和路径逃逸**
+- [x] **Step 6: 写失败测试：文件下载、HEAD、Range、no-index 和路径逃逸**
 
 追加到 `internal/app/cache/server_test.go`：
 
@@ -1233,7 +1233,7 @@ func TestCacheServerRejectsPartialFiles(t *testing.T) {
 }
 ```
 
-- [ ] **Step 7: 运行测试确认失败**
+- [x] **Step 7: 运行测试确认失败**
 
 Run:
 
@@ -1243,7 +1243,7 @@ go test ./internal/app/cache -run 'CacheServerFiles|PathEscape|NoIndex|RootScope
 
 Expected: FAIL，`/files` 尚未实现。
 
-- [ ] **Step 8: 实现文件服务**
+- [x] **Step 8: 实现文件服务**
 
 在 `internal/app/cache/server.go` 追加：
 
@@ -1312,7 +1312,7 @@ func cleanCacheRelPath(rel string) (string, error) {
 	"path/filepath"
 ```
 
-- [ ] **Step 9: 运行 app 测试**
+- [x] **Step 9: 运行 app 测试**
 
 Run:
 
@@ -1322,7 +1322,7 @@ go test ./internal/app/cache -run 'Cache|CacheServer' -v
 
 Expected: PASS。
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add internal/app/cache/model.go internal/app/cache/server.go internal/app/cache/server_test.go

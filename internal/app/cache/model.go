@@ -59,4 +59,5 @@ type ServeOptions struct {
 	Port    int
 	Root    string
 	NoIndex bool
+	Version string
 }
