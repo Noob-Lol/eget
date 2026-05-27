@@ -133,6 +133,23 @@ eget sdk index show go
 
 `eget sdk` only downloads and extracts SDK archives. It does not modify `PATH`, write shell hooks, or manage active SDK versions. For environment switching, use a dedicated tool such as `kite xenv` after installation.
 
+### Cache Management
+
+`eget cache clean` removes local cache files from `global.cache_dir`. By default it removes package, API, SDK download, and partial download cache files older than 3 days. SDK index cache is kept by default; use `--sdk-index` when you explicitly want to clear it.
+
+```bash
+eget cache clean
+eget cache clean --dry-run --older 7d
+eget cache clean --api --all
+```
+
+`eget cache serve` starts a read-only HTTP server for local cache files so machines on the same LAN can browse or download cached packages and SDK archives.
+
+```bash
+eget cache serve
+eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
+```
+
 ### Query Examples
 
 **Query repository info**:

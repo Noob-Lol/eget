@@ -133,6 +133,23 @@ eget sdk index show go
 
 > `eget sdk` 只负责下载和解压安装 SDK，不会修改 `PATH`、不会写 shell hook、不会管理当前激活版本，也不会写 `.xenv.toml`。如需环境切换，可在安装后配合 `xenv tools index` 和 `xenv use`。
 
+### 缓存管理
+
+`eget cache clean` 用于清理 `global.cache_dir` 下的本机缓存。默认清理 3 天前的 package 下载缓存、API cache、SDK 下载缓存和未完成下载状态。SDK index 默认保留；如果确认要清理 SDK index，请显式使用 `--sdk-index`。
+
+```bash
+eget cache clean
+eget cache clean --dry-run --older 7d
+eget cache clean --api --all
+```
+
+`eget cache serve` 会启动只读 HTTP 服务，方便同一局域网内其它机器浏览或下载本机已有的 package/SDK 缓存文件。
+
+```bash
+eget cache serve
+eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
+```
+
 ### 查询命令示例
 
 **查询仓库信息**:

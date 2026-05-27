@@ -1925,7 +1925,7 @@ git commit -m "test(cache): cover cache clean cli output"
 - Modify: `README.zh-CN.md`
 - Modify: `docs/TODO.md`
 
-- [ ] **Step 1: 更新 README.md**
+- [x] **Step 1: 更新 README.md**
 
 在命令列表或配置说明附近加入：
 
@@ -1948,7 +1948,7 @@ eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
 ```
 ```
 
-- [ ] **Step 2: 更新 README.zh-CN.md**
+- [x] **Step 2: 更新 README.zh-CN.md**
 
 加入：
 
@@ -1971,7 +1971,7 @@ eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
 ```
 ```
 
-- [ ] **Step 3: 更新 docs/TODO.md**
+- [x] **Step 3: 更新 docs/TODO.md**
 
 把原 cache 条目拆分为已完成第一期和后续项：
 
@@ -1985,7 +1985,7 @@ eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
   - [ ] `cache serve --token` 和 manifest TTL。
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add README.md README.zh-CN.md docs/TODO.md
