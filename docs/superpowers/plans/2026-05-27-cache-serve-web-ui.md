@@ -62,11 +62,11 @@ git commit -m "feat(cache): add cache serve web ui"
 - Modify: `docs/superpowers/plans/2026-05-27-cache-serve-web-ui.md`
 - Modify: `AGENTS.md`
 
-- [ ] **Step 1: 更新文档**
+- [x] **Step 1: 更新文档**
 
 说明 `cache serve` 根路径提供只读 Web UI。
 
-- [ ] **Step 2: 运行全量验证**
+- [x] **Step 2: 运行全量验证**
 
 Run:
 
@@ -77,7 +77,7 @@ go build ./cmd/eget
 
 Expected: PASS。
 
-- [ ] **Step 3: 手动验证首页**
+- [x] **Step 3: 手动验证首页**
 
 Run:
 
@@ -93,6 +93,6 @@ curl http://127.0.0.1:8686/
 
 Expected: HTML 中包含 `eget-cache`、文件统计和下载链接。
 
-- [ ] **Step 4: 完成收尾**
+- [x] **Step 4: 完成收尾**
 
 移除 `AGENTS.md` 正在进行工作项，提交文档和验证记录。

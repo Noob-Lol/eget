@@ -143,7 +143,7 @@ eget cache clean --dry-run --older 7d
 eget cache clean --api --all
 ```
 
-`eget cache serve` 会启动只读 HTTP 服务，方便同一局域网内其它机器浏览或下载本机已有的 package/SDK 缓存文件。
+`eget cache serve` 会启动只读 HTTP 服务，方便同一局域网内其它机器浏览或下载本机已有的 package/SDK 缓存文件。浏览器打开服务根路径可以查看内置文件列表界面，也可以请求 `/manifest.json` 获取机器可读的 manifest。
 
 ```bash
 eget cache serve
