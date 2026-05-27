@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/gookit/goutil/testutil/assert"
+	cfgpkg "github.com/inherelab/eget/internal/config"
 )
 
 func TestParseOlderDuration(t *testing.T) {
@@ -67,12 +67,15 @@ func TestServiceResolveCacheDirUsesDefault(t *testing.T) {
 }
 
 func TestServiceRejectsDangerousCacheDir(t *testing.T) {
+	nonCacheDir := t.TempDir()
+	writeCacheTestFile(t, filepath.Join(nonCacheDir, "unrelated.zip"), "data")
 	tests := []struct {
 		name string
 		dir  string
 	}{
 		{"empty", ""},
 		{"root", filepath.VolumeName(filepath.Clean(os.TempDir())) + string(filepath.Separator)},
+		{"non cache dir", nonCacheDir},
 	}
 
 	for _, tt := range tests {
@@ -126,8 +129,15 @@ func writeCacheTestFile(t *testing.T, path, body string) {
 	assert.NoErr(t, os.WriteFile(path, []byte(body), 0o644))
 }
 
+func newCacheDirForCleanTest(t *testing.T) string {
+	t.Helper()
+	cacheDir := filepath.Join(t.TempDir(), "eget")
+	assert.NoErr(t, os.MkdirAll(cacheDir, 0o755))
+	return cacheDir
+}
+
 func TestServicePreviewCleanDoesNotRemoveFiles(t *testing.T) {
-	cacheDir := t.TempDir()
+	cacheDir := newCacheDirForCleanTest(t)
 	oldFile := filepath.Join(cacheDir, "old.zip")
 	writeCacheTestFile(t, oldFile, "old")
 	oldTime := time.Date(2026, 5, 20, 10, 0, 0, 0, time.UTC)
@@ -145,7 +155,7 @@ func TestServicePreviewCleanDoesNotRemoveFiles(t *testing.T) {
 }
 
 func TestServiceCleanRemovesOnlyOlderMatchedFiles(t *testing.T) {
-	cacheDir := t.TempDir()
+	cacheDir := newCacheDirForCleanTest(t)
 	oldFile := filepath.Join(cacheDir, "old.zip")
 	newFile := filepath.Join(cacheDir, "new.zip")
 	writeCacheTestFile(t, oldFile, "old")
@@ -168,7 +178,7 @@ func TestServiceCleanRemovesOnlyOlderMatchedFiles(t *testing.T) {
 }
 
 func TestServiceCleanAllIgnoresOlder(t *testing.T) {
-	cacheDir := t.TempDir()
+	cacheDir := newCacheDirForCleanTest(t)
 	file := filepath.Join(cacheDir, "new.zip")
 	writeCacheTestFile(t, file, "new")
 
@@ -183,7 +193,7 @@ func TestServiceCleanAllIgnoresOlder(t *testing.T) {
 }
 
 func TestServiceCleanDoesNotRemoveSDKIndexByDefault(t *testing.T) {
-	cacheDir := t.TempDir()
+	cacheDir := newCacheDirForCleanTest(t)
 	indexFile := filepath.Join(cacheDir, "sdk-index", "go.json")
 	writeCacheTestFile(t, indexFile, "{}")
 	oldTime := time.Date(2026, 5, 20, 10, 0, 0, 0, time.UTC)
@@ -200,7 +210,7 @@ func TestServiceCleanDoesNotRemoveSDKIndexByDefault(t *testing.T) {
 }
 
 func TestServiceCleanRemovesSDKIndexWhenExplicit(t *testing.T) {
-	cacheDir := t.TempDir()
+	cacheDir := newCacheDirForCleanTest(t)
 	indexFile := filepath.Join(cacheDir, "sdk-index", "go.json")
 	writeCacheTestFile(t, indexFile, "{}")
 
@@ -213,7 +223,7 @@ func TestServiceCleanRemovesSDKIndexWhenExplicit(t *testing.T) {
 }
 
 func TestServicePreviewCleanReportsLargeDeletionNeed(t *testing.T) {
-	cacheDir := t.TempDir()
+	cacheDir := newCacheDirForCleanTest(t)
 	for i := 0; i < 100; i++ {
 		writeCacheTestFile(t, filepath.Join(cacheDir, fmt.Sprintf("pkg-%03d.zip", i)), "pkg")
 	}

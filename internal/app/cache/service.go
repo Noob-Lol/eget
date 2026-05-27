@@ -89,7 +89,30 @@ func validateCacheDirForMutation(cacheDir string) error {
 		}
 	}
 
+	if !looksLikeEgetCacheDir(clean) && !hasKnownCacheLayout(clean) && !isEmptyDir(clean) {
+		return fmt.Errorf("refuse to mutate non-eget cache dir %q", cacheDir)
+	}
+
 	return nil
+}
+
+func looksLikeEgetCacheDir(cacheDir string) bool {
+	base := strings.ToLower(filepath.Base(filepath.Clean(cacheDir)))
+	return base == "eget" || strings.Contains(base, "eget-cache") || strings.Contains(base, "eget_cache")
+}
+
+func hasKnownCacheLayout(cacheDir string) bool {
+	for _, name := range []string{"api-cache", "sdk-downloads", "sdk-index"} {
+		if info, err := os.Stat(filepath.Join(cacheDir, name)); err == nil && info.IsDir() {
+			return true
+		}
+	}
+	return false
+}
+
+func isEmptyDir(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	return err == nil && len(entries) == 0
 }
 
 func (s Service) now() time.Time {

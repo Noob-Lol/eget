@@ -79,6 +79,9 @@ func (h cacheHandler) handleManifest(w http.ResponseWriter, r *http.Request) {
 
 	files := make([]ManifestFile, 0, len(entries))
 	for _, entry := range entries {
+		if !pathStaysInDirAfterSymlinks(h.cacheDir, entry.Path) {
+			continue
+		}
 		files = append(files, ManifestFile{
 			Kind:    string(entry.Kind),
 			Path:    entry.RelPath,
@@ -127,8 +130,22 @@ func (h cacheHandler) handleFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
+	realRoot, err := filepath.EvalSymlinks(h.cacheDir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	realPath, err := filepath.EvalSymlinks(fullPath)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	if err := ensurePathInDir(realRoot, realPath); err != nil {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 
-	info, err := os.Stat(fullPath)
+	info, err := os.Stat(realPath)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -138,7 +155,19 @@ func (h cacheHandler) handleFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.ServeFile(w, r, fullPath)
+	http.ServeFile(w, r, realPath)
+}
+
+func pathStaysInDirAfterSymlinks(root, target string) bool {
+	realRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return false
+	}
+	realTarget, err := filepath.EvalSymlinks(target)
+	if err != nil {
+		return false
+	}
+	return ensurePathInDir(realRoot, realTarget) == nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {

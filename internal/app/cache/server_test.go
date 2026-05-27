@@ -143,3 +143,43 @@ func TestCacheServerRejectsPartialFiles(t *testing.T) {
 
 	assert.Eq(t, http.StatusForbidden, rec.Code)
 }
+
+func TestCacheServerRejectsSymlinkEscape(t *testing.T) {
+	cacheDir := t.TempDir()
+	outsideDir := t.TempDir()
+	outsideFile := filepath.Join(outsideDir, "secret.txt")
+	assert.NoErr(t, os.WriteFile(outsideFile, []byte("secret"), 0o644))
+	link := filepath.Join(cacheDir, "sdk-downloads", "leak")
+	assert.NoErr(t, os.MkdirAll(filepath.Dir(link), 0o755))
+	if err := os.Symlink(outsideFile, link); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	handler := NewHandler(Service{}, cacheDir, ServeOptions{})
+	req := httptest.NewRequest(http.MethodGet, "/files/sdk-downloads/leak", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	assert.Eq(t, http.StatusForbidden, rec.Code)
+}
+
+func TestCacheServerManifestExcludesSymlinkEscape(t *testing.T) {
+	cacheDir := t.TempDir()
+	assert.NoErr(t, os.MkdirAll(filepath.Join(cacheDir, "sdk-downloads"), 0o755))
+	outsideFile := filepath.Join(t.TempDir(), "secret.zip")
+	assert.NoErr(t, os.WriteFile(outsideFile, []byte("secret"), 0o644))
+	link := filepath.Join(cacheDir, "sdk-downloads", "secret.zip")
+	if err := os.Symlink(outsideFile, link); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	handler := NewHandler(Service{}, cacheDir, ServeOptions{})
+	req := httptest.NewRequest(http.MethodGet, "/manifest.json", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	assert.Eq(t, http.StatusOK, rec.Code)
+	var manifest Manifest
+	assert.NoErr(t, json.Unmarshal(rec.Body.Bytes(), &manifest))
+	assert.Eq(t, 0, len(manifest.Files))
+}

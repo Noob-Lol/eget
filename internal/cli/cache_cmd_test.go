@@ -15,7 +15,7 @@ import (
 )
 
 func TestCliServiceHandleCacheCleanDryRun(t *testing.T) {
-	tmp := t.TempDir()
+	tmp := newCLICacheDir(t)
 	writeCLITestFile(t, filepath.Join(tmp, "old.zip"), "old")
 	old := time.Date(2026, 5, 20, 10, 0, 0, 0, time.UTC)
 	assert.NoErr(t, os.Chtimes(filepath.Join(tmp, "old.zip"), old, old))
@@ -43,7 +43,7 @@ func TestCliServiceHandleCacheCleanDryRun(t *testing.T) {
 }
 
 func TestCliServiceHandleCacheCleanLargeDeletionRequiresYesInNonTTY(t *testing.T) {
-	tmp := t.TempDir()
+	tmp := newCLICacheDir(t)
 	for i := 0; i < 100; i++ {
 		writeCLITestFile(t, filepath.Join(tmp, fmt.Sprintf("pkg-%03d.zip", i)), "pkg")
 	}
@@ -72,7 +72,7 @@ func TestCliServiceHandleCacheCleanLargeDeletionRequiresYesInNonTTY(t *testing.T
 }
 
 func TestCliServiceHandleCacheCleanLargeDeletionYesSkipsConfirmation(t *testing.T) {
-	tmp := t.TempDir()
+	tmp := newCLICacheDir(t)
 	for i := 0; i < 100; i++ {
 		writeCLITestFile(t, filepath.Join(tmp, fmt.Sprintf("pkg-%03d.zip", i)), "pkg")
 	}
@@ -96,6 +96,13 @@ func writeCLITestFile(t *testing.T, path, body string) {
 	t.Helper()
 	assert.NoErr(t, os.MkdirAll(filepath.Dir(path), 0o755))
 	assert.NoErr(t, os.WriteFile(path, []byte(body), 0o644))
+}
+
+func newCLICacheDir(t *testing.T) string {
+	t.Helper()
+	cacheDir := filepath.Join(t.TempDir(), "eget")
+	assert.NoErr(t, os.MkdirAll(cacheDir, 0o755))
+	return cacheDir
 }
 
 func fileExistsCLI(path string) bool {
