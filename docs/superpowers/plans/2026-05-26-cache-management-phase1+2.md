@@ -1997,7 +1997,7 @@ git commit -m "docs(cache): document cache management commands"
 **Files:**
 - No code changes expected.
 
-- [ ] **Step 1: 运行全量测试**
+- [x] **Step 1: 运行全量测试**
 
 Run:
 
@@ -2007,7 +2007,7 @@ go test ./...
 
 Expected: PASS。
 
-- [ ] **Step 2: 构建 CLI**
+- [x] **Step 2: 构建 CLI**
 
 Run:
 
@@ -2017,7 +2017,7 @@ go build ./cmd/eget
 
 Expected: PASS，并在当前目录生成可执行文件或按 Go 默认输出完成。
 
-- [ ] **Step 3: 手动验证 cache clean dry-run**
+- [x] **Step 3: 手动验证 cache clean dry-run**
 
 Run:
 
@@ -2034,7 +2034,7 @@ Dry run: eget cache clean
  - matched size:
 ```
 
-- [ ] **Step 4: 手动验证 cache serve healthz**
+- [x] **Step 4: 手动验证 cache serve healthz**
 
 启动服务：
 
@@ -2057,7 +2057,7 @@ Expected:
 
 `manifest.json` 返回 `schema: 1`、`server.name: eget-cache` 和 `files` 数组。
 
-- [ ] **Step 5: 最终 commit 或 amend**
+- [x] **Step 5: 最终 commit 或 amend**
 
 如果 Task 8 发现修复项，单独提交：
 
