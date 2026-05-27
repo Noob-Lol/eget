@@ -1336,7 +1336,7 @@ git commit -m "feat(cache): add read-only cache server"
 - Modify: `internal/cli/app.go`
 - Modify: `internal/cli/app_test.go`
 
-- [ ] **Step 1: 写失败测试：cache clean 参数绑定**
+- [x] **Step 1: 写失败测试：cache clean 参数绑定**
 
 追加到 `internal/cli/app_test.go`：
 
@@ -1399,7 +1399,7 @@ func TestMain_CacheServeRejectsInvalidRoot(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -1409,7 +1409,7 @@ go test ./internal/cli -run 'CacheCleanBinds|CacheServeBinds' -v
 
 Expected: FAIL，`cache` 命令或 options 类型未定义。
 
-- [ ] **Step 3: 实现 cache_cmd.go**
+- [x] **Step 3: 实现 cache_cmd.go**
 
 创建 `internal/cli/cache_cmd.go`：
 
@@ -1521,7 +1521,7 @@ import (
 )
 ```
 
-- [ ] **Step 4: 注册顶层 cache 命令**
+- [x] **Step 4: 注册顶层 cache 命令**
 
 在 `internal/cli/app.go` 的 `newApp` 中，放在 `sdk` 后或 `config` 前：
 
@@ -1529,7 +1529,7 @@ import (
 	app.add(newCacheCmd(handler))
 ```
 
-- [ ] **Step 5: 运行 CLI 绑定测试**
+- [x] **Step 5: 运行 CLI 绑定测试**
 
 Run:
 
@@ -1539,7 +1539,7 @@ go test ./internal/cli -run 'CacheCleanBinds|CacheServeBinds' -v
 
 Expected: PASS。
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/cli/cache_cmd.go internal/cli/app.go internal/cli/app_test.go
