@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/inherelab/eget/internal/app"
+	appcache "github.com/inherelab/eget/internal/app/cache"
 	"github.com/inherelab/eget/internal/client"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
@@ -164,6 +165,7 @@ func newCLIService() (*cliService, error) {
 		LatestInfo:     latestInfo,
 		Installer:      &appService,
 	}
+	cacheService := appcache.Service{Config: cfg, Now: time.Now}
 	sdkService, err := app.NewDefaultSDKService(cfg)
 	if err != nil {
 		return nil, err
@@ -179,6 +181,7 @@ func newCLIService() (*cliService, error) {
 		updService:        updService,
 		selfUpdateService: selfUpdateService,
 		sdkService:        sdkService,
+		cacheService:      cacheService,
 		stderr:            os.Stderr,
 		proxyURL:          defaultOpts.ProxyURL,
 	}, nil

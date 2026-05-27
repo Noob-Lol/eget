@@ -1553,7 +1553,7 @@ git commit -m "feat(cache): register cache cli commands"
 - Modify: `internal/cli/wiring.go`
 - Modify: `internal/cli/handlers.go`
 
-- [ ] **Step 1: 扩展 cliService 字段**
+- [x] **Step 1: 扩展 cliService 字段**
 
 在 `internal/cli/service.go` 的 import 中加入 cache 子包别名：
 
@@ -1567,7 +1567,7 @@ appcache "github.com/inherelab/eget/internal/app/cache"
 	cacheService appcache.Service
 ```
 
-- [ ] **Step 2: 注入 Service**
+- [x] **Step 2: 注入 Service**
 
 在 `internal/cli/wiring.go` 的 import 中加入：
 
@@ -1587,7 +1587,7 @@ appcache "github.com/inherelab/eget/internal/app/cache"
 		cacheService:      cacheService,
 ```
 
-- [ ] **Step 3: 在 handler switch 中分发 cache 命令**
+- [x] **Step 3: 在 handler switch 中分发 cache 命令**
 
 在 `internal/cli/handlers.go` 的 `handle` switch 中加入：
 
@@ -1600,7 +1600,7 @@ appcache "github.com/inherelab/eget/internal/app/cache"
 		return s.handleCacheServe(opts)
 ```
 
-- [ ] **Step 4: 实现 CLI options 转换**
+- [x] **Step 4: 实现 CLI options 转换**
 
 在 `internal/cli/handlers.go` 的 import 中加入：
 
@@ -1652,7 +1652,7 @@ func serveOptionsFromCLI(opts *CacheServeOptions) appcache.ServeOptions {
 }
 ```
 
-- [ ] **Step 5: 实现 cache clean 输出**
+- [x] **Step 5: 实现 cache clean 输出**
 
 在 `internal/cli/handlers.go` 追加：
 
@@ -1730,7 +1730,7 @@ func stdinIsTerminal() bool {
 	"golang.org/x/term"
 ```
 
-- [ ] **Step 6: 实现 cache serve 启动**
+- [x] **Step 6: 实现 cache serve 启动**
 
 在 `internal/cli/handlers.go` 追加：
 
@@ -1772,7 +1772,7 @@ func (s *cliService) handleCacheServe(opts *CacheServeOptions) error {
 	"net/http"
 ```
 
-- [ ] **Step 7: 编译 CLI**
+- [x] **Step 7: 编译 CLI**
 
 Run:
 
@@ -1782,7 +1782,7 @@ go test ./internal/cli -run 'CacheCleanBinds|CacheServeBinds' -v
 
 Expected: PASS。
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add internal/cli/service.go internal/cli/wiring.go internal/cli/handlers.go

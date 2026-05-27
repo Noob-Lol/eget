@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/inherelab/eget/internal/app"
+	appcache "github.com/inherelab/eget/internal/app/cache"
 	"github.com/inherelab/eget/internal/sdk"
 )
 
@@ -37,6 +38,7 @@ type cliService struct {
 	updService        app.UpdateService
 	selfUpdateService selfUpdateCLIService
 	sdkService        sdkCLIService
+	cacheService      appcache.Service
 
 	stderr             io.Writer
 	configPathResolver func() (string, error)
