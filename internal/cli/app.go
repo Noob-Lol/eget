@@ -122,6 +122,7 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 	app.add(newInstallCmd(handler))
 	app.add(newDownloadCmd(handler))
 	app.add(newSDKCmd(handler))
+	app.add(newCacheCmd(handler))
 	app.add(newAddCmd(handler))
 	app.add(newUninstallCmd(handler))
 	app.add(newListCmd(handler))
@@ -320,6 +321,18 @@ var commandFlagSpecs = map[string]flagSpec{
 						bools: setOf("all", "a"),
 					},
 				},
+			},
+		},
+	},
+	"cache": {
+		subs: map[string]flagSpec{
+			"clean": {
+				bools:  setOf("all", "a", "dry-run", "yes", "y", "pkg", "api", "sdk", "sdk-index", "partial"),
+				values: setOf("older"),
+			},
+			"serve": {
+				bools:  setOf("no-index"),
+				values: setOf("host", "port", "p", "root"),
 			},
 		},
 	},

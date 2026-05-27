@@ -87,7 +87,7 @@ eget cache serve --manifest-ttl
 - Create: `internal/app/cache/service.go`
 - Create: `internal/app/cache/cache_test.go`
 
-- [ ] **Step 1: 写失败测试：duration 解析**
+- [x] **Step 1: 写失败测试：duration 解析**
 
 在 `internal/app/cache/cache_test.go` 增加：
 
@@ -135,7 +135,7 @@ func TestParseOlderDurationRejectsInvalidInput(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -145,7 +145,7 @@ go test ./internal/app/cache -run OlderDuration -v
 
 Expected: FAIL，提示 `ParseOlderDuration` 未定义。
 
-- [ ] **Step 3: 实现基础类型**
+- [x] **Step 3: 实现基础类型**
 
 创建 `internal/app/cache/model.go`：
 
@@ -216,7 +216,7 @@ type ServeOptions struct {
 }
 ```
 
-- [ ] **Step 4: 实现 duration 解析**
+- [x] **Step 4: 实现 duration 解析**
 
 创建 `internal/app/cache/service.go`：
 
@@ -256,7 +256,7 @@ func ParseOlderDuration(value string) (time.Duration, error) {
 }
 ```
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run:
 
@@ -266,7 +266,7 @@ go test ./internal/app/cache -run OlderDuration -v
 
 Expected: PASS。
 
-- [ ] **Step 6: 写失败测试：cache dir 解析和危险目录拒绝**
+- [x] **Step 6: 写失败测试：cache dir 解析和危险目录拒绝**
 
 追加到 `internal/app/cache/cache_test.go`：
 
@@ -326,7 +326,7 @@ import (
 )
 ```
 
-- [ ] **Step 7: 运行测试确认失败**
+- [x] **Step 7: 运行测试确认失败**
 
 Run:
 
@@ -336,7 +336,7 @@ go test ./internal/app/cache -run 'ResolveCacheDir|DangerousCacheDir' -v
 
 Expected: FAIL，提示 `Service`、`ResolveCacheDir`、`validateCacheDirForMutation` 未定义。
 
-- [ ] **Step 8: 实现 cache dir 解析和危险目录校验**
+- [x] **Step 8: 实现 cache dir 解析和危险目录校验**
 
 修改 `internal/app/cache/service.go` 的 import，并追加：
 
@@ -428,7 +428,7 @@ func ensurePathInDir(root, path string) error {
 
 如果 `os` 尚未使用，先不要引入；实际实现中以 `go test` 编译结果为准删除未使用 import。
 
-- [ ] **Step 9: 运行测试确认通过**
+- [x] **Step 9: 运行测试确认通过**
 
 Run:
 
@@ -438,7 +438,7 @@ go test ./internal/app/cache -run 'OlderDuration|ResolveCacheDir|DangerousCacheD
 
 Expected: PASS。
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add internal/app/cache/model.go internal/app/cache/service.go internal/app/cache/cache_test.go
@@ -451,7 +451,7 @@ git commit -m "feat(cache): add cache model and safety helpers"
 - Modify: `internal/app/cache/service.go`
 - Modify: `internal/app/cache/cache_test.go`
 
-- [ ] **Step 1: 写失败测试：扫描分类和默认 kind**
+- [x] **Step 1: 写失败测试：扫描分类和默认 kind**
 
 追加到 `internal/app/cache/cache_test.go`：
 
@@ -500,7 +500,7 @@ func writeCacheTestFile(t *testing.T, path, body string) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -510,7 +510,7 @@ go test ./internal/app/cache -run 'ScanClassifies|DefaultCleanKinds' -v
 
 Expected: FAIL，提示 `Scan`、`CacheScanOptions` 或 `normalizeKinds` 未定义。
 
-- [ ] **Step 3: 实现扫描、分类和 kind 过滤**
+- [x] **Step 3: 实现扫描、分类和 kind 过滤**
 
 在 `internal/app/cache/service.go` 追加：
 
@@ -666,7 +666,7 @@ func ValidRoot(root string) bool {
 
 `os` 用于 `os.DirEntry` 和 `os.ModeSymlink`，不要误换成 `io/fs`。
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run:
 
@@ -676,12 +676,12 @@ go test ./internal/app/cache -run 'ScanClassifies|DefaultCleanKinds' -v
 
 Expected: PASS。
 
-- [ ] **Step 5: 写失败测试：dry-run、older、all、sdk-index 显式清理**
+- [x] **Step 5: 写失败测试：dry-run、older、all、sdk-index 显式清理**
 
 追加到 `internal/app/cache/cache_test.go`：
 
 ```go
-func TestServiceCleanDryRunDoesNotRemoveFiles(t *testing.T) {
+func TestServicePreviewCleanDoesNotRemoveFiles(t *testing.T) {
 	cacheDir := t.TempDir()
 	oldFile := filepath.Join(cacheDir, "old.zip")
 	writeCacheTestFile(t, oldFile, "old")
@@ -691,7 +691,7 @@ func TestServiceCleanDryRunDoesNotRemoveFiles(t *testing.T) {
 	service := Service{Now: func() time.Time {
 		return time.Date(2026, 5, 26, 10, 0, 0, 0, time.UTC)
 	}}
-	result, err := service.Clean(cacheDir, CleanOptions{Older: 3 * 24 * time.Hour, DryRun: true})
+	result, err := service.PreviewClean(cacheDir, CleanOptions{Older: 3 * 24 * time.Hour})
 
 	assert.NoErr(t, err)
 	assert.Eq(t, 1, result.MatchedFiles)
@@ -788,7 +788,7 @@ func fileExistsForTest(path string) bool {
 }
 ```
 
-- [ ] **Step 6: 运行测试确认失败**
+- [x] **Step 6: 运行测试确认失败**
 
 Run:
 
@@ -798,7 +798,7 @@ go test ./internal/app/cache -run 'Clean' -v
 
 Expected: FAIL，提示 `Clean` 或 `PreviewClean` 未定义。
 
-- [ ] **Step 7: 实现 PreviewClean 和 Clean**
+- [x] **Step 7: 实现 PreviewClean 和 Clean**
 
 在 `internal/app/cache/service.go` 追加：
 
@@ -880,7 +880,7 @@ func removeEmptyParents(root, dir string) {
 }
 ```
 
-- [ ] **Step 8: 运行 app 缓存测试**
+- [x] **Step 8: 运行 app 缓存测试**
 
 Run:
 
@@ -890,7 +890,7 @@ go test ./internal/app/cache -run 'Cache|Clean' -v
 
 Expected: PASS。
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add internal/app/cache/model.go internal/app/cache/service.go internal/app/cache/cache_test.go
@@ -904,7 +904,7 @@ git commit -m "feat(cache): implement cache clean service"
 - Create: `internal/app/cache/server_test.go`
 - Modify: `internal/app/cache/model.go`
 
-- [ ] **Step 1: 写失败测试：healthz 和 manifest**
+- [x] **Step 1: 写失败测试：healthz 和 manifest**
 
 创建 `internal/app/cache/server_test.go`：
 
@@ -963,7 +963,7 @@ func TestCacheServerManifest(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -973,7 +973,7 @@ go test ./internal/app/cache -run 'CacheServerHealthz|CacheServerManifest' -v
 
 Expected: FAIL，提示 `NewHandler` 和 `Manifest` 未定义。
 
-- [ ] **Step 3: 实现 healthz 和 manifest handler**
+- [x] **Step 3: 实现 healthz 和 manifest handler**
 
 创建 `internal/app/cache/server.go`：
 
@@ -1097,7 +1097,7 @@ func cacheBaseURL(r *http.Request) string {
 }
 ```
 
-- [ ] **Step 4: 扩展 ServeOptions 传入版本号**
+- [x] **Step 4: 扩展 ServeOptions 传入版本号**
 
 在 `internal/app/cache/model.go` 中把 `ServeOptions` 改为：
 
@@ -1125,7 +1125,7 @@ import (
 )
 ```
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run:
 
@@ -1135,7 +1135,7 @@ go test ./internal/app/cache -run 'CacheServerHealthz|CacheServerManifest' -v
 
 Expected: PASS。
 
-- [ ] **Step 6: 写失败测试：文件下载、HEAD、Range、no-index 和路径逃逸**
+- [x] **Step 6: 写失败测试：文件下载、HEAD、Range、no-index 和路径逃逸**
 
 追加到 `internal/app/cache/server_test.go`：
 
@@ -1233,7 +1233,7 @@ func TestCacheServerRejectsPartialFiles(t *testing.T) {
 }
 ```
 
-- [ ] **Step 7: 运行测试确认失败**
+- [x] **Step 7: 运行测试确认失败**
 
 Run:
 
@@ -1243,7 +1243,7 @@ go test ./internal/app/cache -run 'CacheServerFiles|PathEscape|NoIndex|RootScope
 
 Expected: FAIL，`/files` 尚未实现。
 
-- [ ] **Step 8: 实现文件服务**
+- [x] **Step 8: 实现文件服务**
 
 在 `internal/app/cache/server.go` 追加：
 
@@ -1312,7 +1312,7 @@ func cleanCacheRelPath(rel string) (string, error) {
 	"path/filepath"
 ```
 
-- [ ] **Step 9: 运行 app 测试**
+- [x] **Step 9: 运行 app 测试**
 
 Run:
 
@@ -1322,7 +1322,7 @@ go test ./internal/app/cache -run 'Cache|CacheServer' -v
 
 Expected: PASS。
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add internal/app/cache/model.go internal/app/cache/server.go internal/app/cache/server_test.go
@@ -1336,7 +1336,7 @@ git commit -m "feat(cache): add read-only cache server"
 - Modify: `internal/cli/app.go`
 - Modify: `internal/cli/app_test.go`
 
-- [ ] **Step 1: 写失败测试：cache clean 参数绑定**
+- [x] **Step 1: 写失败测试：cache clean 参数绑定**
 
 追加到 `internal/cli/app_test.go`：
 
@@ -1399,7 +1399,7 @@ func TestMain_CacheServeRejectsInvalidRoot(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -1409,7 +1409,7 @@ go test ./internal/cli -run 'CacheCleanBinds|CacheServeBinds' -v
 
 Expected: FAIL，`cache` 命令或 options 类型未定义。
 
-- [ ] **Step 3: 实现 cache_cmd.go**
+- [x] **Step 3: 实现 cache_cmd.go**
 
 创建 `internal/cli/cache_cmd.go`：
 
@@ -1521,7 +1521,7 @@ import (
 )
 ```
 
-- [ ] **Step 4: 注册顶层 cache 命令**
+- [x] **Step 4: 注册顶层 cache 命令**
 
 在 `internal/cli/app.go` 的 `newApp` 中，放在 `sdk` 后或 `config` 前：
 
@@ -1529,7 +1529,7 @@ import (
 	app.add(newCacheCmd(handler))
 ```
 
-- [ ] **Step 5: 运行 CLI 绑定测试**
+- [x] **Step 5: 运行 CLI 绑定测试**
 
 Run:
 
@@ -1539,7 +1539,7 @@ go test ./internal/cli -run 'CacheCleanBinds|CacheServeBinds' -v
 
 Expected: PASS。
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/cli/cache_cmd.go internal/cli/app.go internal/cli/app_test.go
@@ -1553,7 +1553,7 @@ git commit -m "feat(cache): register cache cli commands"
 - Modify: `internal/cli/wiring.go`
 - Modify: `internal/cli/handlers.go`
 
-- [ ] **Step 1: 扩展 cliService 字段**
+- [x] **Step 1: 扩展 cliService 字段**
 
 在 `internal/cli/service.go` 的 import 中加入 cache 子包别名：
 
@@ -1567,7 +1567,7 @@ appcache "github.com/inherelab/eget/internal/app/cache"
 	cacheService appcache.Service
 ```
 
-- [ ] **Step 2: 注入 Service**
+- [x] **Step 2: 注入 Service**
 
 在 `internal/cli/wiring.go` 的 import 中加入：
 
@@ -1587,7 +1587,7 @@ appcache "github.com/inherelab/eget/internal/app/cache"
 		cacheService:      cacheService,
 ```
 
-- [ ] **Step 3: 在 handler switch 中分发 cache 命令**
+- [x] **Step 3: 在 handler switch 中分发 cache 命令**
 
 在 `internal/cli/handlers.go` 的 `handle` switch 中加入：
 
@@ -1600,7 +1600,7 @@ appcache "github.com/inherelab/eget/internal/app/cache"
 		return s.handleCacheServe(opts)
 ```
 
-- [ ] **Step 4: 实现 CLI options 转换**
+- [x] **Step 4: 实现 CLI options 转换**
 
 在 `internal/cli/handlers.go` 的 import 中加入：
 
@@ -1652,7 +1652,7 @@ func serveOptionsFromCLI(opts *CacheServeOptions) appcache.ServeOptions {
 }
 ```
 
-- [ ] **Step 5: 实现 cache clean 输出**
+- [x] **Step 5: 实现 cache clean 输出**
 
 在 `internal/cli/handlers.go` 追加：
 
@@ -1730,7 +1730,7 @@ func stdinIsTerminal() bool {
 	"golang.org/x/term"
 ```
 
-- [ ] **Step 6: 实现 cache serve 启动**
+- [x] **Step 6: 实现 cache serve 启动**
 
 在 `internal/cli/handlers.go` 追加：
 
@@ -1772,7 +1772,7 @@ func (s *cliService) handleCacheServe(opts *CacheServeOptions) error {
 	"net/http"
 ```
 
-- [ ] **Step 7: 编译 CLI**
+- [x] **Step 7: 编译 CLI**
 
 Run:
 
@@ -1782,7 +1782,7 @@ go test ./internal/cli -run 'CacheCleanBinds|CacheServeBinds' -v
 
 Expected: PASS。
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add internal/cli/service.go internal/cli/wiring.go internal/cli/handlers.go
@@ -1795,7 +1795,7 @@ git commit -m "feat(cache): wire cache command handlers"
 - Create: `internal/cli/cache_cmd_test.go`
 - Modify: `internal/cli/handlers.go`
 
-- [ ] **Step 1: 写失败测试：clean 输出 dry-run 摘要**
+- [x] **Step 1: 写失败测试：clean 输出 dry-run 摘要**
 
 创建 `internal/cli/cache_cmd_test.go`：
 
@@ -1901,7 +1901,7 @@ func fileExistsCLI(path string) bool {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认行为**
+- [x] **Step 2: 运行测试确认行为**
 
 Run:
 
@@ -1911,7 +1911,7 @@ go test ./internal/cli -run HandleCacheCleanDryRun -v
 
 Expected: PASS，并确认大批量清理在非 TTY 且未传 `--yes` 时不会删除文件。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add internal/cli/cache_cmd_test.go internal/cli/handlers.go
@@ -1925,7 +1925,7 @@ git commit -m "test(cache): cover cache clean cli output"
 - Modify: `README.zh-CN.md`
 - Modify: `docs/TODO.md`
 
-- [ ] **Step 1: 更新 README.md**
+- [x] **Step 1: 更新 README.md**
 
 在命令列表或配置说明附近加入：
 
@@ -1948,7 +1948,7 @@ eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
 ```
 ```
 
-- [ ] **Step 2: 更新 README.zh-CN.md**
+- [x] **Step 2: 更新 README.zh-CN.md**
 
 加入：
 
@@ -1971,7 +1971,7 @@ eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
 ```
 ```
 
-- [ ] **Step 3: 更新 docs/TODO.md**
+- [x] **Step 3: 更新 docs/TODO.md**
 
 把原 cache 条目拆分为已完成第一期和后续项：
 
@@ -1985,7 +1985,7 @@ eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
   - [ ] `cache serve --token` 和 manifest TTL。
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add README.md README.zh-CN.md docs/TODO.md
@@ -1997,7 +1997,7 @@ git commit -m "docs(cache): document cache management commands"
 **Files:**
 - No code changes expected.
 
-- [ ] **Step 1: 运行全量测试**
+- [x] **Step 1: 运行全量测试**
 
 Run:
 
@@ -2007,7 +2007,7 @@ go test ./...
 
 Expected: PASS。
 
-- [ ] **Step 2: 构建 CLI**
+- [x] **Step 2: 构建 CLI**
 
 Run:
 
@@ -2017,7 +2017,7 @@ go build ./cmd/eget
 
 Expected: PASS，并在当前目录生成可执行文件或按 Go 默认输出完成。
 
-- [ ] **Step 3: 手动验证 cache clean dry-run**
+- [x] **Step 3: 手动验证 cache clean dry-run**
 
 Run:
 
@@ -2034,7 +2034,7 @@ Dry run: eget cache clean
  - matched size:
 ```
 
-- [ ] **Step 4: 手动验证 cache serve healthz**
+- [x] **Step 4: 手动验证 cache serve healthz**
 
 启动服务：
 
@@ -2057,7 +2057,7 @@ Expected:
 
 `manifest.json` 返回 `schema: 1`、`server.name: eget-cache` 和 `files` 数组。
 
-- [ ] **Step 5: 最终 commit 或 amend**
+- [x] **Step 5: 最终 commit 或 amend**
 
 如果 Task 8 发现修复项，单独提交：
 
