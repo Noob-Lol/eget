@@ -16,6 +16,8 @@
 
 <!-- PROCESSING WORKS:START -->
 
+- `cache serve` Phase 2.1 内置只读 Web UI：更新 [设计文档](docs/superpowers/specs/2026-05-26-cache-management-design.md)，实施根路径文件列表页面。
+
 <!-- PROCESSING WORKS:END -->
 
 ## 核心原则
