@@ -86,9 +86,10 @@
 ## 项目开发规范
 
 - 使用 git worktree 进行开发时，在 `.worktrees` 目录下创建分支
-- 关键的方法或逻辑点需要添加注释说明
+- 一般代码自解释，但是关键的方法或逻辑点需要添加注释说明
 - 如果需要通过命令行请求 github api, 优先检查 gh 命令是否可用，不可用再尝试其他方式
 - 如果是修复 Github issue，需要在 commit message 中添加 issue number，例如 `fix #1234` `resolve #1234`
+- 新增功能如果包含较多主体逻辑文件，应优先按功能在 `internal/app/<feature>` 下建子包，避免继续膨胀 `internal/app` 根目录
 
 ### Go单元测试编写
 
@@ -103,5 +104,3 @@ Require(t, assert.Eq(t, 1, res.ID))
 // Standard assertion
 assert.Eq(t, expected, actual)
 ```
-
-## 项目核心记忆
