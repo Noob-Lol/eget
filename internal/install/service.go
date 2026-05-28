@@ -97,7 +97,9 @@ func SelectExtractorAs[T any](s *Service, url, tool string, opts *Options) (T, e
 func (s *Service) SelectFinder(target string, opts *Options) (Finder, string, error) {
 	switch DetectTargetKind(target) {
 	case TargetLocalFile, TargetDirectURL:
-		opts.System = "all"
+		if opts.System == "" {
+			opts.System = "all"
+		}
 		return &DirectAssetFinder{URL: target}, "", nil
 	case TargetGitHubURL, TargetRepo:
 		repo, err := NormalizeRepoTarget(target)

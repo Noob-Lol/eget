@@ -186,6 +186,17 @@ func TestSelectFinder(t *testing.T) {
 		}
 	})
 
+	t.Run("direct url preserves explicit system", func(t *testing.T) {
+		opts := &Options{System: "windows/amd64"}
+		_, _, err := svc.SelectFinder("https://example.com/tool.zip", opts)
+		if err != nil {
+			t.Fatalf("SelectFinder(direct explicit system): %v", err)
+		}
+		if opts.System != "windows/amd64" {
+			t.Fatalf("opts.System = %q, want %q", opts.System, "windows/amd64")
+		}
+	})
+
 	t.Run("local file", func(t *testing.T) {
 		opts := &Options{}
 		finder, tool, err := svc.SelectFinder(localFile, opts)
@@ -204,6 +215,17 @@ func TestSelectFinder(t *testing.T) {
 		}
 		if opts.System != "all" {
 			t.Fatalf("opts.System = %q, want %q", opts.System, "all")
+		}
+	})
+
+	t.Run("local file preserves explicit system", func(t *testing.T) {
+		opts := &Options{System: "windows/amd64"}
+		_, _, err := svc.SelectFinder(localFile, opts)
+		if err != nil {
+			t.Fatalf("SelectFinder(local explicit system): %v", err)
+		}
+		if opts.System != "windows/amd64" {
+			t.Fatalf("opts.System = %q, want %q", opts.System, "windows/amd64")
 		}
 	})
 
