@@ -221,9 +221,15 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 
 	bin, bins, err := extractor.Extract(downloaded.Body, opts.All)
 	if len(bins) != 0 && err != nil && !opts.All {
-		bin, opts.All, err = r.resolveExtractedFile(bins, opts)
-		if err != nil {
-			return RunResult{}, err
+		if selected, ok := autoExtractCurrentPlatformExecutables(bins, opts); ok {
+			bins = selected
+			opts.All = true
+			err = nil
+		} else {
+			bin, opts.All, err = r.resolveExtractedFile(bins, opts)
+			if err != nil {
+				return RunResult{}, err
+			}
 		}
 	} else if err != nil && len(bins) == 0 {
 		return RunResult{}, err
@@ -807,6 +813,69 @@ func autoSelectExtractedFile(candidates []ExtractedFile, goos, goarch string) (E
 	return ExtractedFile{}, false
 }
 
+func autoExtractCurrentPlatformExecutables(candidates []ExtractedFile, opts Options) ([]ExtractedFile, bool) {
+	goos, goarch := selectionPlatform(opts)
+	selected := make([]ExtractedFile, 0, len(candidates))
+	for _, candidate := range candidates {
+		if !isExecutableForGOOS(candidate, goos) {
+			continue
+		}
+		if !archiveNameMatchesPlatform(candidate.ArchiveName, goos, goarch) {
+			continue
+		}
+		selected = append(selected, candidate)
+	}
+	return selected, len(selected) > 0
+}
+
+func isExecutableForGOOS(file ExtractedFile, goos string) bool {
+	if file.Dir {
+		return false
+	}
+	name := firstNonEmpty(file.ArchiveName, file.Name)
+	ext := strings.ToLower(filepath.Ext(name))
+	if strings.EqualFold(goos, "windows") {
+		return ext == ".exe"
+	}
+	return isExec(name, file.mode) && ext != ".exe"
+}
+
+func archiveNameMatchesPlatform(name, goos, goarch string) bool {
+	tokens := platformTokens(name)
+	if hasAnyToken(tokens, osTokens...) && !hasAnyToken(tokens, osAliases(goos)...) {
+		return false
+	}
+	if hasAnyToken(tokens, archTokens...) && !hasAnyToken(tokens, archAliases(goarch)...) {
+		return false
+	}
+	return true
+}
+
+func platformTokens(name string) []string {
+	base := strings.ToLower(util.NormalizeSlashesLower(name))
+	base = strings.TrimSuffix(base, executableSuffix(base))
+	tokens := strings.FieldsFunc(base, func(r rune) bool {
+		return r == '-' || r == '.' || r == '/' || r == '\\'
+	})
+	for _, token := range strings.FieldsFunc(base, func(r rune) bool {
+		return r == '-' || r == '_' || r == '.' || r == '/' || r == '\\'
+	}) {
+		tokens = append(tokens, token)
+	}
+	return tokens
+}
+
+func hasAnyToken(tokens []string, aliases ...string) bool {
+	for _, token := range tokens {
+		for _, alias := range aliases {
+			if token == alias {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func autoSelectOnlyWindowsExecutable(candidates []ExtractedFile) (ExtractedFile, bool) {
 	var selected ExtractedFile
 	count := 0
@@ -934,11 +1003,11 @@ func firstNonEmpty(values ...string) string {
 
 func resolvedOutputName(name string, mode os.FileMode, preferredName string) string {
 	base := filepath.Base(name)
-	if preferredName != "" {
-		return applyPreferredName(base, preferredName)
-	}
 	if !isExec(base, mode) {
 		return base
+	}
+	if preferredName != "" {
+		return applyPreferredName(base, preferredName)
 	}
 	return heuristicExecutableName(base)
 }
@@ -948,10 +1017,37 @@ func applyPreferredName(originalName, preferredName string) string {
 	if preferredName == "" {
 		return originalName
 	}
-	if filepath.Ext(preferredName) != "" || ext == "" {
+	if filepath.Ext(preferredName) != "" {
 		return preferredName
 	}
-	return preferredName + ext
+	if shouldUsePreferredExecutableName(originalName, preferredName) {
+		return preferredName + ext
+	}
+	return originalName
+}
+
+func shouldUsePreferredExecutableName(originalName, preferredName string) bool {
+	ext := executableSuffix(originalName)
+	base := strings.TrimSuffix(filepath.Base(originalName), ext)
+	preferred := strings.TrimSuffix(filepath.Base(preferredName), executableSuffix(preferredName))
+	baseLower := strings.ToLower(base)
+	preferredLower := strings.ToLower(preferred)
+	if baseLower == preferredLower {
+		return true
+	}
+	if preferredLower == "" || len(baseLower) <= len(preferredLower) || !strings.HasPrefix(baseLower, preferredLower) {
+		return false
+	}
+	switch baseLower[len(preferredLower)] {
+	case '-', '_', '.':
+	default:
+		return false
+	}
+	remainder := baseLower[len(preferredLower)+1:]
+	tokens := strings.FieldsFunc(remainder, func(r rune) bool {
+		return r == '-' || r == '_' || r == '.'
+	})
+	return hasAnyToken(tokens, append(osTokens, archTokens...)...)
 }
 
 func heuristicExecutableName(name string) string {
@@ -979,5 +1075,34 @@ func executableSuffix(name string) string {
 		return ".appimage"
 	default:
 		return ""
+	}
+}
+
+var osTokens = []string{"windows", "win", "win32", "win64", "darwin", "macos", "osx", "linux", "freebsd", "openbsd", "netbsd", "android", "illumos", "solaris", "plan9"}
+var archTokens = []string{"amd64", "x86_64", "x64", "386", "x86", "i386", "arm64", "aarch64", "arm32", "armv6", "armv7", "arm", "riscv64"}
+
+func osAliases(goos string) []string {
+	switch strings.ToLower(goos) {
+	case "windows":
+		return []string{"windows", "win", "win32", "win64"}
+	case "darwin":
+		return []string{"darwin", "macos", "osx"}
+	default:
+		return []string{strings.ToLower(goos)}
+	}
+}
+
+func archAliases(goarch string) []string {
+	switch strings.ToLower(goarch) {
+	case "amd64":
+		return []string{"amd64", "x86_64", "x64"}
+	case "386":
+		return []string{"386", "x86", "i386"}
+	case "arm64":
+		return []string{"arm64", "aarch64"}
+	case "arm":
+		return []string{"arm32", "armv6", "armv7", "arm"}
+	default:
+		return []string{strings.ToLower(goarch)}
 	}
 }

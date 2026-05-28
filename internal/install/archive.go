@@ -197,9 +197,6 @@ func (a *ArchiveExtractor) Extract(data []byte, multiple bool) (ExtractedFile, [
 				}
 			}
 			ef := ExtractedFile{Name: name, ArchiveName: f.Name, mode: f.Mode, Extract: extract, Dir: f.Dir()}
-			if direct && !multiple {
-				return ef, nil, nil
-			}
 			candidates = append(candidates, ef)
 		}
 	}

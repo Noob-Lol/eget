@@ -1156,6 +1156,59 @@ func TestRunExtractAllStripsComponentsFromZipArchive(t *testing.T) {
 	}
 }
 
+func TestRunAutoExtractsMultipleWindowsExecutables(t *testing.T) {
+	assetURL := "https://example.com/uv.zip"
+	archive := zipBytes(t, map[string]string{
+		"uv.exe":      "uv",
+		"uvx.exe":     "uvx",
+		"uvw.exe":     "uvw",
+		"README.md":   "readme",
+		"LICENSE.txt": "license",
+	})
+	outputDir := t.TempDir()
+
+	svc := NewDefaultService(nil, nil)
+	svc.SystemDetectorFactory = func(goos, goarch string) (Detector, error) {
+		assert.Eq(t, "windows", goos)
+		assert.Eq(t, "amd64", goarch)
+		return &fakeDetector{name: assetURL}, nil
+	}
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(archive)),
+		}, nil
+	}
+
+	runner := NewRunner(svc)
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+	result, err := runner.Run(assetURL, Options{
+		Name:   "uv",
+		Output: outputDir,
+		System: "windows/amd64",
+	})
+	if err != nil {
+		t.Fatalf("run install: %v", err)
+	}
+
+	assert.Eq(t, []string{
+		filepath.Join(outputDir, "uv.exe"),
+		filepath.Join(outputDir, "uvx.exe"),
+		filepath.Join(outputDir, "uvw.exe"),
+	}, result.ExtractedFiles)
+	for _, file := range result.ExtractedFiles {
+		if _, err := os.Stat(file); err != nil {
+			t.Fatalf("expected extracted file %s: %v", file, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "README.md")); !os.IsNotExist(err) {
+		t.Fatalf("expected README.md not to be auto-extracted, stat err=%v", err)
+	}
+}
+
 func zipBytes(t *testing.T, files map[string]string) []byte {
 	t.Helper()
 	var buf bytes.Buffer
@@ -1843,6 +1896,17 @@ func TestOutputPathUsesPreferredNameForExecutable(t *testing.T) {
 	}
 }
 
+func TestOutputPathKeepsExecutableNameWhenPreferredNameDoesNotMatchPlatformSuffix(t *testing.T) {
+	file := ExtractedFile{Name: "bd.exe", mode: 0o666}
+	got, err := outputPath(file, "", false, "beads", false)
+	if err != nil {
+		t.Fatalf("outputPath(): %v", err)
+	}
+	if got != "bd.exe" {
+		t.Fatalf("expected executable name bd.exe to be preserved, got %q", got)
+	}
+}
+
 func TestOutputPathUsesPreferredNameWithExplicitExtension(t *testing.T) {
 	file := ExtractedFile{Name: "chlog-windows-amd64.exe", mode: 0o666}
 	got, err := outputPath(file, "", false, "custom-name.exe", false)
@@ -1981,4 +2045,19 @@ func TestAutoSelectExtractedFileKeepsPromptWhenAmbiguous(t *testing.T) {
 	if ok {
 		t.Fatal("expected ambiguous candidates to keep prompt fallback")
 	}
+}
+
+func TestAutoExtractCurrentPlatformExecutablesFiltersOtherPlatformExecutables(t *testing.T) {
+	candidates := []ExtractedFile{
+		{ArchiveName: `x86_64\uv.exe`, Name: `x86_64\uv.exe`, mode: 0o666},
+		{ArchiveName: `x86\uv.exe`, Name: `x86\uv.exe`, mode: 0o666},
+		{ArchiveName: `linux\uv`, Name: `linux\uv`, mode: 0o755},
+	}
+
+	selected, ok := autoExtractCurrentPlatformExecutables(candidates, Options{System: "windows/amd64"})
+	if !ok {
+		t.Fatal("expected current-platform executable selection")
+	}
+	assert.Eq(t, 1, len(selected))
+	assert.Eq(t, `x86_64\uv.exe`, selected[0].ArchiveName)
 }
