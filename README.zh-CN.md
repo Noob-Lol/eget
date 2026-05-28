@@ -207,6 +207,7 @@ eget update --self --check
 eget add --name fzf --to ~/.local/bin junegunn/fzf
 eget config init
 eget config list|ls
+eget config doctor
 eget config get global.target
 eget config set global.target ~/.local/bin
 ```
@@ -275,6 +276,7 @@ eget config set global.target ~/.local/bin
 
 - 先检查目标是否有新版本，再更新已配置或已安装的目标；也可通过 `--all` 更新全部托管包。
 - `update --self` 会检查 `inherelab/eget` release，选择当前 OS/arch 对应的原始可执行文件 asset，并替换当前正在运行的 eget 可执行文件。Windows 下替换会延迟到当前进程退出后执行。
+- `update --self --check` 会在请求最新版本前输出自更新检查来源 host，方便确认使用的是 GitHub 还是私有源。
 - `update --self --self-source <url>` 会从内部源更新 eget。内部源需要提供 `latest.yaml`，以及同目录下的原始平台文件，例如 `eget-linux-amd64` 和 `eget-windows-amd64.exe`。`<url>` 可以是目录地址，也可以直接是 `latest.yaml` 地址；也可通过 `EGET_SELF_UPDATE_SOURCE` 设置默认内部源。
 
 `sdk`
@@ -289,7 +291,8 @@ eget config set global.target ~/.local/bin
 
 `config`(alias: `cfg`)
 
-- 支持 `init`、`list` / `ls`、`get KEY`、`set KEY VALUE`。
+- 支持 `init`、`list` / `ls`、`doctor`、`get KEY`、`set KEY VALUE`。
+- `config doctor` 会输出本机 config/cache/store/install 相关路径、存在性、可写性，以及敏感配置是否已设置；不会打印 secret 原文。
 - 读取 `eget.toml` 前会加载可选的 `~/.config/eget/.env`，因此配置值可以继续写成 `github_token = "${GITHUB_TOKEN}"`、`proxy_url = "${PROXY_URL}"`，敏感信息无需直接写进配置文件。
 
 ## 主要选项

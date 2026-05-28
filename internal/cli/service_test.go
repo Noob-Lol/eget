@@ -1670,6 +1670,94 @@ func TestHandleUpdateSelfPassesSourceFromEnv(t *testing.T) {
 	assert.Eq(t, "https://example.com/tools/eget/", fake.opts.Source)
 }
 
+func TestHandleUpdateSelfCheckPrintsCheckSource(t *testing.T) {
+	fake := &fakeSelfUpdateCLIService{
+		result: app.SelfUpdateResult{CurrentVersion: "1.7.1", LatestVersion: "1.7.1", Updated: false},
+	}
+	svc := &cliService{selfUpdateService: fake, stderr: io.Discard}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleUpdate(&UpdateOptions{Self: true, Check: true, SelfSource: "https://example.com/tools/eget/latest.yaml"})
+
+	assert.NoErr(t, err)
+	got := out.String()
+	assert.Contains(t, got, "Checking self update from: example.com")
+	assert.Contains(t, got, "https://example.com/tools/eget/latest.yaml")
+}
+
+func TestHandleUpdateSelfCheckPrintsDefaultGitHubSource(t *testing.T) {
+	fake := &fakeSelfUpdateCLIService{
+		result: app.SelfUpdateResult{CurrentVersion: "1.7.1", LatestVersion: "1.7.1", Updated: false},
+	}
+	svc := &cliService{selfUpdateService: fake, stderr: io.Discard}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleUpdate(&UpdateOptions{Self: true, Check: true})
+
+	assert.NoErr(t, err)
+	got := out.String()
+	assert.Contains(t, got, "Checking self update from: github.com")
+	assert.Contains(t, got, app.SelfUpdateRepo)
+}
+
+func TestHandleConfigDoctorPrintsLocalPaths(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("XDG_CONFIG_HOME", "")
+	configPath := filepath.Join(tmp, "eget.toml")
+	cacheDir := filepath.Join(tmp, "cache")
+	targetDir := filepath.Join(tmp, "bin")
+	sdkDir := filepath.Join(tmp, "sdks")
+	assert.NoErr(t, os.MkdirAll(cacheDir, 0o755))
+	assert.NoErr(t, os.MkdirAll(targetDir, 0o755))
+	assert.NoErr(t, os.MkdirAll(sdkDir, 0o755))
+	assert.NoErr(t, os.WriteFile(configPath, []byte("[global]\n"), 0o644))
+
+	cacheValue := cacheDir
+	targetValue := targetDir
+	sdkValue := sdkDir
+	proxyValue := "http://127.0.0.1:10801"
+	tokenValue := "secret"
+	cfg := cfgpkg.NewFile()
+	cfg.Global.CacheDir = &cacheValue
+	cfg.Global.Target = &targetValue
+	cfg.Global.SDKTarget = &sdkValue
+	cfg.Global.ProxyURL = &proxyValue
+	cfg.Global.GithubToken = &tokenValue
+	svc := &cliService{
+		cfgService: app.ConfigService{
+			ConfigPath: configPath,
+			Load: func() (*cfgpkg.File, error) {
+				return cfg, nil
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleConfig(&ConfigOptions{Action: "doctor"})
+
+	assert.NoErr(t, err)
+	got := out.String()
+	assert.Contains(t, got, "eget config doctor")
+	assert.Contains(t, got, configPath)
+	assert.Contains(t, got, cacheDir)
+	assert.Contains(t, got, targetDir)
+	assert.Contains(t, got, sdkDir)
+	assert.Contains(t, got, filepath.Join(tmp, ".config", "eget", "installed.toml"))
+	assert.Contains(t, got, filepath.Join(tmp, ".config", "eget", "sdk.installed.json"))
+	assert.Contains(t, got, "github_token: set")
+	assert.NotContains(t, got, "secret")
+}
+
 func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {
 	installer := &fakeUpdateInstallerForCLI{}
 	svc := &cliService{

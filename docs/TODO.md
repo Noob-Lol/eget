@@ -48,7 +48,8 @@
 - [x] 基于 `latest.yaml 简版 + url template` 配置支持自定义站点的工具下载
 - [ ] ux 体验优化
   - 核心命令帮助信息都加上各种 example 示例说明
-  - eget update --self --check 命令, 先显示一下从哪个 host 检测的更新
+  - [x] eget update --self --check 命令, 先显示一下从哪个 host 检测的更新
+  - [x] eget config doctor 输出本机配置、缓存、store、安装目录等诊断信息
 
 ## search 结果展示 ✅
 

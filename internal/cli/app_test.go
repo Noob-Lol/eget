@@ -680,6 +680,12 @@ func TestMain_ConfigSubcommandsRouteToConfigCommand(t *testing.T) {
 			wantCalls: 1,
 		},
 		{
+			name:      "doctor",
+			args:      []string{"config", "doctor"},
+			want:      ConfigOptions{Action: "doctor"},
+			wantCalls: 1,
+		},
+		{
 			name:      "get",
 			args:      []string{"config", "get", "global.target"},
 			want:      ConfigOptions{Action: "get", Key: "global.target"},

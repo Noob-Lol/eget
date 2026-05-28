@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -25,7 +26,9 @@ import (
 	"github.com/inherelab/eget/internal/client"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
+	storepkg "github.com/inherelab/eget/internal/installed"
 	"github.com/inherelab/eget/internal/sdk"
+	"github.com/inherelab/eget/internal/util"
 	"golang.org/x/term"
 )
 
@@ -577,6 +580,8 @@ func (s *cliService) handleConfig(opts *ConfigOptions) error {
 		ccolor.Yellowln("📦 Configed SDKs:")
 		show.MList(cfg.SDK, showListConfig)
 		return nil
+	case "doctor":
+		return s.handleConfigDoctor()
 	case "get":
 		value, err := s.cfgService.ConfigGet(opts.Key)
 		if err != nil {
@@ -601,6 +606,123 @@ func (s *cliService) handleConfig(opts *ConfigOptions) error {
 	}
 }
 
+func (s *cliService) handleConfigDoctor() error {
+	info, err := s.cfgService.ConfigInfo()
+	if err != nil {
+		return err
+	}
+	cfg, err := s.cfgService.ConfigList()
+	if err != nil {
+		return err
+	}
+
+	configPath := info.Path
+	if configPath == "" {
+		configPath = s.cfgService.ConfigPath
+	}
+	if configPath == "" {
+		if writable, err := cfgpkg.ResolveWritablePath(); err == nil {
+			configPath = writable
+		}
+	}
+	configDir := filepath.Dir(configPath)
+	cacheDir := expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.CacheDir), "~/.cache/eget"))
+	targetDir := expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.Target), "~/.local/bin"))
+	sdkTargetDir := expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.SDKTarget), "~/.local/sdks"))
+	dotenvPath := filepath.Join(configDir, ".env")
+	installedPath := resolveInstalledStorePath()
+	sdkInstalledPath := resolveSDKInstalledStorePath()
+
+	ccolor.Infoln("eget config doctor")
+	printDoctorPath("config_file", configPath, info.Exists)
+	printDoctorPath("config_dir", configDir, dirExists(configDir))
+	printDoctorPath("dotenv_file", dotenvPath, fileExists(dotenvPath))
+	printDoctorPath("installed_store", installedPath, fileExists(installedPath))
+	printDoctorPath("sdk_installed_store", sdkInstalledPath, fileExists(sdkInstalledPath))
+	printDoctorPath("cache_dir", cacheDir, dirExists(cacheDir))
+	printDoctorPath("api_cache_dir", filepath.Join(cacheDir, "api-cache"), dirExists(filepath.Join(cacheDir, "api-cache")))
+	printDoctorPath("sdk_index_dir", filepath.Join(cacheDir, "sdk-index"), dirExists(filepath.Join(cacheDir, "sdk-index")))
+	printDoctorPath("target_dir", targetDir, dirExists(targetDir))
+	printDoctorPath("sdk_target_dir", sdkTargetDir, dirExists(sdkTargetDir))
+	if guiTarget := strings.TrimSpace(util.DerefString(cfg.Global.GuiTarget)); guiTarget != "" {
+		path := expandPathOrRaw(guiTarget)
+		printDoctorPath("gui_target_dir", path, dirExists(path))
+	}
+	if sys7zPath := strings.TrimSpace(util.DerefString(cfg.Global.Sys7zPath)); sys7zPath != "" {
+		path := expandPathOrRaw(sys7zPath)
+		printDoctorPath("sys7z_path", path, fileExists(path))
+	}
+	ccolor.Printf("proxy_url: %s\n", setStatus(util.DerefString(cfg.Global.ProxyURL)))
+	ccolor.Printf("github_token: %s\n", setStatus(util.DerefString(cfg.Global.GithubToken)))
+	ccolor.Printf("cache_dir_writable: %v\n", dirWritable(cacheDir))
+	ccolor.Printf("target_dir_writable: %v\n", dirWritable(targetDir))
+	ccolor.Printf("sdk_target_dir_writable: %v\n", dirWritable(sdkTargetDir))
+	return nil
+}
+
+func printDoctorPath(name, path string, exists bool) {
+	ccolor.Printf("%s: %s (exists: %v)\n", name, path, exists)
+}
+
+func resolveInstalledStorePath() string {
+	store, err := storepkg.DefaultStore()
+	if err != nil {
+		return ""
+	}
+	return store.Path()
+}
+
+func resolveSDKInstalledStorePath() string {
+	path, err := sdk.DefaultStorePath()
+	if err != nil {
+		return ""
+	}
+	return path
+}
+
+func setStatus(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "unset"
+	}
+	return "set"
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func expandPathOrRaw(path string) string {
+	expanded, err := util.Expand(path)
+	if err != nil {
+		return path
+	}
+	return expanded
+}
+
+func dirExists(path string) bool {
+	info, err := os.Stat(filepath.Clean(path))
+	return err == nil && info.IsDir()
+}
+
+func dirWritable(path string) bool {
+	if !dirExists(path) {
+		return false
+	}
+	probe, err := os.CreateTemp(path, ".eget-doctor-*")
+	if err != nil {
+		return false
+	}
+	name := probe.Name()
+	closeErr := probe.Close()
+	removeErr := os.Remove(name)
+	return closeErr == nil && removeErr == nil
+}
+
 func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 	if opts.Self {
 		if opts.All {
@@ -615,10 +737,14 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		if s.selfUpdateService == nil {
 			return fmt.Errorf("self update service is required")
 		}
+		source := s.selfUpdateSource(opts)
+		if opts.Check {
+			printSelfUpdateCheckSource(source)
+		}
 		result, err := s.selfUpdateService.Update(app.SelfUpdateOptions{
 			CheckOnly: opts.Check,
 			Tag:       opts.Tag,
-			Source:    s.selfUpdateSource(opts),
+			Source:    source,
 			Asset:     splitAssetFilters(opts.Asset),
 			Install:   installOptionsFromUpdate(opts),
 		})
@@ -704,6 +830,26 @@ func (s *cliService) selfUpdateSource(opts *UpdateOptions) string {
 		return strings.TrimSpace(value)
 	}
 	return ""
+}
+
+func printSelfUpdateCheckSource(source string) {
+	if strings.TrimSpace(source) == "" {
+		ccolor.Infof("Checking self update from: github.com (%s)\n", app.SelfUpdateRepo)
+		return
+	}
+	host := hostFromURL(source)
+	if host == "" {
+		host = source
+	}
+	ccolor.Infof("Checking self update from: %s (%s)\n", host, source)
+}
+
+func hostFromURL(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	return parsed.Host
 }
 
 func printSelfUpdateResult(result app.SelfUpdateResult) {

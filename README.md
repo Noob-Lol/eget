@@ -207,6 +207,7 @@ eget update --self --check
 eget add --name fzf --to ~/.local/bin junegunn/fzf
 eget config init
 eget config list|ls
+eget config doctor
 eget config get global.target
 eget config set global.target ~/.local/bin
 ```
@@ -275,6 +276,7 @@ The target argument accepted by `install` and `download` can be:
 
 - Updates a configured or installed target after checking that a newer version exists, or all managed packages with `--all`.
 - `update --self` checks `inherelab/eget` releases, selects the raw executable asset for the current OS/arch, and replaces the running executable. On Windows, replacement is deferred until the current process exits.
+- `update --self --check` prints the self-update check host before requesting the latest version, so it is clear whether the check uses GitHub or a private source.
 - `update --self --self-source <url>` updates from an internal source that exposes `latest.yaml` plus raw platform files such as `eget-linux-amd64` and `eget-windows-amd64.exe`. `<url>` may be either the base directory or the `latest.yaml` URL. You can also set `EGET_SELF_UPDATE_SOURCE`.
 
 `sdk`
@@ -289,7 +291,8 @@ The target argument accepted by `install` and `download` can be:
 
 `config` (alias: `cfg`)
 
-- Supports `init`, `list` / `ls`, `get KEY`, and `set KEY VALUE`.
+- Supports `init`, `list` / `ls`, `doctor`, `get KEY`, and `set KEY VALUE`.
+- `config doctor` prints local config/cache/store/install paths, existence checks, writability checks, and set/unset status for sensitive config values without printing secret values.
 - Loads optional dotenv variables from `~/.config/eget/.env` before reading `eget.toml`, so config values such as `github_token = "${GITHUB_TOKEN}"` and `proxy_url = "${PROXY_URL}"` can reference secrets without storing them directly in the config file.
 
 ## Main Options

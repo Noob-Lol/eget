@@ -156,6 +156,7 @@ The core implementation lives in `internal/sdk`:
 eget config init
 eget config list
 eget config ls
+eget config doctor
 eget config get KEY
 eget config set KEY VALUE
 ```

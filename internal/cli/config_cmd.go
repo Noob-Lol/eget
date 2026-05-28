@@ -14,16 +14,19 @@ func newConfigCmd(handler CommandHandler) (*gcli.Command, func()) {
 	cmd.Aliases = []string{"cfg"}
 	cmd.Help = `  init                Initialize the config file with default values
   list | ls           Print current config values and file status
+  doctor              Print local paths and environment diagnostics
 
 <info>Examples</>:
   eget config init
   eget config list
+  eget config doctor
   eget config get global.target
   eget config set global.target ~/.local/bin`
 
 	cmd.Subs = []*gcli.Command{
 		newConfigActionCmd("init", nil, opts, handler),
 		newConfigActionCmd("list", []string{"ls"}, opts, handler),
+		newConfigActionCmd("doctor", nil, opts, handler),
 		newConfigGetCmd(opts, handler),
 		newConfigSetCmd(opts, handler),
 	}
