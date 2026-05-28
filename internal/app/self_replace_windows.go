@@ -14,7 +14,7 @@ type DefaultExecutableReplacer struct{}
 func (DefaultExecutableReplacer) Replace(currentPath, replacementPath string) (SelfReplaceResult, error) {
 	backup := currentPath + ".old"
 	logPath := replacementPath + ".replace.log"
-	script := windowsSelfReplaceScript(currentPath, replacementPath, backup, logPath)
+	script := windowsSelfReplaceScript(currentPath, replacementPath, backup, logPath, os.Getpid())
 	scriptFile, err := os.CreateTemp("", "eget-self-update-*.cmd")
 	if err != nil {
 		return SelfReplaceResult{}, err
@@ -34,12 +34,24 @@ func (DefaultExecutableReplacer) Replace(currentPath, replacementPath string) (S
 	return SelfReplaceResult{Deferred: true}, nil
 }
 
-func windowsSelfReplaceScript(currentPath, replacementPath, backupPath, logPath string) string {
+func windowsSelfReplaceScript(currentPath, replacementPath, backupPath, logPath string, parentPID int) string {
 	return fmt.Sprintf(`@echo off
 setlocal
 setlocal EnableDelayedExpansion
+set parent_pid=%[5]d
 set attempts=0
 echo start self replace %%DATE%% %%TIME%% > "%[4]s"
+echo waiting for parent process: !parent_pid! >> "%[4]s"
+:wait_parent
+set parent_alive=
+for /F "tokens=2" %%%%P in ('tasklist /FI "PID eq !parent_pid!" /NH 2^>nul') do (
+  if "%%%%P"=="!parent_pid!" set parent_alive=1
+)
+if defined parent_alive (
+  timeout /T 1 /NOBREAK >nul
+  goto wait_parent
+)
+echo parent process exited >> "%[4]s"
 :wait
 move /Y "%[1]s" "%[3]s" >nul 2>nul
 if errorlevel 1 (
@@ -71,5 +83,5 @@ if errorlevel 1 (
 del /F /Q "%[3]s" >nul 2>nul
 echo replace succeeded >> "%[4]s"
 del /F /Q "%%~f0" >nul 2>nul
-`, currentPath, replacementPath, backupPath, logPath)
+`, currentPath, replacementPath, backupPath, logPath, parentPID)
 }

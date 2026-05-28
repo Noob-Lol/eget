@@ -9,7 +9,7 @@ import (
 )
 
 func TestWindowsSelfReplaceScriptContainsQuotedPaths(t *testing.T) {
-	script := windowsSelfReplaceScript(`C:\Tools\eget.exe`, `C:\Temp\eget-new.exe`, `C:\Tools\eget.exe.old`, `C:\Temp\eget-self-update.log`)
+	script := windowsSelfReplaceScript(`C:\Tools\eget.exe`, `C:\Temp\eget-new.exe`, `C:\Tools\eget.exe.old`, `C:\Temp\eget-self-update.log`, 1234)
 
 	assert.Contains(t, script, `"C:\Tools\eget.exe"`)
 	assert.Contains(t, script, `"C:\Temp\eget-new.exe"`)
@@ -18,7 +18,7 @@ func TestWindowsSelfReplaceScriptContainsQuotedPaths(t *testing.T) {
 }
 
 func TestWindowsSelfReplaceScriptFastRetriesBeforeOneSecondSleep(t *testing.T) {
-	script := windowsSelfReplaceScript(`C:\Tools\eget.exe`, `C:\Temp\eget-new.exe`, `C:\Tools\eget.exe.old`, `C:\Temp\eget-self-update.log`)
+	script := windowsSelfReplaceScript(`C:\Tools\eget.exe`, `C:\Temp\eget-new.exe`, `C:\Tools\eget.exe.old`, `C:\Temp\eget-self-update.log`, 1234)
 
 	assert.Contains(t, script, "set /A attempts+=1")
 	assert.Contains(t, script, "EnableDelayedExpansion")
@@ -27,11 +27,21 @@ func TestWindowsSelfReplaceScriptFastRetriesBeforeOneSecondSleep(t *testing.T) {
 }
 
 func TestWindowsSelfReplaceScriptWritesDiagnosticLog(t *testing.T) {
-	script := windowsSelfReplaceScript(`C:\Tools\eget.exe`, `C:\Temp\eget-new.exe`, `C:\Tools\eget.exe.old`, `C:\Temp\eget-self-update.log`)
+	script := windowsSelfReplaceScript(`C:\Tools\eget.exe`, `C:\Temp\eget-new.exe`, `C:\Tools\eget.exe.old`, `C:\Temp\eget-self-update.log`, 1234)
 
 	assert.Contains(t, script, `"C:\Temp\eget-self-update.log"`)
 	assert.Contains(t, script, "replace succeeded")
 	assert.Contains(t, script, "restore backup")
 	assert.Contains(t, script, ":replace")
 	assert.Contains(t, script, "waiting to move replacement")
+}
+
+func TestWindowsSelfReplaceScriptWaitsForParentProcessBeforeMovingExecutable(t *testing.T) {
+	script := windowsSelfReplaceScript(`C:\Tools\eget.exe`, `C:\Temp\eget-new.exe`, `C:\Tools\eget.exe.old`, `C:\Temp\eget-self-update.log`, 1234)
+
+	assert.Contains(t, script, "set parent_pid=1234")
+	assert.Contains(t, script, ":wait_parent")
+	assert.Contains(t, script, `tasklist /FI "PID eq !parent_pid!"`)
+	assert.Contains(t, script, "parent process exited")
+	assert.Contains(t, script, ":wait")
 }
