@@ -102,7 +102,7 @@ func TestDownloadBodyUsesCacheWhenAvailable(t *testing.T) {
 	}
 }
 
-func TestDownloadBodyRefreshesCachedModTimeFromRemote(t *testing.T) {
+func TestDownloadBodyUsesCachedFileWithoutRemoteProbe(t *testing.T) {
 	cacheDir := t.TempDir()
 	url := "https://github.com/pbatard/rufus/releases/download/v4.14/rufus-4.14p.exe"
 	cachePath := CacheFilePath(cacheDir, url)
@@ -112,20 +112,14 @@ func TestDownloadBodyRefreshesCachedModTimeFromRemote(t *testing.T) {
 	if err := os.WriteFile(cachePath, []byte("cached-data"), 0o644); err != nil {
 		t.Fatalf("write cache file: %v", err)
 	}
-	wrongTime := time.Date(2026, 5, 24, 13, 19, 24, 0, time.UTC)
-	remoteTime := time.Date(2026, 4, 30, 11, 32, 59, 0, time.UTC)
-	assert.Nil(t, applyModTime(cachePath, wrongTime))
+	localTime := time.Date(2026, 5, 24, 13, 19, 24, 0, time.UTC)
+	assert.Nil(t, applyModTime(cachePath, localTime))
 
 	origHTTPDo := httpDo
 	defer func() { httpDo = origHTTPDo }()
 	httpDo = func(client *http.Client, req *http.Request) (*http.Response, error) {
-		assert.Eq(t, http.MethodHead, req.Method)
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Status:     "200 OK",
-			Header:     http.Header{"Last-Modified": []string{remoteTime.Format(http.TimeFormat)}},
-			Body:       io.NopCloser(strings.NewReader("")),
-		}, nil
+		t.Fatalf("cache hit should not probe remote metadata with %s %s", req.Method, req.URL.String())
+		return nil, nil
 	}
 
 	origDownloadGetWithOptions := downloadGetWithOptions
@@ -143,8 +137,8 @@ func TestDownloadBodyRefreshesCachedModTimeFromRemote(t *testing.T) {
 	}
 
 	assert.Eq(t, "cached-data", string(downloaded.Body))
-	assert.Eq(t, remoteTime, downloaded.ModTime)
-	assert.Eq(t, remoteTime, fileModTime(cachePath).UTC())
+	assert.Eq(t, localTime, downloaded.ModTime.UTC())
+	assert.Eq(t, localTime, fileModTime(cachePath).UTC())
 	if got := stdout.String(); !strings.Contains(got, "Using cached file") {
 		t.Fatalf("expected cached-file notice, got %q", got)
 	}
