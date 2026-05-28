@@ -35,12 +35,19 @@ func TestCacheFilePathUsesReadableAssetNameVersionAndShortHash(t *testing.T) {
 	cacheDir := t.TempDir()
 	got := CacheFilePath(cacheDir, "https://github.com/babarot/gomi/releases/download/v1.6.3/gomi_Linux_x86_64.tar.gz")
 
-	assert.Eq(t, cacheDir, filepath.Dir(got))
+	assert.Eq(t, filepath.Join(cacheDir, "pkg-cache"), filepath.Dir(got))
 	base := filepath.Base(got)
 	assert.True(t, strings.HasPrefix(base, "gomi_Linux_x86_64-1.6.3-"))
 	assert.True(t, strings.HasSuffix(base, ".tar.gz"))
 	shortHash := strings.TrimSuffix(strings.TrimPrefix(base, "gomi_Linux_x86_64-1.6.3-"), ".tar.gz")
 	assert.Eq(t, 8, len(shortHash))
+}
+
+func TestCacheFilePathStoresPackagesUnderPkgCache(t *testing.T) {
+	cacheDir := t.TempDir()
+	got := CacheFilePathWithMeta(cacheDir, "https://example.com/download?id=123", CacheMeta{Name: "tool"})
+
+	assert.Eq(t, filepath.Join(cacheDir, "pkg-cache"), filepath.Dir(got))
 }
 
 func TestCacheFilePathFallsBackToVersionFromFilename(t *testing.T) {

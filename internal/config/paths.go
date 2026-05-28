@@ -67,6 +67,13 @@ func resolveConfigPath(opts pathOptions) (string, error) {
 		checkDotfile = false
 	}
 
+	if configDir, ok := opts.LookupEnv("EGET_CONFIG_DIR"); ok && configDir != "" {
+		configPath := filepath.Join(configDir, "eget.toml")
+		if fileExists(configPath) {
+			return configPath, nil
+		}
+	}
+
 	if checkDotfile {
 		dotfilePath := filepath.Join(opts.HomeDir, ".eget.toml")
 		if fileExists(dotfilePath) {
@@ -107,10 +114,20 @@ func resolveWritablePath(opts pathOptions) (string, error) {
 }
 
 func getOSConfigPath(opts pathOptions) string {
-	if dir, ok := opts.LookupEnv("XDG_CONFIG_HOME"); ok && dir != "" {
-		return filepath.Join(dir, "eget", "eget.toml")
+	return filepath.Join(configDir(opts), "eget.toml")
+}
+
+func configDir(opts pathOptions) string {
+	if opts.LookupEnv == nil {
+		opts.LookupEnv = os.LookupEnv
 	}
-	return filepath.Join(opts.HomeDir, ".config", "eget", "eget.toml")
+	if dir, ok := opts.LookupEnv("EGET_CONFIG_DIR"); ok && dir != "" {
+		return dir
+	}
+	if dir, ok := opts.LookupEnv("XDG_CONFIG_HOME"); ok && dir != "" {
+		return filepath.Join(dir, "eget")
+	}
+	return filepath.Join(opts.HomeDir, ".config", "eget")
 }
 
 func fileExists(path string) bool {

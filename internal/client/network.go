@@ -712,7 +712,7 @@ func CacheFilePathWithMeta(cacheDir, rawURL string, meta CacheMeta) string {
 		name = "download"
 	}
 	version := cacheVersion(rawURL, u, fileName, meta.Version)
-	return filepath.Join(cacheDir, fmt.Sprintf("%s-%s-%s%s", safeCachePart(name), safeCachePart(version), shortURLHash(rawURL), ext))
+	return filepath.Join(cacheDir, "pkg-cache", fmt.Sprintf("%s-%s-%s%s", safeCachePart(name), safeCachePart(version), shortURLHash(rawURL), ext))
 }
 
 func APICacheFilePath(cacheDir, rawURL string) string {

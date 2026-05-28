@@ -1750,6 +1750,7 @@ func TestHandleConfigDoctorPrintsLocalPaths(t *testing.T) {
 	assert.Contains(t, got, "eget config doctor")
 	assert.Contains(t, got, configPath)
 	assert.Contains(t, got, cacheDir)
+	assert.Contains(t, got, filepath.Join(cacheDir, "pkg-cache"))
 	assert.Contains(t, got, targetDir)
 	assert.Contains(t, got, sdkDir)
 	assert.Contains(t, got, filepath.Join(tmp, ".config", "eget", "installed.toml"))

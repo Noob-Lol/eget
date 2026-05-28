@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	cfgpkg "github.com/inherelab/eget/internal/config"
 	forge "github.com/inherelab/eget/internal/source/forge"
 	"github.com/inherelab/eget/internal/source/sourceforge"
 	"github.com/inherelab/eget/internal/util"
@@ -120,10 +121,7 @@ func (s *Store) Remove(target string) error {
 }
 
 func (s *Store) fallbackPath() string {
-	if dir, ok := s.opts.LookupEnv("XDG_CONFIG_HOME"); ok && dir != "" {
-		return filepath.Join(dir, "eget", "installed.toml")
-	}
-	return filepath.Join(s.opts.HomeDir, ".config", "eget", "installed.toml")
+	return filepath.Join(filepath.Dir(cfgpkg.OSConfigPath(s.opts.HomeDir, s.opts.GOOS, s.opts.LookupEnv)), "installed.toml")
 }
 
 func NormalizeRepoName(target string) string {

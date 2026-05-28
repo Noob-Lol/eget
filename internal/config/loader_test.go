@@ -108,6 +108,73 @@ func TestResolveConfigPathFallsBackToOSConfigDir(t *testing.T) {
 	}
 }
 
+func TestResolveConfigPathUsesEgetConfigDir(t *testing.T) {
+	tmp := t.TempDir()
+	configDir := filepath.Join(tmp, "custom-config")
+	wantPath := filepath.Join(configDir, "eget.toml")
+	writeTestFile(t, wantPath, "title = 'custom'\n")
+
+	path, err := resolveConfigPath(pathOptions{
+		HomeDir: filepath.Join(tmp, "home"),
+		GOOS:    "linux",
+		LookupEnv: func(key string) (string, bool) {
+			if key == "EGET_CONFIG_DIR" {
+				return configDir, true
+			}
+			return "", false
+		},
+	})
+	assert.NoErr(t, err)
+	assert.Eq(t, wantPath, path)
+}
+
+func TestResolveConfigPathPrefersEgetConfigDirOverLegacyDotfile(t *testing.T) {
+	tmp := t.TempDir()
+	homePath := filepath.Join(tmp, "home")
+	configDir := filepath.Join(tmp, "custom-config")
+	wantPath := filepath.Join(configDir, "eget.toml")
+	writeTestFile(t, filepath.Join(homePath, ".eget.toml"), "title = 'legacy'\n")
+	writeTestFile(t, wantPath, "title = 'custom'\n")
+
+	path, err := resolveConfigPath(pathOptions{
+		HomeDir: homePath,
+		GOOS:    "linux",
+		LookupEnv: func(key string) (string, bool) {
+			if key == "EGET_CONFIG_DIR" {
+				return configDir, true
+			}
+			return "", false
+		},
+	})
+	assert.NoErr(t, err)
+	assert.Eq(t, wantPath, path)
+}
+
+func TestResolveConfigPathPrefersEgetConfigOverEgetConfigDir(t *testing.T) {
+	tmp := t.TempDir()
+	configDir := filepath.Join(tmp, "custom-config")
+	configPath := filepath.Join(tmp, "explicit.toml")
+	writeTestFile(t, filepath.Join(configDir, "eget.toml"), "title = 'custom'\n")
+	writeTestFile(t, configPath, "title = 'explicit'\n")
+
+	path, err := resolveConfigPath(pathOptions{
+		HomeDir: filepath.Join(tmp, "home"),
+		GOOS:    "linux",
+		LookupEnv: func(key string) (string, bool) {
+			switch key {
+			case "EGET_CONFIG":
+				return configPath, true
+			case "EGET_CONFIG_DIR":
+				return configDir, true
+			default:
+				return "", false
+			}
+		},
+	})
+	assert.NoErr(t, err)
+	assert.Eq(t, configPath, path)
+}
+
 func TestResolveConfigPathSkipsDotfileWhenEnvPathMissing(t *testing.T) {
 	tmp := t.TempDir()
 	homePath := filepath.Join(tmp, "home")
@@ -165,6 +232,25 @@ func TestResolveWritablePathDefaultsToOSConfigDir(t *testing.T) {
 	}
 }
 
+func TestResolveWritablePathUsesEgetConfigDir(t *testing.T) {
+	tmp := t.TempDir()
+	configDir := filepath.Join(tmp, "custom-config")
+	wantPath := filepath.Join(configDir, "eget.toml")
+
+	path, err := resolveWritablePath(pathOptions{
+		HomeDir: filepath.Join(tmp, "home"),
+		GOOS:    "linux",
+		LookupEnv: func(key string) (string, bool) {
+			if key == "EGET_CONFIG_DIR" {
+				return configDir, true
+			}
+			return "", false
+		},
+	})
+	assert.NoErr(t, err)
+	assert.Eq(t, wantPath, path)
+}
+
 func TestResolveWritablePathDefaultsToHomeConfigDirOnWindows(t *testing.T) {
 	tmp := t.TempDir()
 	homePath := filepath.Join(tmp, "home")
@@ -201,6 +287,29 @@ func TestResolveDotenvPathUsesOSConfigDir(t *testing.T) {
 
 	assert.NoErr(t, err)
 	assert.Eq(t, filepath.Join(tmp, "xdg", "eget", ".env"), path)
+}
+
+func TestResolveDotenvPathUsesEgetConfigDirEvenWithExplicitConfig(t *testing.T) {
+	tmp := t.TempDir()
+	configDir := filepath.Join(tmp, "custom-config")
+
+	path, err := resolveDotenvPath(pathOptions{
+		HomeDir: filepath.Join(tmp, "home"),
+		GOOS:    "linux",
+		LookupEnv: func(key string) (string, bool) {
+			switch key {
+			case "EGET_CONFIG":
+				return filepath.Join(tmp, "explicit.toml"), true
+			case "EGET_CONFIG_DIR":
+				return configDir, true
+			default:
+				return "", false
+			}
+		},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, filepath.Join(configDir, ".env"), path)
 }
 
 func TestLoadDotenvFromConfigDir(t *testing.T) {

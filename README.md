@@ -293,7 +293,7 @@ The target argument accepted by `install` and `download` can be:
 
 - Supports `init`, `list` / `ls`, `doctor`, `get KEY`, and `set KEY VALUE`.
 - `config doctor` prints local config/cache/store/install paths, existence checks, writability checks, and set/unset status for sensitive config values without printing secret values.
-- Loads optional dotenv variables from `~/.config/eget/.env` before reading `eget.toml`, so config values such as `github_token = "${GITHUB_TOKEN}"` and `proxy_url = "${PROXY_URL}"` can reference secrets without storing them directly in the config file.
+- Loads optional dotenv variables from the config directory before reading `eget.toml`, so config values such as `github_token = "${GITHUB_TOKEN}"` and `proxy_url = "${PROXY_URL}"` can reference secrets without storing them directly in the config file. Set `EGET_CONFIG_DIR` to move `.env`, `eget.toml`, and install store files together.
 
 ## Main Options
 
@@ -314,6 +314,7 @@ The target argument accepted by `install` and `download` can be:
 `install` and `download` also support `--fallback-versions N` for SourceForge targets. When the latest version folder does not contain a matching asset, eget scans up to `N` older version folders and uses the first folder where the current `--asset` / `--system` filters produce a single match.
 
 > Cache behavior is configured via `config set global.cache_dir ...` or the `cache_dir` field in the config file.
+> Package download cache files are stored under `{cache_dir}/pkg-cache`; provider metadata API cache, SDK downloads, and SDK indexes use `{cache_dir}/api-cache`, `{cache_dir}/sdk-downloads`, and `{cache_dir}/sdk-index`.
 
 `install` additionally supports:
 
@@ -379,9 +380,12 @@ Notes:
 The config file is resolved in this order:
 
 1. `EGET_CONFIG`
-2. `~/.config/eget/eget.toml`
-3. XDG / LocalAppData fallback path
-4. Legacy `~/.eget.toml`
+2. `{EGET_CONFIG_DIR}/eget.toml`
+3. Legacy `~/.eget.toml`
+4. Local `eget.toml`
+5. XDG / home fallback path, such as `~/.config/eget/eget.toml`
+
+`EGET_CONFIG` only changes the `eget.toml` path. `EGET_CONFIG_DIR` changes the default config directory used by `.env`, `eget.toml`, package install records, and SDK install records.
 
 Supported config sections:
 

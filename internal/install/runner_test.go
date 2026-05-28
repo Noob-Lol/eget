@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -27,8 +28,9 @@ import (
 func TestCacheFilePath(t *testing.T) {
 	cacheDir := t.TempDir()
 	got := CacheFilePath(cacheDir, "https://github.com/babarot/gomi/releases/download/v1.6.3/gomi_Linux_x86_64.tar.gz")
-	if filepath.Dir(got) != cacheDir {
-		t.Fatalf("expected cache file under %q, got %q", cacheDir, got)
+	wantDir := filepath.Join(cacheDir, "pkg-cache")
+	if filepath.Dir(got) != wantDir {
+		t.Fatalf("expected cache file under %q, got %q", wantDir, got)
 	}
 	name := filepath.Base(got)
 	if !strings.HasPrefix(name, "gomi_Linux_x86_64-1.6.3-") {
@@ -285,6 +287,7 @@ func TestDownloadBodyResumesLargeCachedDownload(t *testing.T) {
 
 	cacheDir := t.TempDir()
 	cachePath := CacheFilePathWithMeta(cacheDir, downloadURL, CacheMeta{})
+	assert.Nil(t, os.MkdirAll(filepath.Dir(cachePath), 0o755))
 	part := make([]byte, len(body))
 	copy(part[:chunkStart], body[:chunkStart])
 	assert.Nil(t, os.WriteFile(cachePath+".part", part, 0o644))
@@ -1194,11 +1197,15 @@ func TestRunAutoExtractsMultipleWindowsExecutables(t *testing.T) {
 		t.Fatalf("run install: %v", err)
 	}
 
-	assert.Eq(t, []string{
+	gotFiles := append([]string(nil), result.ExtractedFiles...)
+	wantFiles := []string{
 		filepath.Join(outputDir, "uv.exe"),
 		filepath.Join(outputDir, "uvx.exe"),
 		filepath.Join(outputDir, "uvw.exe"),
-	}, result.ExtractedFiles)
+	}
+	sort.Strings(gotFiles)
+	sort.Strings(wantFiles)
+	assert.Eq(t, wantFiles, gotFiles)
 	for _, file := range result.ExtractedFiles {
 		if _, err := os.Stat(file); err != nil {
 			t.Fatalf("expected extracted file %s: %v", file, err)

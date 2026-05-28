@@ -86,6 +86,13 @@ func TestServiceRejectsDangerousCacheDir(t *testing.T) {
 	}
 }
 
+func TestServiceAcceptsPkgCacheLayout(t *testing.T) {
+	cacheDir := t.TempDir()
+	assert.NoErr(t, os.MkdirAll(filepath.Join(cacheDir, "pkg-cache"), 0o755))
+
+	assert.NoErr(t, validateCacheDirForMutation(cacheDir))
+}
+
 func TestServiceScanClassifiesEntries(t *testing.T) {
 	cacheDir := t.TempDir()
 	writeCacheTestFile(t, filepath.Join(cacheDir, "pkg.zip"), "pkg")

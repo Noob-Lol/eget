@@ -364,6 +364,31 @@ func TestResolvePathFallsBackToXDGLocation(t *testing.T) {
 	}
 }
 
+func TestResolvePathUsesEgetConfigDir(t *testing.T) {
+	tmp := t.TempDir()
+	configDir := filepath.Join(tmp, "custom-config")
+	wantPath := filepath.Join(configDir, "installed.toml")
+
+	store := NewStore(Options{
+		HomeDir: filepath.Join(tmp, "home"),
+		GOOS:    "linux",
+		LookupEnv: func(key string) (string, bool) {
+			if key == "EGET_CONFIG_DIR" {
+				return configDir, true
+			}
+			if key == "EGET_CONFIG" {
+				return filepath.Join(tmp, "explicit.toml"), true
+			}
+			return "", false
+		},
+	})
+
+	path := store.Path()
+	if path != wantPath {
+		t.Fatalf("expected EGET_CONFIG_DIR store path %q, got %q", wantPath, path)
+	}
+}
+
 func TestResolvePathDefaultsToHomeConfigDirOnWindows(t *testing.T) {
 	tmp := t.TempDir()
 	homeDir := filepath.Join(tmp, "home")

@@ -7,9 +7,12 @@
 `eget` 会按以下顺序解析配置文件：
 
 1. `EGET_CONFIG`
-2. `~/.config/eget/eget.toml`
-3. XDG / LocalAppData fallback 路径
-4. 旧路径 `~/.eget.toml`
+2. `{EGET_CONFIG_DIR}/eget.toml`
+3. 旧路径 `~/.eget.toml`
+4. 当前目录 `eget.toml`
+5. XDG / home fallback 路径，例如 `~/.config/eget/eget.toml`
+
+`EGET_CONFIG` 只影响 `eget.toml` 文件位置；`EGET_CONFIG_DIR` 会影响默认配置目录，包括 `.env`、`eget.toml`、`installed.toml` 和 `sdk.installed.json`。
 
 创建默认配置：
 
@@ -33,6 +36,12 @@ eget config init
 
 ```text
 $XDG_CONFIG_HOME/eget/.env
+```
+
+如果设置了 `EGET_CONFIG_DIR`，dotenv 路径为：
+
+```text
+{EGET_CONFIG_DIR}/.env
 ```
 
 `.env` 文件是可选的。它会在 `eget.toml` 之前加载，因此配置文件可以继续通过 gookit/config 的环境变量展开引用敏感信息或内部配置：
@@ -100,7 +109,8 @@ sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 目录语义：
 
 - `download` 未指定 `--to` 时默认使用 `cache_dir`。
-- `install` 和 `download` 会优先复用 `cache_dir` 中已有的远程下载缓存。
+- `install` 和 `download` 会优先复用 `{cache_dir}/pkg-cache/` 中已有的 package 下载缓存。
+- API cache 文件写入 `{cache_dir}/api-cache/`。
 - SDK 归档下载缓存写入 `{cache_dir}/sdk-downloads/`。
 - SDK index JSON 缓存写入 `{cache_dir}/sdk-index/`。
 
@@ -320,6 +330,8 @@ SDK 安装记录默认写入：
 ```text
 ~/.config/eget/sdk.installed.json
 ```
+
+设置 `EGET_CONFIG_DIR` 后，这两个记录文件会改为 `{EGET_CONFIG_DIR}/installed.toml` 和 `{EGET_CONFIG_DIR}/sdk.installed.json`。
 
 SDK 安装记录单独存储，是因为 SDK 常见多版本并存，而普通 package 通常是单个当前安装产物。
 

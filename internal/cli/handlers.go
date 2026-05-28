@@ -640,6 +640,7 @@ func (s *cliService) handleConfigDoctor() error {
 	printDoctorPath("installed_store", installedPath, fileExists(installedPath))
 	printDoctorPath("sdk_installed_store", sdkInstalledPath, fileExists(sdkInstalledPath))
 	printDoctorPath("cache_dir", cacheDir, dirExists(cacheDir))
+	printDoctorPath("pkg_cache_dir", filepath.Join(cacheDir, "pkg-cache"), dirExists(filepath.Join(cacheDir, "pkg-cache")))
 	printDoctorPath("api_cache_dir", filepath.Join(cacheDir, "api-cache"), dirExists(filepath.Join(cacheDir, "api-cache")))
 	printDoctorPath("sdk_index_dir", filepath.Join(cacheDir, "sdk-index"), dirExists(filepath.Join(cacheDir, "sdk-index")))
 	printDoctorPath("target_dir", targetDir, dirExists(targetDir))

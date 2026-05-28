@@ -189,6 +189,8 @@ SDK install records live in:
 ~/.config/eget/sdk.installed.json
 ```
 
+`EGET_CONFIG_DIR` moves the default config directory for `.env`, `eget.toml`, `installed.toml`, and `sdk.installed.json`. `EGET_CONFIG` only overrides the `eget.toml` file path.
+
 The stores are separate because SDKs commonly have multiple installed versions, while normal packages usually represent one active installed artifact.
 
 ## Verification

@@ -7,9 +7,12 @@ This document describes the `eget` configuration file. The README keeps only a s
 `eget` resolves the config file in this order:
 
 1. `EGET_CONFIG`
-2. `~/.config/eget/eget.toml`
-3. XDG / LocalAppData fallback path
-4. Legacy `~/.eget.toml`
+2. `{EGET_CONFIG_DIR}/eget.toml`
+3. Legacy `~/.eget.toml`
+4. Local `eget.toml`
+5. XDG / home fallback path, such as `~/.config/eget/eget.toml`
+
+`EGET_CONFIG` only changes the `eget.toml` file path. `EGET_CONFIG_DIR` changes the default config directory used by `.env`, `eget.toml`, `installed.toml`, and `sdk.installed.json`.
 
 Create the default config:
 
@@ -33,6 +36,12 @@ If `XDG_CONFIG_HOME` is set, the dotenv path follows the same config directory:
 
 ```text
 $XDG_CONFIG_HOME/eget/.env
+```
+
+If `EGET_CONFIG_DIR` is set, the dotenv path is:
+
+```text
+{EGET_CONFIG_DIR}/.env
 ```
 
 The dotenv file is optional. It is loaded before `eget.toml`, so config values can reference secrets or internal settings through gookit/config env expansion:
@@ -100,7 +109,8 @@ Fields:
 Directory semantics:
 
 - `download` uses `cache_dir` by default when `--to` is not provided.
-- `install` and `download` reuse cached remote download contents from `cache_dir` when available.
+- `install` and `download` reuse package download cache files from `{cache_dir}/pkg-cache/` when available.
+- API cache files are stored under `{cache_dir}/api-cache/`.
 - SDK archive downloads are stored under `{cache_dir}/sdk-downloads/`.
 - SDK index JSON files are stored under `{cache_dir}/sdk-index/`.
 
@@ -320,6 +330,8 @@ SDK install records default to:
 ```text
 ~/.config/eget/sdk.installed.json
 ```
+
+When `EGET_CONFIG_DIR` is set, these records move to `{EGET_CONFIG_DIR}/installed.toml` and `{EGET_CONFIG_DIR}/sdk.installed.json`.
 
 SDK records are separate because SDKs commonly have multiple installed versions, while normal packages are usually managed as one active installed artifact.
 

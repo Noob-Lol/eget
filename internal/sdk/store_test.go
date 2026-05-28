@@ -31,7 +31,17 @@ func TestDefaultStorePathUsesHomeConfigDir(t *testing.T) {
 
 	path, err := DefaultStorePath()
 	assert.NoErr(t, err)
-	assert.Eq(t, filepath.Join(home, ".config", "eget", "sdk.installed.json"), path)
+	assert.Eq(t, filepath.Join(xdgConfig, "eget", "sdk.installed.json"), path)
+}
+
+func TestDefaultStorePathUsesEgetConfigDir(t *testing.T) {
+	configDir := t.TempDir()
+	t.Setenv("EGET_CONFIG", filepath.Join(t.TempDir(), "explicit.toml"))
+	t.Setenv("EGET_CONFIG_DIR", configDir)
+
+	path, err := DefaultStorePath()
+	assert.NoErr(t, err)
+	assert.Eq(t, filepath.Join(configDir, "sdk.installed.json"), path)
 }
 
 func TestStoreRecordListAndRemove(t *testing.T) {

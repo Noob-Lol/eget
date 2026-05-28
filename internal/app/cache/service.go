@@ -102,7 +102,7 @@ func looksLikeEgetCacheDir(cacheDir string) bool {
 }
 
 func hasKnownCacheLayout(cacheDir string) bool {
-	for _, name := range []string{"api-cache", "sdk-downloads", "sdk-index"} {
+	for _, name := range []string{"pkg-cache", "api-cache", "sdk-downloads", "sdk-index"} {
 		if info, err := os.Stat(filepath.Join(cacheDir, name)); err == nil && info.IsDir() {
 			return true
 		}
