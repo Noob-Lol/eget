@@ -40,6 +40,7 @@
 - [x] 新增 eget 缓存管理命令 `cache` 第一期。
   - [x] `cache clean` 清理下载文件、API cache、SDK 下载缓存和未完成下载状态，默认清理 3 天前的缓存。
   - [x] `cache serve` 启动只读内网 server，分享 package/sdk cache 文件。
+  - [x] `cache serve` 根路径提供内置只读 Web UI，方便浏览和下载缓存文件。
 - [ ] 增强 cache mirror 自动复用能力。
   - [ ] manifest 增加 source URL hash、etag、last_modified 等字段。
   - [ ] 客户端 install/download/sdk install 在回源前尝试使用局域网 cache mirror。

@@ -143,7 +143,7 @@ eget cache clean --dry-run --older 7d
 eget cache clean --api --all
 ```
 
-`eget cache serve` starts a read-only HTTP server for local cache files so machines on the same LAN can browse or download cached packages and SDK archives.
+`eget cache serve` starts a read-only HTTP server for local cache files so machines on the same LAN can browse or download cached packages and SDK archives. Open the server root URL in a browser to view the built-in file list UI, or request `/manifest.json` for the machine-readable manifest.
 
 ```bash
 eget cache serve

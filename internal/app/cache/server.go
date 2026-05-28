@@ -52,6 +52,8 @@ func NewHandler(service Service, cacheDir string, opts ServeOptions) http.Handle
 
 func (h cacheHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
+	case r.URL.Path == "/":
+		h.handleIndex(w, r)
 	case r.URL.Path == "/healthz":
 		writeJSON(w, http.StatusOK, map[string]any{
 			"ok":      true,

@@ -316,12 +316,29 @@ GET /download/{cache-key}
 首期必须实现：
 
 ```text
+GET /
 GET /healthz
 GET /manifest.json
 GET /files/{relpath}
 ```
 
 `/download/{cache-key}` 为后续客户端自动 mirror 预留。它用于按 URL cache key 精确查找文件，而不是让客户端猜测文件路径。
+
+### / Web UI
+
+Phase 2.1 增加一个内置只读 Web UI，服务端在 `GET /` 返回简洁的 HTML 页面，方便人工查看和下载缓存文件。
+
+设计约束：
+
+- 页面只展示文件，不提供删除、清理、上传或配置修改能力。
+- 页面复用 manifest 扫描结果和 `/files/{relpath}` 下载 URL，不新增第二套文件发现逻辑。
+- 页面展示服务名、版本、当前分享范围、文件总数、总大小和生成时间。
+- 文件列表展示 kind、相对路径、大小、修改时间和下载链接。
+- 前端只使用内嵌 HTML/CSS 和少量原生 JavaScript，支持按 kind 和路径关键字过滤。
+- 不引入 React/Vue/Tailwind 等前端构建链路，保持单二进制发布。
+- `--no-index` 继续只表示禁止目录列表，不禁用 `/` 页面；如后续需要完全关闭 UI，再单独设计 `--no-ui`。
+
+这个 UI 面向内网临时共享和排查缓存状态，视觉风格应当克制、清晰、信息密度适中，避免做成管理后台。
 
 ### /healthz
 
@@ -660,6 +677,25 @@ type ServeOptions struct {
 
 - 单测覆盖 manifest、路径逃逸防护、root scope 过滤、文件下载。
 - 本地手动启动后用浏览器或 `curl` 验证 `/healthz` 和文件下载。
+- 运行 `go test ./...`。
+
+### Phase 2.1: 内置只读 Web UI
+
+目标：让 `cache serve` 打开根路径即可查看缓存文件清单，降低人工浏览和内网分享时的使用成本。
+
+实现：
+
+- 新增 `GET /`，返回内置 HTML 页面。
+- 页面复用现有扫描、root scope 和路径安全逻辑。
+- 页面展示服务状态、文件统计和文件列表。
+- 文件列表提供 kind 过滤、路径搜索和下载链接。
+- UI 渲染逻辑放在 `internal/app/cache` 子文件中，避免继续膨胀 `server.go`。
+- 不新增前端依赖，不引入静态资源目录。
+
+验证：
+
+- 单测覆盖 `/` 返回 HTML、文件统计、下载链接、root scope 过滤和 HTML 转义。
+- 手动启动 `cache serve` 后用浏览器或 HTTP 请求验证首页。
 - 运行 `go test ./...`。
 
 ### Phase 3: manifest 增强与 cache mirror 协议
