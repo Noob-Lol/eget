@@ -1737,6 +1737,22 @@ func TestHandleConfigDoctorPrintsLocalPaths(t *testing.T) {
 				return cfg, nil
 			},
 		},
+		lookupEnv: func(key string) (string, bool) {
+			switch key {
+			case "EGET_CONFIG":
+				return configPath, true
+			case "EGET_CONFIG_DIR":
+				return filepath.Dir(configPath), true
+			case "EGET_BIN":
+				return targetDir, true
+			case "EGET_GITHUB_TOKEN":
+				return "env-secret", true
+			case "EGET_SELF_UPDATE_SOURCE":
+				return "https://example.com/tools/eget/", true
+			default:
+				return "", false
+			}
+		},
 	}
 
 	var out bytes.Buffer
@@ -1748,6 +1764,11 @@ func TestHandleConfigDoctorPrintsLocalPaths(t *testing.T) {
 	assert.NoErr(t, err)
 	got := out.String()
 	assert.Contains(t, got, "eget config doctor")
+	assert.Contains(t, got, "[Config]")
+	assert.Contains(t, got, "[Cache]")
+	assert.Contains(t, got, "[Store]")
+	assert.Contains(t, got, "[Runtime]")
+	assert.Contains(t, got, "[Environment]")
 	assert.Contains(t, got, configPath)
 	assert.Contains(t, got, cacheDir)
 	assert.Contains(t, got, filepath.Join(cacheDir, "pkg-cache"))
@@ -1756,7 +1777,13 @@ func TestHandleConfigDoctorPrintsLocalPaths(t *testing.T) {
 	assert.Contains(t, got, filepath.Join(tmp, ".config", "eget", "installed.toml"))
 	assert.Contains(t, got, filepath.Join(tmp, ".config", "eget", "sdk.installed.json"))
 	assert.Contains(t, got, "github_token: set")
+	assert.Contains(t, got, "EGET_CONFIG: "+configPath)
+	assert.Contains(t, got, "EGET_CONFIG_DIR: "+filepath.Dir(configPath))
+	assert.Contains(t, got, "EGET_BIN: "+targetDir)
+	assert.Contains(t, got, "EGET_GITHUB_TOKEN: set")
+	assert.Contains(t, got, "EGET_SELF_UPDATE_SOURCE: https://example.com/tools/eget/")
 	assert.NotContains(t, got, "secret")
+	assert.NotContains(t, got, "env-secret")
 }
 
 func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {

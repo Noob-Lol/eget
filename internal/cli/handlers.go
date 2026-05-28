@@ -634,15 +634,19 @@ func (s *cliService) handleConfigDoctor() error {
 	sdkInstalledPath := resolveSDKInstalledStorePath()
 
 	ccolor.Infoln("eget config doctor")
+	printDoctorSection("Config")
 	printDoctorPath("config_file", configPath, info.Exists)
 	printDoctorPath("config_dir", configDir, dirExists(configDir))
 	printDoctorPath("dotenv_file", dotenvPath, fileExists(dotenvPath))
+	printDoctorSection("Store")
 	printDoctorPath("installed_store", installedPath, fileExists(installedPath))
 	printDoctorPath("sdk_installed_store", sdkInstalledPath, fileExists(sdkInstalledPath))
+	printDoctorSection("Cache")
 	printDoctorPath("cache_dir", cacheDir, dirExists(cacheDir))
 	printDoctorPath("pkg_cache_dir", filepath.Join(cacheDir, "pkg-cache"), dirExists(filepath.Join(cacheDir, "pkg-cache")))
 	printDoctorPath("api_cache_dir", filepath.Join(cacheDir, "api-cache"), dirExists(filepath.Join(cacheDir, "api-cache")))
 	printDoctorPath("sdk_index_dir", filepath.Join(cacheDir, "sdk-index"), dirExists(filepath.Join(cacheDir, "sdk-index")))
+	printDoctorSection("Runtime")
 	printDoctorPath("target_dir", targetDir, dirExists(targetDir))
 	printDoctorPath("sdk_target_dir", sdkTargetDir, dirExists(sdkTargetDir))
 	if guiTarget := strings.TrimSpace(util.DerefString(cfg.Global.GuiTarget)); guiTarget != "" {
@@ -658,11 +662,45 @@ func (s *cliService) handleConfigDoctor() error {
 	ccolor.Printf("cache_dir_writable: %v\n", dirWritable(cacheDir))
 	ccolor.Printf("target_dir_writable: %v\n", dirWritable(targetDir))
 	ccolor.Printf("sdk_target_dir_writable: %v\n", dirWritable(sdkTargetDir))
+	printDoctorSection("Environment")
+	s.printDoctorEnv()
 	return nil
+}
+
+func printDoctorSection(name string) {
+	ccolor.Printf("\n[%s]\n", name)
 }
 
 func printDoctorPath(name, path string, exists bool) {
 	ccolor.Printf("%s: %s (exists: %v)\n", name, path, exists)
+}
+
+func (s *cliService) printDoctorEnv() {
+	lookupEnv := os.LookupEnv
+	if s != nil && s.lookupEnv != nil {
+		lookupEnv = s.lookupEnv
+	}
+	for _, item := range []struct {
+		name   string
+		secret bool
+	}{
+		{name: "EGET_CONFIG"},
+		{name: "EGET_CONFIG_DIR"},
+		{name: "EGET_BIN"},
+		{name: "EGET_GITHUB_TOKEN", secret: true},
+		{name: "EGET_SELF_UPDATE_SOURCE"},
+	} {
+		value, ok := lookupEnv(item.name)
+		if !ok || value == "" {
+			ccolor.Printf("%s: <unset>\n", item.name)
+			continue
+		}
+		if item.secret {
+			ccolor.Printf("%s: set\n", item.name)
+			continue
+		}
+		ccolor.Printf("%s: %s\n", item.name, value)
+	}
 }
 
 func resolveInstalledStorePath() string {
