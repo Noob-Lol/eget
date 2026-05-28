@@ -12,6 +12,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -625,7 +626,7 @@ func (s *cliService) handleConfigDoctor() error {
 			configPath = writable
 		}
 	}
-	configDir := filepath.Dir(configPath)
+	configDir := s.doctorConfigDir(configPath)
 	cacheDir := expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.CacheDir), "~/.cache/eget"))
 	targetDir := expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.Target), "~/.local/bin"))
 	sdkTargetDir := expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.SDKTarget), "~/.local/sdks"))
@@ -673,6 +674,18 @@ func printDoctorSection(name string) {
 
 func printDoctorPath(name, path string, exists bool) {
 	ccolor.Printf("%s: %s (exists: %v)\n", name, path, exists)
+}
+
+func (s *cliService) doctorConfigDir(configPath string) string {
+	lookupEnv := os.LookupEnv
+	if s != nil && s.lookupEnv != nil {
+		lookupEnv = s.lookupEnv
+	}
+	homeDir, err := util.Home()
+	if err != nil {
+		return filepath.Dir(configPath)
+	}
+	return filepath.Dir(cfgpkg.OSConfigPath(homeDir, runtime.GOOS, lookupEnv))
 }
 
 func (s *cliService) printDoctorEnv() {

@@ -1786,6 +1786,46 @@ func TestHandleConfigDoctorPrintsLocalPaths(t *testing.T) {
 	assert.NotContains(t, got, "env-secret")
 }
 
+func TestHandleConfigDoctorKeepsConfigDirIndependentFromExplicitConfigFile(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("EGET_CONFIG_DIR", "")
+	configPath := filepath.Join(tmp, "external", "eget.windows.toml")
+	assert.NoErr(t, os.MkdirAll(filepath.Dir(configPath), 0o755))
+	assert.NoErr(t, os.WriteFile(configPath, []byte("[global]\n"), 0o644))
+
+	cfg := cfgpkg.NewFile()
+	svc := &cliService{
+		cfgService: app.ConfigService{
+			ConfigPath: configPath,
+			Load: func() (*cfgpkg.File, error) {
+				return cfg, nil
+			},
+		},
+		lookupEnv: func(key string) (string, bool) {
+			if key == "EGET_CONFIG" {
+				return configPath, true
+			}
+			return "", false
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleConfig(&ConfigOptions{Action: "doctor"})
+
+	assert.NoErr(t, err)
+	got := out.String()
+	defaultConfigDir := filepath.Join(tmp, ".config", "eget")
+	assert.Contains(t, got, "config_file: "+configPath)
+	assert.Contains(t, got, "config_dir: "+defaultConfigDir)
+	assert.Contains(t, got, "dotenv_file: "+filepath.Join(defaultConfigDir, ".env"))
+	assert.NotContains(t, got, "config_dir: "+filepath.Dir(configPath))
+}
+
 func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {
 	installer := &fakeUpdateInstallerForCLI{}
 	svc := &cliService{
