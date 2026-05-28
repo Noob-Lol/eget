@@ -79,6 +79,8 @@ func (s SelfUpdateService) Update(opts SelfUpdateOptions) (SelfUpdateResult, err
 	installOpts.DownloadOnly = false
 	installOpts.ExtractFile = ""
 	installOpts.Asset = nil
+	installOpts.CacheName = "eget"
+	installOpts.CacheVersion = result.LatestVersion
 	if len(opts.Asset) > 0 {
 		installOpts.Asset = append([]string(nil), opts.Asset...)
 	}

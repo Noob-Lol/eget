@@ -167,6 +167,8 @@ func TestSelfUpdateDownloadsFromInternalSource(t *testing.T) {
 	assert.Eq(t, "eget", installer.opts.Name)
 	assert.Eq(t, "all", installer.opts.System)
 	assert.True(t, installer.opts.DownloadOnly)
+	assert.Eq(t, "eget", installer.opts.CacheName)
+	assert.Eq(t, "1.7.1-18-gabcd1234", installer.opts.CacheVersion)
 	assert.Eq(t, 0, len(installer.opts.Asset))
 }
 
