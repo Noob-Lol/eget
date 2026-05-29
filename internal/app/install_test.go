@@ -260,6 +260,38 @@ func TestInstallTargetRecordsForgeTagFromOptionsBeforeLatestFallback(t *testing.
 	assert.Eq(t, "v2.3.3", store.entry.Version)
 }
 
+func TestInstallTargetSkipsGitHubMetadataForTemplatePackage(t *testing.T) {
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:            "http://mirror.kdev.com/tools/miglite/miglite-windows-amd64.exe",
+			Tool:           "miglite.exe",
+			ExtractedFiles: []string{"miglite.exe"},
+		},
+	}
+	store := &fakeInstalledStore{}
+	svc := Service{
+		Runner: runner,
+		Store:  store,
+		ReleaseInfo: func(repo, url string) (string, time.Time, error) {
+			t.Fatalf("template package should not request release info, got repo=%q url=%q", repo, url)
+			return "", time.Time{}, nil
+		},
+		RepoMetadata: func(repo string) (RepoMetadata, error) {
+			t.Fatalf("template package should not request repo metadata, got repo=%q", repo)
+			return RepoMetadata{}, nil
+		},
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	_, err := svc.InstallTarget("template:miglite", install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, "template:miglite", store.entry.Repo)
+	assert.Eq(t, "", store.entry.Tag)
+	assert.Eq(t, "", store.entry.Version)
+}
+
 func TestTagFromReleaseURL(t *testing.T) {
 	tests := []struct {
 		name string

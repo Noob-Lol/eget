@@ -341,7 +341,7 @@ func (s Service) installResolvedTarget(runTarget, recordTarget string, opts inst
 	if tag == "" && isForge && opts.Tag != "" {
 		tag = opts.Tag
 	}
-	if tag == "" && s.ReleaseInfo != nil {
+	if tag == "" && s.ReleaseInfo != nil && shouldFetchReleaseInfo(repo) {
 		if gotTag, gotDate, err := s.ReleaseInfo(repo, result.URL); err == nil {
 			if tag == "" {
 				tag = gotTag
@@ -349,7 +349,10 @@ func (s Service) installResolvedTarget(runTarget, recordTarget string, opts inst
 			releaseDate = gotDate
 		}
 	}
-	meta := s.repoMetadata(repo)
+	meta := RepoMetadata{}
+	if shouldFetchRepoMetadata(repo) {
+		meta = s.repoMetadata(repo)
+	}
 	if desc := s.configDescForRepo(repo); desc != "" {
 		meta.Desc = desc
 	}
@@ -382,6 +385,27 @@ func (s Service) installResolvedTarget(runTarget, recordTarget string, opts inst
 		return RunResult{}, err
 	}
 	return result, nil
+}
+
+func shouldFetchReleaseInfo(repo string) bool {
+	if install.DetectTargetKind(repo) == install.TargetTemplate {
+		return false
+	}
+	if sourcesf.IsTarget(repo) {
+		return false
+	}
+	if forge.IsTarget(repo) {
+		return true
+	}
+	return isGitHubRepoTarget(repo)
+}
+
+func shouldFetchRepoMetadata(repo string) bool {
+	return isGitHubRepoTarget(repo)
+}
+
+func isGitHubRepoTarget(repo string) bool {
+	return install.DetectTargetKind(repo) == install.TargetRepo || install.DetectTargetKind(repo) == install.TargetGitHubURL
 }
 
 func (s Service) configDescForRepo(repo string) string {
