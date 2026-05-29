@@ -134,6 +134,14 @@ target = "~/.local/bin"
 		t.Fatalf("expected packages.fzf.repo to be junegunn/fzf, got %q", value)
 	}
 
+	value, err = svc.ConfigGet("pkg.fzf.repo")
+	if err != nil {
+		t.Fatalf("config get pkg.fzf.repo: %v", err)
+	}
+	if value != "junegunn/fzf" {
+		t.Fatalf("expected pkg.fzf.repo to be junegunn/fzf, got %q", value)
+	}
+
 	if err := svc.ConfigSet("global.cache_dir", "~/.cache/eget"); err != nil {
 		t.Fatalf("config set cache_dir: %v", err)
 	}

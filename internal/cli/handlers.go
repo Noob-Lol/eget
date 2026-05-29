@@ -634,7 +634,7 @@ func (s *cliService) handleConfigDoctor() error {
 	installedPath := resolveInstalledStorePath()
 	sdkInstalledPath := resolveSDKInstalledStorePath()
 
-	ccolor.Infoln("eget config doctor")
+	ccolor.Infoln("📇 Eget config doctor result")
 	printDoctorSection("Config")
 	printDoctorPath("config_file", configPath, info.Exists)
 	printDoctorPath("config_dir", configDir, dirExists(configDir))
@@ -669,11 +669,11 @@ func (s *cliService) handleConfigDoctor() error {
 }
 
 func printDoctorSection(name string) {
-	ccolor.Printf("\n[%s]\n", name)
+	ccolor.Warnf("\n[%s]\n", name)
 }
 
 func printDoctorPath(name, path string, exists bool) {
-	ccolor.Printf("%s: %s (exists: %v)\n", name, path, exists)
+	ccolor.Printf("%s: %s (exists: <green>%v</>)\n", name, path, exists)
 }
 
 func (s *cliService) doctorConfigDir(configPath string) string {

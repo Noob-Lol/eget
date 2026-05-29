@@ -165,6 +165,13 @@ func (s ConfigService) ConfigGet(key string) (any, error) {
 		return nil, err
 	}
 
+	// Support pkg and pkgs as aliases for packages.
+	if after, ok := strings.CutPrefix(key, "pkg."); ok {
+		key = "packages." + after
+	} else if after, ok := strings.CutPrefix(key, "pkgs."); ok {
+		key = "packages." + after
+	}
+
 	value, ok := cfgpkg.GetByPath(cfg, key)
 	if !ok {
 		return nil, fmt.Errorf("unsupported config key %q", key)

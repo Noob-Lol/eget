@@ -9,9 +9,11 @@ type ShowOptions struct {
 func newShowCmd(handler CommandHandler) (*gcli.Command, func()) {
 	opts := &ShowOptions{}
 	cmd := gcli.NewCommand("show", "Show package details")
+	cmd.Aliases = []string{"info"}
 	cmd.Config = func(c *gcli.Command) {
 		c.AddArg("target", "Package name or repo to show", true)
 	}
+
 	cmd.Func = func(c *gcli.Command, args []string) error {
 		target := c.Arg("target").String()
 		if err := validateNoFlagArgs(args); err != nil {

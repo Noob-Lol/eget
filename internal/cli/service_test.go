@@ -1763,7 +1763,7 @@ func TestHandleConfigDoctorPrintsLocalPaths(t *testing.T) {
 
 	assert.NoErr(t, err)
 	got := out.String()
-	assert.Contains(t, got, "eget config doctor")
+	assert.Contains(t, got, "Eget config doctor result")
 	assert.Contains(t, got, "[Config]")
 	assert.Contains(t, got, "[Cache]")
 	assert.Contains(t, got, "[Store]")

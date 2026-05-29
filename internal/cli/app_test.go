@@ -1085,6 +1085,26 @@ func TestMain_ShowBindsTarget(t *testing.T) {
 	assert.Eq(t, "fzf", opts.Target)
 }
 
+func TestMain_InfoAliasBindsShowTarget(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"info", "fzf"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	assert.Eq(t, "show", calls[0].name)
+	opts, ok := calls[0].options.(*ShowOptions)
+	if !ok {
+		t.Fatalf("expected ShowOptions, got %T", calls[0].options)
+	}
+	assert.Eq(t, "fzf", opts.Target)
+}
+
 func TestMain_ListAllBindsOption(t *testing.T) {
 	calls := make([]commandCall, 0, 1)
 	handler := func(name string, options any) error {
