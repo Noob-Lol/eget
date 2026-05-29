@@ -330,7 +330,7 @@ eget config set global.target ~/.local/bin
 - 单目标 `update <target>` 要求目标已存在于 config 或 installed store；新目标请使用 `install`。
 - `--batch N`: 控制 `update --all` 的包任务并发。`0` 表示自动，`1` 表示串行，大于 `1` 表示最多同时处理该数量的包。
 - `--chunk N`: 控制 update 触发下载时的 HTTP Range 分片并发。
-- `--check`: 检查并列出有新版本的已安装包，等同于 `list --outdated`。
+- `--check`: 检查并列出有新版本的已安装包，等同于 `list --outdated`。如果提供 target，例如 `eget up --check markview jq`，则只检查这些包。
 - `--dry-run`: 仅预览更新计划，不执行实际安装。
 - `--interactive`: 交互式选择要更新的托管包。
 

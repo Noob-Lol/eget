@@ -500,6 +500,46 @@ func TestListUpdateCandidatesIgnoresConfiguredPackageNames(t *testing.T) {
 	assert.Eq(t, "rg", items[0].Name)
 }
 
+func TestListUpdateCandidatesForTargetsChecksOnlyRequestedPackages(t *testing.T) {
+	checkedRepos := make([]string, 0, 2)
+	svc := UpdateService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["jq"] = cfgpkg.Section{Repo: util.StringPtr("jqlang/jq")}
+			cfg.Packages["markview"] = cfgpkg.Section{Repo: util.StringPtr("OXY2DEV/markview.nvim")}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"jqlang/jq":             {Repo: "jqlang/jq", Tag: "jq-1.7"},
+				"OXY2DEV/markview.nvim": {Repo: "OXY2DEV/markview.nvim", Tag: "v1.0.0"},
+				"BurntSushi/ripgrep":    {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			checkedRepos = append(checkedRepos, target.Repo)
+			switch target.Repo {
+			case "jqlang/jq":
+				return LatestInfo{Tag: "jq-1.8"}, nil
+			case "OXY2DEV/markview.nvim":
+				return LatestInfo{Tag: "v1.0.0"}, nil
+			default:
+				t.Fatalf("unexpected latest check for %s", target.Repo)
+				return LatestInfo{}, nil
+			}
+		},
+	}
+
+	items, failures, checked, err := svc.ListUpdateCandidatesForTargets([]string{"markview", "jq"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 2, checked)
+	assert.Eq(t, []string{"OXY2DEV/markview.nvim", "jqlang/jq"}, checkedRepos)
+	assert.Eq(t, 0, len(failures))
+	assert.Eq(t, 1, len(items))
+	assert.Eq(t, "jq", items[0].Name)
+}
+
 func TestUpdateAllPackagesPassesAPICacheOptionsFromConfigToInstaller(t *testing.T) {
 	installer := &fakeInstallService{}
 	cacheTime := 120

@@ -1935,6 +1935,62 @@ func TestHandleUpdateCheckPrintsSameOutdatedListWithoutUpdating(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateCheckWithTargetsOnlyChecksRequestedPackages(t *testing.T) {
+	installer := &fakeUpdateInstallerForCLI{}
+	checkedRepos := make([]string, 0, 2)
+	svc := &cliService{
+		listService: app.ListService{
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				t.Fatalf("expected targeted update --check to use update service")
+				return app.LatestInfo{}, nil
+			},
+		},
+		updService: app.UpdateService{
+			Install: installer,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["jq"] = cfgpkg.Section{Repo: util.StringPtr("jqlang/jq")}
+				cfg.Packages["markview"] = cfgpkg.Section{Repo: util.StringPtr("OXY2DEV/markview.nvim")}
+				cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+				return cfg, nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"jqlang/jq":             {Repo: "jqlang/jq", Tag: "jq-1.7"},
+					"OXY2DEV/markview.nvim": {Repo: "OXY2DEV/markview.nvim", Tag: "v1.0.0"},
+					"BurntSushi/ripgrep":    {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+				}}, nil
+			},
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				checkedRepos = append(checkedRepos, target.Repo)
+				switch target.Repo {
+				case "jqlang/jq":
+					return app.LatestInfo{Tag: "jq-1.8"}, nil
+				case "OXY2DEV/markview.nvim":
+					return app.LatestInfo{Tag: "v1.0.0"}, nil
+				default:
+					t.Fatalf("unexpected latest check for %s", target.Repo)
+					return app.LatestInfo{}, nil
+				}
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleUpdate(&UpdateOptions{Check: true, Targets: []string{"markview", "jq"}})
+	assert.NoErr(t, err)
+
+	got := out.String()
+	assert.Eq(t, []string{"OXY2DEV/markview.nvim", "jqlang/jq"}, checkedRepos)
+	assert.Contains(t, got, "jqlang/jq")
+	assert.Contains(t, got, "jq-1.8")
+	assert.NotContains(t, got, "BurntSushi/ripgrep")
+	assert.Eq(t, 0, len(installer.targets))
+}
+
 func TestHandleConfigInitRejectsOverwriteWithoutConfirmation(t *testing.T) {
 	svc := &cliService{
 		cfgService: app.ConfigService{

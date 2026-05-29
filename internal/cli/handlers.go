@@ -807,6 +807,9 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		return nil
 	}
 	if opts.Check {
+		if len(opts.Targets) > 0 {
+			return s.handleUpdateCheckTargets(opts.Targets)
+		}
 		return s.handleList(&ListOptions{Outdated: true})
 	}
 	if opts.DryRun {
@@ -867,6 +870,45 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *cliService) handleUpdateCheckTargets(targets []string) error {
+	ccolor.Infoln("🚀 Checking outdated packages")
+	s.printOutdatedProxyNotice()
+	reporter := newOutdatedProgressReporter(s.stderrWriter(), !appVerbose())
+	cacheNotices := &apiCacheNoticeCounter{}
+	restoreNotices := suppressOutdatedNetworkNotices(cacheNotices)
+	defer restoreNotices()
+	prevOnDone := s.updService.OnCheckDone
+	s.updService.OnCheckDone = reporter.OnCheckDone
+	defer func() {
+		s.updService.OnCheckDone = prevOnDone
+	}()
+
+	items, failures, checked, err := s.updService.ListUpdateCandidatesForTargets(targets)
+	reporter.Finish()
+	if err != nil {
+		return err
+	}
+	s.printAPICacheSummary(cacheNotices.Count())
+	ccolor.Successf("✅ Checked %d packages\n", checked)
+
+	for _, failure := range failures {
+		ccolor.Fprintf(os.Stderr, "<yellow>check_failed</> %s (%s): %v\n", failure.Name, failure.Repo, failure.Error)
+	}
+	if len(items) == 0 {
+		ccolor.Cyanln("🎉 No outdated packages found")
+		return nil
+	}
+
+	ccolor.Infoln("Outdated Packages:")
+	cols := []string{"Name", "Repo", "Version", "Latest version", "Published At"}
+	rows := make([][]any, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, []any{item.Name, item.Repo, item.InstalledTag, item.LatestTag, formatOutdatedTime(item.PublishedAt)})
+	}
+	ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 	return nil
 }
 

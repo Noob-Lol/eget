@@ -331,7 +331,7 @@ The target argument accepted by `install` and `download` can be:
 - Single-target `update <target>` requires the target to already exist in config or the installed store. Use `install` for new targets.
 - `--batch N`: Control package task concurrency for `update --all`. `0` means auto, `1` means serial, and values greater than `1` process up to that many packages at once.
 - `--chunk N`: Control HTTP Range chunk concurrency for downloads triggered by update.
-- `--check`: Check and list outdated installed packages, same as `list --outdated`.
+- `--check`: Check and list outdated installed packages, same as `list --outdated`. When targets are provided, for example `eget up --check markview jq`, only those packages are checked.
 - `--dry-run`: Preview the update plan without performing installation changes.
 - `--interactive`: Interactively select which managed packages to update.
 
