@@ -232,7 +232,6 @@ latest_format = "yaml"
 url_template = "https://example.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
 os_map = { windows = "windows", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "amd64", arm64 = "arm64" }
-ext_map = { windows = ".zip", linux = ".tar.gz", darwin = ".tar.gz" }
 extract_file = "markview"
 ```
 
@@ -244,6 +243,7 @@ Fields:
 - `version_regex`: optional version extraction regex. If it has a capture group, the first group is used; otherwise the full match is used.
 - `url_template`: download URL template.
 - `os_map` / `arch_map` / `ext_map` / `libc_map`: map local platform variables to the download site's naming.
+  - For template packages, `{ext}` defaults to `.exe` on Windows and an empty string on Linux/macOS; set `ext_map` only when the download site uses a different suffix such as `.zip` or `.tar.gz`.
 - `checksum_url_template`: checksum metadata URL template.
 - `checksum_format`: `text` or `json`.
 - `checksum_json_path`: dot path used when `checksum_format = "json"`; template variables are allowed.
@@ -257,7 +257,7 @@ Fields:
 - `{version}`: latest or command-selected version.
 - `{os}`: OS after `os_map`.
 - `{arch}`: arch after `arch_map`.
-- `{ext}`: extension after `ext_map`.
+- `{ext}`: extension after `ext_map`; defaults to `.exe` on Windows and empty on Linux/macOS when `ext_map` is not set.
 - `{libc}`: Linux libc value after `libc_map`; empty outside Linux or when libc is unknown.
 
 `run-asset` is not a general `post_install`. It only executes the downloaded asset after checksum verification, arguments must be an array, and no shell is used. Template `latest_url` and `checksum_url_template` values are arbitrary site metadata. Requests reuse HTTP options such as `proxy_url` and `disable_ssl`, but they are not forced into provider API cache classification.

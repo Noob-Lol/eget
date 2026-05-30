@@ -51,7 +51,7 @@ func VariablesFor(input VariableInput) (map[string]string, error) {
 		"version": input.Version,
 		"os":      goos,
 		"arch":    goarch,
-		"ext":     mappedValue(input.Config.ExtMap, input.GOOS),
+		"ext":     extValue(input.Config.ExtMap, input.GOOS),
 		"libc":    libc,
 	}, nil
 }
@@ -211,4 +211,18 @@ func mappedValue(items map[string]string, key string) string {
 		return key
 	}
 	return value
+}
+
+func extValue(items map[string]string, goos string) string {
+	if items != nil {
+		if value, ok := items[goos]; ok {
+			return value
+		}
+	}
+	switch goos {
+	case "windows":
+		return ".exe"
+	default:
+		return ""
+	}
 }

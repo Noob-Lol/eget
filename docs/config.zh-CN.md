@@ -232,7 +232,6 @@ latest_format = "yaml"
 url_template = "https://example.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
 os_map = { windows = "windows", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "amd64", arm64 = "arm64" }
-ext_map = { windows = ".zip", linux = ".tar.gz", darwin = ".tar.gz" }
 extract_file = "markview"
 ```
 
@@ -244,6 +243,7 @@ extract_file = "markview"
 - `version_regex`: 可选正则；有捕获组时使用第一个捕获组，否则使用完整匹配。
 - `url_template`: 下载 URL 模板。
 - `os_map` / `arch_map` / `ext_map` / `libc_map`: 将当前平台变量映射到下载站命名。
+  - template package 中 `{ext}` 默认在 Windows 为 `.exe`，Linux/macOS 为空字符串；只有下载站使用 `.zip`、`.tar.gz` 等其他后缀时才需要设置 `ext_map`。
 - `checksum_url_template`: checksum metadata 地址模板。
 - `checksum_format`: `text` 或 `json`。
 - `checksum_json_path`: `checksum_format = "json"` 时用于提取 checksum 的点分路径，可使用模板变量。
@@ -257,7 +257,7 @@ extract_file = "markview"
 - `{version}`: latest 或命令行指定的版本。
 - `{os}`: 经过 `os_map` 处理后的 OS。
 - `{arch}`: 经过 `arch_map` 处理后的 arch。
-- `{ext}`: 经过 `ext_map` 处理后的扩展名。
+- `{ext}`: 经过 `ext_map` 处理后的扩展名；未设置 `ext_map` 时 Windows 默认 `.exe`，Linux/macOS 默认空字符串。
 - `{libc}`: Linux 下检测到 libc 后经过 `libc_map` 处理的值；非 Linux 或未检测到时为空。
 
 `run-asset` 不是通用 `post_install`。它只执行当前下载并已通过 checksum 校验的 asset，参数必须是数组，不会经过 shell，也不会执行额外脚本。template 的 `latest_url` 和 `checksum_url_template` 是任意站点 metadata，请求会复用 `proxy_url`、`disable_ssl` 等 HTTP 配置，但不会被强制归类为 provider API cache。

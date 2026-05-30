@@ -37,6 +37,39 @@ func TestRenderClaudeLinuxMuslTemplate(t *testing.T) {
 	assert.Eq(t, "https://downloads.claude.ai/1.2.3/linux-x64-musl/claude", got)
 }
 
+func TestVariablesForUsesDefaultExecutableExt(t *testing.T) {
+	tests := []struct {
+		name string
+		goos string
+		want string
+	}{
+		{name: "windows exe", goos: "windows", want: ".exe"},
+		{name: "linux empty", goos: "linux", want: ""},
+		{name: "darwin empty", goos: "darwin", want: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vars, err := VariablesFor(VariableInput{Name: "markview", Version: "1.2.3", GOOS: tt.goos, GOARCH: "amd64"})
+			assert.NoErr(t, err)
+			assert.Eq(t, tt.want, vars["ext"])
+		})
+	}
+}
+
+func TestVariablesForExtMapOverridesDefaultExecutableExt(t *testing.T) {
+	vars, err := VariablesFor(VariableInput{
+		Name:    "markview",
+		Version: "1.2.3",
+		GOOS:    "windows",
+		GOARCH:  "amd64",
+		Config: Config{
+			ExtMap: map[string]string{"windows": ".zip"},
+		},
+	})
+	assert.NoErr(t, err)
+	assert.Eq(t, ".zip", vars["ext"])
+}
+
 func TestParseLatestTextAndJSON(t *testing.T) {
 	got, err := ParseLatest([]byte("1.2.3\n"), Config{LatestFormat: "text"})
 	assert.NoErr(t, err)
