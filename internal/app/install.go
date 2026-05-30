@@ -66,6 +66,7 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 	if err := validateRawConcurrencyOptions(opts); err != nil {
 		return RunResult{}, err
 	}
+	opts, extras = inferAddPackageName(target, opts, extras)
 	runTarget, recordTarget, opts, err := s.resolveInstallRequest(target, opts, false)
 	if err != nil {
 		return RunResult{}, err
@@ -100,6 +101,20 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 	}
 
 	return result, nil
+}
+
+func inferAddPackageName(target string, opts install.Options, extras []InstallExtras) (install.Options, []InstallExtras) {
+	if len(extras) == 0 || !extras[0].AddToConfig || opts.Name != "" || extras[0].PackageName != "" {
+		return opts, extras
+	}
+	name, err := ResolvePackageName(target, "")
+	if err != nil || name == "" {
+		return opts, extras
+	}
+	opts.Name = name
+	extras[0].PackageName = name
+	extras[0].PackageOpts.Name = name
+	return opts, extras
 }
 
 func applyDefaultInstallTarget(opts install.Options) install.Options {

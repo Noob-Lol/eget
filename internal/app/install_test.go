@@ -1156,8 +1156,11 @@ func TestInstallTargetWithAddRecordsManagedPackage(t *testing.T) {
 	if config.repo != "junegunn/fzf" {
 		t.Fatalf("expected config repo junegunn/fzf, got %q", config.repo)
 	}
-	if config.name != "" {
-		t.Fatalf("expected empty explicit name, got %q", config.name)
+	if config.name != "fzf" {
+		t.Fatalf("expected inferred package name fzf, got %q", config.name)
+	}
+	if runner.opts.Name != "fzf" {
+		t.Fatalf("expected inferred install name fzf, got %q", runner.opts.Name)
 	}
 	if config.opts.ExtractFile != "fzf" {
 		t.Fatalf("expected extract file to be forwarded, got %q", config.opts.ExtractFile)
@@ -1284,6 +1287,32 @@ func TestInstallTargetWithAddUsesExplicitPackageName(t *testing.T) {
 	if config.name != "chlog" {
 		t.Fatalf("expected explicit package name chlog, got %q", config.name)
 	}
+}
+
+func TestInstallTargetWithAddInfersPackageNameBeforeInstall(t *testing.T) {
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:            "https://github.com/alacritty/alacritty/releases/download/v0.17.0/Alacritty-v0.17.0-portable.exe",
+			ExtractedFiles: []string{"./alacritty.exe"},
+		},
+	}
+	config := &fakeConfigRecorder{}
+	svc := Service{
+		Runner: runner,
+		Config: config,
+	}
+
+	_, err := svc.InstallTarget("alacritty/alacritty", install.Options{}, InstallExtras{
+		AddToConfig: true,
+		PackageOpts: install.Options{},
+	})
+	if err != nil {
+		t.Fatalf("install target with inferred package name: %v", err)
+	}
+
+	assert.Eq(t, "alacritty", runner.opts.Name)
+	assert.Eq(t, "alacritty", config.name)
+	assert.Eq(t, "alacritty", config.opts.Name)
 }
 
 func TestInstallAllPackagesInstallsConfiguredPackagesByName(t *testing.T) {

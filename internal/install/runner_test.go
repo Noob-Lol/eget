@@ -1961,6 +1961,17 @@ func TestOutputPathUsesPreferredNameForExecutable(t *testing.T) {
 	}
 }
 
+func TestOutputPathUsesPreferredNameForVersionedPortableExecutable(t *testing.T) {
+	file := ExtractedFile{Name: "Alacritty-v0.17.0-portable.exe", mode: 0o666}
+	got, err := outputPath(file, "", false, "alacritty", false)
+	if err != nil {
+		t.Fatalf("outputPath(): %v", err)
+	}
+	if got != "alacritty.exe" {
+		t.Fatalf("expected preferred output name alacritty.exe, got %q", got)
+	}
+}
+
 func TestOutputPathKeepsExecutableNameWhenPreferredNameDoesNotMatchPlatformSuffix(t *testing.T) {
 	file := ExtractedFile{Name: "bd.exe", mode: 0o666}
 	got, err := outputPath(file, "", false, "beads", false)

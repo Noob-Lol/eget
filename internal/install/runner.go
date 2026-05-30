@@ -1050,7 +1050,10 @@ func shouldUsePreferredExecutableName(originalName, preferredName string) bool {
 	tokens := strings.FieldsFunc(remainder, func(r rune) bool {
 		return r == '-' || r == '_' || r == '.'
 	})
-	return hasAnyToken(tokens, append(osTokens, archTokens...)...)
+	return hasAnyToken(tokens, osTokens...) ||
+		hasAnyToken(tokens, archTokens...) ||
+		hasAnyToken(tokens, executableVariantTokens...) ||
+		hasVersionToken(tokens)
 }
 
 func heuristicExecutableName(name string) string {
@@ -1083,6 +1086,17 @@ func executableSuffix(name string) string {
 
 var osTokens = []string{"windows", "win", "win32", "win64", "darwin", "macos", "osx", "linux", "freebsd", "openbsd", "netbsd", "android", "illumos", "solaris", "plan9"}
 var archTokens = []string{"amd64", "x86_64", "x64", "386", "x86", "i386", "arm64", "aarch64", "arm32", "armv6", "armv7", "arm", "riscv64"}
+var executableVariantTokens = []string{"portable"}
+var versionTokenPattern = regexp.MustCompile(`^v?\d+$`)
+
+func hasVersionToken(tokens []string) bool {
+	for _, token := range tokens {
+		if versionTokenPattern.MatchString(token) {
+			return true
+		}
+	}
+	return false
+}
 
 func osAliases(goos string) []string {
 	switch strings.ToLower(goos) {
