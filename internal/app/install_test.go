@@ -1108,6 +1108,27 @@ cache_dir = "~/.cache/eget"
 	}
 }
 
+func TestDownloadTargetPreservesExplicitCacheMeta(t *testing.T) {
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:            "https://example.com/tools/eget/eget-windows-amd64.exe",
+			ExtractedFiles: []string{"./eget.exe"},
+		},
+	}
+	svc := Service{Runner: runner}
+
+	_, err := svc.DownloadTarget("https://example.com/tools/eget/eget-windows-amd64.exe", install.Options{
+		CacheName:    "eget",
+		CacheVersion: "1.7.2-45-g5286225",
+	})
+	if err != nil {
+		t.Fatalf("download target: %v", err)
+	}
+
+	assert.Eq(t, "eget", runner.opts.CacheName)
+	assert.Eq(t, "1.7.2-45-g5286225", runner.opts.CacheVersion)
+}
+
 func TestInstallTargetReturnsRunnerErrorWithoutRecording(t *testing.T) {
 	runner := &fakeRunner{err: errors.New("boom")}
 	store := &fakeInstalledStore{}

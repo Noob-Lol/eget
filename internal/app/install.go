@@ -628,6 +628,15 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		batchConcurrency = *cfg.Global.BatchConcurrency
 	}
 
+	cacheName := merged.Name
+	if cli.CacheName != "" {
+		cacheName = cli.CacheName
+	}
+	cacheVersion := merged.Tag
+	if cli.CacheVersion != "" {
+		cacheVersion = cli.CacheVersion
+	}
+
 	return install.Options{
 		Tag:                 merged.Tag,
 		Name:                merged.Name,
@@ -640,8 +649,8 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		IsGUI:               merged.IsGUI,
 		InstallMode:         merged.InstallMode,
 		CacheDir:            cacheDir,
-		CacheName:           merged.Name,
-		CacheVersion:        merged.Tag,
+		CacheName:           cacheName,
+		CacheVersion:        cacheVersion,
 		ProxyURL:            merged.ProxyURL,
 		UserAgent:           merged.UserAgent,
 		APICacheEnabled:     apiCacheEnabled,
