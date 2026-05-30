@@ -104,6 +104,34 @@ func TestWindowsDetectorShowsArchivesWhenMultipleExecutablesMatch(t *testing.T) 
 	}, candidates)
 }
 
+func TestLinuxDetectorPrefersGlibcAsset(t *testing.T) {
+	d, err := newSystemDetectorWithLibc("linux", "amd64", "glibc")
+	assert.NoErr(t, err)
+
+	got, candidates, err := d.Detect([]string{
+		"https://example.com/starship-x86_64-unknown-linux-gnu.tar.gz",
+		"https://example.com/starship-x86_64-unknown-linux-musl.tar.gz",
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "https://example.com/starship-x86_64-unknown-linux-gnu.tar.gz", got)
+	assert.Empty(t, candidates)
+}
+
+func TestLinuxDetectorPrefersMuslAsset(t *testing.T) {
+	d, err := newSystemDetectorWithLibc("linux", "amd64", "musl")
+	assert.NoErr(t, err)
+
+	got, candidates, err := d.Detect([]string{
+		"https://example.com/starship-x86_64-unknown-linux-gnu.tar.gz",
+		"https://example.com/starship-x86_64-unknown-linux-musl.tar.gz",
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "https://example.com/starship-x86_64-unknown-linux-musl.tar.gz", got)
+	assert.Empty(t, candidates)
+}
+
 func TestAssetDetectorSkipsReleaseMetadataAssets(t *testing.T) {
 	d := &assetDetector{Asset: "exe"}
 

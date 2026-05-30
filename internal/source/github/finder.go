@@ -69,6 +69,7 @@ type AssetFinder struct {
 	Prerelease bool
 	MinTime    time.Time
 	Getter     HTTPGetter
+	tag        string
 }
 
 var ErrNoUpgrade = errors.New("requested release is not more recent than current version")
@@ -123,6 +124,7 @@ func (f *AssetFinder) Find() ([]string, error) {
 	if err := json.Unmarshal(body, &release); err != nil {
 		return nil, err
 	}
+	f.tag = release.Tag
 
 	if release.CreatedAt.Before(f.MinTime) {
 		return nil, ErrNoUpgrade
@@ -135,6 +137,10 @@ func (f *AssetFinder) Find() ([]string, error) {
 	verbosef("github finder assets: %d", len(assets))
 
 	return assets, nil
+}
+
+func (f *AssetFinder) ReleaseVersion() string {
+	return f.tag
 }
 
 func (f *AssetFinder) FindMatch() ([]string, error) {

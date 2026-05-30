@@ -40,6 +40,10 @@ type Runner interface {
 	Run(target string, opts Options) (RunResult, error)
 }
 
+type versionedFinder interface {
+	ReleaseVersion() string
+}
+
 type PromptFunc func(title, filterPrompt string, choices []string) (int, error)
 type ConfirmFunc func(file string) (bool, error)
 
@@ -114,7 +118,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 
 	url, candidates, err := detector.Detect(assets)
 	if len(candidates) != 0 && err != nil {
-		url, err = r.resolveCandidate(target, candidates, opts)
+		url, err = r.resolveCandidate(target, candidates, opts, promptReleaseVersion(finder))
 		if err != nil {
 			return RunResult{}, err
 		}
@@ -663,7 +667,7 @@ func downloadProgressLayout(termWidth int) (int, string) {
 	return 10, format
 }
 
-func (r *InstallRunner) resolveCandidate(target string, candidates []string, opts Options) (string, error) {
+func (r *InstallRunner) resolveCandidate(target string, candidates []string, opts Options, releaseVersion string) (string, error) {
 	if selected := uniqueCandidateForName(candidates, opts.Name); selected != "" {
 		return selected, nil
 	}
@@ -688,7 +692,7 @@ func (r *InstallRunner) resolveCandidate(target string, candidates []string, opt
 	for i, candidate := range candidates {
 		choices[i] = path.Base(candidate)
 	}
-	choice, err := r.Prompt("Select package resource", "Filter assets", choices)
+	choice, err := r.Prompt(candidatePromptTitle(releaseVersion), "Filter assets", choices)
 	if err != nil {
 		return "", err
 	}
@@ -696,6 +700,22 @@ func (r *InstallRunner) resolveCandidate(target string, candidates []string, opt
 		return "", fmt.Errorf("selection %d is out of bounds", choice)
 	}
 	return candidates[choice], nil
+}
+
+func promptReleaseVersion(finder Finder) string {
+	versioned, ok := finder.(versionedFinder)
+	if !ok {
+		return ""
+	}
+	return versioned.ReleaseVersion()
+}
+
+func candidatePromptTitle(version string) string {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return "Select package resource"
+	}
+	return "Select package resource " + version
 }
 
 func uniqueCandidateForName(candidates []string, name string) string {

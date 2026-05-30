@@ -1410,7 +1410,7 @@ func TestResolveCandidateSelectsUniqueNameMatch(t *testing.T) {
 	got, err := runner.resolveCandidate("gookit/greq", []string{
 		"https://github.com/gookit/greq/releases/download/v0.6.0/gbench-v0.6.0-windows-amd64.zip",
 		"https://github.com/gookit/greq/releases/download/v0.6.0/greq-v0.6.0-windows-amd64.zip",
-	}, Options{Name: "gbench"})
+	}, Options{Name: "gbench"}, "")
 
 	assert.NoErr(t, err)
 	assert.Eq(t, "https://github.com/gookit/greq/releases/download/v0.6.0/gbench-v0.6.0-windows-amd64.zip", got)
@@ -1421,7 +1421,7 @@ func TestResolveCandidateKeepsPromptWhenNameMatchIsAmbiguous(t *testing.T) {
 	prompted := false
 	runner.Prompt = func(title, filterPrompt string, choices []string) (int, error) {
 		prompted = true
-		assert.Eq(t, "Select package resource", title)
+		assert.Eq(t, "Select package resource v0.6.0", title)
 		assert.Eq(t, "Filter assets", filterPrompt)
 		assert.Eq(t, []string{
 			"gbench-v0.6.0-windows-amd64.zip",
@@ -1433,7 +1433,7 @@ func TestResolveCandidateKeepsPromptWhenNameMatchIsAmbiguous(t *testing.T) {
 	got, err := runner.resolveCandidate("gookit/greq", []string{
 		"https://github.com/gookit/greq/releases/download/v0.6.0/gbench-v0.6.0-windows-amd64.zip",
 		"https://github.com/gookit/greq/releases/download/v0.6.0/gbench-lite-v0.6.0-windows-amd64.zip",
-	}, Options{Name: "gbench"})
+	}, Options{Name: "gbench"}, "v0.6.0")
 
 	assert.NoErr(t, err)
 	assert.True(t, prompted)

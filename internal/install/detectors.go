@@ -35,6 +35,7 @@ type systemArch struct {
 type systemDetector struct {
 	Os   systemOS
 	Arch systemArch
+	Libc string
 }
 
 type releaseAssetKind int
@@ -129,6 +130,10 @@ func (a *systemArch) Match(s string) bool {
 }
 
 func newSystemDetector(goos, goarch string) (*systemDetector, error) {
+	return newSystemDetectorWithLibc(goos, goarch, "")
+}
+
+func newSystemDetectorWithLibc(goos, goarch, libc string) (*systemDetector, error) {
 	osv, ok := installGOOSMap[goos]
 	if !ok {
 		return nil, fmt.Errorf("unsupported target OS: %s", goos)
@@ -137,7 +142,7 @@ func newSystemDetector(goos, goarch string) (*systemDetector, error) {
 	if !ok {
 		return nil, fmt.Errorf("unsupported target arch: %s", goarch)
 	}
-	return &systemDetector{Os: osv, Arch: arch}, nil
+	return &systemDetector{Os: osv, Arch: arch, Libc: libc}, nil
 }
 
 func (d *systemDetector) Detect(assets []string) (string, []string, error) {
@@ -170,6 +175,9 @@ func (d *systemDetector) Detect(assets []string) (string, []string, error) {
 		return matches[0], nil, nil
 	}
 	if len(matches) > 1 {
+		if selected := selectLinuxLibcAsset(matches, d.Libc); selected != "" {
+			return selected, nil, nil
+		}
 		return "", matches, fmt.Errorf("%d matches found", len(matches))
 	}
 	if len(candidates) == 1 {
@@ -182,6 +190,40 @@ func (d *systemDetector) Detect(assets []string) (string, []string, error) {
 		return all[0], nil, nil
 	}
 	return "", all, fmt.Errorf("no candidates found")
+}
+
+func selectLinuxLibcAsset(matches []string, libc string) string {
+	if libc == "" {
+		return ""
+	}
+	libc = strings.ToLower(libc)
+	want := "gnu"
+	if libc == "musl" {
+		want = "musl"
+	}
+	var selected string
+	for _, match := range matches {
+		name := strings.ToLower(path.Base(match))
+		if !assetHasLibcToken(name, want) {
+			continue
+		}
+		if selected != "" {
+			return ""
+		}
+		selected = match
+	}
+	return selected
+}
+
+func assetHasLibcToken(name, libc string) bool {
+	for _, token := range strings.FieldsFunc(name, func(r rune) bool {
+		return r == '-' || r == '_' || r == '.' || r == '/'
+	}) {
+		if token == libc {
+			return true
+		}
+	}
+	return false
 }
 
 func isReleaseMetadataAsset(asset string) bool {

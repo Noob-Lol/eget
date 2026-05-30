@@ -1,12 +1,14 @@
 package install
 
 import (
+	"runtime"
 	"regexp"
 	"time"
 
 	forge "github.com/inherelab/eget/internal/source/forge"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
+	"github.com/inherelab/eget/internal/source/urltemplate"
 )
 
 func NewDefaultService(githubGetter sourcegithub.HTTPGetter, binaryModTime func(tool, output string) time.Time) *Service {
@@ -26,7 +28,11 @@ func NewDefaultService(githubGetter sourcegithub.HTTPGetter, binaryModTime func(
 			return &allDetector{}
 		},
 		SystemDetectorFactory: func(goos, goarch string) (Detector, error) {
-			return newSystemDetector(goos, goarch)
+			libc := ""
+			if goos == "linux" && runtime.GOOS == "linux" {
+				libc = urltemplate.DetectLibc()
+			}
+			return newSystemDetectorWithLibc(goos, goarch, libc)
 		},
 		AssetDetectorFactory: func(asset string, anti bool, re *regexp.Regexp) Detector {
 			return &assetDetector{Asset: asset, Anti: anti, Regex: re}

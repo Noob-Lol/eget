@@ -36,7 +36,7 @@ func jsonResponse(statusCode int, body string) *http.Response {
 func TestAssetFinderFind(t *testing.T) {
 	getter := &fakeGetter{
 		responses: map[string]*http.Response{
-			"https://api.github.com/repos/inhere/markview/releases/latest": jsonResponse(http.StatusOK, `{"assets":[{"browser_download_url":"https://example.com/tool.tar.gz"}],"created_at":"2026-04-18T00:00:00Z"}`),
+			"https://api.github.com/repos/inhere/markview/releases/latest": jsonResponse(http.StatusOK, `{"tag_name":"v1.2.3","assets":[{"browser_download_url":"https://example.com/tool.tar.gz"}],"created_at":"2026-04-18T00:00:00Z"}`),
 		},
 	}
 	finder := NewAssetFinder("inhere/markview", "latest", false, time.Time{})
@@ -48,6 +48,9 @@ func TestAssetFinderFind(t *testing.T) {
 	}
 	if len(assets) != 1 || assets[0] != "https://example.com/tool.tar.gz" {
 		t.Fatalf("assets = %#v", assets)
+	}
+	if finder.ReleaseVersion() != "v1.2.3" {
+		t.Fatalf("ReleaseVersion() = %q", finder.ReleaseVersion())
 	}
 }
 
