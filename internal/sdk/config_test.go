@@ -10,7 +10,6 @@ import (
 func TestResolveConfigUsesSDKNameAndAliases(t *testing.T) {
 	file := cfgpkg.NewFile()
 	file.Global.SDKTarget = stringPtr("~/sdks")
-	file.Global.SDKExtMap = map[string]string{"linux": "tar.gz", "windows": "zip"}
 	file.SDK["go"] = cfgpkg.SDKSection{
 		Aliases:         []string{"golang"},
 		Target:          stringPtr("gosdk/go{version}"),
@@ -33,6 +32,20 @@ func TestResolveConfigUsesSDKNameAndAliases(t *testing.T) {
 	assert.Eq(t, "linux", got.OS)
 	assert.Eq(t, "amd64", got.Arch)
 	assert.Eq(t, 1, got.StripComponents)
+}
+
+func TestResolveConfigUsesDefaultGlobalSDKExtMap(t *testing.T) {
+	file := cfgpkg.NewFile()
+	file.Global.SDKTarget = stringPtr("~/sdks")
+	file.SDK["go"] = cfgpkg.SDKSection{
+		Target:          stringPtr("gosdk/go{version}"),
+		URLTemplate:     stringPtr("https://example.com/go{version}.{os}-{arch}.{ext}"),
+		FilenamePattern: stringPtr("go{version}.{os}-{arch}.{ext}"),
+	}
+
+	got, err := ResolveConfig(file, "go", ResolveConfigOptions{GOOS: "windows", GOARCH: "amd64"})
+	assert.NoErr(t, err)
+	assert.Eq(t, "zip", got.Ext)
 }
 
 func TestResolveConfigUsesPlatformMapsAndSDKExtOverride(t *testing.T) {
@@ -58,16 +71,12 @@ func TestResolveConfigUsesPlatformMapsAndSDKExtOverride(t *testing.T) {
 	assert.Eq(t, "7z", got.Ext)
 }
 
-func TestResolveConfigRequiresTargetAndExtension(t *testing.T) {
+func TestResolveConfigRequiresTarget(t *testing.T) {
 	file := cfgpkg.NewFile()
 	file.Global.SDKTarget = stringPtr("~/sdks")
 	file.SDK["go"] = cfgpkg.SDKSection{}
 
 	_, err := ResolveConfig(file, "go", ResolveConfigOptions{GOOS: "linux", GOARCH: "amd64"})
-	assert.Err(t, err)
-
-	file.SDK["go"] = cfgpkg.SDKSection{Target: stringPtr("gosdk/go{version}")}
-	_, err = ResolveConfig(file, "go", ResolveConfigOptions{GOOS: "linux", GOARCH: "amd64"})
 	assert.Err(t, err)
 }
 

@@ -37,7 +37,16 @@ func NewFile() *File {
 	cfg.Repos = make(map[string]Section)
 	cfg.Packages = make(map[string]Section)
 	cfg.SDK = make(map[string]SDKSection)
+	cfg.Global.SDKExtMap = defaultSDKExtMap()
 	return cfg
+}
+
+func defaultSDKExtMap() map[string]string {
+	return map[string]string{
+		"windows": "zip",
+		"linux":   "tar.gz",
+		"darwin":  "tar.gz",
+	}
 }
 
 func LoadFromEnvOrDefault(lookupEnv func(string) (string, bool), homeDir, goos string) (*File, string, error) {
