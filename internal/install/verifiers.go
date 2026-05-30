@@ -76,16 +76,37 @@ func (s *sha256AssetVerifier) Verify(b []byte) error {
 	if len(fields) == 0 {
 		return fmt.Errorf("sha256sum is empty")
 	}
-	expected, err := hex.DecodeString(fields[0])
+	checksum := firstSHA256ChecksumField(fields)
+	expected, err := hex.DecodeString(checksum)
 	if err != nil {
-		return fmt.Errorf("invalid checksum %q: %w", fields[0], err)
+		return fmt.Errorf("invalid checksum %q: %w", checksum, err)
 	}
 	if len(expected) < sha256.Size {
-		return fmt.Errorf("sha256sum (%s) too small: %d bytes decoded", fields[0], len(expected))
+		return fmt.Errorf("sha256sum (%s) too small: %d bytes decoded", checksum, len(expected))
 	}
 	sum := sha256.Sum256(b)
 	if bytes.Equal(sum[:], expected[:sha256.Size]) {
 		return nil
 	}
 	return &sha256Error{Expected: expected[:sha256.Size], Got: sum[:]}
+}
+
+func firstSHA256ChecksumField(fields []string) string {
+	for _, field := range fields {
+		candidate := strings.Trim(field, "=:,;")
+		if len(candidate) == sha256.Size*2 && isHexString(candidate) {
+			return candidate
+		}
+	}
+	return fields[0]
+}
+
+func isHexString(s string) bool {
+	for _, r := range s {
+		if (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F') {
+			continue
+		}
+		return false
+	}
+	return true
 }
