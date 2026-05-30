@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	neturl "net/url"
+	"path"
+	"strings"
 	"time"
 )
 
@@ -83,11 +86,15 @@ func (f *Finder) Latest() (LatestInfo, error) {
 	if err != nil {
 		return LatestInfo{}, err
 	}
-	version, err := ParseLatest(data, f.Config)
+	cfg := f.Config
+	if cfg.LatestFormat == "" {
+		cfg.LatestFormat = inferMetadataFormat(f.Config.LatestURL)
+	}
+	version, err := ParseLatest(data, cfg)
 	if err != nil {
 		return LatestInfo{}, err
 	}
-	publishedAt, err := ParseLatestPublishedAt(data, f.Config)
+	publishedAt, err := ParseLatestPublishedAt(data, cfg)
 	if err != nil {
 		return LatestInfo{}, err
 	}
@@ -100,4 +107,22 @@ func (f *Finder) Vars() map[string]string {
 		cloned[key] = value
 	}
 	return cloned
+}
+
+func inferMetadataFormat(rawURL string) string {
+	parsed, err := neturl.Parse(rawURL)
+	targetPath := rawURL
+	if err == nil && parsed.Path != "" {
+		targetPath = parsed.Path
+	}
+	switch strings.ToLower(path.Ext(targetPath)) {
+	case ".yaml", ".yml":
+		return "yaml"
+	case ".json":
+		return "json"
+	case ".txt":
+		return "text"
+	default:
+		return ""
+	}
 }

@@ -228,7 +228,6 @@ released_at: 2026-05-25T10:20:30+08:00
 [packages.markview]
 repo = "template:markview"
 latest_url = "https://example.com/tools/markview/latest.yaml"
-latest_format = "yaml"
 url_template = "https://example.com/tools/markview/markview-{version}-{os}-{arch}{ext}"
 os_map = { windows = "windows", linux = "linux", darwin = "darwin" }
 arch_map = { amd64 = "amd64", arm64 = "arm64" }
@@ -238,7 +237,7 @@ extract_file = "markview"
 字段说明：
 
 - `latest_url`: 最新版本 metadata 地址。
-- `latest_format`: `text`、`json` 或 `yaml`，为空时按 `text` 处理。YAML 会读取 `version` 和可选的 `released_at`。
+- `latest_format`: `text`、`json` 或 `yaml`。为空时会根据 `latest_url` 的 `.yaml`、`.yml`、`.json`、`.txt` 后缀自动推断；未知后缀按 `text` 处理。YAML 会读取 `version` 和可选的 `released_at`。
 - `latest_json_path`: `latest_format = "json"` 时用于提取版本的点分路径。
 - `version_regex`: 可选正则；有捕获组时使用第一个捕获组，否则使用完整匹配。
 - `url_template`: 下载 URL 模板。

@@ -57,6 +57,47 @@ func TestFinderLatestReadsYAMLPublishedAt(t *testing.T) {
 	assert.Eq(t, time.Date(2026, 5, 25, 10, 20, 30, 0, time.UTC), info.PublishedAt)
 }
 
+func TestFinderLatestInfersYAMLFormatFromURL(t *testing.T) {
+	getter := &fakeGetter{responses: map[string]string{
+		"https://example.com/latest.yaml": "version: v1.2.5\nreleased_at: 2026-05-25T10:20:30Z\n",
+	}}
+	finder := Finder{
+		Name:   "markview",
+		Target: Target{ID: "markview", Normalized: "template:markview"},
+		Config: Config{
+			LatestURL: "https://example.com/latest.yaml",
+		},
+		Getter: getter,
+	}
+
+	info, err := finder.Latest()
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "v1.2.5", info.Version)
+	assert.Eq(t, time.Date(2026, 5, 25, 10, 20, 30, 0, time.UTC), info.PublishedAt)
+}
+
+func TestFinderLatestExplicitFormatOverridesURLInference(t *testing.T) {
+	getter := &fakeGetter{responses: map[string]string{
+		"https://example.com/latest.yaml": "v1.2.5\n",
+	}}
+	finder := Finder{
+		Name:   "markview",
+		Target: Target{ID: "markview", Normalized: "template:markview"},
+		Config: Config{
+			LatestURL:    "https://example.com/latest.yaml",
+			LatestFormat: "text",
+		},
+		Getter: getter,
+	}
+
+	info, err := finder.Latest()
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "v1.2.5", info.Version)
+	assert.True(t, info.PublishedAt.IsZero())
+}
+
 type fakeGetter struct {
 	responses map[string]string
 	requests  []string
