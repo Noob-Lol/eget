@@ -2,28 +2,19 @@
 
 package app
 
-import "os"
+import (
+	"errors"
+	"syscall"
+)
 
 type DefaultExecutableReplacer struct{}
 
 func (DefaultExecutableReplacer) Replace(currentPath, replacementPath string) (SelfReplaceResult, error) {
-	info, err := os.Stat(currentPath)
-	if err != nil {
-		return SelfReplaceResult{}, err
-	}
-	if err := os.Chmod(replacementPath, info.Mode()); err != nil {
-		return SelfReplaceResult{}, err
-	}
+	ops := defaultSelfReplaceFileOps()
+	ops.IsCrossDeviceRename = isCrossDeviceRename
+	return replaceExecutable(currentPath, replacementPath, ops)
+}
 
-	backup := currentPath + ".old"
-	_ = os.Remove(backup)
-	if err := os.Rename(currentPath, backup); err != nil {
-		return SelfReplaceResult{}, err
-	}
-	if err := os.Rename(replacementPath, currentPath); err != nil {
-		_ = os.Rename(backup, currentPath)
-		return SelfReplaceResult{}, err
-	}
-	_ = os.Remove(backup)
-	return SelfReplaceResult{}, nil
+func isCrossDeviceRename(err error) bool {
+	return errors.Is(err, syscall.EXDEV)
 }
