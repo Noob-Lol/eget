@@ -250,6 +250,43 @@ func TestArchiveExtractorExtractPreservesFileTimestamp(t *testing.T) {
 	}
 }
 
+func TestZipArchivePreservesLegacyDOSTimestampWallTime(t *testing.T) {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	fileHeader := &zip.FileHeader{
+		Name:         "DiskSpd64.exe",
+		Method:       zip.Store,
+		ModifiedDate: uint16(19 + int(time.June)<<5 + (2025-1980)<<9),
+		ModifiedTime: uint16(44<<5 + 21<<11),
+	}
+	w, err := zw.CreateHeader(fileHeader)
+	if err != nil {
+		t.Fatalf("create zip file: %v", err)
+	}
+	if _, err := w.Write([]byte("tool")); err != nil {
+		t.Fatalf("write zip file: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+
+	ar, err := NewZipArchive(buf.Bytes(), nil)
+	if err != nil {
+		t.Fatalf("NewZipArchive: %v", err)
+	}
+	file, err := ar.Next()
+	if err != nil {
+		t.Fatalf("next zip file: %v", err)
+	}
+
+	assert.Eq(t, 2025, file.ModTime.Year())
+	assert.Eq(t, time.June, file.ModTime.Month())
+	assert.Eq(t, 19, file.ModTime.Day())
+	assert.Eq(t, 21, file.ModTime.Hour())
+	assert.Eq(t, 44, file.ModTime.Minute())
+	assert.Eq(t, time.Local.String(), file.ModTime.Location().String())
+}
+
 func TestArchiveExtractorExtractPreservesSelectedDirectoryTimestamp(t *testing.T) {
 	dirTime := time.Date(2024, 4, 5, 6, 7, 8, 0, time.UTC)
 	fileTime := time.Date(2024, 5, 6, 7, 8, 10, 0, time.UTC)

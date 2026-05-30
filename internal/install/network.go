@@ -11,6 +11,7 @@ import (
 
 type RateLimit = client.RateLimit
 type CacheMeta = client.CacheMeta
+type DownloadResult = client.DownloadResult
 
 var downloadGetWithOptions = GetWithOptions
 var httpDo = func(client *http.Client, req *http.Request) (*http.Response, error) {
@@ -85,6 +86,11 @@ func GetRateLimit(opts Options) (RateLimit, error) {
 }
 
 func Download(url string, out io.Writer, getbar func(size int64) io.Writer, opts Options) error {
+	_, err := DownloadWithResult(url, out, getbar, opts)
+	return err
+}
+
+func DownloadWithResult(url string, out io.Writer, getbar func(size int64) io.Writer, opts Options) (DownloadResult, error) {
 	restoreDownloadGet := client.SetDownloadGetWithOptionsForTest(func(url string, clientOpts client.Options) (*http.Response, error) {
 		return downloadGetWithOptions(url, opts)
 	})
@@ -92,7 +98,7 @@ func Download(url string, out io.Writer, getbar func(size int64) io.Writer, opts
 	restoreProxyNotice := client.SetProxyNoticeWriter(proxyNoticeWriter)
 	defer client.SetProxyNoticeWriter(restoreProxyNotice)
 	client.SetVerbose(verboseEnabled, verboseWriter)
-	return client.Download(url, out, getbar, ClientOptions(opts))
+	return client.DownloadWithResult(url, out, getbar, ClientOptions(opts))
 }
 
 func DownloadFile(url, target string, getbar func(size int64) io.Writer, opts Options) (client.DownloadFileResult, error) {

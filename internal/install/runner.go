@@ -570,7 +570,7 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 	}
 
 	buf := &bytes.Buffer{}
-	err := Download(url, buf, r.downloadProgress(opts), opts)
+	result, err := DownloadWithResult(url, buf, r.downloadProgress(opts), opts)
 	if err != nil {
 		return downloadBodyResult{}, err
 	}
@@ -581,7 +581,7 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 			_ = os.WriteFile(cachePath, body, 0o644)
 		}
 	}
-	return downloadBodyResult{Body: body}, nil
+	return downloadBodyResult{Body: body, ModTime: parseHTTPTime(result.LastModified)}, nil
 }
 
 func isInvalidCachedDownload(cachePath string, data []byte) bool {

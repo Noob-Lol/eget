@@ -351,6 +351,40 @@ func TestRunDownloadOnlyPreservesLastModifiedTimestamp(t *testing.T) {
 	assert.Eq(t, modTime, info.ModTime().UTC())
 }
 
+func TestRunDownloadOnlyPreservesLastModifiedTimestampWithoutCache(t *testing.T) {
+	modTime := time.Date(2026, 4, 30, 11, 32, 59, 0, time.UTC)
+	body := []byte("asset-data")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Last-Modified", modTime.Format(http.TimeFormat))
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		if r.Method == http.MethodHead {
+			return
+		}
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+
+	outputDir := t.TempDir()
+	runner := NewRunner(NewDefaultService(nil, nil))
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+
+	result, err := runner.Run(server.URL+"/rufus-4.14p.exe", Options{
+		DownloadOnly: true,
+		Output:       outputDir,
+	})
+	if err != nil {
+		t.Fatalf("download asset: %v", err)
+	}
+
+	assert.Eq(t, 1, len(result.ExtractedFiles))
+	info, err := os.Stat(result.ExtractedFiles[0])
+	if err != nil {
+		t.Fatalf("stat downloaded file: %v", err)
+	}
+	assert.Eq(t, modTime, info.ModTime().UTC())
+}
+
 func TestRunExtractFilePreservesArchiveDirectoryTimestamp(t *testing.T) {
 	dirTime := time.Date(2024, 4, 5, 6, 7, 8, 0, time.UTC)
 	remoteTime := time.Date(2026, 4, 30, 11, 32, 59, 0, time.UTC)

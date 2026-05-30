@@ -110,7 +110,55 @@ func (z *ZipArchive) Next() (File, error) {
 	if err != nil {
 		return File{}, err
 	}
-	return File{Name: name, Mode: f.Mode(), ModTime: f.Modified.UTC(), Type: typ}, nil
+	return File{Name: name, Mode: f.Mode(), ModTime: zipModifiedTime(f), Type: typ}, nil
+}
+
+func zipModifiedTime(f *zip.File) time.Time {
+	if f == nil {
+		return time.Time{}
+	}
+	if zipHasExtendedModTime(f.Extra) {
+		return f.Modified.UTC()
+	}
+	return msDosTimeToLocation(f.ModifiedDate, f.ModifiedTime, time.Local)
+}
+
+func zipHasExtendedModTime(extra []byte) bool {
+	for len(extra) >= 4 {
+		id := uint16(extra[0]) | uint16(extra[1])<<8
+		size := int(uint16(extra[2]) | uint16(extra[3])<<8)
+		extra = extra[4:]
+		if size > len(extra) {
+			return false
+		}
+		field := extra[:size]
+		switch {
+		case id == 0x000a && len(field) >= 32:
+			return true
+		case (id == 0x000d || id == 0x5855) && len(field) >= 8:
+			return true
+		case id == 0x5455 && len(field) >= 5 && field[0]&1 != 0:
+			return true
+		}
+		extra = extra[size:]
+	}
+	return false
+}
+
+func msDosTimeToLocation(dosDate, dosTime uint16, loc *time.Location) time.Time {
+	if loc == nil {
+		loc = time.Local
+	}
+	return time.Date(
+		int(dosDate>>9+1980),
+		time.Month(dosDate>>5&0xf),
+		int(dosDate&0x1f),
+		int(dosTime>>11),
+		int(dosTime>>5&0x3f),
+		int(dosTime&0x1f*2),
+		0,
+		loc,
+	)
 }
 
 func (z *ZipArchive) ReadAll() ([]byte, error) {

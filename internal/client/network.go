@@ -45,6 +45,10 @@ type CacheMeta struct {
 	Version string
 }
 
+type DownloadResult struct {
+	LastModified string
+}
+
 type HTTPGetterFunc func(url string) (*http.Response, error)
 
 func (f HTTPGetterFunc) Get(url string) (*http.Response, error) {
@@ -336,31 +340,39 @@ type byteRange struct {
 }
 
 func Download(rawURL string, out io.Writer, getbar func(size int64) io.Writer, opts Options) error {
+	_, err := DownloadWithResult(rawURL, out, getbar, opts)
+	return err
+}
+
+func DownloadWithResult(rawURL string, out io.Writer, getbar func(size int64) io.Writer, opts Options) (DownloadResult, error) {
 	if isLocalFile(rawURL) {
 		file, err := os.Open(rawURL)
 		if err != nil {
-			return err
+			return DownloadResult{}, err
 		}
 		defer file.Close()
 		_, err = io.Copy(out, file)
-		return err
+		return DownloadResult{}, err
 	}
 
 	printProxyNotice("download request", opts.ProxyURL)
 
 	if opts.ChunkConcurrency != 1 {
-		if size, ok := probeRangeSupport(rawURL, opts); ok {
-			chunks := effectiveChunkCount(opts.ChunkConcurrency, size)
+		if remote, ok := probeDownloadFile(rawURL, opts); ok && remote.AcceptRange {
+			chunks := effectiveChunkCount(opts.ChunkConcurrency, remote.Size)
 			if chunks > 1 {
-				bar := downloadProgressWriter(getbar, size)
-				return downloadRangeChunks(rawURL, out, bar, size, chunks, opts)
+				bar := downloadProgressWriter(getbar, remote.Size)
+				if err := downloadRangeChunks(rawURL, out, bar, remote.Size, chunks, opts); err != nil {
+					return DownloadResult{}, err
+				}
+				return DownloadResult{LastModified: remote.LastModified}, nil
 			}
 		}
 	}
 
 	resp, err := downloadGetWithOptions(rawURL, opts)
 	if err != nil {
-		return err
+		return DownloadResult{}, err
 	}
 	defer resp.Body.Close()
 	verbosef("download response bytes: %d", resp.ContentLength)
@@ -368,9 +380,9 @@ func Download(rawURL string, out io.Writer, getbar func(size int64) io.Writer, o
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return err
+			return DownloadResult{}, err
 		}
-		return fmt.Errorf("download error: %d: %s", resp.StatusCode, body)
+		return DownloadResult{}, fmt.Errorf("download error: %d: %s", resp.StatusCode, body)
 	}
 
 	bar := downloadProgressWriter(getbar, resp.ContentLength)
@@ -380,7 +392,10 @@ func Download(rawURL string, out io.Writer, getbar func(size int64) io.Writer, o
 			finisher.Finish()
 		}
 	}
-	return err
+	if err != nil {
+		return DownloadResult{}, err
+	}
+	return DownloadResult{LastModified: resp.Header.Get("Last-Modified")}, nil
 }
 
 func effectiveChunkCount(requested int, size int64) int {
