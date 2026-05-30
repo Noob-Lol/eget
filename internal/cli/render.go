@@ -16,6 +16,7 @@ import (
 )
 
 const compactTimeLayout = "2006-01-02T15:04:05"
+const compactDisplayTimeLayout = "2006-01-02 15:04:05"
 
 type releaseDisplay struct {
 	Tag         string `json:"tag,omitempty" mapstructure:"tag"`
@@ -152,7 +153,7 @@ func compactTime(value time.Time) string {
 	if value.IsZero() {
 		return "-"
 	}
-	return value.Format(compactTimeLayout)
+	return value.Format(compactDisplayTimeLayout)
 }
 
 func compactTimeOmit(value time.Time) string {

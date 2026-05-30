@@ -1149,11 +1149,11 @@ func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 	if !strings.Contains(got, "Published At") {
 		t.Fatalf("expected published at column in output, got %q", got)
 	}
-	if !strings.Contains(got, "2026-04-21T14:10:17") {
+	if !strings.Contains(got, "2026-04-21 14:10:17") {
 		t.Fatalf("expected published time in output, got %q", got)
 	}
-	if strings.Contains(got, "2026-04-21T14:10:17Z") {
-		t.Fatalf("expected published time without timezone offset, got %q", got)
+	if strings.Contains(got, "2026-04-21T14:10:17") {
+		t.Fatalf("expected published time with a space between date and time, got %q", got)
 	}
 	if strings.Contains(got, " yes ") || strings.Contains(got, " no ") {
 		t.Fatalf("expected Installed column values to be removed, got %q", got)
@@ -1333,11 +1333,11 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 	if !strings.Contains(got, "claude") || !strings.Contains(got, "template") {
 		t.Fatalf("expected template package source in output, got %q", got)
 	}
-	if !strings.Contains(got, "github") || !strings.Contains(got, "2026-05-05T13:20:19") {
+	if !strings.Contains(got, "github") || !strings.Contains(got, "2026-05-05 13:20:19") {
 		t.Fatalf("expected source and update time in output, got %q", got)
 	}
-	if strings.Contains(got, "2026-05-05T13:20:19+08:00") {
-		t.Fatalf("expected update time without timezone offset, got %q", got)
+	if strings.Contains(got, "2026-05-05T13:20:19") {
+		t.Fatalf("expected update time with a space between date and time, got %q", got)
 	}
 	if strings.Contains(got, "ripgrep") {
 		t.Fatalf("expected default list to omit managed-only package, got %q", got)
@@ -1389,11 +1389,11 @@ func TestHandleListAllPrintsManagedAndInstalledPackages(t *testing.T) {
 	if strings.Contains(got, " yes ") || strings.Contains(got, " no ") {
 		t.Fatalf("expected Installed column values to be removed, got %q", got)
 	}
-	if !strings.Contains(got, "2026-05-05T13:20:19") {
+	if !strings.Contains(got, "2026-05-05 13:20:19") {
 		t.Fatalf("expected update time in output, got %q", got)
 	}
-	if strings.Contains(got, "2026-05-05T13:20:19+08:00") {
-		t.Fatalf("expected update time without timezone offset, got %q", got)
+	if strings.Contains(got, "2026-05-05T13:20:19") {
+		t.Fatalf("expected update time with a space between date and time, got %q", got)
 	}
 }
 
@@ -1516,11 +1516,11 @@ func TestHandleListInfoPrintsDetails(t *testing.T) {
 	if !strings.Contains(got, "URL") || !strings.Contains(got, "https://github.com/gookit/gitw/releases/download/v0.3.6/chlog-windows-amd64.exe") {
 		t.Fatalf("expected detailed url output, got %q", got)
 	}
-	if !strings.Contains(got, "2026-05-05T13:20:19") {
+	if !strings.Contains(got, "2026-05-05 13:20:19") {
 		t.Fatalf("expected compact installed time in detail output, got %q", got)
 	}
-	if strings.Contains(got, "2026-05-05T13:20:19+08:00") || strings.Contains(got, "2026-05-05 13:20:19 +0800") {
-		t.Fatalf("expected detail time without timezone offset, got %q", got)
+	if strings.Contains(got, "2026-05-05T13:20:19") || strings.Contains(got, "2026-05-05 13:20:19 +0800") {
+		t.Fatalf("expected detail time with a space between date and time and no timezone offset, got %q", got)
 	}
 }
 
@@ -1570,7 +1570,7 @@ func TestHandleShowPrintsPackageDetails(t *testing.T) {
 	assert.Contains(t, got, "v0.3.6")
 	assert.Contains(t, got, "https://github.com/gookit/gitw")
 	assert.Contains(t, got, "D:/bin/chlog.exe")
-	assert.Contains(t, got, "2026-05-05T13:20:19")
+	assert.Contains(t, got, "2026-05-05 13:20:19")
 }
 
 func TestHandleListRejectsOutdatedWithInfo(t *testing.T) {
@@ -2146,11 +2146,11 @@ func TestHandleQueryPrintsLatestRelease(t *testing.T) {
 	if !strings.Contains(got, "action: latest") || !strings.Contains(got, "repo: owner/repo") {
 		t.Fatalf("expected latest query output, got %q", got)
 	}
-	if !strings.Contains(got, "2026-04-22T09:00:00") {
+	if !strings.Contains(got, "2026-04-22 09:00:00") {
 		t.Fatalf("expected compact published time in latest output, got %q", got)
 	}
-	if strings.Contains(got, "2026-04-22T09:00:00Z") {
-		t.Fatalf("expected latest output without timezone offset, got %q", got)
+	if strings.Contains(got, "2026-04-22T09:00:00") {
+		t.Fatalf("expected latest output with a space between date and time, got %q", got)
 	}
 }
 
@@ -2172,11 +2172,11 @@ func TestPrintQueryResultReleasesUsesCompactTime(t *testing.T) {
 
 	printQueryResult(result)
 	got := out.String()
-	if !strings.Contains(got, "2026-04-22T09:00:00") {
+	if !strings.Contains(got, "2026-04-22 09:00:00") {
 		t.Fatalf("expected compact published time in releases output, got %q", got)
 	}
-	if strings.Contains(got, "2026-04-22T09:00:00+08:00") {
-		t.Fatalf("expected releases output without timezone offset, got %q", got)
+	if strings.Contains(got, "2026-04-22T09:00:00") {
+		t.Fatalf("expected releases output with a space between date and time, got %q", got)
 	}
 }
 
@@ -2220,11 +2220,11 @@ func TestPrintQueryResultInfoUsesCompactTime(t *testing.T) {
 
 	printQueryResult(result)
 	got := out.String()
-	if !strings.Contains(got, "2026-04-22T09:00:00") {
+	if !strings.Contains(got, "2026-04-22 09:00:00") {
 		t.Fatalf("expected compact updated time in info output, got %q", got)
 	}
-	if strings.Contains(got, "2026-04-22T09:00:00+08:00") {
-		t.Fatalf("expected info output without timezone offset, got %q", got)
+	if strings.Contains(got, "2026-04-22T09:00:00") {
+		t.Fatalf("expected info output with a space between date and time, got %q", got)
 	}
 }
 
@@ -2324,11 +2324,11 @@ func TestHandleSearchPrintsList(t *testing.T) {
 	if strings.Contains(strings.ToLower(got), "repo |") || strings.Contains(strings.ToLower(got), "language |") {
 		t.Fatalf("expected search to not render a table, got %q", got)
 	}
-	if !strings.Contains(got, "BurntSushi/ripgrep") || !strings.Contains(got, "⭐123 language: Rust update: 2026-04-24T08:30:00") {
+	if !strings.Contains(got, "BurntSushi/ripgrep") || !strings.Contains(got, "⭐123 language: Rust update: 2026-04-24 08:30:00") {
 		t.Fatalf("expected formatted search headline, got %q", got)
 	}
-	if strings.Contains(got, "2026-04-24T08:30:00Z") {
-		t.Fatalf("expected search time without timezone offset, got %q", got)
+	if strings.Contains(got, "2026-04-24T08:30:00") {
+		t.Fatalf("expected search time with a space between date and time, got %q", got)
 	}
 	if !strings.Contains(got, "ripgrep recursively searches directories") {
 		t.Fatalf("expected description line, got %q", got)
