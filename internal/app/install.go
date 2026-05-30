@@ -623,6 +623,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		OutputExplicit:      cli.Output != "",
 		GuiTarget:           guiTarget,
 		IsGUI:               merged.IsGUI,
+		InstallMode:         merged.InstallMode,
 		CacheDir:            cacheDir,
 		CacheName:           merged.Name,
 		CacheVersion:        merged.Tag,
@@ -762,6 +763,9 @@ func extractOptionsMap(opts install.Options, isGUI bool) map[string]interface{} 
 	}
 	if isGUI {
 		recorded["is_gui"] = true
+	}
+	if opts.InstallMode != "" {
+		recorded["install_mode"] = opts.InstallMode
 	}
 	if opts.ExtractFile != "" {
 		recorded["extract_file"] = opts.ExtractFile

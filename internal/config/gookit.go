@@ -335,6 +335,9 @@ func sectionToMap(section Section) map[string]any {
 	if len(section.InstallArgs) > 0 {
 		data["install_args"] = append([]string(nil), section.InstallArgs...)
 	}
+	if section.InstallMode != nil {
+		data["install_mode"] = *section.InstallMode
+	}
 	if section.DisableSSL != nil {
 		data["disable_ssl"] = *section.DisableSSL
 	}

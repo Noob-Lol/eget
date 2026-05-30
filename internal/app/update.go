@@ -169,6 +169,7 @@ func optionsFromInstalledEntry(entry storepkg.Entry) install.Options {
 	opts.Output, _ = stringOption(entry.Options, "output", "target")
 	opts.OutputExplicit = opts.Output != ""
 	opts.GuiTarget, _ = stringOption(entry.Options, "gui_target")
+	opts.InstallMode, _ = stringOption(entry.Options, "install_mode")
 	opts.ExtractFile, _ = stringOption(entry.Options, "extract_file", "file")
 	opts.Verify, _ = stringOption(entry.Options, "verify")
 	opts.All, _ = boolOption(entry.Options, "all", "extract_all")

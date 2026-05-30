@@ -149,10 +149,11 @@ func TestDumpConfigStringKeepsLegacyRepoSections(t *testing.T) {
 	repo := "junegunn/fzf"
 	cfg.Global.Target = &target
 	cfg.Repos["owner/repo"] = Section{
-		Target:     &repoTarget,
-		System:     &repoSystem,
-		ExtractAll: boolPtr(true),
-		IsGUI:      boolPtr(true),
+		Target:      &repoTarget,
+		System:      &repoSystem,
+		ExtractAll:  boolPtr(true),
+		IsGUI:       boolPtr(true),
+		InstallMode: stringPtr("installer"),
 	}
 	cfg.Packages["fzf"] = Section{Repo: &repo}
 
@@ -171,6 +172,9 @@ func TestDumpConfigStringKeepsLegacyRepoSections(t *testing.T) {
 	}
 	if !strings.Contains(text, "is_gui = true") {
 		t.Fatalf("expected is_gui field, got %q", text)
+	}
+	if !strings.Contains(text, `install_mode = "installer"`) {
+		t.Fatalf("expected install_mode field, got %q", text)
 	}
 	if strings.Contains(text, "\n  all = true") || strings.Contains(text, "\n    all = true") {
 		t.Fatalf("expected old all field to be absent, got %q", text)

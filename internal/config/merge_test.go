@@ -79,6 +79,24 @@ func TestMergeInstallOptionsUsesGUIFromCLIThenPackageThenRepo(t *testing.T) {
 	}
 }
 
+func TestMergeInstallOptionsUsesInstallModeFromPackageThenRepo(t *testing.T) {
+	merged := MergeInstallOptions(
+		Section{},
+		Section{InstallMode: stringPtr("portable")},
+		Section{InstallMode: stringPtr("installer")},
+		CLIOverrides{},
+	)
+	assert.Eq(t, "installer", merged.InstallMode)
+
+	merged = MergeInstallOptions(
+		Section{},
+		Section{InstallMode: stringPtr("installer")},
+		Section{},
+		CLIOverrides{},
+	)
+	assert.Eq(t, "installer", merged.InstallMode)
+}
+
 func TestMergeInstallOptionsUsesRepoSection(t *testing.T) {
 	merged := MergeInstallOptions(
 		Section{

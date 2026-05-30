@@ -233,7 +233,7 @@ The target argument accepted by `install` and `download` can be:
 
 - Resolve, download, verify, and extract a target, then record installation state.
 - `--name` can be used to override the installed executable name; without `--to`, it also acts as the rename hint for single-file assets.
-- `--gui` marks the target as a GUI application. Portable GUI apps use `global.gui_target` by default, while GUI installers such as `.msi` or `setup.exe` are launched and do not record a final install directory. Without `--gui`, installer-like assets prompt before launch; with `--add`, a confirmed installer is persisted with `is_gui = true`.
+- `--gui` marks the target as a GUI application. Portable GUI apps use `global.gui_target` by default, while GUI installers such as `.msi` or `setup.exe` are launched and do not record a final install directory. Without `--gui`, installer-like assets prompt before launch; with `--add`, a confirmed installer is persisted with `is_gui = true`. For GUI installer assets whose `.exe` names do not contain `setup` or `installer`, set `install_mode = "installer"` in the package config to force launching the asset.
 - With `--add`, a successful install also writes the repo target to `[packages.<name>]`; use `--name` to override the package name.
 - Use `--all` without a target to install every package configured under `[packages]`. Package-level options are merged the same way as single package installs.
 
@@ -321,7 +321,7 @@ The target argument accepted by `install` and `download` can be:
 - `--add`: After a successful install, append the repo target to `[packages.<name>]` managed config.
 - `--all`: Install every package configured under `[packages]`; cannot be combined with a target or `--add`.
 - `--batch N`: Control package task concurrency for `install --all`. `0` means auto, `1` means serial, and values greater than `1` process up to that many packages at once.
-- `--gui`: Install as a GUI application; with `--add`, persist `is_gui = true`. Installer-like assets selected without `--gui` prompt before launch and also persist `is_gui = true` when confirmed with `--add`.
+- `--gui`: Install as a GUI application; with `--add`, persist `is_gui = true`. Installer-like assets selected without `--gui` prompt before launch and also persist `is_gui = true` when confirmed with `--add`. Package config can set `install_mode = "installer"` to force a plain `.exe` asset to launch as an installer.
 - `--name`: Override the managed package name; for single executable assets, it also acts as the default output-name hint.
 
 `update` options:
@@ -369,7 +369,7 @@ Notes:
 - `install --name` can rename a single executable asset, for example installing `chlog-windows-amd64.exe` as `chlog.exe`.
 - `install --rename` can rename selected files while extracting multiple files; the config field is `rename_files`, for example `rename_files = { "codex-x86_64-pc-windows-msvc.exe" = "codex.exe" }`.
 - `install --add` only applies to repo targets and appends the managed package definition after a successful install.
-- `global.gui_target` is used only for portable GUI applications. GUI installers such as `.msi` or `setup.exe` are launched and do not record a final install directory.
+- `global.gui_target` is used only for portable GUI applications. GUI installers such as `.msi` or `setup.exe` are launched and do not record a final install directory. Use `install_mode = "installer"` for installer `.exe` assets with product/version/platform names rather than setup-style names.
 - `download` stores the raw downloaded asset by default; extraction only happens when `--file` or `--extract-all` is provided.
 - `sdk` uses `global.sdk_target` for install directories and `{cache_dir}/sdk-downloads` for archive downloads. Resumable state is stored as `.part` plus `.meta.json`.
 - Archive extraction currently supports `zip`, `tar.*`, and `7z`. System 7z is preferred for `.7z`, `.rar`, `.msi`, `.cab`, `.iso`, and `--extract-all` `.exe` archives when `global.sys7z_path` or `PATH` provides `7z`, `7zz`, or `7za`; `tar.*` archives continue to use the built-in Go extractor.

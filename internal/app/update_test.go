@@ -237,6 +237,7 @@ func TestUpdatePackageRestoresTemplateOptionsFromInstalledEntry(t *testing.T) {
 						"checksum_json_path":    "platforms.{os}-{arch}.checksum",
 						"install_action":        "run-asset",
 						"install_args":          []string{"install", "latest"},
+						"install_mode":          "installer",
 					},
 				},
 			}}, nil
@@ -263,6 +264,7 @@ func TestUpdatePackageRestoresTemplateOptionsFromInstalledEntry(t *testing.T) {
 	assert.Eq(t, "platforms.{os}-{arch}.checksum", opts.URLTemplate.ChecksumJSONPath)
 	assert.Eq(t, "run-asset", opts.URLTemplate.InstallAction)
 	assert.Eq(t, []string{"install", "latest"}, opts.URLTemplate.InstallArgs)
+	assert.Eq(t, install.InstallModeInstaller, opts.InstallMode)
 }
 
 func TestUpdatePackageRejectsUnknownPlainWords(t *testing.T) {

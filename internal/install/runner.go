@@ -238,7 +238,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 		bins = []ExtractedFile{bin}
 	}
 	selectedName := selectedFileName(url, bin)
-	if opts.IsGUI {
+	if opts.IsGUI && opts.InstallMode == "" {
 		opts.InstallMode = DetectGUIInstallMode(true, selectedName)
 	} else if !opts.All && DetectInstallerKind(selectedName) != InstallerKindUnknown {
 		confirmed, err := r.confirmLaunchInstaller(selectedName)
@@ -463,6 +463,9 @@ func (r *InstallRunner) launchGUIInstaller(path string, file ExtractedFile, opts
 	kind := DetectInstallerKind(file.ArchiveName)
 	if kind == InstallerKindUnknown {
 		kind = DetectInstallerKind(file.Name)
+	}
+	if kind == InstallerKindUnknown && opts.InstallMode == InstallModeInstaller {
+		kind = InstallerKindEXE
 	}
 	launcher := r.InstallerLauncher
 	if launcher == nil {

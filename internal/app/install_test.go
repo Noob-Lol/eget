@@ -562,6 +562,40 @@ func TestInstallTargetKeepsExplicitOutputForGUI(t *testing.T) {
 	}
 }
 
+func TestInstallTargetPassesConfiguredInstallMode(t *testing.T) {
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:           "https://github.com/Syngnat/GoNavi/releases/download/v0.7.7/GoNavi-0.7.7-Windows-Amd64.exe",
+			Asset:         "GoNavi-0.7.7-Windows-Amd64.exe",
+			IsGUI:         true,
+			InstallMode:   install.InstallModeInstaller,
+			InstallerFile: "C:/Temp/GoNavi-0.7.7-Windows-Amd64.exe",
+		},
+	}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			repo := "Syngnat/GoNavi"
+			name := "gonavi"
+			isGUI := true
+			installMode := install.InstallModeInstaller
+			cfg.Packages["gonavi"] = cfgpkg.Section{
+				Repo:        &repo,
+				Name:        &name,
+				IsGUI:       &isGUI,
+				InstallMode: &installMode,
+			}
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("gonavi", install.Options{})
+	assert.NoErr(t, err)
+	assert.True(t, runner.opts.IsGUI)
+	assert.Eq(t, install.InstallModeInstaller, runner.opts.InstallMode)
+}
+
 func TestInstallTargetRecordsGUIInstallerWithoutExtractedFiles(t *testing.T) {
 	runner := &fakeRunner{
 		result: RunResult{
@@ -926,12 +960,14 @@ func TestExtractOptionsMapOmitsGuiTargetForCLIInstall(t *testing.T) {
 
 func TestExtractOptionsMapKeepsGuiTargetForGUIInstall(t *testing.T) {
 	got := extractOptionsMap(install.Options{
-		Output:    "C:/Users/inhere/.local/bin",
-		GuiTarget: "D:/Program/Tools",
+		Output:      "C:/Users/inhere/.local/bin",
+		GuiTarget:   "D:/Program/Tools",
+		InstallMode: install.InstallModeInstaller,
 	}, true)
 
 	assert.Eq(t, "D:/Program/Tools", got["gui_target"])
 	assert.Eq(t, true, got["is_gui"])
+	assert.Eq(t, install.InstallModeInstaller, got["install_mode"])
 }
 
 func TestExtractOptionsMapKeepsStripComponents(t *testing.T) {

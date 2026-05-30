@@ -382,6 +382,7 @@ download_only = true
 extract_all = true
 strip_components = 1
 is_gui = true
+install_mode = "installer"
 `)
 
 	cfg, err := LoadFile(configPath)
@@ -417,6 +418,9 @@ is_gui = true
 	}
 	if repo.IsGUI == nil || !*repo.IsGUI {
 		t.Fatalf("expected repo is_gui=true, got %#v", repo.IsGUI)
+	}
+	if repo.InstallMode == nil || *repo.InstallMode != "installer" {
+		t.Fatalf("expected repo install_mode=installer, got %#v", repo.InstallMode)
 	}
 }
 

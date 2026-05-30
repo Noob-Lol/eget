@@ -181,6 +181,7 @@ Common fields:
 - `extract_all`: extract all files from the selected archive.
 - `strip_components`: number of leading archive path segments to remove when extracting all files.
 - `is_gui`: install as GUI package, using `gui_target` semantics.
+- `install_mode`: optional GUI install mode. Set `installer` with `is_gui = true` to force a plain `.exe` asset to launch as an installer when its name does not contain `setup` or `installer`; omit it for portable GUI applications.
 - `quiet`: reduce output for this package.
 - `upgrade_only`: only update when an installed package already exists.
 

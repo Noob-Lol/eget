@@ -233,7 +233,7 @@ eget config set global.target ~/.local/bin
 
 - 查找、下载、校验、提取目标，并记录安装状态。
 - 可通过 `--name` 指定安装后的可执行文件名；未指定 `--to` 时，也会作为单文件资产的重命名提示。
-- `--gui` 会将目标标记为 GUI 应用。免安装 GUI 应用默认使用 `global.gui_target`，`.msi` 或 `setup.exe` 等 GUI 安装器会被启动，但不会记录最终安装目录。未传 `--gui` 但选中疑似安装器资源时，会先提示是否启动；确认后若同时传入 `--add`，会持久化 `is_gui = true`。
+- `--gui` 会将目标标记为 GUI 应用。免安装 GUI 应用默认使用 `global.gui_target`，`.msi` 或 `setup.exe` 等 GUI 安装器会被启动，但不会记录最终安装目录。未传 `--gui` 但选中疑似安装器资源时，会先提示是否启动；确认后若同时传入 `--add`，会持久化 `is_gui = true`。如果 GUI 安装器的 `.exe` 文件名不包含 `setup` 或 `installer`，可在 package 配置里设置 `install_mode = "installer"` 强制按安装器启动。
 - 传入 `--add` 时，安装成功后会自动将 repo 目标写入 `[packages.<name>]`；可配合 `--name` 指定包名。
 - 不带目标传入 `--all` 时，会安装 `[packages]` 下配置的全部托管包；每个包仍按单包安装一样合并包级选项。
 
@@ -320,7 +320,7 @@ eget config set global.target ~/.local/bin
 - `--add`: 安装成功后，将 repo 目标追加到 `[packages.<name>]` 托管配置中。
 - `--all`: 安装 `[packages]` 下配置的全部托管包；不能同时传入目标或 `--add`。
 - `--batch N`: 控制 `install --all` 的包任务并发。`0` 表示自动，`1` 表示串行，大于 `1` 表示最多同时处理该数量的包。
-- `--gui`: 按 GUI 应用安装；配合 `--add` 时会持久化 `is_gui = true`。未传 `--gui` 但确认启动疑似安装器时，配合 `--add` 也会持久化 `is_gui = true`。
+- `--gui`: 按 GUI 应用安装；配合 `--add` 时会持久化 `is_gui = true`。未传 `--gui` 但确认启动疑似安装器时，配合 `--add` 也会持久化 `is_gui = true`。package 配置可设置 `install_mode = "installer"`，强制把普通命名的 `.exe` asset 当作安装器启动。
 - `--name`: 指定托管包名；对于单文件可执行资产，也会作为默认输出文件名提示。
 
 `update` 支持选项：
@@ -368,7 +368,7 @@ SourceForge 查询目标使用 `sourceforge:<project>`、`sourceforge:<project>/
 - `install --name` 可用于指定单文件可执行资产的输出文件名，例如将 `chlog-windows-amd64.exe` 安装为 `chlog.exe`。
 - `install --rename` 可在解压多个文件时只重命名指定文件；配置字段为 `rename_files`，例如 `rename_files = { "codex-x86_64-pc-windows-msvc.exe" = "codex.exe" }`。
 - `install --add` 仅对 repo 目标生效，并在安装成功后追加托管包配置。
-- `global.gui_target` 只用于免安装 GUI 应用。`.msi`、`setup.exe` 等 GUI 安装器会被启动，但不会记录最终安装目录。
+- `global.gui_target` 只用于免安装 GUI 应用。`.msi`、`setup.exe` 等 GUI 安装器会被启动，但不会记录最终安装目录。对于文件名是产品/版本/平台格式而不是 setup 风格的 `.exe` 安装器，使用 `install_mode = "installer"`。
 - `download` 默认保存原始下载文件；只有设置了 `--file` 或 `--extract-all` 才会自动提取归档内容。
 - `sdk` 使用 `global.sdk_target` 作为安装根目录，使用 `{cache_dir}/sdk-downloads` 保存 SDK 归档下载缓存；断点续传状态由 `.part` 和 `.meta.json` 维护。
 - 归档提取当前支持 `zip`、`tar.*` 以及 `7z`。当 `global.sys7z_path` 或 `PATH` 提供 `7z`、`7zz`、`7za` 时，`.7z`、`.rar`、`.msi`、`.cab`、`.iso` 以及 `--extract-all` 的 `.exe` 会优先使用系统 7z；`tar.*` 归档继续使用内置 Go 解压流程。

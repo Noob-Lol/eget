@@ -590,6 +590,30 @@ func TestRunPromptsBeforeLaunchingDetectedInstallerWithoutGUIFlag(t *testing.T) 
 	}
 }
 
+func TestRunLaunchesConfiguredInstallerModeForPlainExe(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "GoNavi-0.7.7-Windows-Amd64.exe")
+	if err := os.WriteFile(path, []byte("installer"), 0o755); err != nil {
+		t.Fatalf("write installer: %v", err)
+	}
+
+	launcher := &fakeInstallerLauncher{}
+	runner := NewRunner(NewDefaultService(nil, nil))
+	runner.InstallerLauncher = launcher
+	runner.Stderr = io.Discard
+	runner.ConfirmLaunchInstaller = func(file string) (bool, error) {
+		t.Fatalf("configured installer mode should not prompt, got %q", file)
+		return false, nil
+	}
+
+	result, err := runner.Run(path, Options{IsGUI: true, InstallMode: InstallModeInstaller})
+	assert.NoErr(t, err)
+	assert.Eq(t, path, launcher.path)
+	assert.Eq(t, InstallerKindEXE, launcher.kind)
+	assert.True(t, result.IsGUI)
+	assert.Eq(t, InstallModeInstaller, result.InstallMode)
+}
+
 func TestRunExtractAllDoesNotPromptForDetectedInstaller(t *testing.T) {
 	assetURL := "https://example.com/PicoClaw-Setup.exe"
 	svc := NewService()

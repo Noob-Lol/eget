@@ -181,6 +181,7 @@ strip_components = 1
 - `extract_all`: 解压选中归档中的全部文件。
 - `strip_components`: 解压全部文件时剥离归档内路径前缀层数。
 - `is_gui`: 按 GUI package 处理，使用 `gui_target` 相关语义。
+- `install_mode`: 可选 GUI 安装模式。配合 `is_gui = true` 设置为 `installer` 时，会强制把普通命名的 `.exe` asset 当作安装器启动；免安装 GUI 应用不要设置该字段。
 - `quiet`: 减少当前 package 的输出。
 - `upgrade_only`: 仅当 package 已安装时才更新。
 

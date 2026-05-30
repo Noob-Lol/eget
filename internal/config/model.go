@@ -44,6 +44,7 @@ type Section struct {
 	ChecksumRegex        *string           `toml:"checksum_regex" mapstructure:"checksum_regex"`
 	InstallAction        *string           `toml:"install_action" mapstructure:"install_action"`
 	InstallArgs          []string          `toml:"install_args" mapstructure:"install_args"`
+	InstallMode          *string           `toml:"install_mode" mapstructure:"install_mode"`
 	DisableSSL           *bool             `toml:"disable_ssl" mapstructure:"disable_ssl"`
 	ChunkConcurrency     *int              `toml:"chunk_concurrency" mapstructure:"chunk_concurrency"`
 	BatchConcurrency     *int              `toml:"batch_concurrency" mapstructure:"batch_concurrency"`
@@ -127,6 +128,7 @@ type Merged struct {
 	ChecksumRegex       string
 	InstallAction       string
 	InstallArgs         []string
+	InstallMode         string
 	DisableSSL          bool
 	ChunkConcurrency    int
 }
