@@ -16,22 +16,22 @@
 - Modify: `internal/app/config.go`
 - Test: `internal/app/config_test.go`
 
-- [ ] **Step 1: Add failing tests**
+- [x] **Step 1: Add failing tests**
 
 Add tests for default `config_file`, configured `cache_dir`, `sdk_dir`, `bin_dir`, and store file targets.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `go test ./internal/app -run TestConfigPathInfo -count=1`
 
 Expected: compile or test failure because `ConfigPathInfo` does not exist.
 
-- [ ] **Step 3: Implement resolver**
+- [x] **Step 3: Implement resolver**
 
 Add `ConfigPathInfo(target string) (ConfigPathResult, error)` on `ConfigService`, with default target `config_file` and supported targets:
 `config_dir`, `config_file`, `env_file`, `bin_dir`, `cache_dir`, `sdk_dir`, `pkg_store_file`, `sdk_store_file`.
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 Run: `go test ./internal/app -run TestConfigPathInfo -count=1`
 

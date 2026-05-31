@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/gookit/goutil/testutil/assert"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 )
 
@@ -189,6 +190,58 @@ target = "~/.local/bin"
 	if value != "~/.local/bin" {
 		t.Fatalf("expected updated global.target, got %q", value)
 	}
+}
+
+func TestConfigPathInfo(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+	cacheDir := filepath.Join(tmp, "cache")
+	binDir := filepath.Join(tmp, "bin")
+	sdkDir := filepath.Join(tmp, "sdks")
+	writeConfigFile(t, configPath, `
+[global]
+target = "`+filepath.ToSlash(binDir)+`"
+cache_dir = "`+filepath.ToSlash(cacheDir)+`"
+sdk_target = "`+filepath.ToSlash(sdkDir)+`"
+`)
+	assert.NoErr(t, os.MkdirAll(cacheDir, 0o755))
+
+	svc := ConfigService{
+		ConfigPath: configPath,
+		Load: func() (*cfgpkg.File, error) {
+			return cfgpkg.LoadFile(configPath)
+		},
+	}
+
+	tests := []struct {
+		target string
+		path   string
+		exists bool
+	}{
+		{target: "", path: configPath, exists: true},
+		{target: "config_file", path: configPath, exists: true},
+		{target: "config_dir", path: tmp, exists: true},
+		{target: "env_file", path: filepath.Join(tmp, ".env"), exists: false},
+		{target: "bin_dir", path: binDir, exists: false},
+		{target: "cache_dir", path: cacheDir, exists: true},
+		{target: "sdk_dir", path: sdkDir, exists: false},
+		{target: "pkg_store_file", path: filepath.Join(tmp, "installed.toml"), exists: false},
+		{target: "sdk_store_file", path: filepath.Join(tmp, "sdk.installed.json"), exists: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.target, func(t *testing.T) {
+			got, err := svc.ConfigPathInfo(tt.target)
+			assert.NoErr(t, err)
+			assert.Eq(t, filepath.Clean(tt.path), filepath.Clean(got.Path))
+			assert.Eq(t, tt.exists, got.Exists)
+		})
+	}
+}
+
+func TestConfigPathInfoRejectsUnknownTarget(t *testing.T) {
+	_, err := (ConfigService{}).ConfigPathInfo("unknown")
+	assert.Err(t, err)
 }
 
 func writeConfigFile(t *testing.T, path, content string) {

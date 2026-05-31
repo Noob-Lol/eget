@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/inherelab/eget/internal/client"
@@ -26,6 +28,12 @@ type RepoMetadata struct {
 }
 
 type ConfigInfoResult struct {
+	Path   string
+	Exists bool
+}
+
+type ConfigPathResult struct {
+	Target string
 	Path   string
 	Exists bool
 }
@@ -195,6 +203,71 @@ func (s ConfigService) ConfigSet(key, value string) error {
 	return s.save(cfg)
 }
 
+func (s ConfigService) ConfigPathInfo(target string) (ConfigPathResult, error) {
+	if strings.TrimSpace(target) == "" {
+		target = "config_file"
+	}
+
+	configPath, err := s.configFilePath()
+	if err != nil {
+		return ConfigPathResult{}, err
+	}
+	configDir := filepath.Dir(configPath)
+
+	path := ""
+	isDir := false
+	switch target {
+	case "config_file":
+		path = configPath
+	case "config_dir":
+		path = configDir
+		isDir = true
+	case "env_file":
+		path = filepath.Join(configDir, ".env")
+	case "bin_dir":
+		cfg, err := s.load()
+		if err != nil {
+			return ConfigPathResult{}, err
+		}
+		path = expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.Target), "~/.local/bin"))
+		isDir = true
+	case "cache_dir":
+		cfg, err := s.load()
+		if err != nil {
+			return ConfigPathResult{}, err
+		}
+		path = expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.CacheDir), "~/.cache/eget"))
+		isDir = true
+	case "sdk_dir":
+		cfg, err := s.load()
+		if err != nil {
+			return ConfigPathResult{}, err
+		}
+		path = expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.SDKTarget), "~/.local/sdks"))
+		isDir = true
+	case "pkg_store_file":
+		path = filepath.Join(configDir, "installed.toml")
+	case "sdk_store_file":
+		path = filepath.Join(configDir, "sdk.installed.json")
+	default:
+		return ConfigPathResult{}, fmt.Errorf("unsupported config path target %q", target)
+	}
+
+	return ConfigPathResult{Target: target, Path: path, Exists: pathExists(path, isDir)}, nil
+}
+
+func (s ConfigService) configFilePath() (string, error) {
+	if s.ConfigPath != "" {
+		return s.ConfigPath, nil
+	}
+	if resolved, err := cfgpkg.ResolveConfigPath(); err == nil {
+		return resolved, nil
+	} else if !cfgpkg.IsNotExist(err) {
+		return "", err
+	}
+	return cfgpkg.ResolveWritablePath()
+}
+
 func (s ConfigService) load() (*cfgpkg.File, error) {
 	if s.Load != nil {
 		return s.Load()
@@ -215,6 +288,34 @@ func (s ConfigService) save(file *cfgpkg.File) error {
 		return s.Save(path, file)
 	}
 	return cfgpkg.Save(path, file)
+}
+
+func pathExists(path string, isDir bool) bool {
+	info, err := os.Stat(filepath.Clean(path))
+	if err != nil {
+		return false
+	}
+	if isDir {
+		return info.IsDir()
+	}
+	return !info.IsDir()
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func expandPathOrRaw(path string) string {
+	expanded, err := util.Expand(path)
+	if err != nil {
+		return path
+	}
+	return expanded
 }
 
 func sectionFromInstallOptions(repo, name string, opts install.Options) cfgpkg.Section {
