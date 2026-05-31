@@ -2104,6 +2104,52 @@ func TestHandleConfigInitAllowsOverwriteWithConfirmation(t *testing.T) {
 	}
 }
 
+func TestHandleConfigPathPrintsPath(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+	writeCLIFile(t, configPath, "[global]\ncache_dir = \"~/cache\"\n")
+	svc := &cliService{
+		cfgService: app.ConfigService{
+			ConfigPath: configPath,
+			Load: func() (*cfgpkg.File, error) {
+				return cfgpkg.LoadFile(configPath)
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleConfig(&ConfigOptions{Action: "path", Target: "config_file"})
+	assert.NoErr(t, err)
+	assert.Eq(t, configPath+"\n", out.String())
+}
+
+func TestHandleConfigPathCheckPrintsExistsStatus(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+	cacheDir := filepath.Join(tmp, "cache")
+	writeCLIFile(t, configPath, "[global]\ncache_dir = \""+filepath.ToSlash(cacheDir)+"\"\n")
+	assert.NoErr(t, os.MkdirAll(cacheDir, 0o755))
+	svc := &cliService{
+		cfgService: app.ConfigService{
+			ConfigPath: configPath,
+			Load: func() (*cfgpkg.File, error) {
+				return cfgpkg.LoadFile(configPath)
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleConfig(&ConfigOptions{Action: "path", Target: "cache_dir", Check: true})
+	assert.NoErr(t, err)
+	assert.Eq(t, filepath.ToSlash(cacheDir)+", exists: true\n", filepath.ToSlash(out.String()))
+}
+
 func TestHandleQueryPrintsLatestRelease(t *testing.T) {
 	svc := &cliService{
 		queryService: app.QueryService{

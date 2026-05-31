@@ -208,6 +208,7 @@ eget add --name fzf --to ~/.local/bin junegunn/fzf
 eget config init
 eget config list|ls
 eget config doctor
+eget cfg path --check cache_dir
 eget config get global.target
 eget config set global.target ~/.local/bin
 ```
@@ -291,7 +292,8 @@ eget config set global.target ~/.local/bin
 
 `config`(alias: `cfg`)
 
-- 支持 `init`、`list` / `ls`、`doctor`、`get KEY`、`set KEY VALUE`。
+- 支持 `init`、`list` / `ls`、`doctor`、`path [--check] [target]`、`get KEY`、`set KEY VALUE`。
+- `config path` 用于输出单个本地路径，方便脚本使用。支持的 target 有 `config_dir`、`config_file`（默认）、`env_file`、`bin_dir`、`cache_dir`、`sdk_dir`、`pkg_store_file`、`sdk_store_file`。设置 `--check` 后输出格式为 `path, exists: bool`。
 - `config doctor` 会输出本机 config/cache/store/install 相关路径、存在性、可写性，以及敏感配置是否已设置；不会打印 secret 原文。
 - 读取 `eget.toml` 前会加载可选的 `~/.config/eget/.env`，因此配置值可以继续写成 `github_token = "${GITHUB_TOKEN}"`、`proxy_url = "${PROXY_URL}"`，敏感信息无需直接写进配置文件。
 

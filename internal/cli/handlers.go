@@ -583,6 +583,17 @@ func (s *cliService) handleConfig(opts *ConfigOptions) error {
 		return nil
 	case "doctor":
 		return s.handleConfigDoctor()
+	case "path":
+		info, err := s.cfgService.ConfigPathInfo(opts.Target)
+		if err != nil {
+			return err
+		}
+		if opts.Check {
+			ccolor.Printf("%s, exists: %v\n", info.Path, info.Exists)
+			return nil
+		}
+		ccolor.Println(info.Path)
+		return nil
 	case "get":
 		value, err := s.cfgService.ConfigGet(opts.Key)
 		if err != nil {

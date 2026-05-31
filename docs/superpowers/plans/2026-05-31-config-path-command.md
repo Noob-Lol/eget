@@ -71,21 +71,21 @@ Expected: PASS.
 - Modify: `README.zh-CN.md`
 - Test: `internal/cli/service_test.go`
 
-- [ ] **Step 1: Add failing handler tests**
+- [x] **Step 1: Add failing handler tests**
 
 Add tests for plain path output and `path, exists: bool` output.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `go test ./internal/cli -run TestHandleConfigPath -count=1`
 
 Expected: failure because `handleConfig` does not handle `path`.
 
-- [ ] **Step 3: Implement handler and docs**
+- [x] **Step 3: Implement handler and docs**
 
 Call `ConfigService.ConfigPathInfo`, print just the path normally, and print `<path>, exists: <bool>` when `--check` is set. Document the new command in README files.
 
-- [ ] **Step 4: Verify full suite**
+- [x] **Step 4: Verify full suite**
 
 Run: `go test ./...`
 

@@ -208,6 +208,7 @@ eget add --name fzf --to ~/.local/bin junegunn/fzf
 eget config init
 eget config list|ls
 eget config doctor
+eget cfg path --check cache_dir
 eget config get global.target
 eget config set global.target ~/.local/bin
 ```
@@ -291,7 +292,8 @@ The target argument accepted by `install` and `download` can be:
 
 `config` (alias: `cfg`)
 
-- Supports `init`, `list` / `ls`, `doctor`, `get KEY`, and `set KEY VALUE`.
+- Supports `init`, `list` / `ls`, `doctor`, `path [--check] [target]`, `get KEY`, and `set KEY VALUE`.
+- `config path` prints one local path for scripting. Supported targets are `config_dir`, `config_file` (default), `env_file`, `bin_dir`, `cache_dir`, `sdk_dir`, `pkg_store_file`, and `sdk_store_file`. With `--check`, output is `path, exists: bool`.
 - `config doctor` prints local config/cache/store/install paths, existence checks, writability checks, and set/unset status for sensitive config values without printing secret values.
 - Loads optional dotenv variables from the config directory before reading `eget.toml`, so config values such as `github_token = "${GITHUB_TOKEN}"` and `proxy_url = "${PROXY_URL}"` can reference secrets without storing them directly in the config file. Set `EGET_CONFIG_DIR` to move `.env`, `eget.toml`, and install store files together.
 
