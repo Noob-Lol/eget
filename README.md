@@ -124,6 +124,9 @@ eget sdk install --force go@1.22.0
 eget sdk list
 eget sdk list --json
 eget sdk remove go@1.22.0
+eget sdk path go
+eget sdk path go:1.20
+eget sdk path java:17
 eget sdk config add --all
 eget sdk config add --all --mirror mirror
 eget sdk config add jdk --mirror zulu
@@ -287,6 +290,7 @@ The target argument accepted by `install` and `download` can be:
 - `sdk install` accepts one or more SDK targets and installs them serially.
 - `sdk list` reads installed SDK records. Use `--json` for machine-readable output.
 - `sdk remove <name@version>` removes only paths recorded in the SDK installed store and verified under the configured SDK root.
+- `sdk path <target>` prints a configured SDK base path for unversioned targets such as `go` or `java`, and prints an installed version path for versioned targets such as `go:1.20`, `go@1.21.5`, or `java:17`.
 - `sdk index list/show/refresh/clear` manages normalized SDK index cache files.
 - The first built-in examples target Go and Node. Other SDKs can also work when their archive names can be described by `url_template`, `filename_pattern`, `os_map`, `arch_map`, `ext_map`, and optional HTML/JSON index settings.
 

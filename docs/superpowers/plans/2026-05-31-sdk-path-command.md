@@ -369,7 +369,7 @@ go test ./internal/cli -run TestMain_SDKPath -count=1
 
 预期：通过。
 
-- [ ] **步骤 5：提交任务 2**
+- [x] **步骤 5：提交任务 2**
 
 执行：
 
@@ -389,7 +389,7 @@ git commit -m "feat(cli): parse sdk path command"
 - 修改：`README.md`
 - 修改：`README.zh-CN.md`
 
-- [ ] **步骤 1：新增 handler 失败测试**
+- [x] **步骤 1：新增 handler 失败测试**
 
 在 `internal/cli/service_test.go` 的 `fakeSDKService` 增加字段：
 
@@ -427,7 +427,7 @@ func TestHandleSDKPathPrintsPath(t *testing.T) {
 }
 ```
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 执行：
 
@@ -437,7 +437,7 @@ go test ./internal/cli -run TestHandleSDKPath -count=1
 
 预期：编译失败，因为 `sdkCLIService` 缺少 `Path`，或 handler 尚未路由 `sdk.path`。
 
-- [ ] **步骤 3：实现 handler**
+- [x] **步骤 3：实现 handler**
 
 在 `internal/cli/service.go` 扩展 `sdkCLIService`：
 
@@ -469,7 +469,7 @@ func (s *cliService) handleSDKPath(opts *SDKPathOptions) error {
 }
 ```
 
-- [ ] **步骤 4：更新 README**
+- [x] **步骤 4：更新 README**
 
 在 `README.md` 的 SDK 示例中增加：
 
@@ -491,7 +491,7 @@ eget sdk path java:17
 - `sdk path <target>` 输出 SDK 路径；`go`、`java` 等不带版本目标输出配置的 SDK 基础目录，`go:1.20`、`go@1.21.5`、`java:17` 等带版本目标输出已安装版本目录。
 ```
 
-- [ ] **步骤 5：运行目标测试**
+- [x] **步骤 5：运行目标测试**
 
 执行：
 

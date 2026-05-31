@@ -33,6 +33,8 @@ type fakeSDKService struct {
 	listEntries    []sdk.InstalledEntry
 	removeTarget   string
 	removeResult   sdk.RemoveResult
+	pathTarget     string
+	pathEntry      sdk.InstalledEntry
 	indexName      string
 	indexAll       bool
 	index          sdk.Index
@@ -91,6 +93,11 @@ func (f *fakeSDKService) List(name string) ([]sdk.InstalledEntry, error) {
 func (f *fakeSDKService) Remove(target string) (sdk.RemoveResult, error) {
 	f.removeTarget = target
 	return f.removeResult, f.err
+}
+
+func (f *fakeSDKService) Path(target string) (sdk.InstalledEntry, error) {
+	f.pathTarget = target
+	return f.pathEntry, f.err
 }
 
 func (f *fakeSDKService) RefreshIndex(_ context.Context, name string) (sdk.Index, error) {
@@ -1989,6 +1996,22 @@ func TestHandleUpdateCheckWithTargetsOnlyChecksRequestedPackages(t *testing.T) {
 	assert.Contains(t, got, "jq-1.8")
 	assert.NotContains(t, got, "BurntSushi/ripgrep")
 	assert.Eq(t, 0, len(installer.targets))
+}
+
+func TestHandleSDKPathPrintsPath(t *testing.T) {
+	fake := &fakeSDKService{
+		pathEntry: sdk.InstalledEntry{Name: "jdk", Version: "17.0.11", Path: "D:/tools/jdk/zulu-17.0.11"},
+	}
+	svc := &cliService{sdkService: fake}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handle("sdk.path", &SDKPathOptions{Target: "java:17"})
+	assert.NoErr(t, err)
+	assert.Eq(t, "java:17", fake.pathTarget)
+	assert.Eq(t, "D:/tools/jdk/zulu-17.0.11\n", out.String())
 }
 
 func TestHandleConfigInitRejectsOverwriteWithoutConfirmation(t *testing.T) {

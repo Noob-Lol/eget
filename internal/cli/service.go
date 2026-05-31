@@ -14,6 +14,7 @@ type sdkCLIService interface {
 	InstallMany(context.Context, []string, sdk.InstallOptions) ([]sdk.InstallResult, error)
 	List(string) ([]sdk.InstalledEntry, error)
 	Remove(string) (sdk.RemoveResult, error)
+	Path(string) (sdk.InstalledEntry, error)
 	SearchIndex(string, sdk.SearchOptions) ([]sdk.SearchResult, error)
 	RefreshIndex(context.Context, string) (sdk.Index, error)
 	RefreshAllIndexes(context.Context) ([]sdk.Index, error)

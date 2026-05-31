@@ -130,6 +130,9 @@ func (s *cliService) handle(name string, options any) error {
 	case "sdk.remove":
 		opts := options.(*SDKRemoveOptions)
 		return s.handleSDKRemove(opts)
+	case "sdk.path":
+		opts := options.(*SDKPathOptions)
+		return s.handleSDKPath(opts)
 	case "sdk.search":
 		opts := options.(*SDKSearchOptions)
 		return s.handleSDKSearch(opts)
@@ -1044,6 +1047,18 @@ func (s *cliService) handleSDKRemove(opts *SDKRemoveOptions) error {
 		return nil
 	}
 	ccolor.Successf("✓ Removed %s@%s -> %s\n", result.Name, result.Version, result.Path)
+	return nil
+}
+
+func (s *cliService) handleSDKPath(opts *SDKPathOptions) error {
+	if opts == nil || opts.Target == "" {
+		return fmt.Errorf("sdk path target is required")
+	}
+	entry, err := s.sdkService.Path(opts.Target)
+	if err != nil {
+		return err
+	}
+	ccolor.Println(entry.Path)
 	return nil
 }
 

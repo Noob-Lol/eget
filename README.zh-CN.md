@@ -124,6 +124,9 @@ eget sdk install --force go@1.22.0
 eget sdk list
 eget sdk list --json
 eget sdk remove go@1.22.0
+eget sdk path go
+eget sdk path go:1.20
+eget sdk path java:17
 eget sdk config add --all
 eget sdk config add --all --mirror mirror
 eget sdk config add jdk --mirror zulu
@@ -287,6 +290,7 @@ eget config set global.target ~/.local/bin
 - `sdk install` 支持一次传入多个 SDK target，首版按顺序串行安装。
 - `sdk list` 读取 SDK 安装记录，可加 `--json` 输出 JSON。
 - `sdk remove <name@version>` 只删除 SDK 安装记录中存在、且通过 SDK 根目录安全校验的目录。
+- `sdk path <target>` 输出 SDK 路径；`go`、`java` 等不带版本目标输出配置的 SDK 基础目录，`go:1.20`、`go@1.21.5`、`java:17` 等带版本目标输出已安装版本目录。
 - `sdk index list/show/refresh/clear` 管理规范化后的 SDK 索引缓存 JSON。
 - 首版内置示例覆盖 Go 和 Node。其它 SDK 只要归档命名能用 `url_template`、`filename_pattern`、`os_map`、`arch_map`、`ext_map` 和可选 HTML/JSON index 描述，也可以通过配置使用。
 
