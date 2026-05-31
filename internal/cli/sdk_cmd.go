@@ -21,6 +21,10 @@ type SDKRemoveOptions struct {
 	Target string
 }
 
+type SDKPathOptions struct {
+	Target string
+}
+
 type SDKSearchOptions struct {
 	Name     string
 	Keywords []string
@@ -48,6 +52,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 	installOpts := &SDKInstallOptions{}
 	listOpts := &SDKListOptions{}
 	removeOpts := &SDKRemoveOptions{}
+	pathOpts := &SDKPathOptions{}
 	searchOpts := &SDKSearchOptions{Number: 20}
 	indexOpts := &SDKIndexOptions{}
 	configOpts := &SDKConfigOptions{}
@@ -57,6 +62,8 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
   eget sdk install --force go:1.22 node:20.11.1
   eget sdk list
   eget sdk remove go@1.22.0
+  eget sdk path go
+  eget sdk path java:17
   eget sdk search go 1.22 amd64 ^windows
   eget sdk search --sort desc node REG:^22
   eget sdk config add jdk --mirror huawei
@@ -67,6 +74,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 		newSDKInstallCmd(installOpts, handler),
 		newSDKListCmd(listOpts, handler),
 		newSDKRemoveCmd(removeOpts, handler),
+		newSDKPathCmd(pathOpts, handler),
 		newSDKSearchCmd(searchOpts, handler),
 		newSDKConfigCmd(configOpts, handler),
 		newSDKIndexCmd(indexOpts, handler),
@@ -75,6 +83,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 		*installOpts = SDKInstallOptions{}
 		*listOpts = SDKListOptions{}
 		*removeOpts = SDKRemoveOptions{}
+		*pathOpts = SDKPathOptions{}
 		*searchOpts = SDKSearchOptions{Number: 20}
 		*indexOpts = SDKIndexOptions{}
 		*configOpts = SDKConfigOptions{}
@@ -133,6 +142,25 @@ func newSDKRemoveCmd(opts *SDKRemoveOptions, handler CommandHandler) *gcli.Comma
 		}
 		snapshot := *opts
 		return handler("sdk.remove", &snapshot)
+	}
+	return cmd
+}
+
+func newSDKPathCmd(opts *SDKPathOptions, handler CommandHandler) *gcli.Command {
+	cmd := gcli.NewCommand("path", "Print SDK path")
+	cmd.Config = func(c *gcli.Command) {
+		c.AddArg("target", "SDK target, for example go, go:1.20, or java:17", true)
+	}
+	cmd.Func = func(c *gcli.Command, args []string) error {
+		opts.Target = c.Arg("target").String()
+		if err := validateNoFlagArgs(append([]string{opts.Target}, args...)); err != nil {
+			return err
+		}
+		if len(args) > 0 {
+			return fmt.Errorf("too many arguments: %v", args)
+		}
+		snapshot := *opts
+		return handler("sdk.path", &snapshot)
 	}
 	return cmd
 }

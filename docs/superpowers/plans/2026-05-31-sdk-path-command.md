@@ -252,7 +252,7 @@ go test ./internal/sdk -run TestServicePath -count=1
 
 预期：通过。
 
-- [ ] **步骤 6：提交任务 1**
+- [x] **步骤 6：提交任务 1**
 
 执行：
 
@@ -270,7 +270,7 @@ git commit -m "feat(sdk): resolve sdk path targets"
 - 修改：`internal/cli/app.go`
 - 测试：`internal/cli/app_test.go`
 
-- [ ] **步骤 1：新增 CLI 解析失败测试**
+- [x] **步骤 1：新增 CLI 解析失败测试**
 
 在 `internal/cli/app_test.go` 增加：
 
@@ -304,7 +304,7 @@ func TestMain_SDKPathRejectsMissingTarget(t *testing.T) {
 }
 ```
 
-- [ ] **步骤 2：运行测试确认 RED**
+- [x] **步骤 2：运行测试确认 RED**
 
 执行：
 
@@ -314,7 +314,7 @@ go test ./internal/cli -run TestMain_SDKPath -count=1
 
 预期：编译失败，因为 `SDKPathOptions` 未定义，或命令未注册导致路由失败。
 
-- [ ] **步骤 3：新增 option 和子命令**
+- [x] **步骤 3：新增 option 和子命令**
 
 在 `internal/cli/sdk_cmd.go` 增加：
 
@@ -359,7 +359,7 @@ func newSDKPathCmd(opts *SDKPathOptions, handler CommandHandler) *gcli.Command {
 "path": {},
 ```
 
-- [ ] **步骤 4：运行测试确认 GREEN**
+- [x] **步骤 4：运行测试确认 GREEN**
 
 执行：
 

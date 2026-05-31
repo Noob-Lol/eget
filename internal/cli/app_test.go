@@ -299,6 +299,34 @@ func TestMain_SDKConfigAddRoutesAndBindsOptions(t *testing.T) {
 	assert.False(t, opts.All)
 }
 
+func TestMain_SDKPathRoutesAndBindsTarget(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"sdk", "path", "java:17"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	assert.Eq(t, "sdk.path", calls[0].name)
+	opts, ok := calls[0].options.(*SDKPathOptions)
+	assert.True(t, ok)
+	assert.Eq(t, "java:17", opts.Target)
+}
+
+func TestMain_SDKPathRejectsMissingTarget(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(func(string, any) error {
+		t.Fatal("handler should not run")
+		return nil
+	}, &stdout, &stderr).RunWithArgs([]string{"sdk", "path"})
+	assert.Err(t, err)
+}
+
 func TestMain_SDKConfigAddAllRoutesAndBindsOptions(t *testing.T) {
 	calls := make([]commandCall, 0, 1)
 	handler := func(name string, options any) error {
