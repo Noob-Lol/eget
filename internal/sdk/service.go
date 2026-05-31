@@ -200,6 +200,33 @@ func (s Service) List(name string) ([]InstalledEntry, error) {
 	return s.Store.List(name)
 }
 
+func (s Service) Path(rawTarget string) (InstalledEntry, error) {
+	target, err := ParseTarget(rawTarget)
+	if err != nil {
+		return InstalledEntry{}, err
+	}
+	cfg, err := s.resolveConfig(target.Name)
+	if err != nil {
+		return InstalledEntry{}, err
+	}
+	if target.Kind == VersionLatest {
+		path, err := s.sdkBasePath(cfg)
+		if err != nil {
+			return InstalledEntry{}, err
+		}
+		return InstalledEntry{Name: cfg.Name, Path: path}, nil
+	}
+	entries, err := s.Store.List(cfg.Name)
+	if err != nil {
+		return InstalledEntry{}, err
+	}
+	entry, ok := selectInstalledSDKPath(target, cfg.Name, entries)
+	if !ok {
+		return InstalledEntry{}, fmt.Errorf("sdk %s version %s is not installed", cfg.Name, target.Version)
+	}
+	return entry, nil
+}
+
 func (s Service) Remove(rawTarget string) (RemoveResult, error) {
 	target, err := ParseTarget(rawTarget)
 	if err != nil {
@@ -231,6 +258,32 @@ func (s Service) Remove(rawTarget string) (RemoveResult, error) {
 		return RemoveResult{}, err
 	}
 	return RemoveResult{Name: cfg.Name, Version: target.Version, Path: entry.Path, Missing: missing}, nil
+}
+
+func selectInstalledSDKPath(target Target, name string, entries []InstalledEntry) (InstalledEntry, bool) {
+	candidates := make([]InstalledEntry, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Name != name {
+			continue
+		}
+		switch target.Kind {
+		case VersionExact:
+			if entry.Version == target.Version {
+				return entry, true
+			}
+		case VersionPrefix:
+			if isStableVersion(entry.Version) && strings.HasPrefix(entry.Version, target.Version+".") {
+				candidates = append(candidates, entry)
+			}
+		}
+	}
+	if len(candidates) == 0 {
+		return InstalledEntry{}, false
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		return compareVersion(candidates[i].Version, candidates[j].Version) > 0
+	})
+	return candidates[0], true
 }
 
 func (s Service) RefreshIndex(ctx context.Context, name string) (Index, error) {
@@ -712,6 +765,29 @@ func (s Service) sdkRoot(cfg Config) string {
 		root = expanded
 	}
 	return filepath.Clean(root)
+}
+
+func (s Service) sdkBasePath(cfg Config) (string, error) {
+	prefix := targetTemplateBasePrefix(cfg.TargetTemplate)
+	if prefix == "" {
+		return s.sdkRoot(cfg), nil
+	}
+	if expanded, err := util.Expand(prefix); err == nil && expanded != "" {
+		prefix = expanded
+	}
+	if filepath.IsAbs(prefix) {
+		return filepath.Clean(prefix), nil
+	}
+	return filepath.Join(s.sdkRoot(cfg), filepath.FromSlash(prefix)), nil
+}
+
+func targetTemplateBasePrefix(template string) string {
+	before, _, _ := strings.Cut(template, "{version}")
+	before = strings.TrimRight(before, `/\`)
+	if before == "" || !strings.ContainsAny(before, `/\`) {
+		return ""
+	}
+	return filepath.Dir(filepath.FromSlash(before))
 }
 
 func (s Service) cacheDir() string {

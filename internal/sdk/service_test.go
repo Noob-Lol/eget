@@ -100,6 +100,79 @@ func TestServiceInstallUsesIndexForPrefixVersion(t *testing.T) {
 	assert.Eq(t, "1.21.13", result.Version)
 }
 
+func TestServicePathReturnsConfiguredSDKBasePath(t *testing.T) {
+	root := t.TempDir()
+	cfg := testSDKConfig(root)
+	cfg.SDK["jdk"] = cfgpkg.SDKSection{
+		Aliases: []string{"java"},
+		Target:  stringPtr("jdk/openjdk-{version}"),
+		ExtMap:  map[string]string{"linux": "tar.gz"},
+	}
+	svc := Service{Config: cfg, Store: Store{Path: filepath.Join(root, "sdk.installed.json")}, GOOS: "linux", GOARCH: "amd64"}
+
+	goEntry, err := svc.Path("go")
+	assert.NoErr(t, err)
+	assert.Eq(t, filepath.Join(root, "sdks", "gosdk"), filepath.Clean(goEntry.Path))
+	assert.Eq(t, "go", goEntry.Name)
+	assert.Eq(t, "", goEntry.Version)
+
+	javaEntry, err := svc.Path("java")
+	assert.NoErr(t, err)
+	assert.Eq(t, filepath.Join(root, "sdks", "jdk"), filepath.Clean(javaEntry.Path))
+	assert.Eq(t, "jdk", javaEntry.Name)
+	assert.Eq(t, "", javaEntry.Version)
+}
+
+func TestServicePathReturnsInstalledVersionPath(t *testing.T) {
+	root := t.TempDir()
+	cfg := testSDKConfig(root)
+	store := Store{Path: filepath.Join(root, "sdk.installed.json")}
+	assert.NoErr(t, store.Record(InstalledEntry{Name: "go", Version: "1.20.3", Path: filepath.Join(root, "sdks", "gosdk", "go1.20.3")}))
+	assert.NoErr(t, store.Record(InstalledEntry{Name: "go", Version: "1.20.12", Path: filepath.Join(root, "sdks", "gosdk", "go1.20.12")}))
+	assert.NoErr(t, store.Record(InstalledEntry{Name: "go", Version: "1.21.5", Path: filepath.Join(root, "sdks", "gosdk", "go1.21.5")}))
+	svc := Service{Config: cfg, Store: store, GOOS: "linux", GOARCH: "amd64"}
+
+	prefix, err := svc.Path("go:1.20")
+	assert.NoErr(t, err)
+	assert.Eq(t, "1.20.12", prefix.Version)
+	assert.Eq(t, filepath.Join(root, "sdks", "gosdk", "go1.20.12"), filepath.Clean(prefix.Path))
+
+	exact, err := svc.Path("go@1.21.5")
+	assert.NoErr(t, err)
+	assert.Eq(t, "1.21.5", exact.Version)
+	assert.Eq(t, filepath.Join(root, "sdks", "gosdk", "go1.21.5"), filepath.Clean(exact.Path))
+}
+
+func TestServicePathUsesSDKAliasForInstalledVersion(t *testing.T) {
+	root := t.TempDir()
+	cfg := testSDKConfig(root)
+	cfg.SDK["jdk"] = cfgpkg.SDKSection{
+		Aliases: []string{"java"},
+		Target:  stringPtr("jdk/zulu-{version}"),
+		ExtMap:  map[string]string{"linux": "tar.gz"},
+	}
+	store := Store{Path: filepath.Join(root, "sdk.installed.json")}
+	assert.NoErr(t, store.Record(InstalledEntry{Name: "jdk", Version: "17.0.9", Path: filepath.Join(root, "sdks", "jdk", "zulu-17.0.9")}))
+	assert.NoErr(t, store.Record(InstalledEntry{Name: "jdk", Version: "17.0.11", Path: filepath.Join(root, "sdks", "jdk", "zulu-17.0.11")}))
+	svc := Service{Config: cfg, Store: store, GOOS: "linux", GOARCH: "amd64"}
+
+	got, err := svc.Path("java:17")
+	assert.NoErr(t, err)
+	assert.Eq(t, "jdk", got.Name)
+	assert.Eq(t, "17.0.11", got.Version)
+	assert.Eq(t, filepath.Join(root, "sdks", "jdk", "zulu-17.0.11"), filepath.Clean(got.Path))
+}
+
+func TestServicePathReturnsErrorForMissingInstalledVersion(t *testing.T) {
+	root := t.TempDir()
+	cfg := testSDKConfig(root)
+	svc := Service{Config: cfg, Store: Store{Path: filepath.Join(root, "sdk.installed.json")}, GOOS: "linux", GOARCH: "amd64"}
+
+	_, err := svc.Path("go:1.20")
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), "not installed")
+}
+
 func TestServiceSDKRootExpandsTildeTarget(t *testing.T) {
 	cfg := Config{SDKTarget: "~/.local/sdk"}
 	svc := Service{}

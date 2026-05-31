@@ -64,7 +64,7 @@
 - 修改：`internal/sdk/service.go`
 - 测试：`internal/sdk/service_test.go`
 
-- [ ] **步骤 1：新增基础路径失败测试**
+- [x] **步骤 1：新增基础路径失败测试**
 
 在 `internal/sdk/service_test.go` 增加：
 
@@ -93,7 +93,7 @@ func TestServicePathReturnsConfiguredSDKBasePath(t *testing.T) {
 }
 ```
 
-- [ ] **步骤 2：新增已安装版本路径失败测试**
+- [x] **步骤 2：新增已安装版本路径失败测试**
 
 在 `internal/sdk/service_test.go` 增加：
 
@@ -149,7 +149,7 @@ func TestServicePathReturnsErrorForMissingInstalledVersion(t *testing.T) {
 }
 ```
 
-- [ ] **步骤 3：运行测试确认 RED**
+- [x] **步骤 3：运行测试确认 RED**
 
 执行：
 
@@ -159,7 +159,7 @@ go test ./internal/sdk -run TestServicePath -count=1
 
 预期：编译失败，因为 `Service.Path` 还未定义。
 
-- [ ] **步骤 4：实现 SDK path API**
+- [x] **步骤 4：实现 SDK path API**
 
 在 `internal/sdk/service.go` 增加 `Service.Path` 和 helper。实现要点：
 
@@ -242,7 +242,7 @@ func (s Service) sdkBasePath(cfg Config) (string, error) {
 
 `targetTemplateBasePrefix` 只需要针对 `{version}` 前的静态路径做最小处理：取 `{version}` 前缀，去掉末尾路径分隔符，再返回其目录；如果模板本身就是 `{version}` 或 `go{version}`，返回空字符串，交给 `sdkRoot`。
 
-- [ ] **步骤 5：运行测试确认 GREEN**
+- [x] **步骤 5：运行测试确认 GREEN**
 
 执行：
 
