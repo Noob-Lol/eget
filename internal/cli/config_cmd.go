@@ -1,11 +1,17 @@
 package cli
 
-import "github.com/gookit/gcli/v3"
+import (
+	"fmt"
+
+	"github.com/gookit/gcli/v3"
+)
 
 type ConfigOptions struct {
 	Action string
 	Key    string
 	Value  string
+	Target string
+	Check  bool
 }
 
 func newConfigCmd(handler CommandHandler) (*gcli.Command, func()) {
@@ -15,11 +21,14 @@ func newConfigCmd(handler CommandHandler) (*gcli.Command, func()) {
 	cmd.Help = `  init                Initialize the config file with default values
   list | ls           Print current config values and file status
   doctor              Print local paths and environment diagnostics
+  path [--check] [target]
 
 <info>Examples</>:
   eget config init
   eget config list
   eget config doctor
+  eget cfg path cache_dir
+  eget cfg path --check sdk_store_file
   eget config get global.target
   eget config set global.target ~/.local/bin`
 
@@ -27,6 +36,7 @@ func newConfigCmd(handler CommandHandler) (*gcli.Command, func()) {
 		newConfigActionCmd("init", nil, opts, handler),
 		newConfigActionCmd("list", []string{"ls"}, opts, handler),
 		newConfigActionCmd("doctor", nil, opts, handler),
+		newConfigPathCmd(opts, handler),
 		newConfigGetCmd(opts, handler),
 		newConfigSetCmd(opts, handler),
 	}
@@ -43,6 +53,30 @@ func newConfigActionCmd(action string, aliases []string, opts *ConfigOptions, ha
 			return err
 		}
 		opts.Action = action
+		snapshot := *opts
+		return handler("config", &snapshot)
+	}
+	return cmd
+}
+
+func newConfigPathCmd(opts *ConfigOptions, handler CommandHandler) *gcli.Command {
+	cmd := gcli.NewCommand("path", "Print local config path")
+	cmd.Config = func(c *gcli.Command) {
+		c.BoolOpt(&opts.Check, "check", "", false, "Print path and existence status")
+		c.AddArg("target", "Path target", false)
+	}
+	cmd.Func = func(c *gcli.Command, args []string) error {
+		opts.Action = "path"
+		opts.Target = c.Arg("target").String()
+		if opts.Target == "" {
+			opts.Target = "config_file"
+		}
+		if err := validateNoFlagArgs(append([]string{opts.Target}, args...)); err != nil {
+			return err
+		}
+		if len(args) > 0 {
+			return fmt.Errorf("too many arguments: %v", args)
+		}
 		snapshot := *opts
 		return handler("config", &snapshot)
 	}

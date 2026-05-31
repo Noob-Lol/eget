@@ -347,6 +347,7 @@ var commandFlagSpecs = map[string]flagSpec{
 			"init": {},
 			"list": {},
 			"ls":   {},
+			"path": {bools: setOf("check")},
 			"get":  {},
 			"set":  {},
 		},

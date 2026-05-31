@@ -686,6 +686,18 @@ func TestMain_ConfigSubcommandsRouteToConfigCommand(t *testing.T) {
 			wantCalls: 1,
 		},
 		{
+			name:      "path default",
+			args:      []string{"cfg", "path"},
+			want:      ConfigOptions{Action: "path", Target: "config_file"},
+			wantCalls: 1,
+		},
+		{
+			name:      "path check",
+			args:      []string{"cfg", "path", "--check", "cache_dir"},
+			want:      ConfigOptions{Action: "path", Target: "cache_dir", Check: true},
+			wantCalls: 1,
+		},
+		{
 			name:      "get",
 			args:      []string{"config", "get", "global.target"},
 			want:      ConfigOptions{Action: "get", Key: "global.target"},
@@ -725,8 +737,22 @@ func TestMain_ConfigSubcommandsRouteToConfigCommand(t *testing.T) {
 			assert.Eq(t, tt.want.Action, opts.Action)
 			assert.Eq(t, tt.want.Key, opts.Key)
 			assert.Eq(t, tt.want.Value, opts.Value)
+			assert.Eq(t, tt.want.Target, opts.Target)
+			assert.Eq(t, tt.want.Check, opts.Check)
 		})
 	}
+}
+
+func TestMain_ConfigPathRejectsExtraArgs(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(func(string, any) error {
+		t.Fatal("handler should not run")
+		return nil
+	}, &stdout, &stderr).RunWithArgs([]string{"cfg", "path", "cache_dir", "extra"})
+
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), "too many")
 }
 
 func TestMain_ConfigWithoutSubcommandShowsHelp(t *testing.T) {

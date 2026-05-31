@@ -43,21 +43,21 @@ Expected: PASS.
 - Modify: `internal/cli/config_cmd.go`
 - Test: `internal/cli/app_test.go`
 
-- [ ] **Step 1: Add failing tests**
+- [x] **Step 1: Add failing tests**
 
 Add parser tests for `cfg path`, `cfg path --check cache_dir`, and invalid extra args.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `go test ./internal/cli -run TestMain_Config -count=1`
 
 Expected: failure because the `path` subcommand is not registered.
 
-- [ ] **Step 3: Implement command binding**
+- [x] **Step 3: Implement command binding**
 
 Extend `ConfigOptions` with `Check bool` and `Target string`; add `newConfigPathCmd`.
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 Run: `go test ./internal/cli -run TestMain_Config -count=1`
 
