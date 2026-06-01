@@ -949,7 +949,7 @@ git commit -m "feat(config): add cache mirror options"
 - Modify: `internal/install/runner_download.go`
 - Modify: `internal/install/runner_download_cache_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget downloadBody
@@ -957,7 +957,7 @@ npx gitnexus impact --repo eget downloadBody
 
 Expected: install/download tests and run flow. Report if HIGH/CRITICAL.
 
-- [ ] **Step 2: 写普通下载 mirror 命中测试**
+- [x] **Step 2: 写普通下载 mirror 命中测试**
 
 Append to `internal/install/runner_download_cache_test.go`:
 
@@ -1001,7 +1001,7 @@ go test ./internal/install -run TestDownloadBodyUsesCacheMirrorBeforeOrigin
 
 Expected: FAIL because mirror is not called.
 
-- [ ] **Step 3: 实现普通下载 mirror 尝试**
+- [x] **Step 3: 实现普通下载 mirror 尝试**
 
 Modify `internal/install/runner_download.go` imports:
 
@@ -1067,7 +1067,7 @@ go test ./internal/install -run "TestDownloadBodyUsesCacheMirrorBeforeOrigin|Tes
 
 Expected: PASS.
 
-- [ ] **Step 4: 写 fallback 行为测试**
+- [x] **Step 4: 写 fallback 行为测试**
 
 Add tests:
 
@@ -1112,7 +1112,7 @@ go test ./internal/install -run "CacheMirror|DownloadBody"
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/install/runner_download.go internal/install/runner_download_cache_test.go

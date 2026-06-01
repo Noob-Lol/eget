@@ -2,6 +2,8 @@ package install
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -12,6 +14,7 @@ import (
 	"github.com/gookit/cliui/progress"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/gookit/goutil/x/termenv"
+	"github.com/inherelab/eget/internal/cachemirror"
 )
 
 const downloadProgressRedrawFreq = 256 * 1024
@@ -29,6 +32,23 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 				return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath)}, nil
 			}
 			verbosef("discard invalid cached archive: %s", cachePath)
+		}
+		if hit, err := tryCacheMirrorDownload(cachePath, opts); err != nil {
+			return downloadBodyResult{}, err
+		} else if hit {
+			data, err := os.ReadFile(cachePath)
+			if err != nil {
+				return downloadBodyResult{}, err
+			}
+			if !isInvalidCachedDownload(cachePath, data) {
+				ccolor.Fprintf(output, " - Using cache mirror file <cyan>%s</>\n", filepath.Base(cachePath))
+				return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath)}, nil
+			}
+			if !opts.CacheMirror.Fallback {
+				return downloadBodyResult{}, fmt.Errorf("cache mirror returned invalid archive: %s", filepath.Base(cachePath))
+			}
+			verbosef("discard invalid cache mirror archive: %s", cachePath)
+			_ = os.Remove(cachePath)
 		}
 		result, err := DownloadFile(url, cachePath, r.downloadProgress(opts), opts)
 		if err != nil {
@@ -61,6 +81,29 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 		}
 	}
 	return downloadBodyResult{Body: body, ModTime: parseHTTPTime(result.LastModified)}, nil
+}
+
+func tryCacheMirrorDownload(cachePath string, opts Options) (bool, error) {
+	if cachePath == "" || !opts.CacheMirror.Active() {
+		return false, nil
+	}
+	rel, err := cachemirror.RelPath(opts.CacheDir, cachePath)
+	if err != nil {
+		return false, err
+	}
+	key := cachemirror.KeyForRelPath(rel)
+	result, err := cachemirror.DownloadToFile(context.Background(), opts.CacheMirror, key, cachePath)
+	if err != nil {
+		if opts.CacheMirror.Fallback {
+			verbosef("cache mirror failed: %v", err)
+			return false, nil
+		}
+		return false, err
+	}
+	if !result.Hit && !opts.CacheMirror.Fallback {
+		return false, fmt.Errorf("cache mirror miss: %s", key)
+	}
+	return result.Hit, nil
 }
 
 func isInvalidCachedDownload(cachePath string, data []byte) bool {
