@@ -17,3 +17,4 @@ eget.1
 .xenv.toml
 dist/
 tmp/
+.gitnexus
