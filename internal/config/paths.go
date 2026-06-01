@@ -61,7 +61,7 @@ func resolveConfigPath(opts pathOptions) (string, error) {
 
 	checkDotfile := true
 	if configPath, ok := opts.LookupEnv("EGET_CONFIG"); ok && configPath != "" {
-		if fileExists(configPath) {
+		if util.FileExists(configPath) {
 			return configPath, nil
 		}
 		checkDotfile = false
@@ -69,25 +69,25 @@ func resolveConfigPath(opts pathOptions) (string, error) {
 
 	if configDir, ok := opts.LookupEnv("EGET_CONFIG_DIR"); ok && configDir != "" {
 		configPath := filepath.Join(configDir, "eget.toml")
-		if fileExists(configPath) {
+		if util.FileExists(configPath) {
 			return configPath, nil
 		}
 	}
 
 	if checkDotfile {
 		dotfilePath := filepath.Join(opts.HomeDir, ".eget.toml")
-		if fileExists(dotfilePath) {
+		if util.FileExists(dotfilePath) {
 			return dotfilePath, nil
 		}
 	}
 
 	legacyPath := "eget.toml"
-	if fileExists(legacyPath) {
+	if util.FileExists(legacyPath) {
 		return legacyPath, nil
 	}
 
 	fallbackPath := getOSConfigPath(opts)
-	if fileExists(fallbackPath) {
+	if util.FileExists(fallbackPath) {
 		return fallbackPath, nil
 	}
 
@@ -128,19 +128,6 @@ func configDir(opts pathOptions) string {
 		return filepath.Join(dir, "eget")
 	}
 	return filepath.Join(opts.HomeDir, ".config", "eget")
-}
-
-func fileExists(path string) bool {
-	if path == "" {
-		return false
-	}
-
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-
-	return !info.IsDir()
 }
 
 func IsNotExist(err error) bool {

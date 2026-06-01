@@ -96,7 +96,7 @@ func applyUpdateCLIOverrides(base, cli install.Options) install.Options {
 		base.Asset = append([]string(nil), cli.Asset...)
 	}
 	if len(cli.RenameFiles) > 0 {
-		base.RenameFiles = cloneStringMap(cli.RenameFiles)
+		base.RenameFiles = util.CloneStringMap(cli.RenameFiles)
 	}
 	return base
 }
@@ -185,7 +185,7 @@ func stringMapOption(values map[string]any, keys ...string) map[string]string {
 		}
 		switch typed := value.(type) {
 		case map[string]string:
-			return cloneStringMap(typed)
+			return util.CloneStringMap(typed)
 		case map[string]any:
 			items := make(map[string]string, len(typed))
 			for from, to := range typed {

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/inherelab/eget/internal/util"
 	"github.com/inherelab/eget/internal/util/configutil"
 )
 
@@ -249,7 +250,7 @@ func sectionToMap(section Section) map[string]any {
 		data["quiet"] = *section.Quiet
 	}
 	if len(section.RenameFiles) > 0 {
-		data["rename_files"] = cloneStringMap(section.RenameFiles)
+		data["rename_files"] = util.CloneStringMap(section.RenameFiles)
 	}
 	if section.Repo != nil {
 		data["repo"] = *section.Repo
@@ -273,7 +274,7 @@ func sectionToMap(section Section) map[string]any {
 		data["sdk_target"] = *section.SDKTarget
 	}
 	if len(section.SDKExtMap) > 0 {
-		data["sdk_ext_map"] = cloneStringMap(section.SDKExtMap)
+		data["sdk_ext_map"] = util.CloneStringMap(section.SDKExtMap)
 	}
 	if section.System != nil {
 		data["system"] = *section.System
@@ -306,16 +307,16 @@ func sectionToMap(section Section) map[string]any {
 		data["version_regex"] = *section.VersionRegex
 	}
 	if len(section.OSMap) > 0 {
-		data["os_map"] = cloneStringMap(section.OSMap)
+		data["os_map"] = util.CloneStringMap(section.OSMap)
 	}
 	if len(section.ArchMap) > 0 {
-		data["arch_map"] = cloneStringMap(section.ArchMap)
+		data["arch_map"] = util.CloneStringMap(section.ArchMap)
 	}
 	if len(section.ExtMap) > 0 {
-		data["ext_map"] = cloneStringMap(section.ExtMap)
+		data["ext_map"] = util.CloneStringMap(section.ExtMap)
 	}
 	if len(section.LibcMap) > 0 {
-		data["libc_map"] = cloneStringMap(section.LibcMap)
+		data["libc_map"] = util.CloneStringMap(section.LibcMap)
 	}
 	if section.ChecksumURLTemplate != nil {
 		data["checksum_url_template"] = *section.ChecksumURLTemplate
@@ -380,23 +381,15 @@ func sdkSectionToMap(section SDKSection) map[string]any {
 		data["strip_components"] = *section.StripComponents
 	}
 	if len(section.OSMap) > 0 {
-		data["os_map"] = cloneStringMap(section.OSMap)
+		data["os_map"] = util.CloneStringMap(section.OSMap)
 	}
 	if len(section.ArchMap) > 0 {
-		data["arch_map"] = cloneStringMap(section.ArchMap)
+		data["arch_map"] = util.CloneStringMap(section.ArchMap)
 	}
 	if len(section.ExtMap) > 0 {
-		data["ext_map"] = cloneStringMap(section.ExtMap)
+		data["ext_map"] = util.CloneStringMap(section.ExtMap)
 	}
 	return data
-}
-
-func cloneStringMap(items map[string]string) map[string]string {
-	cloned := make(map[string]string, len(items))
-	for key, value := range items {
-		cloned[key] = value
-	}
-	return cloned
 }
 
 func apiCacheToMap(section APICacheSection) map[string]any {

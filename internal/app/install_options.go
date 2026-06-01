@@ -118,19 +118,8 @@ func mapOpt(value map[string]string) *map[string]string {
 	if len(value) == 0 {
 		return nil
 	}
-	cloned := cloneStringMap(value)
+	cloned := util.CloneStringMap(value)
 	return &cloned
-}
-
-func cloneStringMap(value map[string]string) map[string]string {
-	if len(value) == 0 {
-		return nil
-	}
-	cloned := make(map[string]string, len(value))
-	for key, item := range value {
-		cloned[key] = item
-	}
-	return cloned
 }
 
 func expandPath(value string) (string, error) {

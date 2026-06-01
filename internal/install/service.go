@@ -14,6 +14,7 @@ import (
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
 	"github.com/inherelab/eget/internal/source/urltemplate"
+	"github.com/inherelab/eget/internal/util"
 )
 
 type Finder interface {
@@ -205,10 +206,10 @@ func urlTemplateConfigFromOptions(opts URLTemplateOptions) urltemplate.Config {
 		LatestFormat:        opts.LatestFormat,
 		LatestJSONPath:      opts.LatestJSONPath,
 		VersionRegex:        opts.VersionRegex,
-		OSMap:               cloneStringMap(opts.OSMap),
-		ArchMap:             cloneStringMap(opts.ArchMap),
-		ExtMap:              cloneStringMap(opts.ExtMap),
-		LibcMap:             cloneStringMap(opts.LibcMap),
+		OSMap:               util.CloneStringMap(opts.OSMap),
+		ArchMap:             util.CloneStringMap(opts.ArchMap),
+		ExtMap:              util.CloneStringMap(opts.ExtMap),
+		LibcMap:             util.CloneStringMap(opts.LibcMap),
 		ChecksumURLTemplate: opts.ChecksumURLTemplate,
 		ChecksumFormat:      opts.ChecksumFormat,
 		ChecksumJSONPath:    opts.ChecksumJSONPath,
@@ -216,17 +217,6 @@ func urlTemplateConfigFromOptions(opts URLTemplateOptions) urltemplate.Config {
 		InstallAction:       opts.InstallAction,
 		InstallArgs:         append([]string(nil), opts.InstallArgs...),
 	}
-}
-
-func cloneStringMap(value map[string]string) map[string]string {
-	if len(value) == 0 {
-		return nil
-	}
-	cloned := make(map[string]string, len(value))
-	for key, item := range value {
-		cloned[key] = item
-	}
-	return cloned
 }
 
 func (s *Service) SelectDetector(opts *Options) (Detector, error) {

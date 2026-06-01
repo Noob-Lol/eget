@@ -227,7 +227,7 @@ func extractOptionsMap(opts install.Options, isGUI bool) map[string]interface{} 
 		recorded["asset"] = append([]string(nil), opts.Asset...)
 	}
 	if len(opts.RenameFiles) > 0 {
-		recorded["rename_files"] = cloneStringMap(opts.RenameFiles)
+		recorded["rename_files"] = util.CloneStringMap(opts.RenameFiles)
 	}
 	if opts.Hash {
 		recorded["hash"] = true
@@ -257,16 +257,16 @@ func extractOptionsMap(opts install.Options, isGUI bool) map[string]interface{} 
 		recorded["version_regex"] = opts.URLTemplate.VersionRegex
 	}
 	if len(opts.URLTemplate.OSMap) > 0 {
-		recorded["os_map"] = cloneStringMap(opts.URLTemplate.OSMap)
+		recorded["os_map"] = util.CloneStringMap(opts.URLTemplate.OSMap)
 	}
 	if len(opts.URLTemplate.ArchMap) > 0 {
-		recorded["arch_map"] = cloneStringMap(opts.URLTemplate.ArchMap)
+		recorded["arch_map"] = util.CloneStringMap(opts.URLTemplate.ArchMap)
 	}
 	if len(opts.URLTemplate.ExtMap) > 0 {
-		recorded["ext_map"] = cloneStringMap(opts.URLTemplate.ExtMap)
+		recorded["ext_map"] = util.CloneStringMap(opts.URLTemplate.ExtMap)
 	}
 	if len(opts.URLTemplate.LibcMap) > 0 {
-		recorded["libc_map"] = cloneStringMap(opts.URLTemplate.LibcMap)
+		recorded["libc_map"] = util.CloneStringMap(opts.URLTemplate.LibcMap)
 	}
 	if opts.URLTemplate.ChecksumURLTemplate != "" {
 		recorded["checksum_url_template"] = opts.URLTemplate.ChecksumURLTemplate

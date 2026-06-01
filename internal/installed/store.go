@@ -47,7 +47,7 @@ func DefaultStore() (*Store, error) {
 
 func (s *Store) Path() string {
 	legacyPath := filepath.Join(s.opts.HomeDir, ".eget.installed.toml")
-	if fileExists(legacyPath) {
+	if util.FileExists(legacyPath) {
 		return legacyPath
 	}
 	return s.fallbackPath()
@@ -151,16 +151,4 @@ func NormalizeRepoName(target string) string {
 	}
 
 	return strings.TrimSuffix(target, "/")
-}
-
-func fileExists(path string) bool {
-	if path == "" {
-		return false
-	}
-
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return !info.IsDir()
 }

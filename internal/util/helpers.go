@@ -2,6 +2,7 @@ package util
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -39,4 +40,48 @@ func ContainsPathSeparator(value string) bool {
 
 func NormalizeSlashesLower(value string) string {
 	return strings.ToLower(strings.ReplaceAll(value, "\\", "/"))
+}
+
+func CloneStringMap(items map[string]string) map[string]string {
+	if len(items) == 0 {
+		return nil
+	}
+	cloned := make(map[string]string, len(items))
+	for key, value := range items {
+		cloned[key] = value
+	}
+	return cloned
+}
+
+func FirstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func ExpandPathOrRaw(path string) string {
+	expanded, err := Expand(path)
+	if err != nil {
+		return path
+	}
+	return expanded
+}
+
+func FileExists(path string) bool {
+	if path == "" {
+		return false
+	}
+	info, err := os.Stat(filepath.Clean(path))
+	return err == nil && !info.IsDir()
+}
+
+func DirExists(path string) bool {
+	if path == "" {
+		return false
+	}
+	info, err := os.Stat(filepath.Clean(path))
+	return err == nil && info.IsDir()
 }

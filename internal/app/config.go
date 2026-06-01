@@ -229,21 +229,21 @@ func (s ConfigService) ConfigPathInfo(target string) (ConfigPathResult, error) {
 		if err != nil {
 			return ConfigPathResult{}, err
 		}
-		path = expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.Target), "~/.local/bin"))
+		path = util.ExpandPathOrRaw(util.FirstNonEmptyString(util.DerefString(cfg.Global.Target), "~/.local/bin"))
 		isDir = true
 	case "cache_dir":
 		cfg, err := s.load()
 		if err != nil {
 			return ConfigPathResult{}, err
 		}
-		path = expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.CacheDir), "~/.cache/eget"))
+		path = util.ExpandPathOrRaw(util.FirstNonEmptyString(util.DerefString(cfg.Global.CacheDir), "~/.cache/eget"))
 		isDir = true
 	case "sdk_dir":
 		cfg, err := s.load()
 		if err != nil {
 			return ConfigPathResult{}, err
 		}
-		path = expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.SDKTarget), "~/.local/sdks"))
+		path = util.ExpandPathOrRaw(util.FirstNonEmptyString(util.DerefString(cfg.Global.SDKTarget), "~/.local/sdks"))
 		isDir = true
 	case "pkg_store_file":
 		path = filepath.Join(configDir, "installed.toml")
@@ -301,23 +301,6 @@ func pathExists(path string, isDir bool) bool {
 	return !info.IsDir()
 }
 
-func firstNonEmptyString(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-func expandPathOrRaw(path string) string {
-	expanded, err := util.Expand(path)
-	if err != nil {
-		return path
-	}
-	return expanded
-}
-
 func sectionFromInstallOptions(repo, name string, opts install.Options) cfgpkg.Section {
 	section := cfgpkg.Section{
 		AssetFilters: append([]string(nil), opts.Asset...),
@@ -337,7 +320,7 @@ func sectionFromInstallOptions(repo, name string, opts install.Options) cfgpkg.S
 		section.File = util.StringPtr(opts.ExtractFile)
 	}
 	if len(opts.RenameFiles) > 0 {
-		section.RenameFiles = cloneStringMap(opts.RenameFiles)
+		section.RenameFiles = util.CloneStringMap(opts.RenameFiles)
 	}
 	if opts.Tag != "" {
 		section.Tag = util.StringPtr(opts.Tag)

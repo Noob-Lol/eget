@@ -136,9 +136,9 @@ func (s *cliService) handleConfigDoctor() error {
 		}
 	}
 	configDir := s.doctorConfigDir(configPath)
-	cacheDir := expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.CacheDir), "~/.cache/eget"))
-	targetDir := expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.Target), "~/.local/bin"))
-	sdkTargetDir := expandPathOrRaw(firstNonEmptyString(util.DerefString(cfg.Global.SDKTarget), "~/.local/sdks"))
+	cacheDir := util.ExpandPathOrRaw(util.FirstNonEmptyString(util.DerefString(cfg.Global.CacheDir), "~/.cache/eget"))
+	targetDir := util.ExpandPathOrRaw(util.FirstNonEmptyString(util.DerefString(cfg.Global.Target), "~/.local/bin"))
+	sdkTargetDir := util.ExpandPathOrRaw(util.FirstNonEmptyString(util.DerefString(cfg.Global.SDKTarget), "~/.local/sdks"))
 	dotenvPath := filepath.Join(configDir, ".env")
 	installedPath := resolveInstalledStorePath()
 	sdkInstalledPath := resolveSDKInstalledStorePath()
@@ -146,26 +146,26 @@ func (s *cliService) handleConfigDoctor() error {
 	ccolor.Infoln("📇 Eget config doctor result")
 	printDoctorSection("Config")
 	printDoctorPath("config_file", configPath, info.Exists)
-	printDoctorPath("config_dir", configDir, dirExists(configDir))
-	printDoctorPath("dotenv_file", dotenvPath, fileExists(dotenvPath))
+	printDoctorPath("config_dir", configDir, util.DirExists(configDir))
+	printDoctorPath("dotenv_file", dotenvPath, util.FileExists(dotenvPath))
 	printDoctorSection("Store")
-	printDoctorPath("installed_store", installedPath, fileExists(installedPath))
-	printDoctorPath("sdk_installed_store", sdkInstalledPath, fileExists(sdkInstalledPath))
+	printDoctorPath("installed_store", installedPath, util.FileExists(installedPath))
+	printDoctorPath("sdk_installed_store", sdkInstalledPath, util.FileExists(sdkInstalledPath))
 	printDoctorSection("Cache")
-	printDoctorPath("cache_dir", cacheDir, dirExists(cacheDir))
-	printDoctorPath("pkg_cache_dir", filepath.Join(cacheDir, "pkg-cache"), dirExists(filepath.Join(cacheDir, "pkg-cache")))
-	printDoctorPath("api_cache_dir", filepath.Join(cacheDir, "api-cache"), dirExists(filepath.Join(cacheDir, "api-cache")))
-	printDoctorPath("sdk_index_dir", filepath.Join(cacheDir, "sdk-index"), dirExists(filepath.Join(cacheDir, "sdk-index")))
+	printDoctorPath("cache_dir", cacheDir, util.DirExists(cacheDir))
+	printDoctorPath("pkg_cache_dir", filepath.Join(cacheDir, "pkg-cache"), util.DirExists(filepath.Join(cacheDir, "pkg-cache")))
+	printDoctorPath("api_cache_dir", filepath.Join(cacheDir, "api-cache"), util.DirExists(filepath.Join(cacheDir, "api-cache")))
+	printDoctorPath("sdk_index_dir", filepath.Join(cacheDir, "sdk-index"), util.DirExists(filepath.Join(cacheDir, "sdk-index")))
 	printDoctorSection("Runtime")
-	printDoctorPath("target_dir", targetDir, dirExists(targetDir))
-	printDoctorPath("sdk_target_dir", sdkTargetDir, dirExists(sdkTargetDir))
+	printDoctorPath("target_dir", targetDir, util.DirExists(targetDir))
+	printDoctorPath("sdk_target_dir", sdkTargetDir, util.DirExists(sdkTargetDir))
 	if guiTarget := strings.TrimSpace(util.DerefString(cfg.Global.GuiTarget)); guiTarget != "" {
-		path := expandPathOrRaw(guiTarget)
-		printDoctorPath("gui_target_dir", path, dirExists(path))
+		path := util.ExpandPathOrRaw(guiTarget)
+		printDoctorPath("gui_target_dir", path, util.DirExists(path))
 	}
 	if sys7zPath := strings.TrimSpace(util.DerefString(cfg.Global.Sys7zPath)); sys7zPath != "" {
-		path := expandPathOrRaw(sys7zPath)
-		printDoctorPath("sys7z_path", path, fileExists(path))
+		path := util.ExpandPathOrRaw(sys7zPath)
+		printDoctorPath("sys7z_path", path, util.FileExists(path))
 	}
 	ccolor.Printf("proxy_url: %s\n", setStatus(util.DerefString(cfg.Global.ProxyURL)))
 	ccolor.Printf("github_token: %s\n", setStatus(util.DerefString(cfg.Global.GithubToken)))
@@ -248,30 +248,8 @@ func setStatus(value string) string {
 	return "set"
 }
 
-func firstNonEmptyString(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-func expandPathOrRaw(path string) string {
-	expanded, err := util.Expand(path)
-	if err != nil {
-		return path
-	}
-	return expanded
-}
-
-func dirExists(path string) bool {
-	info, err := os.Stat(filepath.Clean(path))
-	return err == nil && info.IsDir()
-}
-
 func dirWritable(path string) bool {
-	if !dirExists(path) {
+	if !util.DirExists(path) {
 		return false
 	}
 	probe, err := os.CreateTemp(path, ".eget-doctor-*")

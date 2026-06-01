@@ -1,5 +1,7 @@
 package config
 
+import "github.com/inherelab/eget/internal/util"
+
 func MergeInstallOptions(global, repo, pkg Section, cli CLIOverrides) Merged {
 	merged := Merged{}
 
@@ -91,11 +93,11 @@ func firstStrings(cli *[]string, values ...[]string) []string {
 
 func firstStringMap(cli *map[string]string, values ...map[string]string) map[string]string {
 	if cli != nil {
-		return cloneStringMap(*cli)
+		return util.CloneStringMap(*cli)
 	}
 	for _, value := range values {
 		if len(value) > 0 {
-			return cloneStringMap(value)
+			return util.CloneStringMap(value)
 		}
 	}
 	return nil

@@ -1,6 +1,9 @@
 package sdk
 
-import cfgpkg "github.com/inherelab/eget/internal/config"
+import (
+	cfgpkg "github.com/inherelab/eget/internal/config"
+	"github.com/inherelab/eget/internal/util"
+)
 
 type BuiltinConfigSource string
 
@@ -182,9 +185,9 @@ func cloneSDKSection(section cfgpkg.SDKSection) cfgpkg.SDKSection {
 		IndexPathPrefix: cloneBuiltinStringPtr(section.IndexPathPrefix),
 		FilenamePattern: cloneBuiltinStringPtr(section.FilenamePattern),
 		StripComponents: cloneBuiltinIntPtr(section.StripComponents),
-		OSMap:           cloneStringMap(section.OSMap),
-		ArchMap:         cloneStringMap(section.ArchMap),
-		ExtMap:          cloneStringMap(section.ExtMap),
+		OSMap:           util.CloneStringMap(section.OSMap),
+		ArchMap:         util.CloneStringMap(section.ArchMap),
+		ExtMap:          util.CloneStringMap(section.ExtMap),
 	}
 }
 

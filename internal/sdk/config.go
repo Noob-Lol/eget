@@ -73,9 +73,9 @@ func ResolveConfig(file *cfgpkg.File, name string, opts ResolveConfigOptions) (C
 		OS:              osName,
 		Arch:            arch,
 		Ext:             ext,
-		OSMap:           cloneStringMap(section.OSMap),
-		ArchMap:         cloneStringMap(section.ArchMap),
-		ExtMap:          cloneStringMap(section.ExtMap),
+		OSMap:           util.CloneStringMap(section.OSMap),
+		ArchMap:         util.CloneStringMap(section.ArchMap),
+		ExtMap:          util.CloneStringMap(section.ExtMap),
 	}, nil
 }
 
@@ -108,15 +108,4 @@ func mappedValue(values map[string]string, key, fallback string) string {
 		return value
 	}
 	return fallback
-}
-
-func cloneStringMap(items map[string]string) map[string]string {
-	if len(items) == 0 {
-		return nil
-	}
-	cloned := make(map[string]string, len(items))
-	for key, value := range items {
-		cloned[key] = value
-	}
-	return cloned
 }

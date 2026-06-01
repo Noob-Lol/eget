@@ -8,6 +8,7 @@ import (
 
 	"github.com/gookit/goutil/x/ccolor"
 	cfgpkg "github.com/inherelab/eget/internal/config"
+	"github.com/inherelab/eget/internal/util"
 )
 
 func (s *cliService) warnIfSudoUserConfigLooksSkipped(quiet bool) {
@@ -48,7 +49,7 @@ func (s *cliService) warnIfSudoUserConfigLooksSkipped(quiet bool) {
 	}
 
 	candidate := cfgpkg.OSConfigPath(homeDir, "linux", lookupEnv)
-	exists := fileExists
+	exists := util.FileExists
 	if s.fileExists != nil {
 		exists = s.fileExists
 	}
@@ -71,9 +72,4 @@ func lookupUserHome(name string) (string, error) {
 		return "", err
 	}
 	return u.HomeDir, nil
-}
-
-func fileExists(path string) bool {
-	info, err := os.Stat(filepath.Clean(path))
-	return err == nil && !info.IsDir()
 }
