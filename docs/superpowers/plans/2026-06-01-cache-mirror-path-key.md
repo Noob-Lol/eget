@@ -1125,7 +1125,7 @@ git commit -m "feat(install): use cache mirror before origin download"
 - Modify: `internal/sdk/download.go`
 - Modify: `internal/sdk/download_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget DownloadArchive
@@ -1134,7 +1134,7 @@ npx gitnexus impact --repo eget DownloadRequest
 
 Expected: SDK install and download tests. Report if HIGH/CRITICAL.
 
-- [ ] **Step 2: 写 SDK mirror 命中测试**
+- [x] **Step 2: 写 SDK mirror 命中测试**
 
 Append to `internal/sdk/download_test.go`:
 
@@ -1185,7 +1185,7 @@ go test ./internal/sdk -run TestDownloadArchiveUsesCacheMirrorBeforeOrigin
 
 Expected: FAIL because SDK mirror is not implemented.
 
-- [ ] **Step 3: 实现 SDK mirror 尝试并写 meta**
+- [x] **Step 3: 实现 SDK mirror 尝试并写 meta**
 
 Modify `internal/sdk/download.go` imports:
 
@@ -1250,7 +1250,7 @@ go test ./internal/sdk -run "TestDownloadArchiveUsesCacheMirrorBeforeOrigin|Test
 
 Expected: PASS.
 
-- [ ] **Step 4: 写 SDK fallback 和 meta 复用测试**
+- [x] **Step 4: 写 SDK fallback 和 meta 复用测试**
 
 Add tests:
 
@@ -1308,7 +1308,7 @@ go test ./internal/sdk -run "CacheMirror|DownloadArchive"
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/sdk/download.go internal/sdk/download_test.go internal/sdk/service.go internal/sdk/install_service.go internal/app/sdk.go internal/app/sdk_test.go
