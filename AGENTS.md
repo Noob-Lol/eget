@@ -16,6 +16,8 @@
 
 <!-- PROCESSING WORKS:START -->
 
+- [ ] 继续整理大测试文件：[docs/plans/go-test-file-split-plan.md](docs/plans/go-test-file-split-plan.md)
+
 <!-- PROCESSING WORKS:END -->
 
 ## 核心原则
