@@ -6,11 +6,11 @@
 
 ## 进度
 
-- [ ] 阶段 0：基线扫描和计划提交
+- [x] 阶段 0：基线扫描和计划提交
 - [x] 阶段 1：拆分 CLI parser 测试
 - [x] 阶段 2：拆分 app service 测试
 - [x] 阶段 3：拆分 install package 测试
-- [ ] 阶段 4：拆分 config/source 等剩余热点测试
+- [x] 阶段 4：拆分 config/source 等剩余热点测试
 
 ## 当前热点
 
