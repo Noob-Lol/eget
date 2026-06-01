@@ -1,8 +1,16 @@
 # eget 缓存管理命令 cache 设计
 
+## 修订记录
+
+| 日期 | 变更 |
+| --- | --- |
+| 2026-06-01 | 后续 cache mirror 协议调整为 path-key 优先：客户端和服务端基于缓存相对路径 `md5(relpath)` 复用现有老缓存；普通 package cache 暂不要求新增 `.meta.json`，source metadata 和 registry 化能力留给后续阶段单独设计。 |
+| 2026-05-26 | 初始设计：定义 `cache clean`、`cache serve`、manifest schema、客户端自动 mirror 的分期方向。 |
+
 ## 相关文档
 
 - Phase 1+2 实现计划：[2026-05-26-cache-management-phase1+2.md](../plans/2026-05-26-cache-management-phase1+2.md)
+- Path-key cache mirror 实施计划：[2026-06-01-cache-mirror-path-key.md](../plans/2026-06-01-cache-mirror-path-key.md)
 
 ## 背景
 
@@ -322,7 +330,7 @@ GET /manifest.json
 GET /files/{relpath}
 ```
 
-`/download/{cache-key}` 为后续客户端自动 mirror 预留。它用于按 URL cache key 精确查找文件，而不是让客户端猜测文件路径。
+`/download/{cache-key}` 为后续客户端自动 mirror 预留。当前优先使用 path-key 协议，让客户端和服务端基于现有缓存相对路径计算 key，从而直接复用已经存在的老缓存文件。
 
 ### / Web UI
 
@@ -384,7 +392,16 @@ Phase 2.1 增加一个内置只读 Web UI，服务端在 `GET /` 返回简洁的
 
 `cache.root` 不输出本机绝对路径，避免泄露本机目录结构。需要调试时可在本机命令行启动日志中打印 cache dir。
 
-manifest 首期可以不包含 hash。原因是现有普通下载缓存并不统一保存 checksum，SDK 下载缓存只保存 URL/size/etag/last-modified 元数据。后续可扩展：
+manifest 首期可以不包含 hash。原因是现有普通下载缓存并不统一保存 checksum，SDK 下载缓存只保存 URL/size/etag/last-modified 元数据。后续自动 mirror 阶段可先扩展 path-key 字段：
+
+```json
+{
+  "path_key": "path-md5:...",
+  "key_path": "pkg-cache/tool-1.2.3-a1b2c3d4.zip"
+}
+```
+
+更后续如果把 mirror server 做成可搜索、可解析 package/sdk/version/platform 的 registry，再增加 source metadata：
 
 ```json
 {
@@ -410,17 +427,26 @@ manifest 首期可以不包含 hash。原因是现有普通下载缓存并不统
 
 后续客户端自动 mirror 使用。
 
-现有 `client.CacheFilePathWithMeta(cacheDir, rawURL, meta)` 会基于 URL 和元数据生成缓存文件名。自动 mirror 如果直接依赖 `/files/{relpath}`，客户端必须知道服务端的文件路径和命名策略，耦合过深。
+现有 `client.CacheFilePathWithMeta(cacheDir, rawURL, meta)` 会基于 URL 和元数据生成缓存文件名。为了让老缓存直接可用，后续第一版自动 mirror 不强制普通 package cache 增加 `.meta.json`，也不要求服务端知道原始 URL。
 
-因此后续增加 `/download/{cache-key}`：
+后续先增加 path-key 下载：
 
 ```text
-GET /download/sha256:<url-hash>
+GET /download/path-md5:<relpath-hash>
 ```
 
-服务端根据本机 manifest 的 `source_url_hash` 找到文件并返回。客户端只需要根据原始 URL 计算稳定 hash，不需要知道文件名。
+`relpath-hash` 使用规范化后的缓存相对路径计算，例如：
 
-这个能力依赖后续 manifest 增加 URL hash 字段：
+```text
+pkg-cache/tool-1.2.3-a1b2c3d4.zip
+sdk-downloads/go/1.22.0/go1.22.0.windows-amd64.zip
+```
+
+客户端本来就需要计算本地 `cachePath` 或 SDK `finalPath`，因此可以把它转换为相对 `cache_dir` 的 slash path，再计算 `md5(relpath)` 并请求 mirror。服务端启动或请求时扫描 `cache_dir`，建立 `path-md5:<hash> -> cache file path` 映射。这里 MD5 只用于生成短 key，不作为安全校验。
+
+这个设计优先解决“已有老缓存可以立即被局域网复用”的目标。它的限制是客户端和服务端需要使用一致的缓存路径规则；如果因为 eget 版本不同、package 名/version 元数据不同或用户手动移动文件导致 key 不一致，则 mirror miss 后按 fallback 策略回源。
+
+后续如果 mirror server 需要自成 registry，让客户端不请求第三方 provider 就能搜索、解析和下载 package/sdk，再增加 URL/source metadata 协议：
 
 ```json
 {
@@ -465,9 +491,11 @@ fallback = true
 1. 计算本地 cachePath。
 2. 如果本地完整 cache 命中，直接使用。
 3. 如果启用 `[cache_mirror]` 且配置了 `url`：
-   3.1 请求 mirror manifest 或 /download/{cache-key}。
-   3.2 命中后下载到本地 cachePath。
-   3.3 对已有 checksum 的 package 执行现有 checksum 校验。
+   3.1 将 cachePath 转为相对 cache_dir 的 slash path。
+   3.2 计算 pathKey = md5(relpath)。
+   3.3 请求 mirror /download/path-md5:{pathKey}。
+   3.4 命中后下载到本地 cachePath。
+   3.5 对已有 checksum 的 package 执行现有 checksum 校验。
 4. mirror 未命中或失败，且 `cache_mirror.fallback=true`，则回源下载。
 5. 回源下载成功后写入本地 cache。
 ```
@@ -477,9 +505,10 @@ SDK download：
 ```text
 1. 计算 SDK finalPath 和 metaPath。
 2. 如果本地完整 SDK cache 命中，直接使用。
-3. 尝试从 mirror 获取同 URL/SDK/version/filename 对应文件。
-4. 下载成功后写入 finalPath，并生成本地 .meta.json。
-5. mirror 失败则回源下载。
+3. 将 finalPath 转为相对 cache_dir 的 slash path。
+4. 计算 pathKey = md5(relpath)，请求 mirror /download/path-md5:{pathKey}。
+5. 下载成功后写入 finalPath，后续仍按现有 SDK cache 规则校验/记录。
+6. mirror 失败则回源下载。
 ```
 
 API cache：
@@ -497,6 +526,31 @@ mirror 是性能优化，不是信任根。
 3. 没有 checksum 的缓存文件，只能按 size/meta 做弱校验；这与当前直接从源站下载的安全等级一致。
 
 因此文档和日志中应避免暗示 mirror 文件天然可信。
+
+## 后续 registry 化设计思考
+
+path-key mirror 的目标是让客户端在已经解析出下载 URL 后，优先复用局域网里同路径规则生成的缓存文件。它仍然依赖客户端先走现有 provider 流程，例如 GitHub release、SourceForge、template latest 或 SDK index。这个阶段不要求普通 package cache 增加 `.meta.json`，也不要求 mirror server 理解 package 名、版本、平台和来源。
+
+如果后续希望 mirror server 自成 registry，目标会变成：
+
+- 客户端可以直接向 mirror server 搜索或解析 package/sdk，不必先访问第三方 provider。
+- mirror server 能回答“某个 package/sdk 在某个 version/os/arch 下有没有可下载文件”。
+- mirror server 能返回下载文件、文件大小、checksum/source metadata、缓存时间和来源说明。
+- mirror server 能区分普通 package、SDK、template source、手动导入文件等不同来源。
+
+这时才需要更完整的 metadata/index，而不是只靠 path-key。候选数据包括：
+
+- `kind`：`pkg`、`sdk`、`template`、`manual` 等。
+- `name`、`version`、`os`、`arch`、`filename`、`ext`。
+- `source_url`、`source_url_hash`、`provider`、`repo` 或 template id。
+- `checksum`、`checksum_type`、`etag`、`last_modified`、`size`。
+- `cache_path`、`cached_at`、`updated_at`。
+
+registry 化不应该混入第一版自动 mirror。原因是它会改变客户端解析职责，并引入搜索、索引刷新、冲突处理、数据可信度和权限控制等新问题。当前更稳的路线是：
+
+1. 先做 path-key mirror，让老缓存直接可用。
+2. 再补 token、manifest TTL、观测和运维能力。
+3. 如果确实需要离线/内网 registry，再单独设计 registry index、搜索 API 和导入/刷新策略。
 
 ## 安全设计
 
@@ -700,18 +754,20 @@ type ServeOptions struct {
 
 ### Phase 3: manifest 增强与 cache mirror 协议
 
-目标：为自动 mirror 提供稳定索引。
+目标：为自动 mirror 提供能复用老缓存的 path-key 协议。
 
 实现：
 
-- manifest 增加 `source_url_hash`、`etag`、`last_modified`、`meta_path` 可选字段。
-- SDK 下载缓存读取 `.meta.json` 填充 source URL 信息。
-- 普通下载缓存尽量复用现有 cache 命名规则生成 URL hash；如果缺少原始 URL 元数据，只作为普通文件暴露，不进入自动 mirror 匹配。
-- 预留 `/download/{cache-key}`。
+- manifest 可选增加 `path_key` 字段，值为 `path-md5:<md5(relpath)>`。
+- `cache serve` 扫描 cache 时建立 `path-md5:<hash> -> cache file path` 映射。
+- 新增 `/download/path-md5:<hash>`，命中后返回对应缓存文件。
+- path-key 使用相对 `cache_dir` 的 slash path 计算，不暴露本机绝对路径。
+- 不要求普通 package cache 增加 `.meta.json`，确保老缓存能直接参与 mirror。
+- URL/source metadata 和 registry 化能力留给后续阶段单独设计。
 
 验证：
 
-- 单测覆盖 SDK meta 解析、manifest schema 向后兼容、cache-key 命中。
+- 单测覆盖 path-key 计算、manifest schema 向后兼容、cache-key 命中、root scope 过滤和路径逃逸防护。
 
 ### Phase 4: 客户端自动使用 cache mirror
 
