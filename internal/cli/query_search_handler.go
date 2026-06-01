@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/inherelab/eget/internal/app"
+	clirender "github.com/inherelab/eget/internal/cli/render"
 )
 
 func (s *cliService) handleQuery(opts *QueryOptions) error {
@@ -19,14 +20,14 @@ func (s *cliService) handleQuery(opts *QueryOptions) error {
 		return err
 	}
 	if opts.JSON {
-		text, err := queryResultJSON(result)
+		text, err := clirender.QueryResultJSON(result)
 		if err != nil {
 			return err
 		}
 		fmt.Println(text)
 		return nil
 	}
-	printQueryResult(result)
+	clirender.PrintQueryResult(result)
 	return nil
 }
 
@@ -43,7 +44,7 @@ func (s *cliService) handleSearch(opts *SearchOptions) error {
 	}
 
 	if opts.JSON {
-		text, err := searchResultJSON(result)
+		text, err := clirender.SearchResultJSON(result)
 		if err != nil {
 			return err
 		}
@@ -51,6 +52,6 @@ func (s *cliService) handleSearch(opts *SearchOptions) error {
 		return nil
 	}
 
-	printSearchResult(result)
+	clirender.PrintSearchResult(result)
 	return nil
 }

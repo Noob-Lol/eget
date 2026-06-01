@@ -19,7 +19,7 @@ gitnexus detect-changes --repo eget
 
 - [x] 阶段 0：计划提交
 - [x] 阶段 1：抽取低风险公共工具到 `internal/util`
-- [ ] 阶段 2：抽取 CLI 渲染逻辑到 `internal/cli/render`
+- [x] 阶段 2：抽取 CLI 渲染逻辑到 `internal/cli/render`
 - [ ] 阶段 3：抽取 CLI prompt 逻辑到 `internal/cli/prompts`
 - [ ] 阶段 4：抽取 install detector 逻辑到 `internal/install/detect`
 - [ ] 阶段 5：评估并拆分 install archive 子包

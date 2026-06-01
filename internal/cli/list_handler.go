@@ -9,6 +9,7 @@ import (
 	"github.com/gookit/goutil/cliutil"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
+	clirender "github.com/inherelab/eget/internal/cli/render"
 	"github.com/inherelab/eget/internal/install"
 )
 
@@ -27,7 +28,7 @@ func (s *cliService) handleList(opts *ListOptions) error {
 		if err != nil {
 			return err
 		}
-		show.AList("Package Info", listItemToDisplay(*item))
+		show.AList("Package Info", clirender.ListItemToDisplay(*item))
 		return nil
 	}
 
@@ -123,7 +124,7 @@ func (s *cliService) handleShow(opts *ShowOptions) error {
 	if err != nil {
 		return err
 	}
-	show.AList("Package Details", showResultToDisplay(result))
+	show.AList("Package Details", clirender.ShowResultToDisplay(result))
 	return nil
 }
 
@@ -190,7 +191,7 @@ func packageSource(item app.ListItem) string {
 }
 
 func formatListTime(value time.Time) string {
-	return compactTime(value)
+	return clirender.CompactTime(value)
 }
 
 func formatOutdatedTime(value time.Time) string {

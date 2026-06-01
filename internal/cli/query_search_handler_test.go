@@ -11,6 +11,7 @@ import (
 	"github.com/gookit/cliui"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
+	clirender "github.com/inherelab/eget/internal/cli/render"
 )
 
 func TestHandleQueryPrintsLatestRelease(t *testing.T) {
@@ -79,7 +80,7 @@ func TestPrintQueryResultReleasesUsesCompactTime(t *testing.T) {
 	ccolor.SetOutput(&out)
 	defer ccolor.SetOutput(os.Stdout)
 
-	printQueryResult(result)
+	clirender.PrintQueryResult(result)
 	got := out.String()
 	if !strings.Contains(got, "2026-04-22 09:00:00") {
 		t.Fatalf("expected compact published time in releases output, got %q", got)
@@ -103,7 +104,7 @@ func TestPrintQueryResultSourceForgeReleasesShowsUnknownAssetsCount(t *testing.T
 	ccolor.SetOutput(&out)
 	defer ccolor.SetOutput(os.Stdout)
 
-	printQueryResult(result)
+	clirender.PrintQueryResult(result)
 	got := out.String()
 	if !strings.Contains(got, "Assets Count") || !strings.Contains(got, " - ") {
 		t.Fatalf("expected unknown assets count marker in sourceforge releases output, got %q", got)
@@ -127,7 +128,7 @@ func TestPrintQueryResultInfoUsesCompactTime(t *testing.T) {
 	cliui.SetOutput(&out)
 	defer cliui.ResetOutput()
 
-	printQueryResult(result)
+	clirender.PrintQueryResult(result)
 	got := out.String()
 	if !strings.Contains(got, "2026-04-22 09:00:00") {
 		t.Fatalf("expected compact updated time in info output, got %q", got)
@@ -196,7 +197,7 @@ func TestPrintQueryResultAssets(t *testing.T) {
 	ccolor.SetOutput(&out)
 	defer ccolor.SetOutput(os.Stdout)
 
-	printQueryResult(result)
+	clirender.PrintQueryResult(result)
 	if !strings.Contains(out.String(), "tool-linux-amd64.tar.gz") {
 		t.Fatalf("expected asset table output, got %q", out.String())
 	}

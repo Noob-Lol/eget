@@ -1,4 +1,4 @@
-package cli
+package render
 
 import (
 	"encoding/json"
@@ -15,7 +15,7 @@ import (
 	"github.com/inherelab/eget/internal/sdk"
 )
 
-const compactTimeLayout = "2006-01-02T15:04:05"
+const CompactTimeLayout = "2006-01-02T15:04:05"
 const compactDisplayTimeLayout = "2006-01-02 15:04:05"
 
 type releaseDisplay struct {
@@ -149,28 +149,28 @@ type sdkIndexSummaryDisplay struct {
 	LatestStable string
 }
 
-func compactTime(value time.Time) string {
+func CompactTime(value time.Time) string {
 	if value.IsZero() {
 		return "-"
 	}
 	return value.Format(compactDisplayTimeLayout)
 }
 
-func compactTimeOmit(value time.Time) string {
+func CompactTimeOmit(value time.Time) string {
 	if value.IsZero() {
 		return ""
 	}
-	return value.Format(compactTimeLayout)
+	return value.Format(CompactTimeLayout)
 }
 
-func truncateTableText(value string, max int) string {
+func TruncateTableText(value string, max int) string {
 	if max <= 3 || len(value) <= max {
 		return value
 	}
 	return value[:max-3] + "..."
 }
 
-func listItemToDisplay(item app.ListItem) listItemDisplay {
+func ListItemToDisplay(item app.ListItem) listItemDisplay {
 	return listItemDisplay{
 		Name:         item.Name,
 		Repo:         item.Repo,
@@ -180,7 +180,7 @@ func listItemToDisplay(item app.ListItem) listItemDisplay {
 		Version:      item.Version,
 		InstalledTag: item.InstalledTag,
 		Installed:    item.Installed,
-		InstalledAt:  compactTime(item.InstalledAt),
+		InstalledAt:  CompactTime(item.InstalledAt),
 		Asset:        item.Asset,
 		URL:          item.URL,
 		IsGUI:        item.IsGUI,
@@ -189,7 +189,7 @@ func listItemToDisplay(item app.ListItem) listItemDisplay {
 	}
 }
 
-func showResultToDisplay(result app.ShowResult) showResultDisplay {
+func ShowResultToDisplay(result app.ShowResult) showResultDisplay {
 	return showResultDisplay{
 		Name:           result.Name,
 		Repo:           result.Repo,
@@ -202,8 +202,8 @@ func showResultToDisplay(result app.ShowResult) showResultDisplay {
 		InstallTarget:  result.InstallTarget,
 		Version:        result.Version,
 		Tag:            result.Tag,
-		InstalledAt:    compactTime(result.InstalledAt),
-		ReleaseDate:    compactTime(result.ReleaseDate),
+		InstalledAt:    CompactTime(result.InstalledAt),
+		ReleaseDate:    CompactTime(result.ReleaseDate),
 		Asset:          result.Asset,
 		AssetURL:       result.AssetURL,
 		Tool:           result.Tool,
@@ -224,7 +224,7 @@ func repoInfoToDisplay(info app.QueryRepoInfo) repoInfoDisplay {
 		Stars:         info.Stars,
 		Forks:         info.Forks,
 		OpenIssues:    info.OpenIssues,
-		UpdatedAt:     compactTime(info.UpdatedAt),
+		UpdatedAt:     CompactTime(info.UpdatedAt),
 	}
 }
 
@@ -232,7 +232,7 @@ func releaseToDisplay(item app.QueryRelease) releaseDisplay {
 	return releaseDisplay{
 		Tag:         item.Tag,
 		Name:        item.Name,
-		PublishedAt: compactTime(item.PublishedAt),
+		PublishedAt: CompactTime(item.PublishedAt),
 		Prerelease:  item.Prerelease,
 		AssetsCount: item.AssetsCount,
 	}
@@ -240,7 +240,7 @@ func releaseToDisplay(item app.QueryRelease) releaseDisplay {
 
 func releaseToJSONDisplay(item app.QueryRelease) releaseDisplay {
 	display := releaseToDisplay(item)
-	display.PublishedAt = compactTimeOmit(item.PublishedAt)
+	display.PublishedAt = CompactTimeOmit(item.PublishedAt)
 	return display
 }
 
@@ -249,7 +249,7 @@ func assetToDisplay(item app.QueryAsset) assetDisplay {
 		Name:          item.Name,
 		Size:          item.Size,
 		DownloadCount: item.DownloadCount,
-		UpdatedAt:     compactTimeOmit(item.UpdatedAt),
+		UpdatedAt:     CompactTimeOmit(item.UpdatedAt),
 		URL:           item.URL,
 	}
 }
@@ -262,7 +262,7 @@ func queryResultToDisplay(result app.QueryResult) queryResultDisplay {
 	}
 	if result.Info != nil {
 		info := repoInfoToDisplay(*result.Info)
-		info.UpdatedAt = compactTimeOmit(result.Info.UpdatedAt)
+		info.UpdatedAt = CompactTimeOmit(result.Info.UpdatedAt)
 		display.Info = &info
 	}
 	if result.Latest != nil {
@@ -294,7 +294,7 @@ func searchResultToDisplay(result app.SearchResult) searchResultDisplay {
 			StargazersCount: item.StargazersCount,
 			ForksCount:      item.ForksCount,
 			OpenIssuesCount: item.OpenIssuesCount,
-			UpdatedAt:       compactTimeOmit(item.UpdatedAt),
+			UpdatedAt:       CompactTimeOmit(item.UpdatedAt),
 			Archived:        item.Archived,
 			Private:         item.Private,
 		})
@@ -302,7 +302,7 @@ func searchResultToDisplay(result app.SearchResult) searchResultDisplay {
 	return display
 }
 
-func queryResultJSON(result app.QueryResult) (string, error) {
+func QueryResultJSON(result app.QueryResult) (string, error) {
 	data, err := json.MarshalIndent(queryResultToDisplay(result), "", "  ")
 	if err != nil {
 		return "", err
@@ -310,7 +310,7 @@ func queryResultJSON(result app.QueryResult) (string, error) {
 	return string(data), nil
 }
 
-func searchResultJSON(result app.SearchResult) (string, error) {
+func SearchResultJSON(result app.SearchResult) (string, error) {
 	data, err := json.MarshalIndent(searchResultToDisplay(result), "", "  ")
 	if err != nil {
 		return "", err
@@ -318,7 +318,7 @@ func searchResultJSON(result app.SearchResult) (string, error) {
 	return string(data), nil
 }
 
-func sdkResultNotes(cached, resumed bool) string {
+func SDKResultNotes(cached, resumed bool) string {
 	var notes []string
 	if cached {
 		notes = append(notes, "cached")
@@ -329,7 +329,7 @@ func sdkResultNotes(cached, resumed bool) string {
 	return strings.Join(notes, ", ")
 }
 
-func sdkEntriesToDisplay(entries []sdk.InstalledEntry) []sdkInstalledEntryDisplay {
+func SDKEntriesToDisplay(entries []sdk.InstalledEntry) []sdkInstalledEntryDisplay {
 	items := make([]sdkInstalledEntryDisplay, 0, len(entries))
 	for _, entry := range entries {
 		items = append(items, sdkInstalledEntryDisplay{
@@ -341,21 +341,21 @@ func sdkEntriesToDisplay(entries []sdk.InstalledEntry) []sdkInstalledEntryDispla
 			OS:              entry.OS,
 			Arch:            entry.Arch,
 			Ext:             entry.Ext,
-			InstalledAt:     compactTimeOmit(entry.InstalledAt),
+			InstalledAt:     CompactTimeOmit(entry.InstalledAt),
 			StripComponents: entry.StripComponents,
 		})
 	}
 	return items
 }
 
-func sdkCachedIndexesToDisplay(infos []sdk.CachedIndexInfo) []sdkCachedIndexDisplay {
+func SDKCachedIndexesToDisplay(infos []sdk.CachedIndexInfo) []sdkCachedIndexDisplay {
 	items := make([]sdkCachedIndexDisplay, 0, len(infos))
 	for _, info := range infos {
 		items = append(items, sdkCachedIndexDisplay{
 			SDK:       info.SDK,
 			Versions:  info.Versions,
 			SourceURL: info.SourceURL,
-			FetchedAt: compactTimeOmit(info.FetchedAt),
+			FetchedAt: CompactTimeOmit(info.FetchedAt),
 			Path:      info.Path,
 			Cached:    info.Cached,
 		})
@@ -363,9 +363,9 @@ func sdkCachedIndexesToDisplay(infos []sdk.CachedIndexInfo) []sdkCachedIndexDisp
 	return items
 }
 
-func printSDKIndexSummary(index sdk.Index) {
+func PrintSDKIndexSummary(index sdk.Index) {
 	ccolor.Infoln("SDK Index:")
-	summary := sdkIndexSummary(index)
+	summary := SDKIndexSummary(index)
 	ccolor.Print(cliutil.FormatTable([]string{"Name", "Value"}, [][]any{
 		{"SDK", summary.SDK},
 		{"Source", summary.Source},
@@ -377,13 +377,13 @@ func printSDKIndexSummary(index sdk.Index) {
 		{"Latest Stable", summary.LatestStable},
 	}, cliutil.MinimalStyle))
 
-	platforms := sdkIndexPlatformRows(index)
+	platforms := SDKIndexPlatformRows(index)
 	if len(platforms) > 0 {
 		ccolor.Print(cliutil.FormatTable([]string{"Platform", "Files"}, platforms, cliutil.MinimalStyle))
 	}
 }
 
-func sdkIndexSummary(index sdk.Index) sdkIndexSummaryDisplay {
+func SDKIndexSummary(index sdk.Index) sdkIndexSummaryDisplay {
 	stable := 0
 	files := 0
 	latest := ""
@@ -405,7 +405,7 @@ func sdkIndexSummary(index sdk.Index) sdkIndexSummaryDisplay {
 	return sdkIndexSummaryDisplay{
 		SDK:          index.SDK,
 		Source:       index.SourceURL,
-		FetchedAt:    compactTime(index.FetchedAt),
+		FetchedAt:    CompactTime(index.FetchedAt),
 		Versions:     len(index.Items),
 		Stable:       stable,
 		Files:        files,
@@ -414,7 +414,7 @@ func sdkIndexSummary(index sdk.Index) sdkIndexSummaryDisplay {
 	}
 }
 
-func sdkIndexPlatformRows(index sdk.Index) [][]any {
+func SDKIndexPlatformRows(index sdk.Index) [][]any {
 	counts := map[string]int{}
 	for _, item := range index.Items {
 		for _, file := range item.Files {
@@ -437,7 +437,7 @@ func sdkIndexPlatformRows(index sdk.Index) [][]any {
 	return rows
 }
 
-func sdkIndexVersionRows(index sdk.Index, limit int) [][]any {
+func SDKIndexVersionRows(index sdk.Index, limit int) [][]any {
 	if limit <= 0 || len(index.Items) == 0 {
 		return nil
 	}
@@ -453,7 +453,7 @@ func sdkIndexVersionRows(index sdk.Index, limit int) [][]any {
 	return rows
 }
 
-func printJSON(value any) error {
+func PrintJSON(value any) error {
 	data, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
 		return err
@@ -462,7 +462,7 @@ func printJSON(value any) error {
 	return nil
 }
 
-func printQueryResult(result app.QueryResult) {
+func PrintQueryResult(result app.QueryResult) {
 	fmt.Printf("action: %s\n", result.Action)
 	fmt.Printf("repo: %s\n", result.Repo)
 	if result.Tag != "" {
@@ -488,7 +488,7 @@ func printQueryResult(result app.QueryResult) {
 			rows = append(rows, []any{
 				item.Tag,
 				item.Name,
-				compactTime(item.PublishedAt),
+				CompactTime(item.PublishedAt),
 				item.Prerelease,
 				releaseAssetsCount(result.Repo, item),
 			})
@@ -517,7 +517,7 @@ func releaseAssetsCount(repo string, item app.QueryRelease) any {
 	return item.AssetsCount
 }
 
-func printSearchResult(result app.SearchResult) {
+func PrintSearchResult(result app.SearchResult) {
 	if len(result.Items) == 0 {
 		ccolor.Infoln("no repositories found")
 		return
@@ -530,7 +530,7 @@ func printSearchResult(result app.SearchResult) {
 		}
 		updatedAt := "-"
 		if !item.UpdatedAt.IsZero() {
-			updatedAt = compactTime(item.UpdatedAt)
+			updatedAt = CompactTime(item.UpdatedAt)
 		}
 
 		ccolor.Printf("<info>%s</> ⭐%d language: %s update: %s\n", item.FullName, item.StargazersCount, language, updatedAt)
@@ -542,3 +542,5 @@ func printSearchResult(result app.SearchResult) {
 		fmt.Println("---")
 	}
 }
+
+

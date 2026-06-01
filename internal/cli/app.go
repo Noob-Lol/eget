@@ -9,6 +9,7 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/gookit/gcli/v3"
+	clirender "github.com/inherelab/eget/internal/cli/render"
 )
 
 var (
@@ -55,13 +56,13 @@ func BuildInfo() Info {
 
 func normalizeBuildTime(value string) string {
 	for _, layout := range []string{
-		compactTimeLayout,
+		clirender.CompactTimeLayout,
 		time.RFC3339,
 		"2006/01/02-15:04:05",
 		"2006-01-02 15:04:05",
 	} {
 		if parsed, err := time.Parse(layout, value); err == nil {
-			return parsed.Format(compactTimeLayout)
+			return parsed.Format(clirender.CompactTimeLayout)
 		}
 	}
 	return value

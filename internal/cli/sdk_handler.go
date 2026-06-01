@@ -8,6 +8,7 @@ import (
 	"github.com/gookit/goutil/cliutil"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
+	clirender "github.com/inherelab/eget/internal/cli/render"
 	"github.com/inherelab/eget/internal/install"
 	"github.com/inherelab/eget/internal/sdk"
 )
@@ -27,7 +28,7 @@ func (s *cliService) handleSDKInstall(opts *SDKInstallOptions) error {
 		return err
 	}
 	for _, result := range results {
-		notes := sdkResultNotes(result.Cached, result.Resumed)
+		notes := clirender.SDKResultNotes(result.Cached, result.Resumed)
 		if notes != "" {
 			ccolor.Successf("✓ Installed %s@%s -> %s (%s)\n", result.Name, result.Version, result.Path, notes)
 			continue
@@ -55,7 +56,7 @@ func (s *cliService) handleSDKList(opts *SDKListOptions) error {
 		return err
 	}
 	if jsonOutput {
-		return printJSON(sdkEntriesToDisplay(entries))
+		return clirender.PrintJSON(clirender.SDKEntriesToDisplay(entries))
 	}
 	if len(entries) == 0 {
 		ccolor.Infoln("no SDK versions installed")
@@ -64,7 +65,7 @@ func (s *cliService) handleSDKList(opts *SDKListOptions) error {
 	cols := []string{"Name", "Version", "Path", "Installed At"}
 	rows := make([][]any, 0, len(entries))
 	for _, entry := range entries {
-		rows = append(rows, []any{entry.Name, entry.Version, entry.Path, compactTime(entry.InstalledAt)})
+		rows = append(rows, []any{entry.Name, entry.Version, entry.Path, clirender.CompactTime(entry.InstalledAt)})
 	}
 	ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 	return nil
@@ -111,7 +112,7 @@ func (s *cliService) handleSDKSearch(opts *SDKSearchOptions) error {
 		return err
 	}
 	if opts.JSON {
-		return printJSON(results)
+		return clirender.PrintJSON(results)
 	}
 	if len(results) == 0 {
 		ccolor.Infoln("no SDK index matches found")
@@ -137,7 +138,7 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 			return err
 		}
 		if opts.JSON {
-			return printJSON(sdkCachedIndexesToDisplay(infos))
+			return clirender.PrintJSON(clirender.SDKCachedIndexesToDisplay(infos))
 		}
 		if len(infos) == 0 {
 			ccolor.Infoln("no SDK index cache found")
@@ -147,12 +148,12 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 		rows := make([][]any, 0, len(infos))
 		for _, info := range infos {
 			versions := any(info.Versions)
-			updatedAt := compactTime(info.FetchedAt)
+			updatedAt := clirender.CompactTime(info.FetchedAt)
 			if !info.Cached {
 				versions = "-"
 				updatedAt = "-"
 			}
-			rows = append(rows, []any{info.SDK, versions, truncateTableText(info.SourceURL, 48), updatedAt})
+			rows = append(rows, []any{info.SDK, versions, clirender.TruncateTableText(info.SourceURL, 48), updatedAt})
 		}
 		ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 		return nil
@@ -161,7 +162,7 @@ func (s *cliService) handleSDKIndex(opts *SDKIndexOptions) error {
 		if err != nil {
 			return err
 		}
-		printSDKIndexSummary(index)
+		clirender.PrintSDKIndexSummary(index)
 		return nil
 	case "refresh":
 		svc := s.sdkServiceWithIndexReporter()
