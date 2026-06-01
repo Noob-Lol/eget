@@ -2,14 +2,16 @@ package install
 
 import (
 	"testing"
+
+	"github.com/inherelab/eget/internal/install/detect"
 )
 
 func TestAssetDetectorSupportsRegexInclude(t *testing.T) {
-	re, err := compileAssetRegex(`\.deb$`)
+	re, err := detect.CompileAssetRegex(`\.deb$`)
 	if err != nil {
 		t.Fatalf("compileAssetRegex: %v", err)
 	}
-	d := &assetDetector{Asset: `\.deb$`, Regex: re}
+	d := detect.NewAssetDetector(`\.deb$`, false, re)
 
 	got, candidates, err := d.Detect([]string{
 		"https://example.com/pkg_1.0.0_amd64.deb",
@@ -27,11 +29,11 @@ func TestAssetDetectorSupportsRegexInclude(t *testing.T) {
 }
 
 func TestAssetDetectorSupportsRegexExclude(t *testing.T) {
-	re, err := compileAssetRegex(`\.deb$`)
+	re, err := detect.CompileAssetRegex(`\.deb$`)
 	if err != nil {
 		t.Fatalf("compileAssetRegex: %v", err)
 	}
-	d := &assetDetector{Asset: `\.deb$`, Anti: true, Regex: re}
+	d := detect.NewAssetDetector(`\.deb$`, true, re)
 
 	got, candidates, err := d.Detect([]string{
 		"https://example.com/pkg_1.0.0_amd64.deb",
@@ -53,7 +55,7 @@ func TestAssetDetectorSupportsPrefixInclude(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parseAssetFilter: %v", err)
 	}
-	d := &assetDetector{Asset: filter.Expr, Regex: filter.Regex}
+	d := detect.NewAssetDetector(filter.Expr, false, filter.Regex)
 
 	got, candidates, err := d.Detect([]string{
 		"https://example.com/codex-app-server-x86_64-pc-windows-msvc.zip",
@@ -75,7 +77,7 @@ func TestAssetDetectorSupportsSuffixExclude(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parseAssetFilter: %v", err)
 	}
-	d := &assetDetector{Asset: filter.Expr, Anti: filter.Anti, Regex: filter.Regex}
+	d := detect.NewAssetDetector(filter.Expr, filter.Anti, filter.Regex)
 
 	got, candidates, err := d.Detect([]string{
 		"https://example.com/codex.exe",
@@ -93,7 +95,7 @@ func TestAssetDetectorSupportsSuffixExclude(t *testing.T) {
 }
 
 func TestAssetDetectorMatchesPlainFilterCaseInsensitive(t *testing.T) {
-	d := &assetDetector{Asset: "setup"}
+	d := detect.NewAssetDetector("setup", false, nil)
 
 	got, candidates, err := d.Detect([]string{
 		"https://example.com/WinMerge-2.16.56-x64-Setup.exe",

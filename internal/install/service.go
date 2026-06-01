@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inherelab/eget/internal/install/detect"
 	forge "github.com/inherelab/eget/internal/source/forge"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
@@ -25,9 +26,7 @@ type VersionFallbackFinder interface {
 	FallbackVersionAssets(limit int) ([][]string, error)
 }
 
-type Detector interface {
-	Detect(assets []string) (string, []string, error)
-}
+type Detector = detect.Detector
 
 type Verifier interface {
 	Verify(b []byte) error
@@ -287,8 +286,7 @@ func assetFilterForGOOS(raw, goos string) (string, bool) {
 }
 
 func isKnownGOOS(value string) bool {
-	_, ok := installGOOSMap[value]
-	return ok
+	return detect.IsKnownGOOS(value)
 }
 
 type assetFilter struct {

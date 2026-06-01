@@ -1,10 +1,10 @@
 package install
 
 import (
-	"regexp"
 	"runtime"
 	"time"
 
+	"github.com/inherelab/eget/internal/install/detect"
 	forge "github.com/inherelab/eget/internal/source/forge"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
@@ -24,22 +24,16 @@ func NewDefaultService(githubGetter sourcegithub.HTTPGetter, binaryModTime func(
 		SourceForgeGetterFactory: func(opts Options) sourcesf.HTTPGetter {
 			return NewHTTPGetter(opts)
 		},
-		AllDetectorFactory: func() Detector {
-			return &allDetector{}
-		},
+		AllDetectorFactory: detect.NewAllDetector,
 		SystemDetectorFactory: func(goos, goarch string) (Detector, error) {
 			libc := ""
 			if goos == "linux" && runtime.GOOS == "linux" {
 				libc = urltemplate.DetectLibc()
 			}
-			return newSystemDetectorWithLibc(goos, goarch, libc)
+			return detect.NewSystemDetectorWithLibc(goos, goarch, libc)
 		},
-		AssetDetectorFactory: func(asset string, anti bool, re *regexp.Regexp) Detector {
-			return &assetDetector{Asset: asset, Anti: anti, Regex: re}
-		},
-		DetectorChainFactory: func(detectors []Detector, system Detector) Detector {
-			return &detectorChain{detectors: detectors, system: system}
-		},
+		AssetDetectorFactory: detect.NewAssetDetector,
+		DetectorChainFactory: detect.NewChain,
 		Sha256VerifierFactory: func(expected string) (Verifier, error) {
 			return newSha256Verifier(expected)
 		},

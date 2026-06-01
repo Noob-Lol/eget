@@ -1,4 +1,4 @@
-package install
+package detect
 
 import (
 	"testing"
@@ -43,7 +43,7 @@ func TestReleaseAssetMetadataClassification(t *testing.T) {
 }
 
 func TestSystemDetectorSkipsReleaseMetadataAssets(t *testing.T) {
-	d, err := newSystemDetector("windows", "amd64")
+	d, err := NewSystemDetector("windows", "amd64")
 	assert.NoErr(t, err)
 
 	got, candidates, err := d.Detect([]string{
@@ -60,7 +60,7 @@ func TestSystemDetectorSkipsReleaseMetadataAssets(t *testing.T) {
 }
 
 func TestWindowsDetectorSelectsInstallerByExtensionAndArch(t *testing.T) {
-	d, err := newSystemDetector("windows", "amd64")
+	d, err := NewSystemDetector("windows", "amd64")
 	assert.NoErr(t, err)
 
 	got, candidates, err := d.Detect([]string{
@@ -83,7 +83,7 @@ func TestWindowsDetectorSelectsInstallerByExtensionAndArch(t *testing.T) {
 }
 
 func TestWindowsDetectorShowsArchivesWhenMultipleExecutablesMatch(t *testing.T) {
-	d, err := newSystemDetector("windows", "amd64")
+	d, err := NewSystemDetector("windows", "amd64")
 	assert.NoErr(t, err)
 
 	got, candidates, err := d.Detect([]string{
@@ -105,7 +105,7 @@ func TestWindowsDetectorShowsArchivesWhenMultipleExecutablesMatch(t *testing.T) 
 }
 
 func TestLinuxDetectorPrefersGlibcAsset(t *testing.T) {
-	d, err := newSystemDetectorWithLibc("linux", "amd64", "glibc")
+	d, err := NewSystemDetectorWithLibc("linux", "amd64", "glibc")
 	assert.NoErr(t, err)
 
 	got, candidates, err := d.Detect([]string{
@@ -119,7 +119,7 @@ func TestLinuxDetectorPrefersGlibcAsset(t *testing.T) {
 }
 
 func TestLinuxDetectorPrefersMuslAsset(t *testing.T) {
-	d, err := newSystemDetectorWithLibc("linux", "amd64", "musl")
+	d, err := NewSystemDetectorWithLibc("linux", "amd64", "musl")
 	assert.NoErr(t, err)
 
 	got, candidates, err := d.Detect([]string{

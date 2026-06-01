@@ -1,4 +1,4 @@
-package install
+package detect
 
 import (
 	"fmt"
@@ -10,6 +10,10 @@ import (
 type detectorChain struct {
 	detectors []Detector
 	system    Detector
+}
+
+type Detector interface {
+	Detect(assets []string) (string, []string, error)
 }
 
 type assetDetector struct {
@@ -68,12 +72,20 @@ func (dc *detectorChain) Detect(assets []string) (string, []string, error) {
 	return "", candidates, fmt.Errorf("%d candidates found for asset chain", len(candidates))
 }
 
+func NewChain(detectors []Detector, system Detector) Detector {
+	return &detectorChain{detectors: detectors, system: system}
+}
+
 func (a *allDetector) Detect(assets []string) (string, []string, error) {
-	assets = selectableReleaseAssets(assets)
+	assets = SelectableReleaseAssets(assets)
 	if len(assets) == 1 {
 		return assets[0], nil, nil
 	}
 	return "", assets, fmt.Errorf("%d matches found", len(assets))
+}
+
+func NewAllDetector() Detector {
+	return &allDetector{}
 }
 
 func (s *assetDetector) Detect(assets []string) (string, []string, error) {
@@ -104,6 +116,10 @@ func (s *assetDetector) Detect(assets []string) (string, []string, error) {
 	return "", nil, fmt.Errorf("asset `%s` not found", s.Asset)
 }
 
+func NewAssetDetector(asset string, anti bool, re *regexp.Regexp) Detector {
+	return &assetDetector{Asset: asset, Anti: anti, Regex: re}
+}
+
 func (s *assetDetector) matches(base string) bool {
 	if s.Regex != nil {
 		return s.Regex.MatchString(base)
@@ -111,7 +127,7 @@ func (s *assetDetector) matches(base string) bool {
 	return strings.Contains(strings.ToLower(base), strings.ToLower(s.Asset))
 }
 
-func compileAssetRegex(expr string) (*regexp.Regexp, error) {
+func CompileAssetRegex(expr string) (*regexp.Regexp, error) {
 	return regexp.Compile(expr)
 }
 
@@ -129,11 +145,11 @@ func (a *systemArch) Match(s string) bool {
 	return a.regex.MatchString(s)
 }
 
-func newSystemDetector(goos, goarch string) (*systemDetector, error) {
-	return newSystemDetectorWithLibc(goos, goarch, "")
+func NewSystemDetector(goos, goarch string) (Detector, error) {
+	return NewSystemDetectorWithLibc(goos, goarch, "")
 }
 
-func newSystemDetectorWithLibc(goos, goarch, libc string) (*systemDetector, error) {
+func NewSystemDetectorWithLibc(goos, goarch, libc string) (Detector, error) {
 	osv, ok := installGOOSMap[goos]
 	if !ok {
 		return nil, fmt.Errorf("unsupported target OS: %s", goos)
@@ -150,7 +166,7 @@ func (d *systemDetector) Detect(assets []string) (string, []string, error) {
 	var matches []string
 	var candidates []string
 	all := make([]string, 0, len(assets))
-	assets = selectableReleaseAssets(assets)
+	assets = SelectableReleaseAssets(assets)
 	for _, a := range assets {
 		osMatch, extra := d.Os.Match(a)
 		archMatch := d.Arch.Match(a)
@@ -230,7 +246,7 @@ func isReleaseMetadataAsset(asset string) bool {
 	return classifyReleaseAsset(asset) != releaseAssetInstallable
 }
 
-func selectableReleaseAssets(assets []string) []string {
+func SelectableReleaseAssets(assets []string) []string {
 	selectable := make([]string, 0, len(assets))
 	for _, asset := range assets {
 		if !isReleaseMetadataAsset(asset) {
@@ -318,4 +334,9 @@ var installGOARCHMap = map[string]systemArch{
 	"arm":     installArchArm,
 	"arm64":   installArchArm64,
 	"riscv64": installArchRiscv64,
+}
+
+func IsKnownGOOS(value string) bool {
+	_, ok := installGOOSMap[value]
+	return ok
 }
