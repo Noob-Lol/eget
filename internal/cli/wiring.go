@@ -9,6 +9,7 @@ import (
 
 	"github.com/inherelab/eget/internal/app"
 	appcache "github.com/inherelab/eget/internal/app/cache"
+	"github.com/inherelab/eget/internal/cli/prompts"
 	"github.com/inherelab/eget/internal/client"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
@@ -60,7 +61,7 @@ func newCLIService() (*cliService, error) {
 		}
 		return assets, urls, nil
 	}
-	runner.Prompt = promptSelect
+	runner.Prompt = prompts.Select
 
 	store, err := storepkg.DefaultStore()
 	if err != nil {

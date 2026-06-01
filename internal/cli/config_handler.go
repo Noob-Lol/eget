@@ -11,6 +11,7 @@ import (
 	"github.com/gookit/cliui/show"
 	"github.com/gookit/cliui/show/lists"
 	"github.com/gookit/goutil/x/ccolor"
+	"github.com/inherelab/eget/internal/cli/prompts"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	storepkg "github.com/inherelab/eget/internal/installed"
 	"github.com/inherelab/eget/internal/sdk"
@@ -25,7 +26,7 @@ func (s *cliService) handleConfig(opts *ConfigOptions) error {
 			return err
 		}
 		if info.Exists {
-			confirmed, err := promptConfirmOverwrite(info.Path)
+			confirmed, err := prompts.ConfirmOverwrite(info.Path)
 			if err != nil {
 				return err
 			}

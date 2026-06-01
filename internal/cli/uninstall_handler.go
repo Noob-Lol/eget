@@ -1,13 +1,17 @@
 package cli
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/inherelab/eget/internal/cli/prompts"
+)
 
 func (s *cliService) handleUninstall(opts *UninstallOptions) error {
 	if opts == nil || opts.Target == "" {
 		return fmt.Errorf("remove target is required")
 	}
 	if !opts.Yes {
-		confirmed, err := promptConfirmRemove(opts.Target)
+		confirmed, err := prompts.ConfirmRemove(opts.Target)
 		if err != nil {
 			return err
 		}

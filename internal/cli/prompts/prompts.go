@@ -1,4 +1,4 @@
-package cli
+package prompts
 
 import (
 	"context"
@@ -14,11 +14,11 @@ import (
 	"golang.org/x/term"
 )
 
-func promptIndex(choices []string) (int, error) {
-	return promptSelect("Select package resource", "Filter assets", choices)
+func Index(choices []string) (int, error) {
+	return Select("Select package resource", "Filter assets", choices)
 }
 
-func promptSelect(title, filterPrompt string, choices []string) (int, error) {
+func Select(title, filterPrompt string, choices []string) (int, error) {
 	return runSelectIndex(os.Stdin, os.Stderr, readline.New(), title, filterPrompt, choices)
 }
 
@@ -90,18 +90,18 @@ func readStdinLine() (string, error) {
 	}
 }
 
-func promptConfirmOverwrite(path string) (bool, error) {
+func ConfirmOverwrite(path string) (bool, error) {
 	fmt.Fprintf(os.Stderr, "Config file already exists: %s\n", path)
 	fmt.Fprint(os.Stderr, "Overwrite it? [y/N]: ")
-	return promptConfirmDefaultNo()
+	return ConfirmDefaultNo()
 }
 
-func promptConfirmRemove(target string) (bool, error) {
+func ConfirmRemove(target string) (bool, error) {
 	fmt.Fprintf(os.Stderr, "Remove %s? [y/N]: ", target)
-	return promptConfirmDefaultNo()
+	return ConfirmDefaultNo()
 }
 
-func promptConfirmDefaultNo() (bool, error) {
+func ConfirmDefaultNo() (bool, error) {
 	answer, err := readStdinLine()
 	if err != nil {
 		return false, err

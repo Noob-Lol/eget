@@ -8,6 +8,7 @@ import (
 
 	"github.com/gookit/goutil/x/ccolor"
 	appcache "github.com/inherelab/eget/internal/app/cache"
+	"github.com/inherelab/eget/internal/cli/prompts"
 	"golang.org/x/term"
 )
 
@@ -73,7 +74,7 @@ func (s *cliService) handleCacheClean(opts *CacheCleanOptions) error {
 		}
 		ccolor.Fprintf(s.stderrWriter(), "Cache clean matched %d files (%s)\n", preview.MatchedFiles, formatBytes(preview.MatchedSize))
 		ccolor.Fprint(s.stderrWriter(), "Continue? [y/N]: ")
-		confirmed, err := promptConfirmDefaultNo()
+		confirmed, err := prompts.ConfirmDefaultNo()
 		if err != nil {
 			return err
 		}

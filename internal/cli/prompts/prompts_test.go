@@ -1,4 +1,4 @@
-package cli
+package prompts
 
 import (
 	"io"
@@ -30,7 +30,7 @@ func TestPromptIndexConsumesTrailingNewline(t *testing.T) {
 	for i := range choices {
 		choices[i] = "choice"
 	}
-	picked, err := promptIndex(choices)
+	picked, err := Index(choices)
 	if err != nil {
 		t.Fatalf("prompt index: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestPromptIndexRendersInteractiveSelect(t *testing.T) {
 		t.Fatalf("close stdin writer: %v", err)
 	}
 
-	picked, err := promptIndex([]string{"first.zip", "second.zip"})
+	picked, err := Index([]string{"first.zip", "second.zip"})
 	assert.NoErr(t, err)
 	assert.Eq(t, 1, picked)
 
