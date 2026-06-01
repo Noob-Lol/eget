@@ -1,0 +1,190 @@
+package install
+
+import (
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strings"
+
+	"github.com/inherelab/eget/internal/util"
+)
+
+func selectionPlatform(opts Options) (string, string) {
+	goos, goarch := runtime.GOOS, runtime.GOARCH
+	if opts.System == "" {
+		return goos, goarch
+	}
+	parts := strings.SplitN(opts.System, "/", 2)
+	if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+		return parts[0], parts[1]
+	}
+	return goos, goarch
+}
+
+func autoSelectExtractedFile(candidates []ExtractedFile, goos, goarch string) (ExtractedFile, bool) {
+	if len(candidates) == 0 {
+		return ExtractedFile{}, false
+	}
+	if strings.EqualFold(goos, "windows") {
+		if selected, ok := autoSelectOnlyWindowsExecutable(candidates); ok {
+			return selected, true
+		}
+	}
+	patterns := archSelectionPatterns(goarch)
+	if len(patterns) == 0 {
+		return ExtractedFile{}, false
+	}
+
+	matches := make([]ExtractedFile, 0, len(candidates))
+	for _, candidate := range candidates {
+		name := util.NormalizeSlashesLower(candidate.ArchiveName)
+		for _, pattern := range patterns {
+			if pattern.MatchString(name) {
+				matches = append(matches, candidate)
+				break
+			}
+		}
+	}
+	if len(matches) == 1 {
+		return matches[0], true
+	}
+	return ExtractedFile{}, false
+}
+
+func autoExtractCurrentPlatformExecutables(candidates []ExtractedFile, opts Options) ([]ExtractedFile, bool) {
+	goos, goarch := selectionPlatform(opts)
+	selected := make([]ExtractedFile, 0, len(candidates))
+	for _, candidate := range candidates {
+		if !isExecutableForGOOS(candidate, goos) {
+			continue
+		}
+		if !archiveNameMatchesPlatform(candidate.ArchiveName, goos, goarch) {
+			continue
+		}
+		selected = append(selected, candidate)
+	}
+	return selected, len(selected) > 0
+}
+
+func isExecutableForGOOS(file ExtractedFile, goos string) bool {
+	if file.Dir {
+		return false
+	}
+	name := firstNonEmpty(file.ArchiveName, file.Name)
+	ext := strings.ToLower(filepath.Ext(name))
+	if strings.EqualFold(goos, "windows") {
+		return ext == ".exe"
+	}
+	return isExec(name, file.mode) && ext != ".exe"
+}
+
+func archiveNameMatchesPlatform(name, goos, goarch string) bool {
+	tokens := platformTokens(name)
+	if hasAnyToken(tokens, osTokens...) && !hasAnyToken(tokens, osAliases(goos)...) {
+		return false
+	}
+	if hasAnyToken(tokens, archTokens...) && !hasAnyToken(tokens, archAliases(goarch)...) {
+		return false
+	}
+	return true
+}
+
+func platformTokens(name string) []string {
+	base := strings.ToLower(util.NormalizeSlashesLower(name))
+	base = strings.TrimSuffix(base, executableSuffix(base))
+	tokens := strings.FieldsFunc(base, func(r rune) bool {
+		return r == '-' || r == '.' || r == '/' || r == '\\'
+	})
+	for _, token := range strings.FieldsFunc(base, func(r rune) bool {
+		return r == '-' || r == '_' || r == '.' || r == '/' || r == '\\'
+	}) {
+		tokens = append(tokens, token)
+	}
+	return tokens
+}
+
+func hasAnyToken(tokens []string, aliases ...string) bool {
+	for _, token := range tokens {
+		for _, alias := range aliases {
+			if token == alias {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func autoSelectOnlyWindowsExecutable(candidates []ExtractedFile) (ExtractedFile, bool) {
+	var selected ExtractedFile
+	count := 0
+	for _, candidate := range candidates {
+		if strings.EqualFold(filepath.Ext(candidate.ArchiveName), ".exe") {
+			selected = candidate
+			count++
+		}
+	}
+	return selected, count == 1
+}
+
+func archSelectionPatterns(goarch string) []*regexp.Regexp {
+	switch strings.ToLower(goarch) {
+	case "amd64":
+		return compileArchPatterns(`(^|/)(x64|amd64|x86_64)(/|$)`)
+	case "386":
+		return compileArchPatterns(`(^|/)(x86|i386|386)(/|$)`)
+	case "arm64":
+		return compileArchPatterns(`(^|/)(arm64|aarch64)(/|$)`)
+	case "arm":
+		return compileArchPatterns(`(^|/)(arm32|armv6|armv7|arm)(/|$)`)
+	default:
+		return nil
+	}
+}
+
+func compileArchPatterns(exprs ...string) []*regexp.Regexp {
+	patterns := make([]*regexp.Regexp, 0, len(exprs))
+	for _, expr := range exprs {
+		patterns = append(patterns, regexp.MustCompile(expr))
+	}
+	return patterns
+}
+
+var osTokens = []string{"windows", "win", "win32", "win64", "darwin", "macos", "osx", "linux", "freebsd", "openbsd", "netbsd", "android", "illumos", "solaris", "plan9"}
+var archTokens = []string{"amd64", "x86_64", "x64", "386", "x86", "i386", "arm64", "aarch64", "arm32", "armv6", "armv7", "arm", "riscv64"}
+var executableVariantTokens = []string{"portable"}
+var versionTokenPattern = regexp.MustCompile(`^v?\d+$`)
+
+func hasVersionToken(tokens []string) bool {
+	for _, token := range tokens {
+		if versionTokenPattern.MatchString(token) {
+			return true
+		}
+	}
+	return false
+}
+
+func osAliases(goos string) []string {
+	switch strings.ToLower(goos) {
+	case "windows":
+		return []string{"windows", "win", "win32", "win64"}
+	case "darwin":
+		return []string{"darwin", "macos", "osx"}
+	default:
+		return []string{strings.ToLower(goos)}
+	}
+}
+
+func archAliases(goarch string) []string {
+	switch strings.ToLower(goarch) {
+	case "amd64":
+		return []string{"amd64", "x86_64", "x64"}
+	case "386":
+		return []string{"386", "x86", "i386"}
+	case "arm64":
+		return []string{"arm64", "aarch64"}
+	case "arm":
+		return []string{"arm32", "armv6", "armv7", "arm"}
+	default:
+		return []string{strings.ToLower(goarch)}
+	}
+}

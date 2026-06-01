@@ -1,8 +1,8 @@
 package install
 
 import (
-	"runtime"
 	"regexp"
+	"runtime"
 	"time"
 
 	forge "github.com/inherelab/eget/internal/source/forge"
