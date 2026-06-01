@@ -82,11 +82,11 @@ func ParseLatest(data []byte, cfg Config) (string, error) {
 }
 
 func ParseLatestPublishedAt(data []byte, cfg Config) (time.Time, error) {
-	if cfg.LatestFormat != "yaml" {
-		return time.Time{}, nil
-	}
 	value, err := ExtractYAMLPath(data, "released_at")
 	if err != nil {
+		if cfg.LatestFormat != "yaml" {
+			return time.Time{}, nil
+		}
 		return time.Time{}, nil
 	}
 	return parsePublishedAt(value), nil
@@ -190,6 +190,7 @@ func parsePublishedAt(value string) time.Time {
 	value = strings.TrimSpace(value)
 	for _, layout := range []string{
 		time.RFC3339,
+		"2006-01-02T15:04:05",
 		"2006-01-02 15:04:05 -0700 MST",
 		"2006-01-02 15:04:05 -0700",
 		"2006-01-02 15:04:05",

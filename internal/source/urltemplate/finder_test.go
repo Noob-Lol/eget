@@ -98,6 +98,30 @@ func TestFinderLatestExplicitFormatOverridesURLInference(t *testing.T) {
 	assert.True(t, info.PublishedAt.IsZero())
 }
 
+func TestFinderLatestReadsYAMLPublishedAtWithTextVersionRegex(t *testing.T) {
+	getter := &fakeGetter{responses: map[string]string{
+		"https://example.com/latest.yaml": "version: v1.2.5\nreleased_at: 2026-05-25T10:20:30Z\n",
+	}}
+	finder := Finder{
+		Name:   "xenv",
+		Target: Target{ID: "xenv", Normalized: "template:xenv"},
+		Config: Config{
+			LatestURL:      "https://example.com/latest.yaml",
+			LatestFormat:   "text",
+			VersionRegex:   `version:\s*(\S+)`,
+			URLTemplate:    "https://example.com/{version}/xenv.exe",
+			LatestJSONPath: "",
+		},
+		Getter: getter,
+	}
+
+	info, err := finder.Latest()
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "v1.2.5", info.Version)
+	assert.Eq(t, time.Date(2026, 5, 25, 10, 20, 30, 0, time.UTC), info.PublishedAt)
+}
+
 type fakeGetter struct {
 	responses map[string]string
 	requests  []string

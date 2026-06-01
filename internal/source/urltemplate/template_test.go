@@ -94,6 +94,15 @@ func TestParseLatestYAML(t *testing.T) {
 	}
 }
 
+func TestParseLatestYAMLPublishedAtWithoutTimezone(t *testing.T) {
+	data := []byte("version: v1.2.5\nreleased_at: 2026-06-01T17:49:52\n")
+
+	releasedAt, err := ParseLatestPublishedAt(data, Config{LatestFormat: "yaml"})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, time.Date(2026, 6, 1, 17, 49, 52, 0, time.UTC), releasedAt)
+}
+
 func TestParseLatestYAMLRequiresVersion(t *testing.T) {
 	_, err := ParseLatest([]byte("released_at: 2026-05-25T10:20:30Z\n"), Config{LatestFormat: "yaml"})
 	assert.Err(t, err)
