@@ -452,6 +452,7 @@ func TestMain_GUIFlagBindsInstallAndAdd(t *testing.T) {
 		want string
 	}{
 		{"install gui", []string{"install", "--gui", "inhere/markview"}, "install"},
+		{"install alias gui", []string{"ins", "--gui", "inhere/markview"}, "install"},
 		{"add gui", []string{"add", "--gui", "inhere/markview"}, "add"},
 	}
 	for _, tt := range tests {
@@ -484,6 +485,38 @@ func TestMain_GUIFlagBindsInstallAndAdd(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMain_InstallModeFlagBindsInstallAlias(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"ins", "--gui", "--install-mode", "installer", "owner/repo"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	assert.Eq(t, "install", calls[0].name)
+	opts, ok := calls[0].options.(*InstallOptions)
+	assert.True(t, ok)
+	assert.True(t, opts.GUI)
+	assert.Eq(t, "installer", opts.InstallMode)
+	assert.Eq(t, []string{"owner/repo"}, opts.Targets)
+}
+
+func TestMain_InstallRejectsInvalidInstallMode(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(func(string, any) error {
+		t.Fatal("handler should not run")
+		return nil
+	}, &stdout, &stderr).RunWithArgs([]string{"install", "--gui", "--install-mode", "silent", "owner/repo"})
+
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), "install mode")
 }
 
 func TestMain_FallbackVersionsFlagBindsInstallAndDownload(t *testing.T) {

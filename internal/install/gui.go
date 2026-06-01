@@ -27,7 +27,12 @@ func DetectGUIInstallMode(isGUI bool, fileName string) string {
 	if !isGUI {
 		return ""
 	}
-	if DetectInstallerKind(fileName) != InstallerKindUnknown {
+	lower := strings.ToLower(filepath.Base(fileName))
+	if strings.Contains(lower, "portable") {
+		return InstallModePortable
+	}
+	switch filepath.Ext(lower) {
+	case ".exe", ".msi":
 		return InstallModeInstaller
 	}
 	return InstallModePortable

@@ -648,6 +648,52 @@ func TestRunLaunchesConfiguredInstallerModeForPlainExe(t *testing.T) {
 	assert.Eq(t, InstallModeInstaller, result.InstallMode)
 }
 
+func TestRunGUIPlainExeDefaultsToInstaller(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "GoNavi-0.7.7-Windows-Amd64.exe")
+	if err := os.WriteFile(path, []byte("installer"), 0o755); err != nil {
+		t.Fatalf("write installer: %v", err)
+	}
+
+	launcher := &fakeInstallerLauncher{}
+	runner := NewRunner(NewDefaultService(nil, nil))
+	runner.InstallerLauncher = launcher
+	runner.Stderr = io.Discard
+	runner.ConfirmLaunchInstaller = func(file string) (bool, error) {
+		t.Fatalf("gui plain exe should not prompt, got %q", file)
+		return false, nil
+	}
+
+	result, err := runner.Run(path, Options{IsGUI: true})
+	assert.NoErr(t, err)
+	assert.Eq(t, path, launcher.path)
+	assert.Eq(t, InstallerKindEXE, launcher.kind)
+	assert.True(t, result.IsGUI)
+	assert.Eq(t, InstallModeInstaller, result.InstallMode)
+}
+
+func TestRunGUIPortableExeUsesPortableMode(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "GoNavi-0.7.7-Windows-Amd64-portable.exe")
+	if err := os.WriteFile(path, []byte("portable"), 0o755); err != nil {
+		t.Fatalf("write portable exe: %v", err)
+	}
+
+	launcher := &fakeInstallerLauncher{}
+	runner := NewRunner(NewDefaultService(nil, nil))
+	runner.InstallerLauncher = launcher
+	runner.Stderr = io.Discard
+	outDir := t.TempDir()
+
+	result, err := runner.Run(path, Options{IsGUI: true, Output: outDir})
+	assert.NoErr(t, err)
+	assert.Eq(t, "", launcher.path)
+	assert.True(t, result.IsGUI)
+	assert.Eq(t, InstallModePortable, result.InstallMode)
+	assert.Eq(t, 1, len(result.ExtractedFiles))
+	assert.Eq(t, filepath.Join(outDir, filepath.Base(path)), result.ExtractedFiles[0])
+}
+
 func TestRunExtractAllDoesNotPromptForDetectedInstaller(t *testing.T) {
 	assetURL := "https://example.com/PicoClaw-Setup.exe"
 	svc := NewService()

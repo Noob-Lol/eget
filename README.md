@@ -99,6 +99,8 @@ eget install --all
 ```bash
 # Install a GUI app; portable GUI apps use global.gui_target by default
 eget install --gui sipeed/picoclaw
+# Force a plain .exe GUI asset to launch as an installer
+eget ins --gui --install-mode installer owner/repo
 eget add --gui --name picoclaw sipeed/picoclaw
 ```
 
@@ -237,7 +239,7 @@ The target argument accepted by `install` and `download` can be:
 
 - Resolve, download, verify, and extract a target, then record installation state.
 - `--name` can be used to override the installed executable name; without `--to`, it also acts as the rename hint for single-file assets.
-- `--gui` marks the target as a GUI application. Portable GUI apps use `global.gui_target` by default, while GUI installers such as `.msi` or `setup.exe` are launched and do not record a final install directory. Without `--gui`, installer-like assets prompt before launch; with `--add`, a confirmed installer is persisted with `is_gui = true`. For GUI installer assets whose `.exe` names do not contain `setup` or `installer`, set `install_mode = "installer"` in the package config to force launching the asset.
+- `--gui` marks the target as a GUI application. GUI `.exe` and `.msi` assets default to installer mode and are launched, unless the selected asset or extracted file name contains `portable`; portable GUI apps use `global.gui_target` by default. Without `--gui`, installer-like assets prompt before launch; with `--add`, a confirmed installer is persisted with `is_gui = true`. Pass `--install-mode portable|installer` or set `install_mode` in package config to override detection.
 - With `--add`, a successful install also writes the repo target to `[packages.<name>]`; use `--name` to override the package name.
 - Use `--all` without a target to install every package configured under `[packages]`. Package-level options are merged the same way as single package installs.
 
@@ -327,7 +329,8 @@ The target argument accepted by `install` and `download` can be:
 - `--add`: After a successful install, append the repo target to `[packages.<name>]` managed config.
 - `--all`: Install every package configured under `[packages]`; cannot be combined with a target or `--add`.
 - `--batch N`: Control package task concurrency for `install --all`. `0` means auto, `1` means serial, and values greater than `1` process up to that many packages at once.
-- `--gui`: Install as a GUI application; with `--add`, persist `is_gui = true`. Installer-like assets selected without `--gui` prompt before launch and also persist `is_gui = true` when confirmed with `--add`. Package config can set `install_mode = "installer"` to force a plain `.exe` asset to launch as an installer.
+- `--gui`: Install as a GUI application; with `--add`, persist `is_gui = true`. Installer-like assets selected without `--gui` prompt before launch and also persist `is_gui = true` when confirmed with `--add`.
+- `--install-mode portable|installer`: Override GUI install mode for this run. By default, `--gui` treats selected `.exe` / `.msi` files as installers unless the selected asset or extracted file name contains `portable`.
 - `--name`: Override the managed package name; for single executable assets, it also acts as the default output-name hint.
 
 `update` options:

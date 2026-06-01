@@ -152,6 +152,7 @@ type CLIOverrides struct {
 	System           *string
 	Tag              *string
 	Target           *string
+	InstallMode      *string
 	UpgradeOnly      *bool
 	Verify           *string
 	DisableSSL       *bool

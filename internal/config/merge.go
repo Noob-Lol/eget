@@ -35,7 +35,7 @@ func MergeInstallOptions(global, repo, pkg Section, cli CLIOverrides) Merged {
 	merged.ChecksumJSONPath = firstString(pkg.ChecksumJSONPath, repo.ChecksumJSONPath, global.ChecksumJSONPath)
 	merged.ChecksumRegex = firstString(pkg.ChecksumRegex, repo.ChecksumRegex, global.ChecksumRegex)
 	merged.InstallAction = firstString(pkg.InstallAction, repo.InstallAction, global.InstallAction)
-	merged.InstallMode = firstString(pkg.InstallMode, repo.InstallMode, global.InstallMode)
+	merged.InstallMode = firstString(cli.InstallMode, pkg.InstallMode, repo.InstallMode, global.InstallMode)
 	merged.ChunkConcurrency = firstInt(cli.ChunkConcurrency, pkg.ChunkConcurrency, repo.ChunkConcurrency, global.ChunkConcurrency)
 	merged.StripComponents = firstInt(cli.StripComponents, pkg.StripComponents, repo.StripComponents, global.StripComponents)
 

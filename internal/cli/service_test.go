@@ -151,6 +151,8 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 		StripComponents: 1,
 		Add:             true,
 		Name:            "tool",
+		GUI:             true,
+		InstallMode:     install.InstallModeInstaller,
 	})
 	if installOpts.CacheDir != "" {
 		t.Fatalf("expected install cache dir to stay empty, got %q", installOpts.CacheDir)
@@ -160,6 +162,8 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	}
 	assert.Eq(t, map[string]string{"tool-linux-amd64": "tool"}, installOpts.RenameFiles)
 	assert.Eq(t, 1, installOpts.StripComponents)
+	assert.True(t, installOpts.IsGUI)
+	assert.Eq(t, install.InstallModeInstaller, installOpts.InstallMode)
 
 	downloadOpts := installOptionsFromDownload(&DownloadOptions{
 		Tag:             "nightly",

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -21,6 +22,7 @@ func installOptionsFromInstall(opts *InstallOptions) install.Options {
 		All:                 opts.All,
 		StripComponents:     opts.StripComponents,
 		IsGUI:               opts.GUI,
+		InstallMode:         opts.InstallMode,
 		Quiet:               opts.Quiet,
 		FallbackVersions:    opts.FallbackVersions,
 		ChunkConcurrency:    opts.ChunkConcurrency,
@@ -161,4 +163,11 @@ func hasMultipleFilePatterns(value string) bool {
 		}
 	}
 	return false
+}
+
+func validateInstallMode(value string) error {
+	if value == "" || value == install.InstallModePortable || value == install.InstallModeInstaller {
+		return nil
+	}
+	return fmt.Errorf("install mode must be %q or %q", install.InstallModePortable, install.InstallModeInstaller)
 }

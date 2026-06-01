@@ -596,6 +596,29 @@ func TestInstallTargetPassesConfiguredInstallMode(t *testing.T) {
 	assert.Eq(t, install.InstallModeInstaller, runner.opts.InstallMode)
 }
 
+func TestInstallTargetPassesCLIInstallMode(t *testing.T) {
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:           "https://github.com/Syngnat/GoNavi/releases/download/v0.7.7/GoNavi-0.7.7-Windows-Amd64.exe",
+			Asset:         "GoNavi-0.7.7-Windows-Amd64.exe",
+			IsGUI:         true,
+			InstallMode:   install.InstallModeInstaller,
+			InstallerFile: "C:/Temp/GoNavi-0.7.7-Windows-Amd64.exe",
+		},
+	}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	_, err := svc.InstallTarget("Syngnat/GoNavi", install.Options{IsGUI: true, InstallMode: install.InstallModeInstaller})
+	assert.NoErr(t, err)
+	assert.True(t, runner.opts.IsGUI)
+	assert.Eq(t, install.InstallModeInstaller, runner.opts.InstallMode)
+}
+
 func TestInstallTargetRecordsGUIInstallerWithoutExtractedFiles(t *testing.T) {
 	runner := &fakeRunner{
 		result: RunResult{

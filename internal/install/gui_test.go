@@ -16,7 +16,9 @@ func TestDetectGUIInstallMode(t *testing.T) {
 		{"gui msi installer", true, "app.msi", InstallModeInstaller},
 		{"gui setup exe installer", true, "PicoClaw-Setup.exe", InstallModeInstaller},
 		{"gui installer exe installer", true, "foo-installer-x64.exe", InstallModeInstaller},
-		{"gui plain exe portable", true, "picoclaw.exe", InstallModePortable},
+		{"gui plain exe installer", true, "picoclaw.exe", InstallModeInstaller},
+		{"gui portable exe portable", true, "picoclaw-portable.exe", InstallModePortable},
+		{"gui portable zip portable", true, "picoclaw-portable.zip", InstallModePortable},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

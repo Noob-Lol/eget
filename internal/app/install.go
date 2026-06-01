@@ -562,6 +562,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		DownloadOnly:     boolOpt(cli.DownloadOnly),
 		File:             stringOpt(cli.ExtractFile),
 		IsGUI:            boolOpt(cli.IsGUI),
+		InstallMode:      stringOpt(cli.InstallMode),
 		Name:             stringOpt(cli.Name),
 		Quiet:            boolOpt(cli.Quiet),
 		RenameFiles:      mapOpt(cli.RenameFiles),
