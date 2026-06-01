@@ -22,7 +22,7 @@ gitnexus detect-changes --repo eget
 - [x] 阶段 2：抽取 CLI 渲染逻辑到 `internal/cli/render`
 - [x] 阶段 3：抽取 CLI prompt 逻辑到 `internal/cli/prompts`
 - [x] 阶段 4：抽取 install detector 逻辑到 `internal/install/detect`
-- [ ] 阶段 5：评估并拆分 install archive 子包
+- [x] 阶段 5：评估 install archive 子包，暂缓实施
 
 ## 总体原则
 
@@ -426,6 +426,22 @@ git commit -m "refactor: move install detectors to subpackage"
 ## 阶段 5：评估并拆分 install archive 子包
 
 目标：评估 `internal/install/archive*`、`chooser.go`、`system7z.go` 是否能形成稳定 archive 子包；如果边界清楚，再拆。
+
+### 评估结论
+
+本阶段只完成评估，暂缓实施子包迁移。
+
+GitNexus 调用面显示，archive/extractor 相关构造函数不只集中在 archive 实现内部，还被以下主流程或测试直接使用：
+
+- `internal/install/default_service.go`：默认 Service wiring 直接构造 `NewFileChooser`、`NewBinaryChooser`、`NewExtractor`、`NewSystem7zExtractor`。
+- `internal/install/service.go`：`newExtractor` 依赖 `Chooser`、`Extractor`、`ArchiveExtractOptions` 和 system7z fallback。
+- `internal/install/runner.go`、`runner_extract.go`、`runner_select.go`、`runner_platform.go`、`runner_installer.go`：大量使用 `Extractor`、`ExtractedFile`、`ArchiveExtractOptions`。
+- `internal/sdk/install_service.go`：SDK 安装流程直接调用 `install.NewExtractor`。
+- `internal/install/defaults_archive_test.go`、`chooser_test.go`、`system7z_test.go`、`service_extractor_test.go` 等测试直接覆盖 chooser/archive/system7z 细节。
+
+如果迁移到 `internal/install/archive`，需要同时导出并桥接 `Chooser`、`Extractor`、`ExtractedFile`、`ArchiveExtractOptions`、`File`、`FileType`、`Archive`、`ArchiveFn`、`DecompFn` 以及 system7z 测试 hook。这个导出面已经接近把 install 主链路的核心抽象整体外移，影响面明显大于“降低根目录文件数量”的收益。
+
+因此本轮保持 archive/extractor 相关文件在 `internal/install` 根包，后续若确实要拆，应先单独设计 `install/archive` 的稳定 API，并同步调整 runner/service 边界，而不是作为文件整理阶段顺手迁移。
 
 ### 现状
 
