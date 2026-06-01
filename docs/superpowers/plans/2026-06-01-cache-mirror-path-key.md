@@ -465,7 +465,7 @@ git commit -m "feat(cache): add path-key mirror helpers"
 - Modify: `internal/app/cache/server.go`
 - Modify: `internal/app/cache/server_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget ManifestFile
@@ -474,7 +474,7 @@ npx gitnexus impact --repo eget cacheHandler.ServeHTTP
 
 Expected: report direct callers/tests; risk should be MEDIUM or lower. If HIGH/CRITICAL, pause and report.
 
-- [ ] **Step 2: 写 manifest path_key 测试**
+- [x] **Step 2: 写 manifest path_key 测试**
 
 Modify `TestCacheServerManifest` in `internal/app/cache/server_test.go` to assert:
 
@@ -492,7 +492,7 @@ go test ./internal/app/cache -run TestCacheServerManifest
 
 Expected: FAIL because `PathKey` is not present.
 
-- [ ] **Step 3: 增加 manifest path_key**
+- [x] **Step 3: 增加 manifest path_key**
 
 Modify `internal/app/cache/server.go`:
 
@@ -523,7 +523,7 @@ go test ./internal/app/cache -run TestCacheServerManifest
 
 Expected: PASS.
 
-- [ ] **Step 4: 写 /download path-key 测试**
+- [x] **Step 4: 写 /download path-key 测试**
 
 Append tests to `internal/app/cache/server_test.go`:
 
@@ -564,7 +564,7 @@ go test ./internal/app/cache -run "TestCacheServerDownloadPathKey"
 
 Expected: FAIL because `/download` is not implemented.
 
-- [ ] **Step 5: 实现 /download handler**
+- [x] **Step 5: 实现 /download handler**
 
 Modify `ServeHTTP`:
 
@@ -617,7 +617,7 @@ go test ./internal/app/cache
 
 Expected: PASS.
 
-- [ ] **Step 6: 增加安全测试**
+- [x] **Step 6: 增加安全测试**
 
 Add tests:
 
@@ -657,7 +657,7 @@ go test ./internal/app/cache
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add internal/app/cache/server.go internal/app/cache/server_test.go

@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/inherelab/eget/internal/cachemirror"
 )
 
 type Manifest struct {
@@ -32,6 +34,7 @@ type ManifestCache struct {
 type ManifestFile struct {
 	Kind    string    `json:"kind"`
 	Path    string    `json:"path"`
+	PathKey string    `json:"path_key,omitempty"`
 	URL     string    `json:"url"`
 	Size    int64     `json:"size"`
 	ModTime time.Time `json:"mod_time"`
@@ -62,6 +65,8 @@ func (h cacheHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 	case r.URL.Path == "/manifest.json":
 		h.handleManifest(w, r)
+	case strings.HasPrefix(r.URL.Path, "/download/"):
+		h.handleDownload(w, r)
 	case strings.HasPrefix(r.URL.Path, "/files/"):
 		h.handleFile(w, r)
 	default:
@@ -87,6 +92,7 @@ func (h cacheHandler) handleManifest(w http.ResponseWriter, r *http.Request) {
 		files = append(files, ManifestFile{
 			Kind:    string(entry.Kind),
 			Path:    entry.RelPath,
+			PathKey: cachemirror.KeyForRelPath(entry.RelPath),
 			URL:     "/files/" + path.Clean(entry.RelPath),
 			Size:    entry.Size,
 			ModTime: entry.ModTime,
@@ -106,6 +112,40 @@ func (h cacheHandler) handleManifest(w http.ResponseWriter, r *http.Request) {
 		},
 		Files: files,
 	})
+}
+
+func (h cacheHandler) handleDownload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	key := strings.TrimPrefix(r.URL.Path, "/download/")
+	if !strings.HasPrefix(key, cachemirror.PathMD5Prefix) {
+		http.NotFound(w, r)
+		return
+	}
+
+	entries, err := h.service.Scan(h.cacheDir, CacheScanOptions{
+		Root:  h.opts.Root,
+		Kinds: []Kind{KindPkg, KindAPI, KindSDK, KindSDKIndex},
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	for _, entry := range entries {
+		if cachemirror.KeyForRelPath(entry.RelPath) != key {
+			continue
+		}
+		if !pathStaysInDirAfterSymlinks(h.cacheDir, entry.Path) {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		http.ServeFile(w, r, entry.Path)
+		return
+	}
+	http.NotFound(w, r)
 }
 
 func (h cacheHandler) handleFile(w http.ResponseWriter, r *http.Request) {
