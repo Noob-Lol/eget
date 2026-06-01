@@ -10,7 +10,7 @@
 - [x] 阶段 1：拆分 CLI handler
 - [x] 阶段 2：拆分 install runner
 - [x] 阶段 3：拆分 client network
-- [ ] 阶段 4：拆分 app install/update
+- [x] 阶段 4：拆分 app install/update
 - [ ] 阶段 5：拆分 SDK service
 
 ## 扫描结论
