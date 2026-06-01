@@ -1324,7 +1324,7 @@ git commit -m "feat(sdk): use cache mirror before origin download"
 - Modify: `README.zh-CN.md`
 - Modify: `docs/TODO.md`
 
-- [ ] **Step 1: 更新配置文档**
+- [x] **Step 1: 更新配置文档**
 
 In `docs/config.md`, add a section near `api_cache` / `ghproxy`:
 
@@ -1362,7 +1362,7 @@ fallback = true
 第一版 mirror 协议使用基于缓存相对路径的 path-key，因此可以直接复用 mirror 机器上已有的老缓存文件。mirror 只是下载优化，不是信任根；已有 checksum 配置仍会在后续流程中执行校验。
 ````
 
-- [ ] **Step 2: 更新 README 简介**
+- [x] **Step 2: 更新 README 简介**
 
 Add short examples to both README files:
 
@@ -1382,7 +1382,7 @@ url = "http://192.168.1.10:8686"
 ```
 ````
 
-- [ ] **Step 3: 更新 TODO**
+- [x] **Step 3: 更新 TODO**
 
 In `docs/TODO.md`, mark completed items:
 
@@ -1396,7 +1396,7 @@ In `docs/TODO.md`, mark completed items:
 
 Do not mark the parent complete because registry/token/TTL remain open.
 
-- [ ] **Step 4: 运行局部测试**
+- [x] **Step 4: 运行局部测试**
 
 ```bash
 go test ./internal/cachemirror ./internal/app/cache ./internal/config ./internal/install ./internal/sdk ./internal/app ./internal/cli
@@ -1404,7 +1404,7 @@ go test ./internal/cachemirror ./internal/app/cache ./internal/config ./internal
 
 Expected: PASS.
 
-- [ ] **Step 5: 运行主链路全量测试**
+- [x] **Step 5: 运行主链路全量测试**
 
 Because this changes MVP install/download/sdk paths, run:
 
@@ -1414,7 +1414,7 @@ go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 6: 手动验证 path-key mirror**
+- [x] **Step 6: 手动验证 path-key mirror**
 
 Use two temporary cache dirs:
 
@@ -1436,7 +1436,7 @@ fallback = true
 
 Run a package or direct download whose file already exists in the server cache. Expected: client prints mirror/cache usage in verbose mode, writes the file into its own cache dir, and does not fail if mirror misses.
 
-- [ ] **Step 7: detect changes**
+- [x] **Step 7: detect changes**
 
 ```bash
 npx gitnexus detect-changes --repo eget
@@ -1444,7 +1444,7 @@ npx gitnexus detect-changes --repo eget
 
 Expected: affected symbols limited to cache mirror helper, cache server, config parsing, install download, SDK download, docs.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add docs/config.md docs/config.zh-CN.md README.md README.zh-CN.md docs/TODO.md
@@ -1453,13 +1453,13 @@ git commit -m "docs(cache): document path-key cache mirror"
 
 ## Final Verification Checklist
 
-- [ ] `go test ./...` passes.
-- [ ] `npx gitnexus detect-changes --repo eget` output matches expected scope.
-- [ ] `cache serve /manifest.json` includes `path_key`.
-- [ ] `cache serve /download/path-md5:<hash>` returns a matching cache file.
-- [ ] Ordinary `install/download` uses mirror before origin when enabled.
-- [ ] `sdk install` uses mirror before origin when enabled and writes reusable SDK meta.
-- [ ] Mirror 404/timeout falls back when `fallback=true`.
-- [ ] Mirror error stops the command when `fallback=false`.
-- [ ] Existing checksum behavior remains after mirror hit.
-- [ ] `docs/TODO.md` checkboxes reflect completed and remaining cache mirror work.
+- [x] `go test ./...` passes.
+- [x] `npx gitnexus detect-changes --repo eget` 已执行；本次输出只报告 GitNexus 自动写入的 `AGENTS.md`，实际提交范围通过 `git diff --cached` 控制为预期 docs/README/TODO/计划文件。
+- [x] `cache serve /manifest.json` includes `path_key`.
+- [x] `cache serve /download/path-md5:<hash>` returns a matching cache file.
+- [x] Ordinary `install/download` uses mirror before origin when enabled.
+- [x] `sdk install` uses mirror before origin when enabled and writes reusable SDK meta.
+- [x] Mirror 404/timeout falls back when `fallback=true`.
+- [x] Mirror error stops the command when `fallback=false`.
+- [x] Existing checksum behavior remains after mirror hit.
+- [x] `docs/TODO.md` checkboxes reflect completed and remaining cache mirror work.
