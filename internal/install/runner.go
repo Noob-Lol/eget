@@ -78,7 +78,7 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 		opts.CacheName = tool
 	}
 	targetKind := DetectTargetKind(target)
-	ccolor.Fprintf(output, "🚀 Install <info>%s</> from <info>%s</>\n", target, TargetKindDisplayName(targetKind))
+	ccolor.Fprintf(output, "🚀 %s <info>%s</> from <info>%s</>%s\n", operationDisplayName(opts.Operation), target, TargetKindDisplayName(targetKind), versionDisplaySuffix(opts))
 	// verbosef("target kind: %s", targetKind)
 	assets, err := finder.Find()
 	if err != nil {
@@ -170,6 +170,25 @@ func (r *InstallRunner) Run(target string, opts Options) (RunResult, error) {
 	}
 
 	return r.extractDownloadedBody(url, tool, downloaded, opts, output)
+}
+
+func operationDisplayName(operation string) string {
+	switch operation {
+	case OperationUpdate:
+		return "Update"
+	default:
+		return "Install"
+	}
+}
+
+func versionDisplaySuffix(opts Options) string {
+	if opts.CurrentVersion != "" && opts.TargetVersion != "" {
+		return fmt.Sprintf(" (<info>%s</> -> <info>%s</>)", opts.CurrentVersion, opts.TargetVersion)
+	}
+	if opts.TargetVersion != "" {
+		return fmt.Sprintf(" (<info>%s</>)", opts.TargetVersion)
+	}
+	return ""
 }
 
 func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downloadBodyResult, opts Options, output io.Writer) (RunResult, error) {

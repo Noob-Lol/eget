@@ -14,6 +14,9 @@ import (
 type Options struct {
 	Tag                 string
 	Prerelease          bool
+	Operation           string
+	CurrentVersion      string
+	TargetVersion       string
 	Name                string
 	Verbose             bool
 	Source              bool
@@ -77,6 +80,8 @@ type URLTemplateOptions struct {
 }
 
 const (
+	OperationInstall      = "install"
+	OperationUpdate       = "update"
 	InstallModePortable   = "portable"
 	InstallModeInstaller  = "installer"
 	InstallModeRunAsset   = "run-asset"

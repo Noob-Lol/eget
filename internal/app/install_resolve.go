@@ -169,6 +169,9 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 
 	return install.Options{
 		Tag:                 merged.Tag,
+		Operation:           cli.Operation,
+		CurrentVersion:      cli.CurrentVersion,
+		TargetVersion:       cli.TargetVersion,
 		Name:                merged.Name,
 		Source:              merged.Source,
 		SourcePath:          merged.SourcePath,

@@ -61,6 +61,9 @@ func (s UpdateService) UpdatePackage(nameOrRepo string, cli install.Options) (Ru
 		target = installedUpdateTarget(item, entry)
 		opts = applyUpdateCLIOverrides(optionsFromInstalledEntry(entry), cli)
 	}
+	opts.Operation = install.OperationUpdate
+	opts.CurrentVersion = item.InstalledTag
+	opts.TargetVersion = check.outdated.LatestTag
 	return s.Install.InstallTarget(target, opts)
 }
 

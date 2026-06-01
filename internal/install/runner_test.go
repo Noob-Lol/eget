@@ -458,6 +458,40 @@ func TestRunWritesSuccessfulInstallOutputToStdout(t *testing.T) {
 	}
 }
 
+func TestRunWritesUpdateVersionContextToStdout(t *testing.T) {
+	tmpDir := t.TempDir()
+	source := filepath.Join(tmpDir, "xenv-windows-amd64.exe")
+	if err := os.WriteFile(source, []byte("tool"), 0o755); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	outputDir := filepath.Join(tmpDir, "bin")
+	if err := os.Mkdir(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	runner := NewRunner(NewDefaultService(nil, nil))
+	runner.Stdout = &stdout
+	runner.Stderr = io.Discard
+
+	if _, err := runner.Run(source, Options{
+		DownloadOnly:   true,
+		Output:         outputDir,
+		Operation:      OperationUpdate,
+		CurrentVersion: "0.2.0",
+		TargetVersion:  "0.2.0-3-g3186bf3",
+	}); err != nil {
+		t.Fatalf("run update: %v", err)
+	}
+
+	got := stdout.String()
+	assert.Contains(t, got, "Update")
+	assert.Contains(t, got, "0.2.0")
+	assert.Contains(t, got, "->")
+	assert.Contains(t, got, "0.2.0-3-g3186bf3")
+	assert.NotContains(t, got, "Install")
+}
+
 func TestRunStopsWhenConfiguredAssetFilterMatchesNoCurrentReleaseAssets(t *testing.T) {
 	svc := NewDefaultService(nil, nil)
 	svc.GitHubGetterFactory = func(opts Options) sourcegithub.HTTPGetter {

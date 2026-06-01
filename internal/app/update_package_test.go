@@ -84,6 +84,9 @@ func TestUpdatePackageUpdatesTemplateManagedPackage(t *testing.T) {
 	_, err := svc.UpdatePackage("claude", install.Options{})
 	assert.NoErr(t, err)
 	assert.Eq(t, []string{"claude"}, installer.targets)
+	assert.Eq(t, install.OperationUpdate, installer.options[0].Operation)
+	assert.Eq(t, "1.2.3", installer.options[0].CurrentVersion)
+	assert.Eq(t, "1.2.4", installer.options[0].TargetVersion)
 }
 
 func TestUpdatePackageSkipsUpToDateManagedPackage(t *testing.T) {
