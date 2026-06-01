@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/inherelab/eget/internal/cachemirror"
 	"github.com/inherelab/eget/internal/source/forge"
 	"github.com/inherelab/eget/internal/source/sourceforge"
 	"github.com/inherelab/eget/internal/source/urltemplate"
@@ -35,6 +36,7 @@ type Options struct {
 	APICacheEnabled     bool
 	APICacheDir         string
 	APICacheTime        int
+	CacheMirror         cachemirror.Options
 	GhproxyEnabled      bool
 	GhproxyHostURL      string
 	GhproxySupportAPI   bool

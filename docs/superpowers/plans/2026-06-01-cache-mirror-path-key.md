@@ -677,7 +677,7 @@ git commit -m "feat(cache): serve cache files by path key"
 - Modify: `internal/app/sdk.go`
 - Modify: `internal/app/sdk_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget File
@@ -688,7 +688,7 @@ npx gitnexus impact --repo eget NewDefaultSDKService
 
 Expected: config and install/sdk option construction callers; risk likely MEDIUM. Report if higher.
 
-- [ ] **Step 2: 写 config 加载测试**
+- [x] **Step 2: 写 config 加载测试**
 
 Append to `internal/config/loader_sections_test.go`:
 
@@ -721,7 +721,7 @@ go test ./internal/config -run TestLoadFileSupportsCacheMirrorSection
 
 Expected: FAIL because `CacheMirror` does not exist.
 
-- [ ] **Step 3: 实现配置模型和 decode/encode**
+- [x] **Step 3: 实现配置模型和 decode/encode**
 
 Modify `internal/config/model.go`:
 
@@ -806,7 +806,7 @@ go test ./internal/config -run TestLoadFileSupportsCacheMirrorSection
 
 Expected: PASS.
 
-- [ ] **Step 4: 写 install option 注入测试**
+- [x] **Step 4: 写 install option 注入测试**
 
 Append to `internal/app/install_config_test.go`:
 
@@ -845,7 +845,7 @@ go test ./internal/app -run TestInstallOptionsIncludeCacheMirrorConfig
 
 Expected: FAIL because install options do not include mirror config.
 
-- [ ] **Step 5: 实现 install/sdk option 注入**
+- [x] **Step 5: 实现 install/sdk option 注入**
 
 Modify `internal/install/options.go` imports and struct:
 
@@ -936,7 +936,7 @@ go test ./internal/config ./internal/app ./internal/cli ./internal/sdk
 
 Expected: PASS after adjusting imports.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/config internal/install/options.go internal/app/cache_mirror_options.go internal/app/install_resolve.go internal/cli/options.go internal/sdk/service.go internal/app/sdk.go internal/sdk/download.go internal/sdk/install_service.go

@@ -35,10 +35,11 @@ func NewDefaultSDKService(cfg *cfgpkg.File) (sdk.Service, error) {
 	}
 
 	return sdk.Service{
-		Config:     cfg,
-		Store:      sdk.Store{Path: storePath},
-		IndexCache: sdk.IndexCache{Dir: filepath.Join(cacheDir, "sdk-index")},
-		ClientOpts: clientOpts,
+		Config:      cfg,
+		Store:       sdk.Store{Path: storePath},
+		IndexCache:  sdk.IndexCache{Dir: filepath.Join(cacheDir, "sdk-index")},
+		ClientOpts:  clientOpts,
+		CacheMirror: CacheMirrorOptionsFromConfig(cfg),
 	}, nil
 }
 

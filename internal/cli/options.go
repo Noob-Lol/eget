@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/inherelab/eget/internal/app"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 	"github.com/inherelab/eget/internal/util"
@@ -44,6 +45,7 @@ func applyGlobalNetworkConfig(opts *install.Options, cfg *cfgpkg.File) {
 	if cfg.ApiCache.CacheTime != nil {
 		opts.APICacheTime = *cfg.ApiCache.CacheTime
 	}
+	opts.CacheMirror = app.CacheMirrorOptionsFromConfig(cfg)
 	if cfg.Global.CacheDir != nil {
 		if cacheDir, err := util.Expand(*cfg.Global.CacheDir); err == nil && cacheDir != "" {
 			opts.CacheDir = cacheDir

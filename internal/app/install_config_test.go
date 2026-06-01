@@ -3,6 +3,7 @@ package app
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 	cfgpkg "github.com/inherelab/eget/internal/config"
@@ -56,6 +57,25 @@ proxy_url = "http://127.0.0.1:7890"
 	if expected := filepath.Join(expectedCache, "api-cache"); runner.opts.APICacheDir != expected {
 		t.Fatalf("expected derived api cache dir, got %q", runner.opts.APICacheDir)
 	}
+}
+
+func TestInstallOptionsIncludeCacheMirrorConfig(t *testing.T) {
+	cacheDir := t.TempDir()
+	cfg := cfgpkg.NewFile()
+	cfg.Global.CacheDir = util.StringPtr(cacheDir)
+	cfg.CacheMirror.Enable = util.BoolPtr(true)
+	cfg.CacheMirror.URL = util.StringPtr("http://mirror.local:8686/")
+	cfg.CacheMirror.Timeout = intPtr(2)
+	cfg.CacheMirror.Fallback = util.BoolPtr(false)
+	svc := Service{LoadConfig: func() (*cfgpkg.File, error) { return cfg, nil }}
+
+	opts, err := svc.resolveInstallOptions("owner/repo", install.Options{}, false)
+
+	assert.NoErr(t, err)
+	assert.True(t, opts.CacheMirror.Enable)
+	assert.Eq(t, "http://mirror.local:8686", opts.CacheMirror.URL)
+	assert.Eq(t, 2*time.Second, opts.CacheMirror.Timeout)
+	assert.False(t, opts.CacheMirror.Fallback)
 }
 
 func TestInstallTargetUsesDefaultTargetWhenGlobalTargetMissingOrEmpty(t *testing.T) {
@@ -305,4 +325,8 @@ target = "D:/Program/AITools/PicoClaw"
 	if err.Error() != `package "picoclaw" has no repo` {
 		t.Fatalf("unexpected error: %v", err)
 	}
+}
+
+func intPtr(v int) *int {
+	return &v
 }

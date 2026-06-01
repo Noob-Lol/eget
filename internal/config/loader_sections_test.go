@@ -135,6 +135,30 @@ fallbacks = ["https://gh.llkk.cc", "https://gh.fhjhy.top"]
 	}
 }
 
+func TestLoadFileSupportsCacheMirrorSection(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+
+	writeTestFile(t, configPath, `
+[cache_mirror]
+enable = true
+url = "http://mirror.local:8686"
+timeout = 3
+fallback = false
+`)
+
+	cfg, err := LoadFile(configPath)
+
+	assert.NoErr(t, err)
+	assert.True(t, cfg.CacheMirror.Enable != nil && *cfg.CacheMirror.Enable)
+	assert.Eq(t, "http://mirror.local:8686", *cfg.CacheMirror.URL)
+	assert.Eq(t, 3, *cfg.CacheMirror.Timeout)
+	assert.True(t, cfg.CacheMirror.Fallback != nil && !*cfg.CacheMirror.Fallback)
+	if _, ok := cfg.Repos["cache_mirror"]; ok {
+		t.Fatalf("expected cache_mirror to not be treated as repo section")
+	}
+}
+
 func TestLoadFileDecodesConcurrencyOptions(t *testing.T) {
 	tmp := t.TempDir()
 	configPath := filepath.Join(tmp, "eget.toml")

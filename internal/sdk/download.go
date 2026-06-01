@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/inherelab/eget/internal/cachemirror"
 	"github.com/inherelab/eget/internal/client"
 )
 
@@ -20,8 +21,9 @@ type DownloadRequest struct {
 	Version  string
 	Filename string
 
-	ClientOpts client.Options
-	Progress   func(size int64) io.Writer
+	ClientOpts  client.Options
+	CacheMirror cachemirror.Options
+	Progress    func(size int64) io.Writer
 }
 
 type DownloadResult struct {

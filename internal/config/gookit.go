@@ -34,6 +34,9 @@ func decodeConfigFile(cfg *configutil.Manager) (*File, error) {
 	if err := cfg.MapOnExists("ghproxy", &conf.Ghproxy); err != nil {
 		return nil, err
 	}
+	if err := cfg.MapOnExists("cache_mirror", &conf.CacheMirror); err != nil {
+		return nil, err
+	}
 	if err := cfg.MapOnExists("packages", &conf.Packages); err != nil {
 		return nil, err
 	}
@@ -65,11 +68,12 @@ func encodeConfigFile(file *File) *configutil.Manager {
 	}
 
 	data := map[string]any{
-		"global":    sectionToMap(file.Global),
-		"api_cache": apiCacheToMap(file.ApiCache),
-		"ghproxy":   ghproxyToMap(file.Ghproxy),
-		"packages":  map[string]any{},
-		"sdk":       map[string]any{},
+		"global":       sectionToMap(file.Global),
+		"api_cache":    apiCacheToMap(file.ApiCache),
+		"ghproxy":      ghproxyToMap(file.Ghproxy),
+		"cache_mirror": cacheMirrorToMap(file.CacheMirror),
+		"packages":     map[string]any{},
+		"sdk":          map[string]any{},
 	}
 	for name, section := range file.Packages {
 		data["packages"].(map[string]any)[name] = sectionToMap(section)
@@ -148,7 +152,7 @@ func sortedAnyKeys(items map[string]any) []string {
 
 func isReservedConfigRootKey(key string) bool {
 	switch key {
-	case "global", "api_cache", "ghproxy", "packages", "sdk":
+	case "global", "api_cache", "ghproxy", "cache_mirror", "packages", "sdk":
 		return true
 	default:
 		return false
@@ -167,13 +171,13 @@ func normalizePathValue(key string, value any) (any, bool) {
 			text = "http://" + text
 		}
 		return text, true
-	case "extract_all", "is_gui", "download_only", "quiet", "show_hash", "download_source", "upgrade_only", "disable_ssl", "enable", "support_api":
+	case "extract_all", "is_gui", "download_only", "quiet", "show_hash", "download_source", "upgrade_only", "disable_ssl", "enable", "support_api", "fallback":
 		parsed, err := strconv.ParseBool(text)
 		if err != nil {
 			return nil, false
 		}
 		return parsed, true
-	case "cache_time", "chunk_concurrency", "batch_concurrency":
+	case "cache_time", "chunk_concurrency", "batch_concurrency", "timeout":
 		parsed, err := strconv.Atoi(text)
 		if err != nil {
 			return nil, false
@@ -416,6 +420,23 @@ func ghproxyToMap(section GhproxySection) map[string]any {
 	}
 	if len(section.Fallbacks) > 0 {
 		data["fallbacks"] = append([]string(nil), section.Fallbacks...)
+	}
+	return data
+}
+
+func cacheMirrorToMap(section CacheMirrorSection) map[string]any {
+	data := map[string]any{}
+	if section.Enable != nil {
+		data["enable"] = *section.Enable
+	}
+	if section.URL != nil {
+		data["url"] = *section.URL
+	}
+	if section.Timeout != nil {
+		data["timeout"] = *section.Timeout
+	}
+	if section.Fallback != nil {
+		data["fallback"] = *section.Fallback
 	}
 	return data
 }

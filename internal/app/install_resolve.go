@@ -189,6 +189,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		APICacheEnabled:     apiCacheEnabled,
 		APICacheDir:         apiCacheDir,
 		APICacheTime:        apiCacheTime,
+		CacheMirror:         CacheMirrorOptionsFromConfig(cfg),
 		GhproxyEnabled:      ghproxyEnabled,
 		GhproxyHostURL:      ghproxyHostURL,
 		GhproxySupportAPI:   ghproxySupportAPI,
