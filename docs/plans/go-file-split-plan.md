@@ -7,7 +7,7 @@
 ## 进度
 
 - [x] 阶段 0：基线保护和规划提交
-- [ ] 阶段 1：拆分 CLI handler
+- [x] 阶段 1：拆分 CLI handler
 - [ ] 阶段 2：拆分 install runner
 - [ ] 阶段 3：拆分 client network
 - [ ] 阶段 4：拆分 app install/update
