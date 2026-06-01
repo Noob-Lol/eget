@@ -138,7 +138,7 @@ fallback = true
 - Create: `internal/cachemirror/key_test.go`
 - Create: `internal/cachemirror/download_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 本任务新增文件，不修改现有 symbol。运行：
 
@@ -148,7 +148,7 @@ npx gitnexus status
 
 Expected: current 或提示 stale；stale 时先运行 `npx gitnexus analyze`。
 
-- [ ] **Step 2: 写 key 失败测试**
+- [x] **Step 2: 写 key 失败测试**
 
 在 `internal/cachemirror/key_test.go` 新增测试：
 
@@ -197,7 +197,7 @@ go test ./internal/cachemirror
 
 Expected: FAIL because package/functions do not exist.
 
-- [ ] **Step 3: 实现 key/options 最小代码**
+- [x] **Step 3: 实现 key/options 最小代码**
 
 Create `internal/cachemirror/options.go`:
 
@@ -304,7 +304,7 @@ go test ./internal/cachemirror
 
 Expected: PASS for key tests except download helper tests not yet added.
 
-- [ ] **Step 4: 写 mirror 下载失败测试**
+- [x] **Step 4: 写 mirror 下载失败测试**
 
 Append to `internal/cachemirror/download_test.go`:
 
@@ -372,7 +372,7 @@ go test ./internal/cachemirror
 
 Expected: FAIL because `DownloadToFile` is missing.
 
-- [ ] **Step 5: 实现 mirror 下载 helper**
+- [x] **Step 5: 实现 mirror 下载 helper**
 
 Create `internal/cachemirror/download.go`:
 
@@ -452,7 +452,7 @@ go test ./internal/cachemirror
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/cachemirror
