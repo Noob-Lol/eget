@@ -16,6 +16,8 @@
 
 <!-- PROCESSING WORKS:START -->
 
+- [ ] Go 公共工具与子包整理：[docs/plans/go-subpackage-utility-plan.md](docs/plans/go-subpackage-utility-plan.md)
+
 <!-- PROCESSING WORKS:END -->
 
 ## 核心原则
