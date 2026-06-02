@@ -9,6 +9,7 @@ import (
 	"github.com/gookit/goutil/x/ccolor"
 	appcache "github.com/inherelab/eget/internal/app/cache"
 	"github.com/inherelab/eget/internal/cli/prompts"
+	"github.com/inherelab/eget/internal/cli/render"
 	"golang.org/x/term"
 )
 
@@ -42,6 +43,50 @@ func cleanOptionsFromCLI(opts *CacheCleanOptions) (appcache.CleanOptions, error)
 	}, nil
 }
 
+func (s *cliService) handleCacheList(opts *CacheListOptions) error {
+	result, err := s.cacheService.List("", appcache.ListOptions{Root: opts.Root})
+	if err != nil {
+		return err
+	}
+	if opts.JSON {
+		return render.PrintJSON(result)
+	}
+
+	ccolor.Fprintf(s.stderrWriter(), "Cache files: %d (%s)\n", result.TotalFiles, formatBytes(result.TotalSize))
+	ccolor.Fprintf(s.stderrWriter(), " - cache dir: %s\n", result.CacheDir)
+	for _, file := range result.Files {
+		ccolor.Fprintf(s.stderrWriter(), " - %s\t%s\t%s\n", file.Kind, formatBytes(file.Size), file.Path)
+	}
+	return nil
+}
+
+func (s *cliService) handleCacheStatus(opts *CacheStatusOptions) error {
+	result, err := s.cacheService.Status("")
+	if err != nil {
+		return err
+	}
+	if opts.JSON {
+		return render.PrintJSON(result)
+	}
+
+	ccolor.Fprintln(s.stderrWriter(), "Cache status")
+	ccolor.Fprintf(s.stderrWriter(), " - cache dir: %s\n", result.CacheDir)
+	ccolor.Fprintf(s.stderrWriter(), " - files: %d\n", result.TotalFiles)
+	ccolor.Fprintf(s.stderrWriter(), " - size: %s\n", formatBytes(result.TotalSize))
+	for _, kind := range []string{"pkg", "api", "sdk", "sdk-index", "partial"} {
+		summary := result.Kinds[kind]
+		ccolor.Fprintf(s.stderrWriter(), " - %s: %d files, %s\n", kind, summary.Files, formatBytes(summary.Size))
+	}
+	ccolor.Fprintf(s.stderrWriter(), " - cache mirror: enabled=%v url=%s fallback=%v timeout=%ds\n",
+		result.CacheMirror.Enable,
+		result.CacheMirror.URL,
+		result.CacheMirror.Fallback,
+		result.CacheMirror.Timeout,
+	)
+	ccolor.Fprintf(s.stderrWriter(), " - serve: %s\n", result.ServeCommand)
+	return nil
+}
+
 func serveOptionsFromCLI(opts *CacheServeOptions) appcache.ServeOptions {
 	return appcache.ServeOptions{
 		Host:    opts.Host,
@@ -62,6 +107,9 @@ func (s *cliService) handleCacheClean(opts *CacheCleanOptions) error {
 		return err
 	}
 	if cleanOpts.DryRun {
+		if opts.JSON {
+			return render.PrintJSON(preview)
+		}
 		ccolor.Fprintln(s.stderrWriter(), "Dry run: eget cache clean")
 		ccolor.Fprintf(s.stderrWriter(), " - cache dir: %s\n", preview.CacheDir)
 		ccolor.Fprintf(s.stderrWriter(), " - matched files: %d\n", preview.MatchedFiles)
@@ -85,6 +133,9 @@ func (s *cliService) handleCacheClean(opts *CacheCleanOptions) error {
 	result, err := s.cacheService.Clean("", cleanOpts)
 	if err != nil {
 		return err
+	}
+	if opts.JSON {
+		return render.PrintJSON(result)
 	}
 	ccolor.Fprintln(s.stderrWriter(), "Cleaned eget cache")
 	ccolor.Fprintf(s.stderrWriter(), " - cache dir: %s\n", result.CacheDir)

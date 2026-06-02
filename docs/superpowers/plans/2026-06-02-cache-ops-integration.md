@@ -368,7 +368,7 @@ git commit -m "feat(cache): add cache list and status reports"
 - Modify: `internal/cli/app_cache_test.go`
 - Modify: `internal/cli/cache_cmd_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget CacheCleanOptions
@@ -378,7 +378,7 @@ npx gitnexus impact --repo eget handleCacheClean
 
 Expected: CLI cache tests and command wiring. Report if HIGH/CRITICAL.
 
-- [ ] **Step 2: 写 CLI flag 绑定失败测试**
+- [x] **Step 2: 写 CLI flag 绑定失败测试**
 
 Append to `internal/cli/app_cache_test.go`:
 
@@ -447,7 +447,7 @@ go test ./internal/cli -run "CacheListBinds|CacheStatusBinds|CacheCleanBindsJSON
 
 Expected: FAIL because command/options do not exist.
 
-- [ ] **Step 3: 写 CLI handler JSON/text 失败测试**
+- [x] **Step 3: 写 CLI handler JSON/text 失败测试**
 
 Append to `internal/cli/cache_cmd_test.go`:
 
@@ -501,7 +501,7 @@ go test ./internal/cli -run "HandleCacheList|HandleCacheStatus|HandleCacheCleanD
 
 Expected: FAIL because handlers do not exist / JSON flag not implemented.
 
-- [ ] **Step 4: 实现 CLI options、commands 和 flag spec**
+- [x] **Step 4: 实现 CLI options、commands 和 flag spec**
 
 Modify `internal/cli/cache_cmd.go`:
 
@@ -551,7 +551,7 @@ case "cache.status":
 	return s.handleCacheStatus(opts)
 ```
 
-- [ ] **Step 5: 实现 CLI handlers**
+- [x] **Step 5: 实现 CLI handlers**
 
 Modify `internal/cli/cache_handler.go`:
 
@@ -580,7 +580,7 @@ func (s *cliService) handleCacheList(opts *CacheListOptions) error {
 - In `handleCacheClean`, if `opts.JSON && cleanOpts.DryRun`, print preview JSON and return.
 - In `handleCacheClean`, after actual clean, if `opts.JSON`, print result JSON and return.
 
-- [ ] **Step 6: 运行 CLI 测试**
+- [x] **Step 6: 运行 CLI 测试**
 
 ```bash
 go test ./internal/cli -run "Cache"
@@ -588,7 +588,7 @@ go test ./internal/cli -run "Cache"
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add internal/cli/cache_cmd.go internal/cli/app.go internal/cli/handlers.go internal/cli/cache_handler.go internal/cli/app_cache_test.go internal/cli/cache_cmd_test.go

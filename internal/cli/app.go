@@ -328,8 +328,15 @@ var commandFlagSpecs = map[string]flagSpec{
 	},
 	"cache": {
 		subs: map[string]flagSpec{
+			"list": {
+				bools:  setOf("json", "j"),
+				values: setOf("root"),
+			},
+			"status": {
+				bools: setOf("json", "j"),
+			},
 			"clean": {
-				bools:  setOf("all", "a", "dry-run", "yes", "y", "pkg", "api", "sdk", "sdk-index", "partial"),
+				bools:  setOf("all", "a", "dry-run", "yes", "y", "pkg", "api", "sdk", "sdk-index", "partial", "json", "j"),
 				values: setOf("older"),
 			},
 			"serve": {

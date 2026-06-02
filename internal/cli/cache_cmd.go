@@ -11,11 +11,21 @@ type CacheCleanOptions struct {
 	All      bool
 	DryRun   bool
 	Yes      bool
+	JSON     bool
 	Pkg      bool
 	API      bool
 	SDK      bool
 	SDKIndex bool
 	Partial  bool
+}
+
+type CacheListOptions struct {
+	Root string
+	JSON bool
+}
+
+type CacheStatusOptions struct {
+	JSON bool
 }
 
 type CacheServeOptions struct {
@@ -32,10 +42,14 @@ func newCacheCmd(handler CommandHandler) (*gcli.Command, func()) {
 	cmd.Help = `<info>Examples</>:
   eget cache clean
   eget cache clean --dry-run --older 7d
+  eget cache list --root sdk --json
+  eget cache status
   eget cache clean --api --all
   eget cache serve
   eget cache serve --host 127.0.0.1 --port 0 --root sdk`
 	cmd.Subs = []*gcli.Command{
+		newCacheListCmd(&CacheListOptions{Root: "all"}, handler),
+		newCacheStatusCmd(&CacheStatusOptions{}, handler),
 		newCacheCleanCmd(cleanOpts, handler),
 		newCacheServeCmd(serveOpts, handler),
 	}
@@ -45,6 +59,40 @@ func newCacheCmd(handler CommandHandler) (*gcli.Command, func()) {
 	}
 }
 
+func newCacheListCmd(opts *CacheListOptions, handler CommandHandler) *gcli.Command {
+	cmd := gcli.NewCommand("list", "List local cache files")
+	cmd.Config = func(c *gcli.Command) {
+		c.StrOpt(&opts.Root, "root", "", "all", "Filter root: all, pkg, api, sdk, sdk-index, partial")
+		c.BoolOpt(&opts.JSON, "json", "j", false, "Output as JSON")
+	}
+	cmd.Func = func(_ *gcli.Command, args []string) error {
+		if err := validateNoFlagArgs(args); err != nil {
+			return err
+		}
+		if !isValidCacheListRoot(opts.Root) {
+			return fmt.Errorf("invalid cache root %q: must be one of all, pkg, api, sdk, sdk-index, partial", opts.Root)
+		}
+		snapshot := *opts
+		return handler("cache.list", &snapshot)
+	}
+	return cmd
+}
+
+func newCacheStatusCmd(opts *CacheStatusOptions, handler CommandHandler) *gcli.Command {
+	cmd := gcli.NewCommand("status", "Show local cache status")
+	cmd.Config = func(c *gcli.Command) {
+		c.BoolOpt(&opts.JSON, "json", "j", false, "Output as JSON")
+	}
+	cmd.Func = func(_ *gcli.Command, args []string) error {
+		if err := validateNoFlagArgs(args); err != nil {
+			return err
+		}
+		snapshot := *opts
+		return handler("cache.status", &snapshot)
+	}
+	return cmd
+}
+
 func newCacheCleanCmd(opts *CacheCleanOptions, handler CommandHandler) *gcli.Command {
 	cmd := gcli.NewCommand("clean", "Clean local cache files")
 	cmd.Config = func(c *gcli.Command) {
@@ -52,6 +100,7 @@ func newCacheCleanCmd(opts *CacheCleanOptions, handler CommandHandler) *gcli.Com
 		c.BoolOpt(&opts.All, "all", "a", false, "Ignore older duration and remove all selected cache files")
 		c.BoolOpt(&opts.DryRun, "dry-run", "", false, "Print matched files without removing them")
 		c.BoolOpt(&opts.Yes, "yes", "y", false, "Skip large deletion confirmation")
+		c.BoolOpt(&opts.JSON, "json", "j", false, "Output as JSON")
 		c.BoolOpt(&opts.Pkg, "pkg", "", false, "Select package/download cache")
 		c.BoolOpt(&opts.API, "api", "", false, "Select API cache")
 		c.BoolOpt(&opts.SDK, "sdk", "", false, "Select SDK download cache")
@@ -87,6 +136,13 @@ func newCacheServeCmd(opts *CacheServeOptions, handler CommandHandler) *gcli.Com
 		return handler("cache.serve", &snapshot)
 	}
 	return cmd
+}
+
+func isValidCacheListRoot(root string) bool {
+	if root == "partial" {
+		return true
+	}
+	return isValidCacheRoot(root)
 }
 
 func isValidCacheRoot(root string) bool {

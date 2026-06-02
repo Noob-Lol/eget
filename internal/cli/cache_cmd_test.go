@@ -92,6 +92,46 @@ func TestCliServiceHandleCacheCleanLargeDeletionYesSkipsConfirmation(t *testing.
 	assert.False(t, fileExistsCLI(filepath.Join(tmp, "pkg-000.zip")))
 }
 
+func TestCliServiceHandleCacheListJSON(t *testing.T) {
+	tmp := newCLICacheDir(t)
+	writeCLITestFile(t, filepath.Join(tmp, "pkg-cache", "tool.zip"), "pkg")
+	cfg := cfgpkg.NewFile()
+	cfg.Global.CacheDir = &tmp
+	service := &cliService{cacheService: appcache.Service{Config: cfg}}
+
+	err := service.handleCacheList(&CacheListOptions{JSON: true})
+
+	assert.NoErr(t, err)
+}
+
+func TestCliServiceHandleCacheStatusText(t *testing.T) {
+	tmp := newCLICacheDir(t)
+	writeCLITestFile(t, filepath.Join(tmp, "pkg-cache", "tool.zip"), "pkg")
+	cfg := cfgpkg.NewFile()
+	cfg.Global.CacheDir = &tmp
+	var stderr bytes.Buffer
+	service := &cliService{cacheService: appcache.Service{Config: cfg}, stderr: &stderr}
+
+	err := service.handleCacheStatus(&CacheStatusOptions{})
+
+	assert.NoErr(t, err)
+	assert.Contains(t, stderr.String(), "Cache status")
+	assert.Contains(t, stderr.String(), "cache dir:")
+}
+
+func TestCliServiceHandleCacheCleanDryRunJSON(t *testing.T) {
+	tmp := newCLICacheDir(t)
+	writeCLITestFile(t, filepath.Join(tmp, "old.zip"), "old")
+	cfg := cfgpkg.NewFile()
+	cfg.Global.CacheDir = &tmp
+	service := &cliService{cacheService: appcache.Service{Config: cfg}}
+
+	err := service.handleCacheClean(&CacheCleanOptions{Older: "3d", DryRun: true, JSON: true})
+
+	assert.NoErr(t, err)
+	assert.True(t, fileExistsCLI(filepath.Join(tmp, "old.zip")))
+}
+
 func writeCLITestFile(t *testing.T, path, body string) {
 	t.Helper()
 	assert.NoErr(t, os.MkdirAll(filepath.Dir(path), 0o755))

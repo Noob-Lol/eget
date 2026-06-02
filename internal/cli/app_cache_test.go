@@ -30,6 +30,61 @@ func TestMain_CacheCleanBindsOptions(t *testing.T) {
 	assert.True(t, opts.Yes)
 }
 
+func TestMain_CacheListBindsOptions(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"cache", "list", "--root", "sdk", "--json"})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "cache.list", calls[0].name)
+	opts, ok := calls[0].options.(*CacheListOptions)
+	assert.True(t, ok)
+	assert.Eq(t, "sdk", opts.Root)
+	assert.True(t, opts.JSON)
+}
+
+func TestMain_CacheStatusBindsJSON(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"cache", "status", "--json"})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "cache.status", calls[0].name)
+	opts, ok := calls[0].options.(*CacheStatusOptions)
+	assert.True(t, ok)
+	assert.True(t, opts.JSON)
+}
+
+func TestMain_CacheCleanBindsJSON(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"cache", "clean", "--dry-run", "--json"})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "cache.clean", calls[0].name)
+	opts := calls[0].options.(*CacheCleanOptions)
+	assert.True(t, opts.DryRun)
+	assert.True(t, opts.JSON)
+}
+
 func TestMain_CacheServeBindsOptions(t *testing.T) {
 	calls := make([]commandCall, 0, 1)
 	handler := func(name string, options any) error {
