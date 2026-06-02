@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
+	"github.com/inherelab/eget/internal/cachemirror"
 	"github.com/inherelab/eget/internal/client"
 )
 
@@ -68,6 +69,106 @@ func TestDownloadArchiveUsesCompleteCacheWhenMetaMatches(t *testing.T) {
 	assert.Eq(t, finalPath, result.Path)
 	assert.True(t, result.FromCache)
 	assert.Eq(t, int64(len("archive")), result.Size)
+}
+
+func TestDownloadArchiveUsesCacheMirrorBeforeOrigin(t *testing.T) {
+	var originHit bool
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		originHit = true
+		_, _ = w.Write([]byte("origin"))
+	}))
+	defer origin.Close()
+
+	cacheDir := t.TempDir()
+	req := DownloadRequest{
+		URL:      origin.URL + "/go.zip",
+		CacheDir: cacheDir,
+		SDK:      "go",
+		Version:  "1.22.0",
+		Filename: "go.zip",
+	}
+	rel, err := cachemirror.RelPath(cacheDir, sdkDownloadFinalPath(req))
+	assert.NoErr(t, err)
+	expectedPath := "/download/" + cachemirror.KeyForRelPath(rel)
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Eq(t, expectedPath, r.URL.Path)
+		_, _ = w.Write([]byte("mirror"))
+	}))
+	defer mirror.Close()
+	req.CacheMirror = cachemirror.Options{Enable: true, URL: mirror.URL, Fallback: true}
+
+	result, err := DownloadArchive(context.Background(), req)
+
+	assert.NoErr(t, err)
+	assert.False(t, originHit)
+	assert.Eq(t, sdkDownloadFinalPath(req), result.Path)
+	assert.True(t, result.FromCache)
+	data, err := os.ReadFile(result.Path)
+	assert.NoErr(t, err)
+	assert.Eq(t, "mirror", string(data))
+}
+
+func TestDownloadArchiveCacheMirrorMissFallsBack(t *testing.T) {
+	mirror := httptest.NewServer(http.NotFoundHandler())
+	defer mirror.Close()
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("origin"))
+	}))
+	defer origin.Close()
+
+	req := DownloadRequest{
+		URL:         origin.URL + "/go.zip",
+		CacheDir:    t.TempDir(),
+		SDK:         "go",
+		Version:     "1.22.0",
+		Filename:    "go.zip",
+		CacheMirror: cachemirror.Options{Enable: true, URL: mirror.URL, Fallback: true},
+	}
+
+	result, err := DownloadArchive(context.Background(), req)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, int64(len("origin")), result.Size)
+}
+
+func TestDownloadArchiveCacheMirrorMissErrorsWhenFallbackDisabled(t *testing.T) {
+	mirror := httptest.NewServer(http.NotFoundHandler())
+	defer mirror.Close()
+
+	req := DownloadRequest{
+		URL:         "https://example.com/go.zip",
+		CacheDir:    t.TempDir(),
+		SDK:         "go",
+		Version:     "1.22.0",
+		Filename:    "go.zip",
+		CacheMirror: cachemirror.Options{Enable: true, URL: mirror.URL, Fallback: false},
+	}
+
+	_, err := DownloadArchive(context.Background(), req)
+
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), "cache mirror miss")
+}
+
+func TestDownloadArchiveCacheMirrorHitWritesReusableMeta(t *testing.T) {
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("mirror"))
+	}))
+	defer mirror.Close()
+	req := DownloadRequest{
+		URL:         mirror.URL + "/go.zip",
+		CacheDir:    t.TempDir(),
+		SDK:         "go",
+		Version:     "1.22.0",
+		Filename:    "go.zip",
+		CacheMirror: cachemirror.Options{Enable: true, URL: mirror.URL, Fallback: true},
+	}
+
+	_, err := DownloadArchive(context.Background(), req)
+	assert.NoErr(t, err)
+	ok, meta := completeCacheMatches(sdkDownloadFinalPath(req), sdkDownloadMetaPath(req), req)
+	assert.True(t, ok)
+	assert.Eq(t, req.URL, meta.URL)
 }
 
 func TestDownloadArchiveUsesParallelClientDownload(t *testing.T) {

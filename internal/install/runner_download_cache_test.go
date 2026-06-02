@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
+	"github.com/inherelab/eget/internal/cachemirror"
 )
 
 func TestCacheFilePath(t *testing.T) {
@@ -208,6 +209,83 @@ func TestDownloadBodyWritesCacheAfterDownload(t *testing.T) {
 	if string(saved) != "network-data" {
 		t.Fatalf("expected cached network data, got %q", string(saved))
 	}
+}
+
+func TestDownloadBodyUsesCacheMirrorBeforeOrigin(t *testing.T) {
+	cacheDir := t.TempDir()
+	var originHit bool
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		originHit = true
+		_, _ = w.Write([]byte("origin"))
+	}))
+	defer origin.Close()
+
+	downloadURL := origin.URL + "/tool.zip"
+	cachePath := CacheFilePath(cacheDir, downloadURL)
+	rel, err := cachemirror.RelPath(cacheDir, cachePath)
+	assert.NoErr(t, err)
+	expectedPath := "/download/" + cachemirror.KeyForRelPath(rel)
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Eq(t, expectedPath, r.URL.Path)
+		_, _ = w.Write([]byte("mirror"))
+	}))
+	defer mirror.Close()
+
+	runner := &InstallRunner{}
+	got, err := runner.downloadBody(downloadURL, Options{
+		CacheDir: cacheDir,
+		CacheMirror: cachemirror.Options{
+			Enable:   true,
+			URL:      mirror.URL,
+			Fallback: true,
+		},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "mirror", string(got.Body))
+	assert.False(t, originHit)
+	saved, err := os.ReadFile(cachePath)
+	assert.NoErr(t, err)
+	assert.Eq(t, "mirror", string(saved))
+}
+
+func TestDownloadBodyFallsBackWhenCacheMirrorMisses(t *testing.T) {
+	mirror := httptest.NewServer(http.NotFoundHandler())
+	defer mirror.Close()
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("origin"))
+	}))
+	defer origin.Close()
+
+	got, err := (&InstallRunner{}).downloadBody(origin.URL+"/tool.zip", Options{
+		CacheDir: t.TempDir(),
+		CacheMirror: cachemirror.Options{
+			Enable:   true,
+			URL:      mirror.URL,
+			Fallback: true,
+		},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "origin", string(got.Body))
+}
+
+func TestDownloadBodyErrorsWhenCacheMirrorFallbackDisabled(t *testing.T) {
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	}))
+	defer mirror.Close()
+
+	_, err := (&InstallRunner{}).downloadBody("https://example.com/tool.zip", Options{
+		CacheDir: t.TempDir(),
+		CacheMirror: cachemirror.Options{
+			Enable:   true,
+			URL:      mirror.URL,
+			Fallback: false,
+		},
+	})
+
+	assert.Err(t, err)
 }
 
 func TestDownloadBodyUsesCacheMetadata(t *testing.T) {

@@ -66,13 +66,14 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 		download = DownloadArchive
 	}
 	downloadResult, err := download(ctx, DownloadRequest{
-		URL:        url,
-		CacheDir:   s.cacheDir(),
-		SDK:        cfg.Name,
-		Version:    version,
-		Filename:   filename,
-		ClientOpts: s.effectiveClientOptions(),
-		Progress:   opts.Progress,
+		URL:         url,
+		CacheDir:    s.cacheDir(),
+		SDK:         cfg.Name,
+		Version:     version,
+		Filename:    filename,
+		ClientOpts:  s.effectiveClientOptions(),
+		CacheMirror: s.CacheMirror,
+		Progress:    opts.Progress,
 	})
 	if err != nil {
 		return InstallResult{}, err

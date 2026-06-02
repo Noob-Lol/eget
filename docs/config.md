@@ -66,6 +66,7 @@ Supported sections:
 
 - `[global]`: global defaults and network/cache settings.
 - `[api_cache]`: metadata API response cache.
+- `[cache_mirror]`: LAN cache mirror client settings.
 - `[ghproxy]`: GitHub URL rewrite proxy.
 - `["owner/repo"]`: legacy direct package section.
 - `[packages.<name>]`: named package section.
@@ -130,6 +131,27 @@ Fields:
 - `cache_time`: cache TTL in seconds.
 
 The API cache stores known provider metadata `GET` responses, including GitHub API, GitLab/Gitea release API, and SourceForge files listings. Cache files are stored under `{cache_dir}/api-cache/`.
+
+## Cache Mirror
+
+`[cache_mirror]` lets `install`, `download`, and `sdk install` try a LAN `eget cache serve` instance before downloading from the original source.
+
+```toml
+[cache_mirror]
+enable = true
+url = "http://192.168.1.10:8686"
+timeout = 5
+fallback = true
+```
+
+Fields:
+
+- `enable`: enable cache mirror lookup before origin downloads.
+- `url`: cache server base URL, usually an `eget cache serve --host 0.0.0.0 --port 8686` instance.
+- `timeout`: mirror request timeout in seconds. Values less than or equal to `0` use the default 5 seconds.
+- `fallback`: when `true`, mirror miss or error falls back to the original source. When `false`, mirror miss or error stops the download.
+
+The first mirror protocol uses a path key based on the normalized cache relative path. It can reuse old cache files already present on the mirror server. The mirror is an optimization, not a trust root; checksum verification still uses existing package verification when configured.
 
 ## GitHub Proxy
 

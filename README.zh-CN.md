@@ -155,6 +155,20 @@ eget cache serve
 eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
 ```
 
+启动一个局域网 cache server：
+
+```bash
+eget cache serve --host 0.0.0.0 --port 8686
+```
+
+客户端开启回源前优先尝试 cache server：
+
+```toml
+[cache_mirror]
+enable = true
+url = "http://192.168.1.10:8686"
+```
+
 ### 查询命令示例
 
 **查询仓库信息**:

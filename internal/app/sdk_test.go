@@ -3,6 +3,7 @@ package app
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
 	cfgpkg "github.com/inherelab/eget/internal/config"
@@ -25,6 +26,10 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 	ghproxyEnable := true
 	ghproxyHost := "https://gh.example.com"
 	ghproxySupportAPI := false
+	cacheMirrorEnable := true
+	cacheMirrorURL := "http://mirror.local:8686/"
+	cacheMirrorTimeout := 4
+	cacheMirrorFallback := false
 	cfg := cfgpkg.NewFile()
 	cfg.Global.CacheDir = &cacheDir
 	cfg.Global.ProxyURL = &proxyURL
@@ -37,6 +42,10 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 	cfg.Ghproxy.HostURL = &ghproxyHost
 	cfg.Ghproxy.SupportAPI = &ghproxySupportAPI
 	cfg.Ghproxy.Fallbacks = []string{"https://gh2.example.com"}
+	cfg.CacheMirror.Enable = &cacheMirrorEnable
+	cfg.CacheMirror.URL = &cacheMirrorURL
+	cfg.CacheMirror.Timeout = &cacheMirrorTimeout
+	cfg.CacheMirror.Fallback = &cacheMirrorFallback
 
 	service, err := NewDefaultSDKService(cfg)
 	assert.NoErr(t, err)
@@ -57,6 +66,10 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 	assert.Eq(t, ghproxyHost, service.ClientOpts.GhproxyHostURL)
 	assert.False(t, service.ClientOpts.GhproxySupportAPI)
 	assert.Eq(t, []string{"https://gh2.example.com"}, service.ClientOpts.GhproxyFallbacks)
+	assert.True(t, service.CacheMirror.Enable)
+	assert.Eq(t, "http://mirror.local:8686", service.CacheMirror.URL)
+	assert.Eq(t, 4*time.Second, service.CacheMirror.Timeout)
+	assert.False(t, service.CacheMirror.Fallback)
 }
 
 func TestNewDefaultSDKServiceLoadsConfigWhenNil(t *testing.T) {

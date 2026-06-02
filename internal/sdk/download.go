@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/inherelab/eget/internal/cachemirror"
 	"github.com/inherelab/eget/internal/client"
 )
 
@@ -20,8 +22,9 @@ type DownloadRequest struct {
 	Version  string
 	Filename string
 
-	ClientOpts client.Options
-	Progress   func(size int64) io.Writer
+	ClientOpts  client.Options
+	CacheMirror cachemirror.Options
+	Progress    func(size int64) io.Writer
 }
 
 type DownloadResult struct {
@@ -65,6 +68,22 @@ func DownloadArchive(ctx context.Context, req DownloadRequest) (DownloadResult, 
 		}, nil
 	}
 
+	if hit, result, err := downloadArchiveFromMirror(ctx, finalPath, req); err != nil {
+		return DownloadResult{}, err
+	} else if hit {
+		meta := downloadMeta{
+			Schema:    1,
+			URL:       req.URL,
+			Filename:  req.Filename,
+			Size:      result.Size,
+			UpdatedAt: time.Now(),
+		}
+		if err := saveDownloadMeta(metaPath, meta); err != nil {
+			return DownloadResult{}, err
+		}
+		return DownloadResult{Path: finalPath, FromCache: true, Size: result.Size}, nil
+	}
+
 	result, err := client.DownloadFile(req.URL, finalPath, req.Progress, req.ClientOpts)
 	if err != nil {
 		return DownloadResult{}, err
@@ -92,6 +111,31 @@ func DownloadArchive(ctx context.Context, req DownloadRequest) (DownloadResult, 
 
 func sdkDownloadFinalPath(req DownloadRequest) string {
 	return filepath.Join(req.CacheDir, "sdk-downloads", safeName(req.SDK), safeName(req.Version), req.Filename)
+}
+
+func downloadArchiveFromMirror(ctx context.Context, finalPath string, req DownloadRequest) (bool, cachemirror.DownloadResult, error) {
+	if !req.CacheMirror.Active() {
+		return false, cachemirror.DownloadResult{}, nil
+	}
+	rel, err := cachemirror.RelPath(req.CacheDir, finalPath)
+	if err != nil {
+		return false, cachemirror.DownloadResult{}, err
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	key := cachemirror.KeyForRelPath(rel)
+	result, err := cachemirror.DownloadToFile(ctx, req.CacheMirror, key, finalPath)
+	if err != nil {
+		if req.CacheMirror.Fallback {
+			return false, cachemirror.DownloadResult{}, nil
+		}
+		return false, cachemirror.DownloadResult{}, err
+	}
+	if !result.Hit && !req.CacheMirror.Fallback {
+		return false, cachemirror.DownloadResult{}, fmt.Errorf("cache mirror miss: %s", key)
+	}
+	return result.Hit, result, nil
 }
 
 func sdkDownloadPartPath(req DownloadRequest) string {

@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/inherelab/eget/internal/cachemirror"
 	"github.com/inherelab/eget/internal/client"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 )
@@ -12,14 +13,15 @@ import (
 type DownloaderFunc func(context.Context, DownloadRequest) (DownloadResult, error)
 
 type Service struct {
-	Config     *cfgpkg.File
-	Store      Store
-	IndexCache IndexCache
-	ClientOpts client.Options
-	GOOS       string
-	GOARCH     string
-	Now        func() time.Time
-	Downloader DownloaderFunc
+	Config      *cfgpkg.File
+	Store       Store
+	IndexCache  IndexCache
+	ClientOpts  client.Options
+	CacheMirror cachemirror.Options
+	GOOS        string
+	GOARCH      string
+	Now         func() time.Time
+	Downloader  DownloaderFunc
 
 	OnIndexRefresh func(IndexRefreshEvent)
 }

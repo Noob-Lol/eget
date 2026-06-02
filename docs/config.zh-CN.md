@@ -66,6 +66,7 @@ proxy_url = "${PROXY_URL}"
 
 - `[global]`: 全局默认值、网络和缓存配置。
 - `[api_cache]`: provider 元数据 API 响应缓存。
+- `[cache_mirror]`: 局域网缓存 mirror 客户端配置。
 - `[ghproxy]`: GitHub URL 重写代理。
 - `["owner/repo"]`: ~旧版直接 package 配置~。
 - `[packages.<name>]`: 命名 package 配置。
@@ -130,6 +131,27 @@ cache_time = 300
 - `cache_time`: 缓存有效期，单位为秒。
 
 > API cache 会缓存 GitHub API、GitLab/Gitea release API、SourceForge files 列表等已知 provider 的 `GET` 响应。缓存文件目录为 `{cache_dir}/api-cache/`。
+
+## Cache Mirror
+
+`[cache_mirror]` 让 `install`、`download` 和 `sdk install` 在回源下载前先尝试局域网内的 `eget cache serve` 服务。
+
+```toml
+[cache_mirror]
+enable = true
+url = "http://192.168.1.10:8686"
+timeout = 5
+fallback = true
+```
+
+字段说明：
+
+- `enable`: 是否在回源下载前启用 cache mirror 查询。
+- `url`: cache server 基础地址，通常指向 `eget cache serve --host 0.0.0.0 --port 8686` 启动的服务。
+- `timeout`: mirror 请求超时时间，单位为秒。小于等于 `0` 时使用默认 5 秒。
+- `fallback`: 为 `true` 时，mirror miss 或错误后继续回源；为 `false` 时，mirror miss 或错误会直接终止下载。
+
+第一版 mirror 协议使用基于缓存相对路径的 path-key，因此可以直接复用 mirror 机器上已有的老缓存文件。mirror 只是下载优化，不是信任根；已有 checksum 配置仍会在后续流程中执行校验。
 
 ## GitHub Proxy
 

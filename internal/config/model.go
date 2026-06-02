@@ -77,16 +77,24 @@ type GhproxySection struct {
 	Fallbacks  []string `toml:"fallbacks" mapstructure:"fallbacks"`
 }
 
+type CacheMirrorSection struct {
+	Enable   *bool   `toml:"enable" mapstructure:"enable"`
+	URL      *string `toml:"url" mapstructure:"url"`
+	Timeout  *int    `toml:"timeout" mapstructure:"timeout"`
+	Fallback *bool   `toml:"fallback" mapstructure:"fallback"`
+}
+
 type File struct {
 	Meta struct {
 		Keys []string
 	}
-	Global   Section         `toml:"global" mapstructure:"global"`
-	ApiCache APICacheSection `toml:"api_cache" mapstructure:"api_cache"`
-	Ghproxy  GhproxySection  `toml:"ghproxy" mapstructure:"ghproxy"`
-	Repos    map[string]Section
-	Packages map[string]Section    `toml:"packages" mapstructure:"packages"`
-	SDK      map[string]SDKSection `toml:"sdk" mapstructure:"sdk"`
+	Global      Section            `toml:"global" mapstructure:"global"`
+	ApiCache    APICacheSection    `toml:"api_cache" mapstructure:"api_cache"`
+	Ghproxy     GhproxySection     `toml:"ghproxy" mapstructure:"ghproxy"`
+	CacheMirror CacheMirrorSection `toml:"cache_mirror" mapstructure:"cache_mirror"`
+	Repos       map[string]Section
+	Packages    map[string]Section    `toml:"packages" mapstructure:"packages"`
+	SDK         map[string]SDKSection `toml:"sdk" mapstructure:"sdk"`
 }
 
 type Merged struct {

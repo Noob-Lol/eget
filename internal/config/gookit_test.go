@@ -24,6 +24,18 @@ func TestPathGetAndSet(t *testing.T) {
 	if err := SetByPath(cfg, "api_cache.cache_time", "300"); err != nil {
 		t.Fatalf("set api_cache.cache_time: %v", err)
 	}
+	if err := SetByPath(cfg, "cache_mirror.enable", "true"); err != nil {
+		t.Fatalf("set cache_mirror.enable: %v", err)
+	}
+	if err := SetByPath(cfg, "cache_mirror.url", "http://mirror.local:8686"); err != nil {
+		t.Fatalf("set cache_mirror.url: %v", err)
+	}
+	if err := SetByPath(cfg, "cache_mirror.timeout", "3"); err != nil {
+		t.Fatalf("set cache_mirror.timeout: %v", err)
+	}
+	if err := SetByPath(cfg, "cache_mirror.fallback", "false"); err != nil {
+		t.Fatalf("set cache_mirror.fallback: %v", err)
+	}
 	if err := SetByPath(cfg, "global.chunk_concurrency", "0"); err != nil {
 		t.Fatalf("set global.chunk_concurrency: %v", err)
 	}
@@ -67,6 +79,14 @@ func TestPathGetAndSet(t *testing.T) {
 	if !ok || cacheTime != 300 {
 		t.Fatalf("expected api_cache.cache_time to be 300, got %#v ok=%t", cacheTime, ok)
 	}
+	mirrorEnable, ok := GetByPath(cfg, "cache_mirror.enable")
+	if !ok || mirrorEnable != true {
+		t.Fatalf("expected cache_mirror.enable to be true, got %#v ok=%t", mirrorEnable, ok)
+	}
+	mirrorTimeout, ok := GetByPath(cfg, "cache_mirror.timeout")
+	if !ok || mirrorTimeout != 3 {
+		t.Fatalf("expected cache_mirror.timeout to be 3, got %#v ok=%t", mirrorTimeout, ok)
+	}
 	chunk, ok := GetByPath(cfg, "global.chunk_concurrency")
 	if !ok || chunk != 0 {
 		t.Fatalf("expected global.chunk_concurrency to be 0, got %#v ok=%t", chunk, ok)
@@ -106,6 +126,23 @@ func TestPathGetAndSet(t *testing.T) {
 	if pkg.Desc == nil || *pkg.Desc != "Command-line fuzzy finder" {
 		t.Fatalf("expected package desc to be parsed, got %#v", pkg.Desc)
 	}
+}
+
+func TestDumpConfigStringIncludesCacheMirror(t *testing.T) {
+	cfg := NewFile()
+	cfg.CacheMirror.Enable = boolPtr(true)
+	cfg.CacheMirror.URL = stringPtr("http://mirror.local:8686")
+	cfg.CacheMirror.Timeout = intPtr(3)
+	cfg.CacheMirror.Fallback = boolPtr(false)
+
+	text, err := dumpConfigString(cfg)
+
+	assert.NoErr(t, err)
+	assert.Contains(t, text, "[cache_mirror]")
+	assert.Contains(t, text, "enable = true")
+	assert.Contains(t, text, `url = "http://mirror.local:8686"`)
+	assert.Contains(t, text, "timeout = 3")
+	assert.Contains(t, text, "fallback = false")
 }
 
 func TestDecodeAndBindStruct(t *testing.T) {

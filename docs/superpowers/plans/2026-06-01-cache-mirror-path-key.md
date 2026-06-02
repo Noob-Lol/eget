@@ -138,7 +138,7 @@ fallback = true
 - Create: `internal/cachemirror/key_test.go`
 - Create: `internal/cachemirror/download_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 本任务新增文件，不修改现有 symbol。运行：
 
@@ -148,7 +148,7 @@ npx gitnexus status
 
 Expected: current 或提示 stale；stale 时先运行 `npx gitnexus analyze`。
 
-- [ ] **Step 2: 写 key 失败测试**
+- [x] **Step 2: 写 key 失败测试**
 
 在 `internal/cachemirror/key_test.go` 新增测试：
 
@@ -197,7 +197,7 @@ go test ./internal/cachemirror
 
 Expected: FAIL because package/functions do not exist.
 
-- [ ] **Step 3: 实现 key/options 最小代码**
+- [x] **Step 3: 实现 key/options 最小代码**
 
 Create `internal/cachemirror/options.go`:
 
@@ -304,7 +304,7 @@ go test ./internal/cachemirror
 
 Expected: PASS for key tests except download helper tests not yet added.
 
-- [ ] **Step 4: 写 mirror 下载失败测试**
+- [x] **Step 4: 写 mirror 下载失败测试**
 
 Append to `internal/cachemirror/download_test.go`:
 
@@ -372,7 +372,7 @@ go test ./internal/cachemirror
 
 Expected: FAIL because `DownloadToFile` is missing.
 
-- [ ] **Step 5: 实现 mirror 下载 helper**
+- [x] **Step 5: 实现 mirror 下载 helper**
 
 Create `internal/cachemirror/download.go`:
 
@@ -452,7 +452,7 @@ go test ./internal/cachemirror
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/cachemirror
@@ -465,7 +465,7 @@ git commit -m "feat(cache): add path-key mirror helpers"
 - Modify: `internal/app/cache/server.go`
 - Modify: `internal/app/cache/server_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget ManifestFile
@@ -474,7 +474,7 @@ npx gitnexus impact --repo eget cacheHandler.ServeHTTP
 
 Expected: report direct callers/tests; risk should be MEDIUM or lower. If HIGH/CRITICAL, pause and report.
 
-- [ ] **Step 2: 写 manifest path_key 测试**
+- [x] **Step 2: 写 manifest path_key 测试**
 
 Modify `TestCacheServerManifest` in `internal/app/cache/server_test.go` to assert:
 
@@ -492,7 +492,7 @@ go test ./internal/app/cache -run TestCacheServerManifest
 
 Expected: FAIL because `PathKey` is not present.
 
-- [ ] **Step 3: 增加 manifest path_key**
+- [x] **Step 3: 增加 manifest path_key**
 
 Modify `internal/app/cache/server.go`:
 
@@ -523,7 +523,7 @@ go test ./internal/app/cache -run TestCacheServerManifest
 
 Expected: PASS.
 
-- [ ] **Step 4: 写 /download path-key 测试**
+- [x] **Step 4: 写 /download path-key 测试**
 
 Append tests to `internal/app/cache/server_test.go`:
 
@@ -564,7 +564,7 @@ go test ./internal/app/cache -run "TestCacheServerDownloadPathKey"
 
 Expected: FAIL because `/download` is not implemented.
 
-- [ ] **Step 5: 实现 /download handler**
+- [x] **Step 5: 实现 /download handler**
 
 Modify `ServeHTTP`:
 
@@ -617,7 +617,7 @@ go test ./internal/app/cache
 
 Expected: PASS.
 
-- [ ] **Step 6: 增加安全测试**
+- [x] **Step 6: 增加安全测试**
 
 Add tests:
 
@@ -657,7 +657,7 @@ go test ./internal/app/cache
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add internal/app/cache/server.go internal/app/cache/server_test.go
@@ -677,7 +677,7 @@ git commit -m "feat(cache): serve cache files by path key"
 - Modify: `internal/app/sdk.go`
 - Modify: `internal/app/sdk_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget File
@@ -688,7 +688,7 @@ npx gitnexus impact --repo eget NewDefaultSDKService
 
 Expected: config and install/sdk option construction callers; risk likely MEDIUM. Report if higher.
 
-- [ ] **Step 2: 写 config 加载测试**
+- [x] **Step 2: 写 config 加载测试**
 
 Append to `internal/config/loader_sections_test.go`:
 
@@ -721,7 +721,7 @@ go test ./internal/config -run TestLoadFileSupportsCacheMirrorSection
 
 Expected: FAIL because `CacheMirror` does not exist.
 
-- [ ] **Step 3: 实现配置模型和 decode/encode**
+- [x] **Step 3: 实现配置模型和 decode/encode**
 
 Modify `internal/config/model.go`:
 
@@ -806,7 +806,7 @@ go test ./internal/config -run TestLoadFileSupportsCacheMirrorSection
 
 Expected: PASS.
 
-- [ ] **Step 4: 写 install option 注入测试**
+- [x] **Step 4: 写 install option 注入测试**
 
 Append to `internal/app/install_config_test.go`:
 
@@ -845,7 +845,7 @@ go test ./internal/app -run TestInstallOptionsIncludeCacheMirrorConfig
 
 Expected: FAIL because install options do not include mirror config.
 
-- [ ] **Step 5: 实现 install/sdk option 注入**
+- [x] **Step 5: 实现 install/sdk option 注入**
 
 Modify `internal/install/options.go` imports and struct:
 
@@ -936,7 +936,7 @@ go test ./internal/config ./internal/app ./internal/cli ./internal/sdk
 
 Expected: PASS after adjusting imports.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/config internal/install/options.go internal/app/cache_mirror_options.go internal/app/install_resolve.go internal/cli/options.go internal/sdk/service.go internal/app/sdk.go internal/sdk/download.go internal/sdk/install_service.go
@@ -949,7 +949,7 @@ git commit -m "feat(config): add cache mirror options"
 - Modify: `internal/install/runner_download.go`
 - Modify: `internal/install/runner_download_cache_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget downloadBody
@@ -957,7 +957,7 @@ npx gitnexus impact --repo eget downloadBody
 
 Expected: install/download tests and run flow. Report if HIGH/CRITICAL.
 
-- [ ] **Step 2: 写普通下载 mirror 命中测试**
+- [x] **Step 2: 写普通下载 mirror 命中测试**
 
 Append to `internal/install/runner_download_cache_test.go`:
 
@@ -1001,7 +1001,7 @@ go test ./internal/install -run TestDownloadBodyUsesCacheMirrorBeforeOrigin
 
 Expected: FAIL because mirror is not called.
 
-- [ ] **Step 3: 实现普通下载 mirror 尝试**
+- [x] **Step 3: 实现普通下载 mirror 尝试**
 
 Modify `internal/install/runner_download.go` imports:
 
@@ -1067,7 +1067,7 @@ go test ./internal/install -run "TestDownloadBodyUsesCacheMirrorBeforeOrigin|Tes
 
 Expected: PASS.
 
-- [ ] **Step 4: 写 fallback 行为测试**
+- [x] **Step 4: 写 fallback 行为测试**
 
 Add tests:
 
@@ -1112,7 +1112,7 @@ go test ./internal/install -run "CacheMirror|DownloadBody"
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/install/runner_download.go internal/install/runner_download_cache_test.go
@@ -1125,7 +1125,7 @@ git commit -m "feat(install): use cache mirror before origin download"
 - Modify: `internal/sdk/download.go`
 - Modify: `internal/sdk/download_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget DownloadArchive
@@ -1134,7 +1134,7 @@ npx gitnexus impact --repo eget DownloadRequest
 
 Expected: SDK install and download tests. Report if HIGH/CRITICAL.
 
-- [ ] **Step 2: 写 SDK mirror 命中测试**
+- [x] **Step 2: 写 SDK mirror 命中测试**
 
 Append to `internal/sdk/download_test.go`:
 
@@ -1185,7 +1185,7 @@ go test ./internal/sdk -run TestDownloadArchiveUsesCacheMirrorBeforeOrigin
 
 Expected: FAIL because SDK mirror is not implemented.
 
-- [ ] **Step 3: 实现 SDK mirror 尝试并写 meta**
+- [x] **Step 3: 实现 SDK mirror 尝试并写 meta**
 
 Modify `internal/sdk/download.go` imports:
 
@@ -1250,7 +1250,7 @@ go test ./internal/sdk -run "TestDownloadArchiveUsesCacheMirrorBeforeOrigin|Test
 
 Expected: PASS.
 
-- [ ] **Step 4: 写 SDK fallback 和 meta 复用测试**
+- [x] **Step 4: 写 SDK fallback 和 meta 复用测试**
 
 Add tests:
 
@@ -1308,7 +1308,7 @@ go test ./internal/sdk -run "CacheMirror|DownloadArchive"
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/sdk/download.go internal/sdk/download_test.go internal/sdk/service.go internal/sdk/install_service.go internal/app/sdk.go internal/app/sdk_test.go
@@ -1324,7 +1324,7 @@ git commit -m "feat(sdk): use cache mirror before origin download"
 - Modify: `README.zh-CN.md`
 - Modify: `docs/TODO.md`
 
-- [ ] **Step 1: 更新配置文档**
+- [x] **Step 1: 更新配置文档**
 
 In `docs/config.md`, add a section near `api_cache` / `ghproxy`:
 
@@ -1362,7 +1362,7 @@ fallback = true
 第一版 mirror 协议使用基于缓存相对路径的 path-key，因此可以直接复用 mirror 机器上已有的老缓存文件。mirror 只是下载优化，不是信任根；已有 checksum 配置仍会在后续流程中执行校验。
 ````
 
-- [ ] **Step 2: 更新 README 简介**
+- [x] **Step 2: 更新 README 简介**
 
 Add short examples to both README files:
 
@@ -1382,7 +1382,7 @@ url = "http://192.168.1.10:8686"
 ```
 ````
 
-- [ ] **Step 3: 更新 TODO**
+- [x] **Step 3: 更新 TODO**
 
 In `docs/TODO.md`, mark completed items:
 
@@ -1396,7 +1396,7 @@ In `docs/TODO.md`, mark completed items:
 
 Do not mark the parent complete because registry/token/TTL remain open.
 
-- [ ] **Step 4: 运行局部测试**
+- [x] **Step 4: 运行局部测试**
 
 ```bash
 go test ./internal/cachemirror ./internal/app/cache ./internal/config ./internal/install ./internal/sdk ./internal/app ./internal/cli
@@ -1404,7 +1404,7 @@ go test ./internal/cachemirror ./internal/app/cache ./internal/config ./internal
 
 Expected: PASS.
 
-- [ ] **Step 5: 运行主链路全量测试**
+- [x] **Step 5: 运行主链路全量测试**
 
 Because this changes MVP install/download/sdk paths, run:
 
@@ -1414,7 +1414,7 @@ go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 6: 手动验证 path-key mirror**
+- [x] **Step 6: 手动验证 path-key mirror**
 
 Use two temporary cache dirs:
 
@@ -1436,7 +1436,7 @@ fallback = true
 
 Run a package or direct download whose file already exists in the server cache. Expected: client prints mirror/cache usage in verbose mode, writes the file into its own cache dir, and does not fail if mirror misses.
 
-- [ ] **Step 7: detect changes**
+- [x] **Step 7: detect changes**
 
 ```bash
 npx gitnexus detect-changes --repo eget
@@ -1444,7 +1444,7 @@ npx gitnexus detect-changes --repo eget
 
 Expected: affected symbols limited to cache mirror helper, cache server, config parsing, install download, SDK download, docs.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add docs/config.md docs/config.zh-CN.md README.md README.zh-CN.md docs/TODO.md
@@ -1453,13 +1453,13 @@ git commit -m "docs(cache): document path-key cache mirror"
 
 ## Final Verification Checklist
 
-- [ ] `go test ./...` passes.
-- [ ] `npx gitnexus detect-changes --repo eget` output matches expected scope.
-- [ ] `cache serve /manifest.json` includes `path_key`.
-- [ ] `cache serve /download/path-md5:<hash>` returns a matching cache file.
-- [ ] Ordinary `install/download` uses mirror before origin when enabled.
-- [ ] `sdk install` uses mirror before origin when enabled and writes reusable SDK meta.
-- [ ] Mirror 404/timeout falls back when `fallback=true`.
-- [ ] Mirror error stops the command when `fallback=false`.
-- [ ] Existing checksum behavior remains after mirror hit.
-- [ ] `docs/TODO.md` checkboxes reflect completed and remaining cache mirror work.
+- [x] `go test ./...` passes.
+- [x] `npx gitnexus detect-changes --repo eget` 已执行；本次输出只报告 GitNexus 自动写入的 `AGENTS.md`，实际提交范围通过 `git diff --cached` 控制为预期 docs/README/TODO/计划文件。
+- [x] `cache serve /manifest.json` includes `path_key`.
+- [x] `cache serve /download/path-md5:<hash>` returns a matching cache file.
+- [x] Ordinary `install/download` uses mirror before origin when enabled.
+- [x] `sdk install` uses mirror before origin when enabled and writes reusable SDK meta.
+- [x] Mirror 404/timeout falls back when `fallback=true`.
+- [x] Mirror error stops the command when `fallback=false`.
+- [x] Existing checksum behavior remains after mirror hit.
+- [x] `docs/TODO.md` checkboxes reflect completed and remaining cache mirror work.

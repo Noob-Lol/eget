@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
+	"github.com/inherelab/eget/internal/cachemirror"
 )
 
 func TestCacheServerHealthz(t *testing.T) {
@@ -48,6 +49,7 @@ func TestCacheServerManifest(t *testing.T) {
 	assert.Eq(t, 1, len(manifest.Files))
 	assert.Eq(t, "pkg", manifest.Files[0].Kind)
 	assert.Eq(t, "pkg.zip", manifest.Files[0].Path)
+	assert.Eq(t, "path-md5:7d666be70f6586be664607040ebc2977", manifest.Files[0].PathKey)
 	assert.Eq(t, "/files/pkg.zip", manifest.Files[0].URL)
 	assert.Eq(t, "http://example.com", manifest.Server.BaseURL)
 }
@@ -182,4 +184,57 @@ func TestCacheServerManifestExcludesSymlinkEscape(t *testing.T) {
 	var manifest Manifest
 	assert.NoErr(t, json.Unmarshal(rec.Body.Bytes(), &manifest))
 	assert.Eq(t, 0, len(manifest.Files))
+}
+
+func TestCacheServerDownloadPathKey(t *testing.T) {
+	cacheDir := t.TempDir()
+	file := filepath.Join(cacheDir, "pkg-cache", "tool.zip")
+	assert.NoErr(t, os.MkdirAll(filepath.Dir(file), 0o755))
+	assert.NoErr(t, os.WriteFile(file, []byte("pkg"), 0o644))
+	key := cachemirror.KeyForRelPath("pkg-cache/tool.zip")
+	handler := NewHandler(Service{}, cacheDir, ServeOptions{})
+
+	req := httptest.NewRequest(http.MethodGet, "/download/"+key, nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	assert.Eq(t, http.StatusOK, rec.Code)
+	assert.Eq(t, "pkg", rec.Body.String())
+}
+
+func TestCacheServerDownloadPathKeyMiss(t *testing.T) {
+	cacheDir := t.TempDir()
+	handler := NewHandler(Service{}, cacheDir, ServeOptions{})
+
+	req := httptest.NewRequest(http.MethodGet, "/download/path-md5:missing", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	assert.Eq(t, http.StatusNotFound, rec.Code)
+}
+
+func TestCacheServerDownloadPathKeyRespectsRootScope(t *testing.T) {
+	cacheDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(cacheDir, "pkg.zip"), []byte("pkg"), 0o644))
+	key := cachemirror.KeyForRelPath("pkg.zip")
+	handler := NewHandler(Service{}, cacheDir, ServeOptions{Root: "sdk"})
+
+	req := httptest.NewRequest(http.MethodGet, "/download/"+key, nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	assert.Eq(t, http.StatusNotFound, rec.Code)
+}
+
+func TestCacheServerDownloadPathKeyRejectsPartial(t *testing.T) {
+	cacheDir := t.TempDir()
+	assert.NoErr(t, os.WriteFile(filepath.Join(cacheDir, "pkg.zip.part"), []byte("partial"), 0o644))
+	key := cachemirror.KeyForRelPath("pkg.zip.part")
+	handler := NewHandler(Service{}, cacheDir, ServeOptions{})
+
+	req := httptest.NewRequest(http.MethodGet, "/download/"+key, nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	assert.Eq(t, http.StatusNotFound, rec.Code)
 }
