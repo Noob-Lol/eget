@@ -52,10 +52,10 @@ func (s *cliService) handleCacheList(opts *CacheListOptions) error {
 		return render.PrintJSON(result)
 	}
 
-	ccolor.Fprintf(s.stderrWriter(), "Cache files: %d (%s)\n", result.TotalFiles, formatBytes(result.TotalSize))
-	ccolor.Fprintf(s.stderrWriter(), " - cache dir: %s\n", result.CacheDir)
+	ccolor.Fprintf(s.stderrWriter(), "Cache files: %d (<green>%s</>)\n", result.TotalFiles, formatBytes(result.TotalSize))
+	ccolor.Fprintf(s.stderrWriter(), "- cache dir: %s\n", result.CacheDir)
 	for _, file := range result.Files {
-		ccolor.Fprintf(s.stderrWriter(), " - %s\t%s\t%s\n", file.Kind, formatBytes(file.Size), file.Path)
+		ccolor.Fprintf(s.stderrWriter(), " <mga>%-8s</> <green>%-10s</>  %s\n", file.Kind, formatBytes(file.Size), file.Path)
 	}
 	return nil
 }
@@ -69,21 +69,21 @@ func (s *cliService) handleCacheStatus(opts *CacheStatusOptions) error {
 		return render.PrintJSON(result)
 	}
 
-	ccolor.Fprintln(s.stderrWriter(), "Cache status")
-	ccolor.Fprintf(s.stderrWriter(), " - cache dir: %s\n", result.CacheDir)
-	ccolor.Fprintf(s.stderrWriter(), " - files: %d\n", result.TotalFiles)
-	ccolor.Fprintf(s.stderrWriter(), " - size: %s\n", formatBytes(result.TotalSize))
+	ccolor.Fprintln(s.stderrWriter(), "<ylw1>Cache status</>")
+	ccolor.Fprintf(s.stderrWriter(), " • cache dir: %s\n", result.CacheDir)
+	ccolor.Fprintf(s.stderrWriter(), " • total files: <mga>%d</>\n", result.TotalFiles)
+	ccolor.Fprintf(s.stderrWriter(), " • total size: <green>%s</>\n", formatBytes(result.TotalSize))
 	for _, kind := range []string{"pkg", "api", "sdk", "sdk-index", "partial"} {
 		summary := result.Kinds[kind]
-		ccolor.Fprintf(s.stderrWriter(), " - %s: %d files, %s\n", kind, summary.Files, formatBytes(summary.Size))
+		ccolor.Fprintf(s.stderrWriter(), "   <mga>%-9s</> %-3d files, <green>%s</>\n", kind, summary.Files, formatBytes(summary.Size))
 	}
-	ccolor.Fprintf(s.stderrWriter(), " - cache mirror: enabled=%v url=%s fallback=%v timeout=%ds\n",
+	ccolor.Fprintf(s.stderrWriter(), "\n • run serve: <gray>%s</>\n", result.ServeCommand)
+	ccolor.Fprintf(s.stderrWriter(), " • cache mirror: enabled=%v url=%s fallback=%v timeout=%ds\n",
 		result.CacheMirror.Enable,
 		result.CacheMirror.URL,
 		result.CacheMirror.Fallback,
 		result.CacheMirror.Timeout,
 	)
-	ccolor.Fprintf(s.stderrWriter(), " - serve: %s\n", result.ServeCommand)
 	return nil
 }
 
@@ -112,10 +112,10 @@ func (s *cliService) handleCacheClean(opts *CacheCleanOptions) error {
 		if opts.JSON {
 			return render.PrintJSON(preview)
 		}
-		ccolor.Fprintln(s.stderrWriter(), "Dry run: eget cache clean")
+		ccolor.Fprintln(s.stderrWriter(), "<green>Dry run</>: eget cache clean")
 		ccolor.Fprintf(s.stderrWriter(), " - cache dir: %s\n", preview.CacheDir)
-		ccolor.Fprintf(s.stderrWriter(), " - matched files: %d\n", preview.MatchedFiles)
-		ccolor.Fprintf(s.stderrWriter(), " - matched size: %s\n", formatBytes(preview.MatchedSize))
+		ccolor.Fprintf(s.stderrWriter(), " - matched files: <mga>%d</>\n", preview.MatchedFiles)
+		ccolor.Fprintf(s.stderrWriter(), " - matched size: <mga>%s</>\n", formatBytes(preview.MatchedSize))
 		return nil
 	}
 	if preview.NeedsConfirmation() && !opts.Yes {
@@ -141,9 +141,9 @@ func (s *cliService) handleCacheClean(opts *CacheCleanOptions) error {
 	}
 	ccolor.Fprintln(s.stderrWriter(), "Cleaned eget cache")
 	ccolor.Fprintf(s.stderrWriter(), " - cache dir: %s\n", result.CacheDir)
-	ccolor.Fprintf(s.stderrWriter(), " - removed files: %d\n", result.RemovedFiles)
-	ccolor.Fprintf(s.stderrWriter(), " - freed size: %s\n", formatBytes(result.RemovedSize))
-	ccolor.Fprintf(s.stderrWriter(), " - skipped files: %d\n", len(result.Skipped))
+	ccolor.Fprintf(s.stderrWriter(), " - removed files: <mga>%d</>\n", result.RemovedFiles)
+	ccolor.Fprintf(s.stderrWriter(), " - freed size: <green>%s</>\n", formatBytes(result.RemovedSize))
+	ccolor.Fprintf(s.stderrWriter(), " - skipped files: <mga>%d</>\n", len(result.Skipped))
 	if len(result.Skipped) > 0 {
 		ccolor.Fprintln(s.stderrWriter(), "Skipped:")
 		for _, skipped := range result.Skipped {
@@ -179,7 +179,7 @@ func (s *cliService) handleCacheServe(opts *CacheServeOptions) error {
 	actualAddr := listener.Addr().String()
 	ccolor.Fprintf(s.stderrWriter(), "Serving eget cache on http://%s\n", actualAddr)
 	ccolor.Fprintf(s.stderrWriter(), " - cache dir: %s\n", cacheDir)
-	ccolor.Fprintln(s.stderrWriter(), " - read-only mode; do not expose this service to the public internet")
+	ccolor.Fprintln(s.stderrWriter(), " - <ylw>read-only</> mode; do not expose this service to the public internet")
 
 	server := &http.Server{Handler: handler}
 	return server.Serve(listener)

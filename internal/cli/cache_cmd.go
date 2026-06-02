@@ -63,6 +63,7 @@ func newCacheCmd(handler CommandHandler) (*gcli.Command, func()) {
 
 func newCacheListCmd(opts *CacheListOptions, handler CommandHandler) *gcli.Command {
 	cmd := gcli.NewCommand("list", "List local cache files")
+	cmd.Aliases = []string{"ls"}
 	cmd.Config = func(c *gcli.Command) {
 		c.StrOpt(&opts.Root, "root", "", "all", "Filter root: all, pkg, api, sdk, sdk-index, partial")
 		c.BoolOpt(&opts.JSON, "json", "j", false, "Output as JSON")
@@ -82,6 +83,7 @@ func newCacheListCmd(opts *CacheListOptions, handler CommandHandler) *gcli.Comma
 
 func newCacheStatusCmd(opts *CacheStatusOptions, handler CommandHandler) *gcli.Command {
 	cmd := gcli.NewCommand("status", "Show local cache status")
+	cmd.Aliases = []string{"st"}
 	cmd.Config = func(c *gcli.Command) {
 		c.BoolOpt(&opts.JSON, "json", "j", false, "Output as JSON")
 	}
