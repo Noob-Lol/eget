@@ -34,6 +34,7 @@ type CacheServeOptions struct {
 	Root    string
 	NoIndex bool
 	Token   string
+	JSONLog bool
 }
 
 func newCacheCmd(handler CommandHandler) (*gcli.Command, func()) {
@@ -126,6 +127,7 @@ func newCacheServeCmd(opts *CacheServeOptions, handler CommandHandler) *gcli.Com
 		c.StrOpt(&opts.Root, "root", "", "all", "Share scope: all, pkg, api, sdk, sdk-index")
 		c.StrOpt(&opts.Token, "token", "", "", "Bearer token required for cache downloads and manifest")
 		c.BoolOpt(&opts.NoIndex, "no-index", "", false, "Disable directory listing")
+		c.BoolOpt(&opts.JSONLog, "json-log", "", false, "Write one JSON request log line per cache server request")
 	}
 	cmd.Func = func(_ *gcli.Command, args []string) error {
 		if err := validateNoFlagArgs(args); err != nil {

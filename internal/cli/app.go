@@ -340,7 +340,7 @@ var commandFlagSpecs = map[string]flagSpec{
 				values: setOf("older"),
 			},
 			"serve": {
-				bools:  setOf("no-index"),
+				bools:  setOf("no-index", "json-log"),
 				values: setOf("host", "port", "p", "root", "token"),
 			},
 		},

@@ -766,7 +766,7 @@ git commit -m "feat(cache): add bearer token for cache serve"
 - Modify: `internal/cli/cache_handler.go`
 - Modify: `internal/cli/app_cache_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget ServeOptions
@@ -776,7 +776,7 @@ npx gitnexus impact --repo eget CacheServeOptions
 
 Expected: cache server and CLI cache serve tests. Report if HIGH/CRITICAL.
 
-- [ ] **Step 2: 写 json-log 失败测试**
+- [x] **Step 2: 写 json-log 失败测试**
 
 Append to `internal/app/cache/auth_log_test.go`:
 
@@ -814,7 +814,7 @@ go test ./internal/app/cache -run "JSONLog"
 
 Expected: FAIL because json-log is not implemented.
 
-- [ ] **Step 3: 实现 json-log middleware**
+- [x] **Step 3: 实现 json-log middleware**
 
 Modify `ServeOptions`:
 
@@ -852,7 +852,7 @@ if opts.JSONLog { handler = withJSONLog(handler, writer, service.now) }
 - `bytes` counts response bytes.
 - `path` uses `r.URL.Path`, not `RequestURI`, so query string is excluded.
 
-- [ ] **Step 4: 绑定 CLI json-log flag**
+- [x] **Step 4: 绑定 CLI json-log flag**
 
 Modify `CacheServeOptions`:
 
@@ -884,7 +884,7 @@ LogWriter: s.stderrWriter(), // set in handleCacheServe after conversion if need
 
 If `serveOptionsFromCLI` cannot access `s.stderrWriter()`, set `serveOpts.LogWriter = s.stderrWriter()` in `handleCacheServe`.
 
-- [ ] **Step 5: 运行 json-log 测试**
+- [x] **Step 5: 运行 json-log 测试**
 
 ```bash
 go test ./internal/app/cache -run "JSONLog|Token"
@@ -893,7 +893,7 @@ go test ./internal/cli -run "CacheServe"
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/app/cache/model.go internal/app/cache/auth_log.go internal/app/cache/auth_log_test.go internal/app/cache/server.go internal/cli/cache_cmd.go internal/cli/app.go internal/cli/cache_handler.go internal/cli/app_cache_test.go

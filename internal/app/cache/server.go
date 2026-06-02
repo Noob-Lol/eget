@@ -50,7 +50,12 @@ func NewHandler(service Service, cacheDir string, opts ServeOptions) http.Handle
 	if opts.Root == "" {
 		opts.Root = "all"
 	}
-	return withBearerToken(cacheHandler{service: service, cacheDir: cacheDir, opts: opts}, opts.Token)
+	handler := http.Handler(cacheHandler{service: service, cacheDir: cacheDir, opts: opts})
+	handler = withBearerToken(handler, opts.Token)
+	if opts.JSONLog {
+		handler = withJSONLog(handler, opts.LogWriter, service.now)
+	}
+	return handler
 }
 
 func (h cacheHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

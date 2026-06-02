@@ -95,6 +95,7 @@ func serveOptionsFromCLI(opts *CacheServeOptions) appcache.ServeOptions {
 		NoIndex: opts.NoIndex,
 		Version: BuildInfo().Version,
 		Token:   opts.Token,
+		JSONLog: opts.JSONLog,
 	}
 }
 
@@ -159,6 +160,9 @@ func (s *cliService) handleCacheServe(opts *CacheServeOptions) error {
 	}
 	if serveOpts.Root == "" {
 		serveOpts.Root = "all"
+	}
+	if serveOpts.JSONLog {
+		serveOpts.LogWriter = s.stderrWriter()
 	}
 	cacheDir, err := s.cacheService.ResolveCacheDir()
 	if err != nil {

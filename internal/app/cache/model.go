@@ -1,6 +1,9 @@
 package cache
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 type Kind string
 
@@ -55,10 +58,12 @@ func (r CleanResult) NeedsConfirmation() bool {
 }
 
 type ServeOptions struct {
-	Host    string
-	Port    int
-	Root    string
-	NoIndex bool
-	Version string
-	Token   string
+	Host      string
+	Port      int
+	Root      string
+	NoIndex   bool
+	Version   string
+	Token     string
+	JSONLog   bool
+	LogWriter io.Writer `json:"-"`
 }
