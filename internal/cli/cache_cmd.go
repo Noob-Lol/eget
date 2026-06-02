@@ -33,6 +33,7 @@ type CacheServeOptions struct {
 	Port    int
 	Root    string
 	NoIndex bool
+	Token   string
 }
 
 func newCacheCmd(handler CommandHandler) (*gcli.Command, func()) {
@@ -123,6 +124,7 @@ func newCacheServeCmd(opts *CacheServeOptions, handler CommandHandler) *gcli.Com
 		c.StrOpt(&opts.Host, "host", "", "0.0.0.0", "Listen host")
 		c.IntOpt(&opts.Port, "port", "p", 8686, "Listen port, 0 means random free port")
 		c.StrOpt(&opts.Root, "root", "", "all", "Share scope: all, pkg, api, sdk, sdk-index")
+		c.StrOpt(&opts.Token, "token", "", "", "Bearer token required for cache downloads and manifest")
 		c.BoolOpt(&opts.NoIndex, "no-index", "", false, "Disable directory listing")
 	}
 	cmd.Func = func(_ *gcli.Command, args []string) error {

@@ -94,6 +94,7 @@ func serveOptionsFromCLI(opts *CacheServeOptions) appcache.ServeOptions {
 		Root:    opts.Root,
 		NoIndex: opts.NoIndex,
 		Version: BuildInfo().Version,
+		Token:   opts.Token,
 	}
 }
 

@@ -107,6 +107,24 @@ func TestMain_CacheServeBindsOptions(t *testing.T) {
 	assert.True(t, opts.NoIndex)
 }
 
+func TestMain_CacheServeBindsToken(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"cache", "serve", "--token", "secret"})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "cache.serve", calls[0].name)
+	opts, ok := calls[0].options.(*CacheServeOptions)
+	assert.True(t, ok)
+	assert.Eq(t, "secret", opts.Token)
+}
+
 func TestMain_CacheServeRejectsInvalidRoot(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

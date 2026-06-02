@@ -60,4 +60,5 @@ type ServeOptions struct {
 	Root    string
 	NoIndex bool
 	Version string
+	Token   string
 }

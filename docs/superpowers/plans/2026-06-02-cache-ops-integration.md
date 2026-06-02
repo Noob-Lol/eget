@@ -607,7 +607,7 @@ git commit -m "feat(cache): add list status and clean json commands"
 - Modify: `internal/cli/cache_handler.go`
 - Modify: `internal/cli/app_cache_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget ServeOptions
@@ -618,7 +618,7 @@ npx gitnexus impact --repo eget handleCacheServe
 
 Expected: cache server tests and CLI cache serve tests. Report if HIGH/CRITICAL.
 
-- [ ] **Step 2: 写 token auth 失败测试**
+- [x] **Step 2: 写 token auth 失败测试**
 
 Create `internal/app/cache/auth_log_test.go`:
 
@@ -666,7 +666,7 @@ go test ./internal/app/cache -run "Token"
 
 Expected: FAIL because token is ignored.
 
-- [ ] **Step 3: 实现 token auth middleware**
+- [x] **Step 3: 实现 token auth middleware**
 
 Modify `internal/app/cache/model.go`:
 
@@ -713,7 +713,7 @@ handler = withBearerToken(handler, opts.Token)
 return handler
 ```
 
-- [ ] **Step 4: 绑定 CLI token flag**
+- [x] **Step 4: 绑定 CLI token flag**
 
 Modify `CacheServeOptions`:
 
@@ -739,7 +739,7 @@ assert.NoErr(t, err)
 assert.Eq(t, "secret", calls[0].options.(*CacheServeOptions).Token)
 ```
 
-- [ ] **Step 5: 运行 token 测试**
+- [x] **Step 5: 运行 token 测试**
 
 ```bash
 go test ./internal/app/cache -run "Token|Healthz|Manifest"
@@ -748,7 +748,7 @@ go test ./internal/cli -run "CacheServe"
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add internal/app/cache/model.go internal/app/cache/auth_log.go internal/app/cache/auth_log_test.go internal/app/cache/server.go internal/cli/cache_cmd.go internal/cli/app.go internal/cli/cache_handler.go internal/cli/app_cache_test.go

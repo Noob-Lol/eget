@@ -341,7 +341,7 @@ var commandFlagSpecs = map[string]flagSpec{
 			},
 			"serve": {
 				bools:  setOf("no-index"),
-				values: setOf("host", "port", "p", "root"),
+				values: setOf("host", "port", "p", "root", "token"),
 			},
 		},
 	},
