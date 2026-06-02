@@ -985,7 +985,7 @@ git commit -m "docs(cache): document cache ops integration enhancements"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-06-02-cache-ops-integration.md`
 
-- [ ] **Step 1: 运行局部测试**
+- [x] **Step 1: 运行局部测试**
 
 ```bash
 go test ./internal/app/cache ./internal/cli
@@ -993,7 +993,7 @@ go test ./internal/app/cache ./internal/cli
 
 Expected: PASS.
 
-- [ ] **Step 2: 运行全量测试**
+- [x] **Step 2: 运行全量测试**
 
 ```bash
 go test ./...
@@ -1001,7 +1001,7 @@ go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 3: 手动验证 CLI JSON**
+- [x] **Step 3: 手动验证 CLI JSON**
 
 Use a temporary config dir/cache dir:
 
@@ -1018,7 +1018,7 @@ Expected:
 - `cache status --json` contains `kinds` and `cache_mirror`.
 - dry-run does not remove files.
 
-- [ ] **Step 4: 手动验证 token 和 json-log**
+- [x] **Step 4: 手动验证 token 和 json-log**
 
 Start server:
 
@@ -1042,7 +1042,7 @@ Expected:
 - stderr receives one JSON log line per request.
 - JSON log line does not include query string or Authorization value.
 
-- [ ] **Step 5: detect changes**
+- [x] **Step 5: detect changes**
 
 ```bash
 npx gitnexus detect-changes --repo eget
@@ -1050,7 +1050,7 @@ npx gitnexus detect-changes --repo eget
 
 Expected: affected symbols limited to cache service/reporting, cache server options/middleware, CLI cache commands/handlers, docs.
 
-- [ ] **Step 6: Commit plan checkbox updates**
+- [x] **Step 6: Commit plan checkbox updates**
 
 ```bash
 git add docs/superpowers/plans/2026-06-02-cache-ops-integration.md
@@ -1059,18 +1059,18 @@ git commit -m "docs(cache): update cache ops integration plan progress"
 
 ## Final Verification Checklist
 
-- [ ] `cache list` lists cache files and supports root filtering.
-- [ ] `cache list --json` outputs valid JSON with `path_key`.
-- [ ] `cache status` summarizes cache dir, totals, kind summaries, mirror config, and serve suggestion.
-- [ ] `cache status --json` outputs valid JSON.
-- [ ] `cache clean --dry-run --json` outputs preview JSON and removes nothing.
-- [ ] `cache clean --json --yes` outputs result JSON after deletion.
-- [ ] `cache serve --token` protects `/`, `/manifest.json`, `/files/*`, `/download/*`.
-- [ ] `cache serve --token` leaves `/healthz` accessible without token.
-- [ ] `cache serve --json-log` writes one JSON line per request to stderr.
-- [ ] JSON logs exclude query string, Authorization header, and token values.
-- [ ] README/config docs explain A+B usage.
-- [ ] Design doc Phase 5 links to this implementation plan.
-- [ ] `docs/TODO.md` reflects completed and remaining Phase 5 work.
-- [ ] `go test ./...` passes.
-- [ ] `npx gitnexus detect-changes --repo eget` has been reviewed.
+- [x] `cache list` lists cache files and supports root filtering.
+- [x] `cache list --json` outputs valid JSON with `path_key`.
+- [x] `cache status` summarizes cache dir, totals, kind summaries, mirror config, and serve suggestion.
+- [x] `cache status --json` outputs valid JSON.
+- [x] `cache clean --dry-run --json` outputs preview JSON and removes nothing.
+- [x] `cache clean --json --yes` outputs result JSON after deletion.
+- [x] `cache serve --token` protects `/`, `/manifest.json`, `/files/*`, `/download/*`.
+- [x] `cache serve --token` leaves `/healthz` accessible without token.
+- [x] `cache serve --json-log` writes one JSON line per request to stderr.
+- [x] JSON logs exclude query string, Authorization header, and token values.
+- [x] README/config docs explain A+B usage.
+- [x] Design doc Phase 5 links to this implementation plan.
+- [x] `docs/TODO.md` reflects completed and remaining Phase 5 work.
+- [x] `go test ./...` passes.
+- [x] `npx gitnexus detect-changes --repo eget` has been reviewed; current output only reported GitNexus generated `AGENTS.md`, while staged changes are controlled explicitly.

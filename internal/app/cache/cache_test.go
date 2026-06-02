@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -242,6 +243,28 @@ func TestServicePreviewCleanReportsLargeDeletionNeed(t *testing.T) {
 	assert.Eq(t, 100, result.MatchedFiles)
 	assert.True(t, result.NeedsConfirmation())
 	assert.True(t, fileExistsForTest(filepath.Join(cacheDir, "pkg-000.zip")))
+}
+
+func TestCleanResultJSONUsesSnakeCaseFields(t *testing.T) {
+	data, err := json.Marshal(CleanResult{
+		CacheDir:     "cache",
+		MatchedFiles: 1,
+		RemovedFiles: 0,
+		MatchedSize:  3,
+		RemovedSize:  0,
+		Skipped:      []CleanSkip{{Path: "bad", Reason: "locked"}},
+	})
+
+	assert.NoErr(t, err)
+	got := string(data)
+	assert.Contains(t, got, `"cache_dir":"cache"`)
+	assert.Contains(t, got, `"matched_files":1`)
+	assert.Contains(t, got, `"removed_files":0`)
+	assert.Contains(t, got, `"matched_size":3`)
+	assert.Contains(t, got, `"removed_size":0`)
+	assert.Contains(t, got, `"skipped":[`)
+	assert.Contains(t, got, `"path":"bad"`)
+	assert.Contains(t, got, `"reason":"locked"`)
 }
 
 func fileExistsForTest(path string) bool {

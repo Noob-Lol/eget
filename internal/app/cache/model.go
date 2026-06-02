@@ -40,17 +40,17 @@ type CleanOptions struct {
 }
 
 type CleanSkip struct {
-	Path   string
-	Reason string
+	Path   string `json:"path"`
+	Reason string `json:"reason"`
 }
 
 type CleanResult struct {
-	CacheDir     string
-	MatchedFiles int
-	RemovedFiles int
-	MatchedSize  int64
-	RemovedSize  int64
-	Skipped      []CleanSkip
+	CacheDir     string      `json:"cache_dir"`
+	MatchedFiles int         `json:"matched_files"`
+	RemovedFiles int         `json:"removed_files"`
+	MatchedSize  int64       `json:"matched_size"`
+	RemovedSize  int64       `json:"removed_size"`
+	Skipped      []CleanSkip `json:"skipped"`
 }
 
 func (r CleanResult) NeedsConfirmation() bool {
