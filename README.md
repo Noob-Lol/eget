@@ -164,7 +164,7 @@ eget cache serve
 eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
 ```
 
-Start a LAN cache server with simple bearer protection and JSON request logs:
+The server prints text request logs by default. Add simple bearer protection and switch request logs to JSON lines when needed:
 
 ```bash
 eget cache serve --host 0.0.0.0 --port 8686 --token "$EGET_CACHE_TOKEN" --json-log

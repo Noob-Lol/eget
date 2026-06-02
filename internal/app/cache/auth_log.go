@@ -2,6 +2,7 @@ package cache
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -61,6 +62,14 @@ func (r *statusRecorder) Write(data []byte) (int, error) {
 }
 
 func withJSONLog(next http.Handler, writer io.Writer, now func() time.Time) http.Handler {
+	return withRequestLog(next, writer, now, true)
+}
+
+func withTextLog(next http.Handler, writer io.Writer, now func() time.Time) http.Handler {
+	return withRequestLog(next, writer, now, false)
+}
+
+func withRequestLog(next http.Handler, writer io.Writer, now func() time.Time, jsonLog bool) http.Handler {
 	if writer == nil {
 		writer = os.Stderr
 	}
@@ -84,6 +93,18 @@ func withJSONLog(next http.Handler, writer io.Writer, now func() time.Time) http
 			DurationMS: now().Sub(start).Milliseconds(),
 			RemoteAddr: r.RemoteAddr,
 		}
-		_ = json.NewEncoder(writer).Encode(event)
+		if jsonLog {
+			_ = json.NewEncoder(writer).Encode(event)
+			return
+		}
+		_, _ = fmt.Fprintf(writer, "%s %s %s %d bytes=%d duration_ms=%d remote_addr=%s\n",
+			event.TS.Format("01-02 15:04:05"),
+			event.Method,
+			event.Path,
+			event.Status,
+			event.Bytes,
+			event.DurationMS,
+			event.RemoteAddr,
+		)
 	})
 }

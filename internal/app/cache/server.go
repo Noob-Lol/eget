@@ -54,6 +54,8 @@ func NewHandler(service Service, cacheDir string, opts ServeOptions) http.Handle
 	handler = withBearerToken(handler, opts.Token)
 	if opts.JSONLog {
 		handler = withJSONLog(handler, opts.LogWriter, service.now)
+	} else {
+		handler = withTextLog(handler, opts.LogWriter, service.now)
 	}
 	return handler
 }

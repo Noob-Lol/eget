@@ -164,7 +164,7 @@ eget cache serve
 eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
 ```
 
-启动带简单 bearer 保护和 JSON 请求日志的局域网 cache server：
+服务端默认输出 text 请求日志。需要时可以开启简单 bearer 保护，并把请求日志切换为 JSON lines：
 
 ```bash
 eget cache serve --host 0.0.0.0 --port 8686 --token "$EGET_CACHE_TOKEN" --json-log

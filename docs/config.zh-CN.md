@@ -159,6 +159,8 @@ fallback = true
 eget cache serve --token "$EGET_CACHE_TOKEN"
 ```
 
+`cache serve` 默认输出 text 请求日志；需要结构化 JSON lines 时再增加 `--json-log`。
+
 不要把 bearer token 写入 `[cache_mirror]`；当前 mirror client 下载不会发送 token。如果后续需要认证的 mirror client 下载，应作为独立的客户端/服务端协议另行设计。
 
 ## GitHub Proxy

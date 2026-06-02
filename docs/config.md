@@ -159,6 +159,8 @@ The first mirror protocol uses a path key based on the normalized cache relative
 eget cache serve --token "$EGET_CACHE_TOKEN"
 ```
 
+`cache serve` prints text request logs by default. Add `--json-log` when structured JSON lines are preferred.
+
 Do not put bearer tokens in `[cache_mirror]`; current mirror client downloads do not send a token. If authenticated mirror client downloads are needed later, they should be designed as a separate client/server contract.
 
 ## GitHub Proxy
