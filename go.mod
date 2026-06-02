@@ -9,7 +9,7 @@ require (
 	github.com/gookit/color v1.6.1
 	github.com/gookit/config/v2 v2.2.8
 	github.com/gookit/gcli/v3 v3.3.1
-	github.com/gookit/goutil v0.7.5
+	github.com/gookit/goutil v0.7.6
 	github.com/klauspost/compress v1.18.5
 	github.com/ulikunitz/xz v0.5.15
 	golang.org/x/net v0.48.0

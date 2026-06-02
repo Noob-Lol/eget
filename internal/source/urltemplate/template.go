@@ -9,6 +9,7 @@ import (
 
 	gconfig "github.com/gookit/config/v2"
 	gyaml "github.com/gookit/config/v2/yaml"
+	"github.com/gookit/goutil/strutil"
 )
 
 type Config struct {
@@ -188,17 +189,8 @@ func extractRegex(value, pattern, field string) (string, error) {
 
 func parsePublishedAt(value string) time.Time {
 	value = strings.TrimSpace(value)
-	for _, layout := range []string{
-		time.RFC3339,
-		"2006-01-02T15:04:05",
-		"2006-01-02 15:04:05 -0700 MST",
-		"2006-01-02 15:04:05 -0700",
-		"2006-01-02 15:04:05",
-		"2006-01-02",
-	} {
-		if parsed, err := time.Parse(layout, value); err == nil {
-			return parsed
-		}
+	if parsed, err := strutil.ToTimeIn(value, time.UTC); err == nil {
+		return parsed
 	}
 	return time.Time{}
 }

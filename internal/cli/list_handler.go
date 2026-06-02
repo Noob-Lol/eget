@@ -163,7 +163,7 @@ func listPackageVersion(item app.ListItem) string {
 		return item.Version
 	}
 	if !item.Installed {
-		return "No-Install"
+		return "<mga>No-Install</>"
 	}
 	return ""
 }

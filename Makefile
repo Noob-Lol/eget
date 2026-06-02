@@ -44,6 +44,7 @@ DIST_DIR := dist
 
 ## build-all: cross-compile for all platforms
 build-all: dump-info build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows latest-yaml
+	ls -lh $(DIST_DIR)
 
 ## dump-info: dump build info
 dump-info:
