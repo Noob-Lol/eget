@@ -910,7 +910,7 @@ git commit -m "feat(cache): add json request logs for cache serve"
 - Modify: `docs/TODO.md`
 - Modify: `docs/superpowers/specs/2026-05-26-cache-management-design.md`
 
-- [ ] **Step 1: 更新 README cache management**
+- [x] **Step 1: 更新 README cache management**
 
 Add examples near existing cache section:
 
@@ -932,7 +932,7 @@ eget cache serve --host 0.0.0.0 --port 8686 --token "$EGET_CACHE_TOKEN" --json-l
 
 Add equivalent Chinese text to `README.zh-CN.md`.
 
-- [ ] **Step 2: 更新 config docs**
+- [x] **Step 2: 更新 config docs**
 
 In `docs/config.md` and `docs/config.zh-CN.md`, clarify:
 
@@ -947,7 +947,7 @@ eget cache serve --token "$EGET_CACHE_TOKEN"
 
 If implementation adds client token support later, document it in a separate plan.
 
-- [ ] **Step 3: 更新 TODO**
+- [x] **Step 3: 更新 TODO**
 
 Update `docs/TODO.md`:
 
@@ -963,7 +963,7 @@ Update `docs/TODO.md`:
   - [x] `cache clean --json` 和 `cache serve --json-log`。
 ```
 
-- [ ] **Step 4: 链接计划文档到设计文档**
+- [x] **Step 4: 链接计划文档到设计文档**
 
 In `docs/superpowers/specs/2026-05-26-cache-management-design.md`, under Phase 5, add:
 
@@ -973,7 +973,7 @@ In `docs/superpowers/specs/2026-05-26-cache-management-design.md`, under Phase 5
 - [2026-06-02 Cache Ops Integration Enhancements](../plans/2026-06-02-cache-ops-integration.md)
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add README.md README.zh-CN.md docs/config.md docs/config.zh-CN.md docs/TODO.md docs/superpowers/specs/2026-05-26-cache-management-design.md

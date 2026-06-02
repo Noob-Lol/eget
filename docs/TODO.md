@@ -45,7 +45,11 @@
   - [x] `cache serve` 增加 path-key 下载协议，基于缓存相对路径 md5 复用现有老缓存。
   - [x] 客户端 install/download/sdk install 在回源前尝试使用局域网 cache mirror。
   - [ ] 后续 registry 化阶段再设计 source metadata、搜索和不依赖第三方 provider 的解析能力。
-  - [ ] `cache serve --token` 和 manifest TTL。
+  - [x] `cache serve --token`。
+  - [ ] manifest TTL。
+- [ ] cache 运维和脚本集成增强。
+  - [x] `cache list` 和 `cache status`。
+  - [x] `cache clean --json` 和 `cache serve --json-log`。
 - [x] 基于 `latest.yaml 简版 + url template` 配置支持自定义站点的工具下载
 - [ ] ux 体验优化
   - 核心命令帮助信息都加上各种 example 示例说明

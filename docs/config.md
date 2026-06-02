@@ -153,6 +153,14 @@ Fields:
 
 The first mirror protocol uses a path key based on the normalized cache relative path. It can reuse old cache files already present on the mirror server. The mirror is an optimization, not a trust root; checksum verification still uses existing package verification when configured.
 
+`[cache_mirror]` is client-side lookup configuration. Server access protection is a runtime `cache serve` option:
+
+```bash
+eget cache serve --token "$EGET_CACHE_TOKEN"
+```
+
+Do not put bearer tokens in `[cache_mirror]`; current mirror client downloads do not send a token. If authenticated mirror client downloads are needed later, they should be designed as a separate client/server contract.
+
 ## GitHub Proxy
 
 Example:

@@ -153,6 +153,14 @@ fallback = true
 
 第一版 mirror 协议使用基于缓存相对路径的 path-key，因此可以直接复用 mirror 机器上已有的老缓存文件。mirror 只是下载优化，不是信任根；已有 checksum 配置仍会在后续流程中执行校验。
 
+`[cache_mirror]` 是客户端侧的 mirror 查询配置。服务端访问保护是 `cache serve` 的运行时参数：
+
+```bash
+eget cache serve --token "$EGET_CACHE_TOKEN"
+```
+
+不要把 bearer token 写入 `[cache_mirror]`；当前 mirror client 下载不会发送 token。如果后续需要认证的 mirror client 下载，应作为独立的客户端/服务端协议另行设计。
+
 ## GitHub Proxy
 
 示例：

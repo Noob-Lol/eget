@@ -145,7 +145,16 @@ eget sdk index show go
 ```bash
 eget cache clean
 eget cache clean --dry-run --older 7d
+eget cache clean --dry-run --json
 eget cache clean --api --all
+```
+
+查看缓存内容和状态：
+
+```bash
+eget cache status
+eget cache list --root sdk
+eget cache list --json
 ```
 
 `eget cache serve` 会启动只读 HTTP 服务，方便同一局域网内其它机器浏览或下载本机已有的 package/SDK 缓存文件。浏览器打开服务根路径可以查看内置文件列表界面，也可以请求 `/manifest.json` 获取机器可读的 manifest。
@@ -155,10 +164,10 @@ eget cache serve
 eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
 ```
 
-启动一个局域网 cache server：
+启动带简单 bearer 保护和 JSON 请求日志的局域网 cache server：
 
 ```bash
-eget cache serve --host 0.0.0.0 --port 8686
+eget cache serve --host 0.0.0.0 --port 8686 --token "$EGET_CACHE_TOKEN" --json-log
 ```
 
 客户端开启回源前优先尝试 cache server：

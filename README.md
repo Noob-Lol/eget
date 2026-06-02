@@ -145,7 +145,16 @@ eget sdk index show go
 ```bash
 eget cache clean
 eget cache clean --dry-run --older 7d
+eget cache clean --dry-run --json
 eget cache clean --api --all
+```
+
+Inspect cache contents:
+
+```bash
+eget cache status
+eget cache list --root sdk
+eget cache list --json
 ```
 
 `eget cache serve` starts a read-only HTTP server for local cache files so machines on the same LAN can browse or download cached packages and SDK archives. Open the server root URL in a browser to view the built-in file list UI, or request `/manifest.json` for the machine-readable manifest.
@@ -155,10 +164,10 @@ eget cache serve
 eget cache serve --host 127.0.0.1 --port 0 --root sdk --no-index
 ```
 
-Start a LAN cache server:
+Start a LAN cache server with simple bearer protection and JSON request logs:
 
 ```bash
-eget cache serve --host 0.0.0.0 --port 8686
+eget cache serve --host 0.0.0.0 --port 8686 --token "$EGET_CACHE_TOKEN" --json-log
 ```
 
 Enable a client to try the cache server before origin downloads:
