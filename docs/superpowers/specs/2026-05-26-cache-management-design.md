@@ -801,6 +801,10 @@ type ServeOptions struct {
 
 这些增强不影响 Phase 1-4 的核心设计。
 
+实施计划：
+
+- [2026-06-02 Cache Ops Integration Enhancements](../plans/2026-06-02-cache-ops-integration.md)
+
 ## 测试策略
 
 ### 单元测试
