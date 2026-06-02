@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/ccolor"
 	appcache "github.com/inherelab/eget/internal/app/cache"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 )
@@ -36,7 +37,7 @@ func TestCliServiceHandleCacheCleanDryRun(t *testing.T) {
 	err := service.handleCacheClean(&CacheCleanOptions{Older: "3d", DryRun: true})
 
 	assert.NoErr(t, err)
-	out := stderr.String()
+	out := ccolor.ClearCode(stderr.String())
 	assert.Contains(t, out, "Dry run: eget cache clean")
 	assert.Contains(t, out, "matched files: 1")
 	assert.True(t, fileExistsCLI(filepath.Join(tmp, "old.zip")))
@@ -88,7 +89,7 @@ func TestCliServiceHandleCacheCleanLargeDeletionYesSkipsConfirmation(t *testing.
 	err := service.handleCacheClean(&CacheCleanOptions{Older: "3d", All: true, Yes: true})
 
 	assert.NoErr(t, err)
-	assert.Contains(t, stderr.String(), "removed files: 100")
+	assert.Contains(t, ccolor.ClearCode(stderr.String()), "removed files: 100")
 	assert.False(t, fileExistsCLI(filepath.Join(tmp, "pkg-000.zip")))
 }
 

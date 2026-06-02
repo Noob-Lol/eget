@@ -148,7 +148,7 @@ fallback = true
 
 - `enable`: 是否在回源下载前启用 cache mirror 查询。
 - `url`: cache server 基础地址，通常指向 `eget cache serve --host 0.0.0.0 --port 8686` 启动的服务。
-- `timeout`: mirror 请求超时时间，单位为秒。小于等于 `0` 时使用默认 5 秒。
+- `timeout`: mirror 连接、TLS 握手和响应头超时时间，单位为秒。小于等于 `0` 时使用默认 5 秒。该值不限制完整文件 body 下载耗时，因此大文件在服务端开始响应后可以继续下载超过该时长。
 - `fallback`: 为 `true` 时，mirror miss 或错误后继续回源；为 `false` 时，mirror miss 或错误会直接终止下载。
 
 第一版 mirror 协议使用基于缓存相对路径的 path-key，因此可以直接复用 mirror 机器上已有的老缓存文件。mirror 只是下载优化，不是信任根；已有 checksum 配置仍会在后续流程中执行校验。

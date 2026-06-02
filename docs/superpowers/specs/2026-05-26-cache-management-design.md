@@ -478,7 +478,7 @@ fallback = true
 | --- | --- | --- |
 | `enable` | false | 是否启用客户端自动 cache mirror |
 | `url` | 空 | 局域网 `cache serve` 地址 |
-| `timeout` | `5` | mirror 请求超时秒数 |
+| `timeout` | `5` | mirror 连接、TLS 握手和响应头超时秒数；不限制完整文件 body 下载耗时 |
 | `fallback` | `true` | mirror 失败后是否回源下载 |
 
 不把 mirror 配置放在 `[global]` 下，原因是 mirror 有独立的启用状态、地址、超时和 fallback 策略，后续还可能增加 token、manifest TTL、scope 等字段。独立 `[cache_mirror]` 更利于扩展，也能避免 `global` 继续膨胀。
@@ -496,7 +496,7 @@ fallback = true
    3.3 请求 mirror /download/path-md5:{pathKey}。
    3.4 命中后下载到本地 cachePath。
    3.5 对已有 checksum 的 package 执行现有 checksum 校验。
-4. mirror 未命中或失败，且 `cache_mirror.fallback=true`，则回源下载。
+4. mirror 未命中或失败，且 `cache_mirror.fallback=true`，则提示原因并回源下载。
 5. 回源下载成功后写入本地 cache。
 ```
 

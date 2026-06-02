@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -23,7 +24,14 @@ func DownloadToFile(ctx context.Context, opts Options, key, target string) (Down
 	if err != nil {
 		return DownloadResult{}, err
 	}
-	client := &http.Client{Timeout: opts.Timeout}
+	client := &http.Client{Transport: &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout: opts.Timeout,
+		}).DialContext,
+		TLSHandshakeTimeout:   opts.Timeout,
+		ResponseHeaderTimeout: opts.Timeout,
+	}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
 		return DownloadResult{}, err

@@ -34,7 +34,11 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 			verbosef("discard invalid cached archive: %s", cachePath)
 		}
 		if hit, err := tryCacheMirrorDownload(cachePath, opts); err != nil {
-			return downloadBodyResult{}, err
+			if opts.CacheMirror.Fallback {
+				printCacheMirrorFallback(output, err)
+			} else {
+				return downloadBodyResult{}, err
+			}
 		} else if hit {
 			data, err := os.ReadFile(cachePath)
 			if err != nil {
@@ -96,14 +100,26 @@ func tryCacheMirrorDownload(cachePath string, opts Options) (bool, error) {
 	if err != nil {
 		if opts.CacheMirror.Fallback {
 			verbosef("cache mirror failed: %v", err)
-			return false, nil
+			return false, err
 		}
 		return false, err
+	}
+	if !result.Hit && opts.CacheMirror.Fallback {
+		verbosef("cache mirror miss: %s", key)
+		return false, fmt.Errorf("cache mirror miss: %s", key)
 	}
 	if !result.Hit && !opts.CacheMirror.Fallback {
 		return false, fmt.Errorf("cache mirror miss: %s", key)
 	}
 	return result.Hit, nil
+}
+
+func printCacheMirrorFallback(output io.Writer, err error) {
+	if strings.Contains(err.Error(), "cache mirror miss:") {
+		ccolor.Fprintf(output, " - Cache mirror miss, fallback to origin: <yellow>%v</>\n", err)
+		return
+	}
+	ccolor.Fprintf(output, " - Cache mirror failed, fallback to origin: <yellow>%v</>\n", err)
 }
 
 func isInvalidCachedDownload(cachePath string, data []byte) bool {

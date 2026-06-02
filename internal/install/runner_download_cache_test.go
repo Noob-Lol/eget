@@ -270,6 +270,33 @@ func TestDownloadBodyFallsBackWhenCacheMirrorMisses(t *testing.T) {
 	assert.Eq(t, "origin", string(got.Body))
 }
 
+func TestDownloadBodyPrintsCacheMirrorFallbackError(t *testing.T) {
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "mirror down", http.StatusInternalServerError)
+	}))
+	defer mirror.Close()
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("origin"))
+	}))
+	defer origin.Close()
+
+	var stdout bytes.Buffer
+	got, err := (&InstallRunner{Stdout: &stdout}).downloadBody(origin.URL+"/tool.zip", Options{
+		CacheDir: t.TempDir(),
+		CacheMirror: cachemirror.Options{
+			Enable:   true,
+			URL:      mirror.URL,
+			Fallback: true,
+		},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "origin", string(got.Body))
+	assert.Contains(t, stdout.String(), "Cache mirror failed")
+	assert.Contains(t, stdout.String(), "fallback to origin")
+	assert.Contains(t, stdout.String(), "500")
+}
+
 func TestDownloadBodyErrorsWhenCacheMirrorFallbackDisabled(t *testing.T) {
 	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "boom", http.StatusInternalServerError)

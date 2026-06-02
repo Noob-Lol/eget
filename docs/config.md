@@ -148,7 +148,7 @@ Fields:
 
 - `enable`: enable cache mirror lookup before origin downloads.
 - `url`: cache server base URL, usually an `eget cache serve --host 0.0.0.0 --port 8686` instance.
-- `timeout`: mirror request timeout in seconds. Values less than or equal to `0` use the default 5 seconds.
+- `timeout`: mirror connect, TLS handshake, and response-header timeout in seconds. Values less than or equal to `0` use the default 5 seconds. The timeout does not cap the full file body download duration, so large LAN mirror downloads can exceed this value once the server starts responding.
 - `fallback`: when `true`, mirror miss or error falls back to the original source. When `false`, mirror miss or error stops the download.
 
 The first mirror protocol uses a path key based on the normalized cache relative path. It can reuse old cache files already present on the mirror server. The mirror is an optimization, not a trust root; checksum verification still uses existing package verification when configured.
