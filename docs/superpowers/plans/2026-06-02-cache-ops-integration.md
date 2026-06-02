@@ -187,7 +187,7 @@ npx gitnexus detect-changes --repo eget
 - Create: `internal/app/cache/report.go`
 - Create: `internal/app/cache/report_test.go`
 
-- [ ] **Step 1: impact analysis**
+- [x] **Step 1: impact analysis**
 
 ```bash
 npx gitnexus impact --repo eget Service
@@ -196,7 +196,7 @@ npx gitnexus impact --repo eget Entry
 
 Expected: cache service tests and CLI cache handlers. Report if HIGH/CRITICAL.
 
-- [ ] **Step 2: 写 list/status 失败测试**
+- [x] **Step 2: 写 list/status 失败测试**
 
 Create `internal/app/cache/report_test.go`:
 
@@ -276,7 +276,7 @@ go test ./internal/app/cache -run "ServiceList|ServiceStatus"
 
 Expected: FAIL because `ListOptions`, `Service.List`, `Service.Status` do not exist.
 
-- [ ] **Step 3: 实现 report 模型和方法**
+- [x] **Step 3: 实现 report 模型和方法**
 
 Create `internal/app/cache/report.go`:
 
@@ -343,7 +343,7 @@ Implementation details:
 - `Service.Status` scans all five kinds and summarizes by kind.
 - Mirror config is read directly from `s.Config.CacheMirror`; default timeout `5` if nil or <=0.
 
-- [ ] **Step 4: 运行 app cache 测试**
+- [x] **Step 4: 运行 app cache 测试**
 
 ```bash
 go test ./internal/app/cache -run "ServiceList|ServiceStatus|ServiceScan"
@@ -351,7 +351,7 @@ go test ./internal/app/cache -run "ServiceList|ServiceStatus|ServiceScan"
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/app/cache/report.go internal/app/cache/report_test.go
