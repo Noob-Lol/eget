@@ -186,6 +186,32 @@ func TestMain_SDKRoutesAndBindsOptions(t *testing.T) {
 			},
 		},
 		{
+			name:    "download default",
+			args:    []string{"sdk", "download", "go:1.22"},
+			wantCmd: "sdk.download",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKDownloadOptions)
+				assert.True(t, ok)
+				assert.Eq(t, []string{"go:1.22"}, opts.Targets)
+				assert.Eq(t, "", opts.OS)
+				assert.Eq(t, "", opts.Arch)
+				assert.Eq(t, "", opts.Output)
+			},
+		},
+		{
+			name:    "download alias platform output",
+			args:    []string{"sdk", "dl", "--os", "windows", "--arch", "amd64", "-o", "downloads", "go:1.22", "node:20"},
+			wantCmd: "sdk.download",
+			assertOpts: func(t *testing.T, options any) {
+				opts, ok := options.(*SDKDownloadOptions)
+				assert.True(t, ok)
+				assert.Eq(t, []string{"go:1.22", "node:20"}, opts.Targets)
+				assert.Eq(t, "windows", opts.OS)
+				assert.Eq(t, "amd64", opts.Arch)
+				assert.Eq(t, "downloads", opts.Output)
+			},
+		},
+		{
 			name:    "list all",
 			args:    []string{"sdk", "list"},
 			wantCmd: "sdk.list",
@@ -336,6 +362,25 @@ func TestMain_SDKRoutesAndBindsOptions(t *testing.T) {
 			assert.Eq(t, 1, len(calls))
 			assert.Eq(t, tt.wantCmd, calls[0].name)
 			tt.assertOpts(t, calls[0].options)
+		})
+	}
+}
+
+func TestMain_SDKDownloadRejectsPartialPlatform(t *testing.T) {
+	tests := [][]string{
+		{"sdk", "download", "--os", "windows", "go:1.22"},
+		{"sdk", "download", "--arch", "amd64", "go:1.22"},
+	}
+	for _, args := range tests {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			err := newApp(func(string, any) error {
+				t.Fatal("handler should not run")
+				return nil
+			}, &stdout, &stderr).RunWithArgs(args)
+			assert.Err(t, err)
+			assert.Contains(t, err.Error(), "--os and --arch")
 		})
 	}
 }

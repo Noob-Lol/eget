@@ -12,6 +12,7 @@ import (
 
 type sdkCLIService interface {
 	InstallMany(context.Context, []string, sdk.InstallOptions) ([]sdk.InstallResult, error)
+	DownloadMany(context.Context, []string, sdk.SDKDownloadOptions) ([]sdk.SDKDownloadResult, error)
 	List(string) ([]sdk.InstalledEntry, error)
 	Remove(string) (sdk.RemoveResult, error)
 	Path(string) (sdk.InstalledEntry, error)

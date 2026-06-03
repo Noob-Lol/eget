@@ -97,6 +97,9 @@ func (s *cliService) handle(name string, options any) error {
 	case "update":
 		opts := options.(*UpdateOptions)
 		return s.handleUpdate(opts)
+	case "sdk.download":
+		opts := options.(*SDKDownloadOptions)
+		return s.handleSDKDownload(opts)
 	case "sdk.install":
 		opts := options.(*SDKInstallOptions)
 		return s.handleSDKInstall(opts)

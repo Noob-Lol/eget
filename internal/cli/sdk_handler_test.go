@@ -39,6 +39,43 @@ func TestHandleSDKInstallPrintsResults(t *testing.T) {
 	assert.Contains(t, got, "resumed")
 }
 
+func TestHandleSDKDownloadPrintsResults(t *testing.T) {
+	fake := &fakeSDKService{
+		downloadResults: []sdk.SDKDownloadResult{{
+			Name: "go", Version: "1.21.1", Path: "/cache/go.zip", OS: "windows", Arch: "amd64", Cached: true, Resumed: true,
+		}},
+	}
+	svc := &cliService{sdkService: fake}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handle("sdk.download", &SDKDownloadOptions{Targets: []string{"go@1.21.1"}, OS: "windows", Arch: "amd64", Output: "downloads"})
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"go@1.21.1"}, fake.downloadTargets)
+	assert.Eq(t, "windows", fake.downloadOpts.Platform.OS)
+	assert.Eq(t, "amd64", fake.downloadOpts.Platform.Arch)
+	assert.Eq(t, "downloads", fake.downloadOpts.OutputDir)
+	assert.NotNil(t, fake.downloadOpts.Progress)
+	got := out.String()
+	assert.Contains(t, got, "Download SDK go@1.21.1 -> 1.21.1 from example.com")
+	assert.Contains(t, got, "go@1.21.1")
+	assert.Contains(t, got, "windows/amd64")
+	assert.Contains(t, got, "/cache/go.zip")
+	assert.Contains(t, got, "cached")
+	assert.Contains(t, got, "resumed")
+}
+
+func TestHandleSDKDownloadRejectsMissingTarget(t *testing.T) {
+	svc := &cliService{sdkService: &fakeSDKService{}}
+
+	err := svc.handle("sdk.download", &SDKDownloadOptions{})
+
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), "target is required")
+}
+
 func TestHandleSDKListJSONOutput(t *testing.T) {
 	fake := &fakeSDKService{
 		listEntries: []sdk.InstalledEntry{{

@@ -38,6 +38,33 @@ func (s *cliService) handleSDKInstall(opts *SDKInstallOptions) error {
 	return nil
 }
 
+func (s *cliService) handleSDKDownload(opts *SDKDownloadOptions) error {
+	if opts == nil || len(opts.Targets) == 0 {
+		return fmt.Errorf("sdk download target is required")
+	}
+	results, err := s.sdkService.DownloadMany(context.Background(), opts.Targets, sdk.SDKDownloadOptions{
+		Platform:  sdk.PlatformOptions{OS: opts.OS, Arch: opts.Arch},
+		OutputDir: opts.Output,
+		Progress:  s.sdkDownloadProgress(),
+		OnStart: func(target string, version string, host string) {
+			ccolor.Printf(" - Download SDK %s -> %s from %s\n", target, version, host)
+		},
+	})
+	if err != nil {
+		return err
+	}
+	for _, result := range results {
+		notes := clirender.SDKResultNotes(result.Cached, result.Resumed)
+		platform := result.OS + "/" + result.Arch
+		if notes != "" {
+			ccolor.Successf("✓ Downloaded %s@%s %s -> %s (%s)\n", result.Name, result.Version, platform, result.Path, notes)
+			continue
+		}
+		ccolor.Successf("✓ Downloaded %s@%s %s -> %s\n", result.Name, result.Version, platform, result.Path)
+	}
+	return nil
+}
+
 func (s *cliService) sdkDownloadProgress() func(int64) io.Writer {
 	return func(size int64) io.Writer {
 		return install.NewDownloadProgress(s.stderrWriter(), size)

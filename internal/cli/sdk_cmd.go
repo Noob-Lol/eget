@@ -12,6 +12,13 @@ type SDKInstallOptions struct {
 	Force   bool
 }
 
+type SDKDownloadOptions struct {
+	Targets []string
+	OS      string
+	Arch    string
+	Output  string
+}
+
 type SDKListOptions struct {
 	Name string
 	JSON bool
@@ -50,6 +57,7 @@ type SDKConfigOptions struct {
 
 func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 	installOpts := &SDKInstallOptions{}
+	downloadOpts := &SDKDownloadOptions{}
 	listOpts := &SDKListOptions{}
 	removeOpts := &SDKRemoveOptions{}
 	pathOpts := &SDKPathOptions{}
@@ -60,6 +68,8 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 	cmd.Help = `<info>Examples</>:
   eget sdk install go@1.22.0
   eget sdk install --force go:1.22 node:20.11.1
+  eget sdk download go:1.22
+  eget sdk dl --os linux --arch arm64 -o ./downloads go:1.22
   eget sdk list
   eget sdk remove go@1.22.0
   eget sdk path go
@@ -69,9 +79,10 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
   eget sdk config add jdk --mirror huawei
   eget sdk config add jdk --mirror zulu
   eget sdk config add --all
-  eget sdk index refresh go`
+	eget sdk index refresh go`
 	cmd.Subs = []*gcli.Command{
 		newSDKInstallCmd(installOpts, handler),
+		newSDKDownloadCmd(downloadOpts, handler),
 		newSDKListCmd(listOpts, handler),
 		newSDKRemoveCmd(removeOpts, handler),
 		newSDKPathCmd(pathOpts, handler),
@@ -81,6 +92,7 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 	}
 	return cmd, func() {
 		*installOpts = SDKInstallOptions{}
+		*downloadOpts = SDKDownloadOptions{}
 		*listOpts = SDKListOptions{}
 		*removeOpts = SDKRemoveOptions{}
 		*pathOpts = SDKPathOptions{}
@@ -88,6 +100,31 @@ func newSDKCmd(handler CommandHandler) (*gcli.Command, func()) {
 		*indexOpts = SDKIndexOptions{}
 		*configOpts = SDKConfigOptions{}
 	}
+}
+
+func newSDKDownloadCmd(opts *SDKDownloadOptions, handler CommandHandler) *gcli.Command {
+	cmd := gcli.NewCommand("download", "Download SDK archive(s)")
+	cmd.Aliases = []string{"dl"}
+	cmd.Config = func(c *gcli.Command) {
+		c.StrOpt(&opts.OS, "os", "", "", "Target OS, default current OS")
+		c.StrOpt(&opts.Arch, "arch", "", "", "Target arch, default current arch")
+		c.StrOpt(&opts.Output, "output", "o", "", "Directory to place downloaded archive(s)")
+		c.AddArg("target", "SDK target(s), for example go@1.22.0 or node:20.11.1", true, true)
+	}
+	cmd.Func = func(c *gcli.Command, args []string) error {
+		targetArgs := append(c.Arg("target").Strings(), args...)
+		if err := validateNoFlagArgs(targetArgs); err != nil {
+			return err
+		}
+		if (opts.OS == "") != (opts.Arch == "") {
+			return fmt.Errorf("sdk download --os and --arch must be used together")
+		}
+		opts.Targets = splitTargets(targetArgs)
+		snapshot := *opts
+		snapshot.Targets = append([]string(nil), opts.Targets...)
+		return handler("sdk.download", &snapshot)
+	}
+	return cmd
 }
 
 func newSDKInstallCmd(opts *SDKInstallOptions, handler CommandHandler) *gcli.Command {

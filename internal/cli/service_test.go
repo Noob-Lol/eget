@@ -18,28 +18,31 @@ import (
 )
 
 type fakeSDKService struct {
-	installTargets []string
-	installOpts    sdk.InstallOptions
-	installResults []sdk.InstallResult
-	listName       string
-	listEntries    []sdk.InstalledEntry
-	removeTarget   string
-	removeResult   sdk.RemoveResult
-	pathTarget     string
-	pathEntry      sdk.InstalledEntry
-	indexName      string
-	indexAll       bool
-	index          sdk.Index
-	indexes        []sdk.Index
-	cachedIndexes  []sdk.CachedIndexInfo
-	searchName     string
-	searchKeywords []string
-	searchNumber   int
-	searchSort     string
-	searchResults  []sdk.SearchResult
-	clearName      string
-	clearAll       bool
-	err            error
+	installTargets  []string
+	installOpts     sdk.InstallOptions
+	installResults  []sdk.InstallResult
+	downloadTargets []string
+	downloadOpts    sdk.SDKDownloadOptions
+	downloadResults []sdk.SDKDownloadResult
+	listName        string
+	listEntries     []sdk.InstalledEntry
+	removeTarget    string
+	removeResult    sdk.RemoveResult
+	pathTarget      string
+	pathEntry       sdk.InstalledEntry
+	indexName       string
+	indexAll        bool
+	index           sdk.Index
+	indexes         []sdk.Index
+	cachedIndexes   []sdk.CachedIndexInfo
+	searchName      string
+	searchKeywords  []string
+	searchNumber    int
+	searchSort      string
+	searchResults   []sdk.SearchResult
+	clearName       string
+	clearAll        bool
+	err             error
 }
 
 type fakeUninstallStoreForCLI struct {
@@ -75,6 +78,17 @@ func (f *fakeSDKService) InstallMany(_ context.Context, targets []string, opts s
 		}
 	}
 	return f.installResults, f.err
+}
+
+func (f *fakeSDKService) DownloadMany(_ context.Context, targets []string, opts sdk.SDKDownloadOptions) ([]sdk.SDKDownloadResult, error) {
+	f.downloadTargets = append([]string(nil), targets...)
+	f.downloadOpts = opts
+	for _, target := range targets {
+		if opts.OnStart != nil {
+			opts.OnStart(target, "1.21.1", "example.com")
+		}
+	}
+	return f.downloadResults, f.err
 }
 
 func (f *fakeSDKService) List(name string) ([]sdk.InstalledEntry, error) {
