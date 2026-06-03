@@ -150,6 +150,30 @@ func TestMain_ConfigHelpFlagShowsSubcommandHelp(t *testing.T) {
 	}
 }
 
+func TestMain_ConfigPathHelpShowsSupportedTargets(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(func(string, any) error {
+		t.Fatal("handler should not run")
+		return nil
+	}, &stdout, &stderr).RunWithArgs([]string{"cfg", "path", "--help"})
+
+	assert.NoErr(t, err)
+	help := stdout.String() + stderr.String()
+	for _, target := range []string{
+		"config_file",
+		"config_dir",
+		"env_file",
+		"bin_dir",
+		"cache_dir",
+		"sdk_dir",
+		"pkg_store_file",
+		"sdk_store_file",
+	} {
+		assert.Contains(t, help, target)
+	}
+}
+
 func TestMain_ConfigSubcommandRejectsUnknownFlag(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

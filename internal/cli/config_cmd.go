@@ -6,6 +6,8 @@ import (
 	"github.com/gookit/gcli/v3"
 )
 
+const supportedConfigPathTargets = "config_file, config_dir, env_file, bin_dir, cache_dir, sdk_dir, pkg_store_file, sdk_store_file"
+
 type ConfigOptions struct {
 	Action string
 	Key    string
@@ -63,7 +65,7 @@ func newConfigPathCmd(opts *ConfigOptions, handler CommandHandler) *gcli.Command
 	cmd := gcli.NewCommand("path", "Print local config path")
 	cmd.Config = func(c *gcli.Command) {
 		c.BoolOpt(&opts.Check, "check", "", false, "Print path and existence status")
-		c.AddArg("target", "Path target", false)
+		c.AddArg("target", "Path target. Supported: "+supportedConfigPathTargets, false)
 	}
 	cmd.Func = func(c *gcli.Command, args []string) error {
 		opts.Action = "path"
