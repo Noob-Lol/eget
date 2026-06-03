@@ -366,21 +366,32 @@ func TestMain_SDKRoutesAndBindsOptions(t *testing.T) {
 	}
 }
 
-func TestMain_SDKDownloadRejectsPartialPlatform(t *testing.T) {
-	tests := [][]string{
-		{"sdk", "download", "--os", "windows", "go:1.22"},
-		{"sdk", "download", "--arch", "amd64", "go:1.22"},
+func TestMain_SDKDownloadAllowsPartialPlatform(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		wantOS   string
+		wantArch string
+	}{
+		{"os only", []string{"sdk", "download", "--os", "windows", "go:1.22"}, "windows", ""},
+		{"arch only", []string{"sdk", "download", "--arch", "arm64", "go:1.22"}, "", "arm64"},
 	}
-	for _, args := range tests {
-		t.Run(strings.Join(args, " "), func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]commandCall, 0, 1)
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
-			err := newApp(func(string, any) error {
-				t.Fatal("handler should not run")
+			err := newApp(func(name string, options any) error {
+				calls = append(calls, commandCall{name: name, options: options})
 				return nil
-			}, &stdout, &stderr).RunWithArgs(args)
-			assert.Err(t, err)
-			assert.Contains(t, err.Error(), "--os and --arch")
+			}, &stdout, &stderr).RunWithArgs(tt.args)
+
+			assert.NoErr(t, err)
+			assert.Eq(t, 1, len(calls))
+			opts, ok := calls[0].options.(*SDKDownloadOptions)
+			assert.True(t, ok)
+			assert.Eq(t, tt.wantOS, opts.OS)
+			assert.Eq(t, tt.wantArch, opts.Arch)
 		})
 	}
 }

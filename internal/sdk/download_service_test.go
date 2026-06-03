@@ -110,22 +110,54 @@ func TestServiceDownloadPlatformOverrideSelectsNonCurrentPlatform(t *testing.T) 
 	assert.Eq(t, "go1.21.1.windows-amd64.zip", result.Filename)
 }
 
-func TestServiceDownloadRejectsPartialPlatformOverride(t *testing.T) {
+func TestServiceDownloadPartialPlatformOverrideUsesCurrentDefault(t *testing.T) {
 	root := t.TempDir()
+	archivePath := filepath.Join(root, "cache", "sdk-downloads", "go", "1.21.1", "go1.21.1.windows-amd64.zip")
 	svc := Service{
 		Config:     testSDKConfig(root),
 		Store:      Store{Path: filepath.Join(root, "sdk.installed.json")},
 		IndexCache: IndexCache{Dir: filepath.Join(root, "cache", "sdk-index")},
 		GOOS:       "linux",
 		GOARCH:     "amd64",
+		Now:        time.Now,
+		Downloader: func(ctx context.Context, req DownloadRequest) (DownloadResult, error) {
+			assert.Eq(t, "https://example.com/go1.21.1.windows-amd64.zip", req.URL)
+			return DownloadResult{Path: archivePath}, nil
+		},
 	}
 
-	_, err := svc.Download(context.Background(), "go@1.21.1", SDKDownloadOptions{
+	result, err := svc.Download(context.Background(), "go@1.21.1", SDKDownloadOptions{
 		Platform: PlatformOptions{OS: "windows"},
 	})
 
-	assert.Err(t, err)
-	assert.Contains(t, err.Error(), "--os and --arch")
+	assert.NoErr(t, err)
+	assert.Eq(t, "windows", result.OS)
+	assert.Eq(t, "amd64", result.Arch)
+}
+
+func TestServiceDownloadPartialArchOverrideUsesCurrentDefaultOS(t *testing.T) {
+	root := t.TempDir()
+	archivePath := filepath.Join(root, "cache", "sdk-downloads", "go", "1.21.1", "go1.21.1.linux-arm64.zip")
+	svc := Service{
+		Config:     testSDKConfig(root),
+		Store:      Store{Path: filepath.Join(root, "sdk.installed.json")},
+		IndexCache: IndexCache{Dir: filepath.Join(root, "cache", "sdk-index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+		Now:        time.Now,
+		Downloader: func(ctx context.Context, req DownloadRequest) (DownloadResult, error) {
+			assert.Eq(t, "https://example.com/go1.21.1.linux-arm64.zip", req.URL)
+			return DownloadResult{Path: archivePath}, nil
+		},
+	}
+
+	result, err := svc.Download(context.Background(), "go@1.21.1", SDKDownloadOptions{
+		Platform: PlatformOptions{Arch: "arm64"},
+	})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "linux", result.OS)
+	assert.Eq(t, "arm64", result.Arch)
 }
 
 func TestServiceDownloadDoesNotRecordInstalledSDK(t *testing.T) {

@@ -18,7 +18,7 @@ func (s Service) Download(ctx context.Context, rawTarget string, opts SDKDownloa
 		if host == "" {
 			host = archive.URL
 		}
-		opts.OnStart(rawTarget, archive.Version, host)
+		opts.OnStart(rawTarget, archive.Version, host, archive.OS, archive.Arch)
 	}
 	download := s.Downloader
 	if download == nil {

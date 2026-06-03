@@ -116,9 +116,6 @@ func newSDKDownloadCmd(opts *SDKDownloadOptions, handler CommandHandler) *gcli.C
 		if err := validateNoFlagArgs(targetArgs); err != nil {
 			return err
 		}
-		if (opts.OS == "") != (opts.Arch == "") {
-			return fmt.Errorf("sdk download --os and --arch must be used together")
-		}
 		opts.Targets = splitTargets(targetArgs)
 		snapshot := *opts
 		snapshot.Targets = append([]string(nil), opts.Targets...)

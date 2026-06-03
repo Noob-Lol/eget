@@ -59,7 +59,7 @@ func TestHandleSDKDownloadPrintsResults(t *testing.T) {
 	assert.Eq(t, "downloads", fake.downloadOpts.OutputDir)
 	assert.NotNil(t, fake.downloadOpts.Progress)
 	got := out.String()
-	assert.Contains(t, got, "Download SDK go@1.21.1 -> 1.21.1 from example.com")
+	assert.Contains(t, got, "Download SDK go@1.21.1 -> 1.21.1 (windows/amd64) from example.com")
 	assert.Contains(t, got, "go@1.21.1")
 	assert.Contains(t, got, "windows/amd64")
 	assert.Contains(t, got, "/cache/go.zip")

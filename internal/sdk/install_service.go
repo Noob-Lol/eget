@@ -140,9 +140,6 @@ type resolvedArchive struct {
 }
 
 func (s Service) resolveDownloadArchive(rawTarget string, platform PlatformOptions) (resolvedArchive, error) {
-	if (platform.OS == "") != (platform.Arch == "") {
-		return resolvedArchive{}, fmt.Errorf("sdk download --os and --arch must be used together")
-	}
 	target, err := ParseTarget(rawTarget)
 	if err != nil {
 		return resolvedArchive{}, err

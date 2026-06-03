@@ -46,8 +46,8 @@ func (s *cliService) handleSDKDownload(opts *SDKDownloadOptions) error {
 		Platform:  sdk.PlatformOptions{OS: opts.OS, Arch: opts.Arch},
 		OutputDir: opts.Output,
 		Progress:  s.sdkDownloadProgress(),
-		OnStart: func(target string, version string, host string) {
-			ccolor.Printf(" - Download SDK %s -> %s from %s\n", target, version, host)
+		OnStart: func(target string, version string, host string, goos string, goarch string) {
+			ccolor.Printf(" - Download SDK %s -> %s (%s/%s) from %s\n", target, version, goos, goarch, host)
 		},
 	})
 	if err != nil {

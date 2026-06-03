@@ -41,7 +41,7 @@ type SDKDownloadOptions struct {
 	Platform  PlatformOptions
 	OutputDir string
 	Progress  func(size int64) io.Writer
-	OnStart   func(target string, version string, host string)
+	OnStart   func(target string, version string, host string, goos string, goarch string)
 }
 
 type SDKDownloadResult struct {

@@ -85,7 +85,7 @@ func (f *fakeSDKService) DownloadMany(_ context.Context, targets []string, opts 
 	f.downloadOpts = opts
 	for _, target := range targets {
 		if opts.OnStart != nil {
-			opts.OnStart(target, "1.21.1", "example.com")
+			opts.OnStart(target, "1.21.1", "example.com", opts.Platform.OS, opts.Platform.Arch)
 		}
 	}
 	return f.downloadResults, f.err
