@@ -32,6 +32,31 @@ type InstallOptions struct {
 	OnStart  func(target string, version string, host string)
 }
 
+type PlatformOptions struct {
+	OS   string
+	Arch string
+}
+
+type SDKDownloadOptions struct {
+	Platform  PlatformOptions
+	OutputDir string
+	Progress  func(size int64) io.Writer
+	OnStart   func(target string, version string, host string)
+}
+
+type SDKDownloadResult struct {
+	Name     string
+	Version  string
+	Path     string
+	URL      string
+	Filename string
+	OS       string
+	Arch     string
+	Ext      string
+	Cached   bool
+	Resumed  bool
+}
+
 type InstallResult struct {
 	Name    string
 	Version string

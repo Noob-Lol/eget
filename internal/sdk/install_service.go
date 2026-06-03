@@ -11,19 +11,12 @@ import (
 )
 
 func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOptions) (InstallResult, error) {
-	target, err := ParseTarget(rawTarget)
+	archive, err := s.resolveDownloadArchive(rawTarget, PlatformOptions{})
 	if err != nil {
 		return InstallResult{}, err
 	}
-	cfg, err := s.resolveConfig(target.Name)
-	if err != nil {
-		return InstallResult{}, err
-	}
-	version, file, err := s.resolveVersionAndFile(target, cfg)
-	if err != nil {
-		return InstallResult{}, err
-	}
-	vars := TemplateVars{Name: cfg.Name, Version: version, OS: cfg.OS, Arch: cfg.Arch, Ext: cfg.Ext}
+	cfg := archive.Config
+	vars := TemplateVars{Name: cfg.Name, Version: archive.Version, OS: archive.OS, Arch: archive.Arch, Ext: archive.Ext}
 	installPath, err := s.resolveInstallPath(cfg, vars)
 	if err != nil {
 		return InstallResult{}, err
@@ -42,35 +35,23 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 		return InstallResult{}, err
 	}
 
-	url := file.URL
-	filename := file.Filename
-	if url == "" {
-		url, err = RenderTemplate(cfg.URLTemplate, vars)
-		if err != nil {
-			return InstallResult{}, err
-		}
-		filename = filepath.Base(url)
-	}
-	if filename == "" {
-		filename = filepath.Base(url)
-	}
 	if opts.OnStart != nil {
-		host := indexSourceHost(url)
+		host := indexSourceHost(archive.URL)
 		if host == "" {
-			host = url
+			host = archive.URL
 		}
-		opts.OnStart(rawTarget, version, host)
+		opts.OnStart(rawTarget, archive.Version, host)
 	}
 	download := s.Downloader
 	if download == nil {
 		download = DownloadArchive
 	}
 	downloadResult, err := download(ctx, DownloadRequest{
-		URL:         url,
+		URL:         archive.URL,
 		CacheDir:    s.cacheDir(),
 		SDK:         cfg.Name,
-		Version:     version,
-		Filename:    filename,
+		Version:     archive.Version,
+		Filename:    archive.Filename,
 		ClientOpts:  s.effectiveClientOptions(),
 		CacheMirror: s.CacheMirror,
 		Progress:    opts.Progress,
@@ -79,7 +60,7 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 		return InstallResult{}, err
 	}
 
-	tmpDir := filepath.Join(s.sdkRoot(cfg), ".eget-tmp", fmt.Sprintf("%s-%s-%d", cfg.Name, version, s.now().UnixNano()))
+	tmpDir := filepath.Join(s.sdkRoot(cfg), ".eget-tmp", fmt.Sprintf("%s-%s-%d", cfg.Name, archive.Version, s.now().UnixNano()))
 	if err := os.RemoveAll(tmpDir); err != nil {
 		return InstallResult{}, err
 	}
@@ -91,7 +72,7 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 	if err != nil {
 		return InstallResult{}, err
 	}
-	extractor := install.NewExtractor(filename, cfg.Name, chooser)
+	extractor := install.NewExtractor(archive.Filename, cfg.Name, chooser)
 	direct, ok := extractor.(install.DirectAllExtractor)
 	if !ok {
 		return InstallResult{}, fmt.Errorf("sdk archive extractor does not support direct extraction")
@@ -120,20 +101,20 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 
 	entry := InstalledEntry{
 		Name:            cfg.Name,
-		Version:         version,
+		Version:         archive.Version,
 		Path:            installPath,
-		URL:             url,
-		Filename:        filename,
-		OS:              cfg.OS,
-		Arch:            cfg.Arch,
-		Ext:             cfg.Ext,
+		URL:             archive.URL,
+		Filename:        archive.Filename,
+		OS:              archive.OS,
+		Arch:            archive.Arch,
+		Ext:             archive.Ext,
 		InstalledAt:     s.now(),
 		StripComponents: cfg.StripComponents,
 	}
 	if err := s.Store.Record(entry); err != nil {
 		return InstallResult{}, err
 	}
-	return InstallResult{Name: cfg.Name, Version: version, Path: installPath, URL: url, Cached: downloadResult.FromCache, Resumed: downloadResult.Resumed}, nil
+	return InstallResult{Name: cfg.Name, Version: archive.Version, Path: installPath, URL: archive.URL, Cached: downloadResult.FromCache, Resumed: downloadResult.Resumed}, nil
 }
 
 func (s Service) InstallMany(ctx context.Context, targets []string, opts InstallOptions) ([]InstallResult, error) {
@@ -146,6 +127,56 @@ func (s Service) InstallMany(ctx context.Context, targets []string, opts Install
 		results = append(results, result)
 	}
 	return results, nil
+}
+
+type resolvedArchive struct {
+	Config   Config
+	Version  string
+	URL      string
+	Filename string
+	OS       string
+	Arch     string
+	Ext      string
+}
+
+func (s Service) resolveDownloadArchive(rawTarget string, platform PlatformOptions) (resolvedArchive, error) {
+	if (platform.OS == "") != (platform.Arch == "") {
+		return resolvedArchive{}, fmt.Errorf("sdk download --os and --arch must be used together")
+	}
+	target, err := ParseTarget(rawTarget)
+	if err != nil {
+		return resolvedArchive{}, err
+	}
+	cfg, err := s.resolveConfigForPlatform(target.Name, platform)
+	if err != nil {
+		return resolvedArchive{}, err
+	}
+	version, file, err := s.resolveVersionAndFile(target, cfg)
+	if err != nil {
+		return resolvedArchive{}, err
+	}
+	vars := TemplateVars{Name: cfg.Name, Version: version, OS: cfg.OS, Arch: cfg.Arch, Ext: cfg.Ext}
+	url := file.URL
+	filename := file.Filename
+	if url == "" {
+		url, err = RenderTemplate(cfg.URLTemplate, vars)
+		if err != nil {
+			return resolvedArchive{}, err
+		}
+		filename = filepath.Base(url)
+	}
+	if filename == "" {
+		filename = filepath.Base(url)
+	}
+	return resolvedArchive{
+		Config:   cfg,
+		Version:  version,
+		URL:      url,
+		Filename: filename,
+		OS:       cfg.OS,
+		Arch:     cfg.Arch,
+		Ext:      cfg.Ext,
+	}, nil
 }
 
 func (s Service) ensureSafeSDKPath(targetPath string, cfg Config) error {

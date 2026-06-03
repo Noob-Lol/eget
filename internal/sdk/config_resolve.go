@@ -11,11 +11,21 @@ import (
 )
 
 func (s Service) resolveConfig(name string) (Config, error) {
-	goos := s.GOOS
+	return s.resolveConfigForPlatform(name, PlatformOptions{})
+}
+
+func (s Service) resolveConfigForPlatform(name string, platform PlatformOptions) (Config, error) {
+	goos := platform.OS
+	if goos == "" {
+		goos = s.GOOS
+	}
 	if goos == "" {
 		goos = runtime.GOOS
 	}
-	goarch := s.GOARCH
+	goarch := platform.Arch
+	if goarch == "" {
+		goarch = s.GOARCH
+	}
 	if goarch == "" {
 		goarch = runtime.GOARCH
 	}
