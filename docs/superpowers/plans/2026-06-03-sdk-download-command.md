@@ -707,7 +707,7 @@ git commit -m "feat(sdk): add archive download service"
 - Modify: `internal/cli/app_sdk_test.go`
 - Modify: `internal/cli/sdk_handler_test.go`
 
-- [ ] **Step 1: Run GitNexus impact analysis before CLI edits**
+- [x] **Step 1: Run GitNexus impact analysis before CLI edits**
 
 Run:
 
@@ -718,7 +718,7 @@ npx gitnexus impact --repo eget --target cliService.handle --direction upstream
 
 Expected: CLI app construction and command routing are listed. If risk is HIGH or CRITICAL, stop and report before editing.
 
-- [ ] **Step 2: Extend CLI service interface and fake service**
+- [x] **Step 2: Extend CLI service interface and fake service**
 
 In `internal/cli/service.go`, add to `sdkCLIService`:
 
@@ -749,7 +749,7 @@ func (f *fakeSDKService) DownloadMany(_ context.Context, targets []string, opts 
 }
 ```
 
-- [ ] **Step 3: Add CLI routing tests**
+- [x] **Step 3: Add CLI routing tests**
 
 In `internal/cli/app_sdk_test.go`, add cases to `TestMain_SDKRoutesAndBindsOptions`:
 
@@ -805,7 +805,7 @@ func TestMain_SDKDownloadRejectsPartialPlatform(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: Add CLI options and command**
+- [x] **Step 4: Add CLI options and command**
 
 In `internal/cli/sdk_cmd.go`, add:
 
@@ -872,7 +872,7 @@ Update `cmd.Help` examples:
   eget sdk dl --os linux --arch arm64 -o ./downloads go:1.22
 ```
 
-- [ ] **Step 5: Route handler name**
+- [x] **Step 5: Route handler name**
 
 In `internal/cli/handlers.go`, add before `sdk.install`:
 
@@ -882,7 +882,7 @@ case "sdk.download":
 	return s.handleSDKDownload(opts)
 ```
 
-- [ ] **Step 6: Add handler tests**
+- [x] **Step 6: Add handler tests**
 
 In `internal/cli/sdk_handler_test.go`, add:
 
@@ -925,7 +925,7 @@ func TestHandleSDKDownloadRejectsMissingTarget(t *testing.T) {
 }
 ```
 
-- [ ] **Step 7: Implement CLI handler**
+- [x] **Step 7: Implement CLI handler**
 
 In `internal/cli/sdk_handler.go`, add:
 
@@ -958,7 +958,7 @@ func (s *cliService) handleSDKDownload(opts *SDKDownloadOptions) error {
 }
 ```
 
-- [ ] **Step 8: Run CLI tests**
+- [x] **Step 8: Run CLI tests**
 
 Run:
 
@@ -968,7 +968,7 @@ go test ./internal/cli -run 'TestMain_SDK|TestHandleSDKDownload' -count=1
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit CLI integration**
+- [x] **Step 9: Commit CLI integration**
 
 ```bash
 git add internal/cli/service.go internal/cli/service_test.go internal/cli/sdk_cmd.go internal/cli/handlers.go internal/cli/sdk_handler.go internal/cli/app_sdk_test.go internal/cli/sdk_handler_test.go
