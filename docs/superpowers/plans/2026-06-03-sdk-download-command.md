@@ -981,7 +981,7 @@ git commit -m "feat(cli): add sdk download command"
 - Modify: `docs/sdk-usage.md`
 - Modify: `docs/superpowers/plans/2026-06-03-sdk-download-command.md`
 
-- [ ] **Step 1: Update SDK usage command overview**
+- [x] **Step 1: Update SDK usage command overview**
 
 In `docs/sdk-usage.md`, add examples near the command overview:
 
@@ -997,7 +997,7 @@ Add alias bullet:
 - `sdk download`: `sdk dl`
 ```
 
-- [ ] **Step 2: Add SDK download usage section**
+- [x] **Step 2: Add SDK download usage section**
 
 In `docs/sdk-usage.md`, add a section after "安装和删除":
 
@@ -1031,7 +1031,7 @@ eget sdk dl -o ./downloads go:1.22
 `--output/-o` 只表示目录，不支持改名为单个文件。
 ````
 
-- [ ] **Step 3: Run focused package tests**
+- [x] **Step 3: Run focused package tests**
 
 Run:
 
@@ -1041,7 +1041,7 @@ go test ./internal/sdk ./internal/cli -count=1
 
 Expected: PASS.
 
-- [ ] **Step 4: Run full test suite**
+- [x] **Step 4: Run full test suite**
 
 Run:
 
@@ -1051,7 +1051,7 @@ go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 5: Run GitNexus detect changes before final commit**
+- [x] **Step 5: Run GitNexus detect changes before final commit**
 
 Run:
 
@@ -1061,11 +1061,11 @@ npx gitnexus detect_changes --repo eget
 
 Expected: Reported changes should be limited to SDK service, SDK CLI, tests, and docs. If unrelated symbols or high-risk flows appear, review before committing.
 
-- [ ] **Step 6: Mark this implementation plan checkboxes as complete**
+- [x] **Step 6: Mark this implementation plan checkboxes as complete**
 
 Update this plan file as each task is completed. At this final step, every executed checkbox should be marked `[x]`.
 
-- [ ] **Step 7: Commit docs and plan progress**
+- [x] **Step 7: Commit docs and plan progress**
 
 ```bash
 git add docs/sdk-usage.md docs/superpowers/plans/2026-06-03-sdk-download-command.md

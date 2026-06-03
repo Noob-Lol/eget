@@ -8,6 +8,9 @@
 eget sdk install go@1.22.0
 eget sdk install go:1.22 node:20.11.1
 eget sdk install --force go@1.22.0
+eget sdk download go:1.22
+eget sdk dl --os linux --arch arm64 go:1.22
+eget sdk dl -o ./downloads go:1.22
 eget sdk list
 eget sdk list --json
 eget sdk remove go@1.22.0
@@ -24,6 +27,7 @@ eget sdk index clear --all
 常用别名：
 
 - `sdk install`: `sdk i`, `sdk ins`
+- `sdk download`: `sdk dl`
 - `sdk list`: `sdk ls`
 - `sdk remove`: `sdk rm`
 - `sdk index`: `sdk idx`
@@ -73,6 +77,34 @@ eget sdk remove go@1.22.0
 ```
 
 `sdk remove` 需要明确版本，不支持 `go` 或 `go@latest`。
+
+## 只下载归档
+
+`sdk download` 只下载 SDK 归档，不解压、不写安装记录：
+
+```bash
+eget sdk download go:1.22
+eget sdk dl go:1.22
+```
+
+默认下载当前平台归档，文件保存在 `{cache_dir}/sdk-downloads/{sdk}/{version}/`。如果归档已经完整存在且 meta 匹配，会直接复用缓存。
+
+可以下载非当前平台归档：
+
+```bash
+eget sdk dl --os linux --arch arm64 go:1.22
+eget sdk dl --os windows --arch amd64 node:20
+```
+
+`--os` 和 `--arch` 使用 Go 平台名，例如 `linux`、`windows`、`darwin`、`amd64`、`arm64`。发布文件名里的平台命名仍由 SDK 配置中的 `os_map`、`arch_map` 和 `ext_map` 决定。
+
+可以把最终归档复制到指定目录：
+
+```bash
+eget sdk dl -o ./downloads go:1.22
+```
+
+`--output/-o` 只表示目录，不支持改名为单个文件。
 
 ## 搜索 Index Cache
 
