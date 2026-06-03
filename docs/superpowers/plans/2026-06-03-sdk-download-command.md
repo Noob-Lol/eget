@@ -61,7 +61,7 @@ Do not stage, modify, or revert that file while implementing this plan.
 - Create: `internal/sdk/download_service_test.go`
 - Modify: `internal/sdk/service_test_helpers_test.go`
 
-- [ ] **Step 1: Add SDK test config support for platform override**
+- [x] **Step 1: Add SDK test config support for platform override**
 
 In `internal/sdk/service_test_helpers_test.go`, update `testSDKConfig` so tests can resolve Windows archives and non-current platform files:
 
@@ -82,7 +82,7 @@ func testSDKConfig(root string) *cfgpkg.File {
 }
 ```
 
-- [ ] **Step 2: Write failing exact-version download test**
+- [x] **Step 2: Write failing exact-version download test**
 
 Create `internal/sdk/download_service_test.go` with:
 
@@ -141,7 +141,7 @@ func TestServiceDownloadExactVersionUsesURLTemplate(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run:
 
@@ -151,7 +151,7 @@ go test ./internal/sdk -run TestServiceDownloadExactVersionUsesURLTemplate -coun
 
 Expected: FAIL because `Service.Download`, `SDKDownloadOptions`, and result types are not implemented.
 
-- [ ] **Step 4: Add index/platform/output/multi tests**
+- [x] **Step 4: Add index/platform/output/multi tests**
 
 Append these tests to `internal/sdk/download_service_test.go`:
 
@@ -313,7 +313,7 @@ func TestServiceDownloadManyDownloadsTargetsInOrder(t *testing.T) {
 }
 ```
 
-- [ ] **Step 5: Run SDK download tests to verify they fail**
+- [x] **Step 5: Run SDK download tests to verify they fail**
 
 Run:
 
@@ -323,7 +323,7 @@ go test ./internal/sdk -run 'TestServiceDownload' -count=1
 
 Expected: FAIL on missing service API and types.
 
-- [ ] **Step 6: Commit failing tests**
+- [x] **Step 6: Commit failing tests**
 
 ```bash
 git add internal/sdk/service_test_helpers_test.go internal/sdk/download_service_test.go
