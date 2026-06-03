@@ -123,9 +123,12 @@ h1{margin:0;font-size:28px;font-weight:750;letter-spacing:0}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
 .stat b{display:block;font-size:20px}
 .stat span{color:var(--muted);font-size:12px;text-transform:uppercase}
-.tools{display:flex;gap:10px;margin:16px 0}
-input,select{height:38px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);padding:0 12px}
-input{flex:1;min-width:180px}
+.tools{display:flex;align-items:center;gap:12px;margin:16px 0;flex-wrap:wrap}
+.search-input{height:38px;width:280px;max-width:100%;flex:0 1 280px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);padding:0 12px}
+.kind-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filter-label{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase}
+.kind-filter label{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);font-size:13px}
+.kind-filter input{width:14px;height:14px;margin:0;accent-color:var(--accent)}
 table{width:100%;border-collapse:separate;border-spacing:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
 th{font-size:12px;color:var(--muted);text-transform:uppercase;background:#fafbfc}
@@ -135,7 +138,7 @@ tr:last-child td{border-bottom:0}
 .size,.time{white-space:nowrap;color:var(--muted)}
 a.download{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 10px;border-radius:7px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:650}
 .empty{padding:26px;text-align:center;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:8px}
-@media (max-width:760px){.top{display:block}.stats{margin-top:16px;min-width:0}.tools{display:grid}th:nth-child(4),td:nth-child(4){display:none}}
+@media (max-width:760px){.top{display:block}.stats{margin-top:16px;min-width:0}.tools{display:grid}.search-input{width:100%;flex:auto}.kind-filter{align-items:flex-start}th:nth-child(4),td:nth-child(4){display:none}}
 </style>
 </head>
 <body>
@@ -151,14 +154,14 @@ a.download{display:inline-flex;align-items:center;justify-content:center;height:
 </div>
 </section>
 <section class="tools">
-<input id="search" type="search" placeholder="Search files" aria-label="Search files">
-<select id="kind" aria-label="Kind">
-<option value="">Kind</option>
-<option value="pkg">pkg</option>
-<option value="api">api</option>
-<option value="sdk">sdk</option>
-<option value="sdk-index">sdk-index</option>
-</select>
+<input class="search-input" id="search" type="search" placeholder="Search files" aria-label="Search files">
+<div class="kind-filter" role="group" aria-labelledby="kind-label">
+<span id="kind-label" class="filter-label">Kind</span>
+<label><input type="checkbox" value="pkg" name="kind" checked>pkg</label>
+<label><input type="checkbox" value="api" name="kind" checked>api</label>
+<label><input type="checkbox" value="sdk" name="kind" checked>sdk</label>
+<label><input type="checkbox" value="sdk-index" name="kind" checked>sdk-index</label>
+</div>
 </section>
 {{if .Files}}
 <table>
@@ -181,19 +184,24 @@ a.download{display:inline-flex;align-items:center;justify-content:center;height:
 </main>
 <script>
 const search=document.getElementById('search');
-const kind=document.getElementById('kind');
+const kindInputs=[...document.querySelectorAll('input[name="kind"]')];
 const rows=[...document.querySelectorAll('#files tr')];
+function selectedKinds(){
+  return new Set(kindInputs.filter(input=>input.checked).map(input=>input.value));
+}
 function applyFilter(){
   const q=search.value.trim().toLowerCase();
-  const k=kind.value;
+  const kinds=selectedKinds();
   for(const row of rows){
-    const okKind=!k||row.dataset.kind===k;
+    const okKind=kinds.has(row.dataset.kind);
     const okPath=!q||row.dataset.path.toLowerCase().includes(q);
     row.hidden=!(okKind&&okPath);
   }
 }
 search.addEventListener('input',applyFilter);
-kind.addEventListener('change',applyFilter);
+for(const input of kindInputs){
+  input.addEventListener('change',applyFilter);
+}
 </script>
 </body>
 </html>`))

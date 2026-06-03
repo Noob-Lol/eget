@@ -38,6 +38,13 @@ func TestCacheServeUIRendersFileList(t *testing.T) {
 	assert.StrContains(t, body, "data-kind=\"sdk\"")
 	assert.StrContains(t, body, "Search files")
 	assert.StrContains(t, body, "Kind")
+	assert.StrContains(t, body, `class="search-input"`)
+	assert.NotContains(t, body, `<select id="kind"`)
+	assert.StrContains(t, body, `type="checkbox" value="pkg"`)
+	assert.StrContains(t, body, `type="checkbox" value="api"`)
+	assert.StrContains(t, body, `type="checkbox" value="sdk"`)
+	assert.StrContains(t, body, `type="checkbox" value="sdk-index"`)
+	assert.StrContains(t, body, "selectedKinds")
 }
 
 func TestCacheServeUIHonorsRootScope(t *testing.T) {
