@@ -41,6 +41,7 @@ func newCacheCmd(handler CommandHandler) (*gcli.Command, func()) {
 	cleanOpts := &CacheCleanOptions{Older: "3d"}
 	serveOpts := &CacheServeOptions{Host: "0.0.0.0", Port: 8686, Root: "all"}
 	cmd := gcli.NewCommand("cache", "Manage local eget cache")
+	cmd.Aliases = []string{"ca"}
 	cmd.Help = `<info>Examples</>:
   eget cache clean
   eget cache clean --dry-run --older 7d
