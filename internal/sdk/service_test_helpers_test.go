@@ -14,7 +14,7 @@ import (
 func testSDKConfig(root string) *cfgpkg.File {
 	cfg := cfgpkg.NewFile()
 	cfg.Global.SDKTarget = stringPtr(filepath.Join(root, "sdks"))
-	cfg.Global.SDKExtMap = map[string]string{"linux": "zip"}
+	cfg.Global.SDKExtMap = map[string]string{"linux": "zip", "windows": "zip", "darwin": "tar.gz"}
 	cfg.SDK["go"] = cfgpkg.SDKSection{
 		Target:          stringPtr("gosdk/go{version}"),
 		URLTemplate:     stringPtr("https://example.com/go{version}.{os}-{arch}.{ext}"),
