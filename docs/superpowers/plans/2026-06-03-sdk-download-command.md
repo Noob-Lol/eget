@@ -337,7 +337,7 @@ git commit -m "test(sdk): cover archive download service"
 - Modify: `internal/sdk/config_resolve.go`
 - Modify: `internal/sdk/install_service.go`
 
-- [ ] **Step 1: Run GitNexus impact analysis before editing symbols**
+- [x] **Step 1: Run GitNexus impact analysis before editing symbols**
 
 Run:
 
@@ -348,7 +348,7 @@ npx gitnexus impact --repo eget --target Service.resolveConfig --direction upstr
 
 Expected: The output reports direct callers and risk. If risk is HIGH or CRITICAL, stop and report before editing.
 
-- [ ] **Step 2: Add service download types**
+- [x] **Step 2: Add service download types**
 
 In `internal/sdk/service.go`, add these types near `InstallOptions`:
 
@@ -379,7 +379,7 @@ type SDKDownloadResult struct {
 }
 ```
 
-- [ ] **Step 3: Add platform-aware config resolver**
+- [x] **Step 3: Add platform-aware config resolver**
 
 In `internal/sdk/config_resolve.go`, replace `resolveConfig` with:
 
@@ -407,7 +407,7 @@ func (s Service) resolveConfigForPlatform(name string, platform PlatformOptions)
 }
 ```
 
-- [ ] **Step 4: Add archive resolution structs and helper**
+- [x] **Step 4: Add archive resolution structs and helper**
 
 In `internal/sdk/install_service.go`, add this helper below `InstallMany` or near the top after imports:
 
@@ -465,7 +465,7 @@ func (s Service) resolveDownloadArchive(rawTarget string, platform PlatformOptio
 }
 ```
 
-- [ ] **Step 5: Refactor `Install()` to use helper**
+- [x] **Step 5: Refactor `Install()` to use helper**
 
 In `internal/sdk/install_service.go`, replace the initial target/config/version/url block inside `Install()` with:
 
@@ -526,7 +526,7 @@ entry := InstalledEntry{
 return InstallResult{Name: cfg.Name, Version: archive.Version, Path: installPath, URL: archive.URL, Cached: downloadResult.FromCache, Resumed: downloadResult.Resumed}, nil
 ```
 
-- [ ] **Step 6: Run install tests to verify behavior is unchanged**
+- [x] **Step 6: Run install tests to verify behavior is unchanged**
 
 Run:
 
@@ -536,7 +536,7 @@ go test ./internal/sdk -run 'TestServiceInstall' -count=1
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit shared resolution refactor**
+- [x] **Step 7: Commit shared resolution refactor**
 
 ```bash
 git add internal/sdk/service.go internal/sdk/config_resolve.go internal/sdk/install_service.go
@@ -548,7 +548,7 @@ git commit -m "refactor(sdk): share archive resolution"
 **Files:**
 - Create: `internal/sdk/download_service.go`
 
-- [ ] **Step 1: Run GitNexus impact analysis before adding related methods**
+- [x] **Step 1: Run GitNexus impact analysis before adding related methods**
 
 Run:
 
@@ -558,7 +558,7 @@ npx gitnexus impact --repo eget --target DownloadArchive --direction upstream
 
 Expected: Existing install/download cache callers are listed. If risk is HIGH or CRITICAL, stop and report before editing.
 
-- [ ] **Step 2: Implement download service**
+- [x] **Step 2: Implement download service**
 
 Create `internal/sdk/download_service.go`:
 
@@ -669,7 +669,7 @@ func copyDownloadedArchive(src, outputDir, filename string) (string, error) {
 }
 ```
 
-- [ ] **Step 3: Run SDK download service tests**
+- [x] **Step 3: Run SDK download service tests**
 
 Run:
 
@@ -679,7 +679,7 @@ go test ./internal/sdk -run 'TestServiceDownload' -count=1
 
 Expected: PASS.
 
-- [ ] **Step 4: Run full SDK package tests**
+- [x] **Step 4: Run full SDK package tests**
 
 Run:
 
@@ -689,7 +689,7 @@ go test ./internal/sdk -count=1
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit download service implementation**
+- [x] **Step 5: Commit download service implementation**
 
 ```bash
 git add internal/sdk/download_service.go
