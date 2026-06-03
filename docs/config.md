@@ -97,7 +97,7 @@ Fields:
 - `target`: default install directory for CLI tools.
 - `gui_target`: default install directory for portable GUI applications.
 - `cache_dir`: default cache root. Raw downloads, API cache files, SDK downloads, and SDK indexes are derived from this directory.
-- `proxy_url`: HTTP-layer proxy for remote requests. GitHub lookups and remote downloads both use it.
+- `proxy_url`: HTTP-layer proxy for remote requests. GitHub lookups, remote downloads, and SDK requests use it. The app-level `--no-proxy` option disables this setting for one run; a non-empty `NO_PROXY` environment variable also disables `global.proxy_url`.
 - `user_agent`: default HTTP `User-Agent`. When empty, eget uses the built-in browser UA; configured values override the default.
 - `system`: default target platform in `GOOS/GOARCH` form, for example `windows/amd64`.
 - `sys7z_path`: optional 7z executable path. When empty, eget searches `PATH` for `7z`, `7zz`, then `7za`.

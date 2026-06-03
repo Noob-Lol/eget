@@ -98,3 +98,19 @@ func TestMain_GlobalVerboseFlagParsesBeforeCommand(t *testing.T) {
 		t.Fatalf("expected app verbose flag to be true")
 	}
 }
+
+func TestMain_GlobalNoProxyFlagParsesBeforeCommand(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApp(handler, &stdout, &stderr)
+	err := app.RunWithArgs([]string{"--no-proxy", "install", "inhere/markview"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	assert.True(t, app.NoProxy())
+}

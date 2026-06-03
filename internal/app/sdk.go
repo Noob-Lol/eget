@@ -9,7 +9,8 @@ import (
 	"github.com/inherelab/eget/internal/util"
 )
 
-func NewDefaultSDKService(cfg *cfgpkg.File) (sdk.Service, error) {
+func NewDefaultSDKService(cfg *cfgpkg.File, noProxyOpt ...bool) (sdk.Service, error) {
+	noProxy := len(noProxyOpt) > 0 && noProxyOpt[0]
 	if cfg == nil {
 		loaded, err := cfgpkg.Load()
 		if err != nil {
@@ -23,7 +24,7 @@ func NewDefaultSDKService(cfg *cfgpkg.File) (sdk.Service, error) {
 		return sdk.Service{}, err
 	}
 
-	clientOpts := sdkClientOptionsFromConfig(cfg)
+	clientOpts := sdkClientOptionsFromConfig(cfg, noProxy)
 	cacheDir := clientOpts.APICacheDir
 	if cfg != nil && cfg.Global.CacheDir != nil {
 		if expanded, err := util.Expand(*cfg.Global.CacheDir); err == nil && expanded != "" {
@@ -43,12 +44,13 @@ func NewDefaultSDKService(cfg *cfgpkg.File) (sdk.Service, error) {
 	}, nil
 }
 
-func sdkClientOptionsFromConfig(cfg *cfgpkg.File) client.Options {
+func sdkClientOptionsFromConfig(cfg *cfgpkg.File, noProxyOpt ...bool) client.Options {
+	noProxy := len(noProxyOpt) > 0 && noProxyOpt[0]
 	opts := client.Options{}
 	if cfg == nil {
 		return opts
 	}
-	if cfg.Global.ProxyURL != nil {
+	if cfg.Global.ProxyURL != nil && !util.GlobalProxyDisabled(noProxy) {
 		opts.ProxyURL = *cfg.Global.ProxyURL
 	}
 	if cfg.Global.UserAgent != nil {

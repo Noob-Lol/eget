@@ -34,7 +34,7 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 			Tag:       opts.Tag,
 			Source:    source,
 			Asset:     splitAssetFilters(opts.Asset),
-			Install:   installOptionsFromUpdate(opts),
+			Install:   s.applyGlobalFlags(installOptionsFromUpdate(opts)),
 		})
 		if err != nil {
 			return err
@@ -54,7 +54,7 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 	if opts.Interactive {
 		return fmt.Errorf("update --interactive is not implemented")
 	}
-	installOpts := installOptionsFromUpdate(opts)
+	installOpts := s.applyGlobalFlags(installOptionsFromUpdate(opts))
 	if opts.All {
 		ccolor.Infoln("🚀 Checking outdated packages")
 		s.printOutdatedProxyNotice()

@@ -96,6 +96,7 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 }
 
 func TestApplyGlobalNetworkConfigDerivesAPICacheDir(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
 	cacheDir := "~/.cache/eget"
 	proxyURL := "http://127.0.0.1:7890"
 	apiCacheEnabled := true
@@ -115,6 +116,18 @@ func TestApplyGlobalNetworkConfigDerivesAPICacheDir(t *testing.T) {
 	assert.Eq(t, 120, opts.APICacheTime)
 	assert.Eq(t, filepath.Join(expectedCache, "api-cache"), opts.APICacheDir)
 	assert.Eq(t, proxyURL, opts.ProxyURL)
+}
+
+func TestApplyGlobalNetworkConfigSkipsProxyURLWhenNoProxyEnvSet(t *testing.T) {
+	t.Setenv("NO_PROXY", "1")
+	proxyURL := "http://127.0.0.1:7890"
+	cfg := cfgpkg.NewFile()
+	cfg.Global.ProxyURL = &proxyURL
+
+	opts := install.Options{}
+	applyGlobalNetworkConfig(&opts, cfg)
+
+	assert.Eq(t, "", opts.ProxyURL)
 }
 
 func TestInstallOptionsFromDownloadEnablesArchiveExtractionWhenRequested(t *testing.T) {

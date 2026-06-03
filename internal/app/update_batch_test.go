@@ -160,6 +160,36 @@ func TestUpdateAllPackagesPassesAPICacheOptionsFromConfigToInstaller(t *testing.
 	}
 }
 
+func TestUpdateAllPackagesNoProxySkipsConfiguredProxyURL(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	installer := &fakeInstallService{}
+	proxyURL := "http://127.0.0.1:7890"
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Global.ProxyURL = &proxyURL
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	_, err := svc.UpdateAllPackages(install.Options{NoProxy: true})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(installer.options))
+	assert.Eq(t, "", installer.options[0].ProxyURL)
+	assert.True(t, installer.options[0].NoProxy)
+}
+
 func TestUpdateAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testing.T) {
 	block := make(chan struct{})
 	installer := &fakeInstallService{block: block}

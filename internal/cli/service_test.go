@@ -172,6 +172,7 @@ func TestNewCLIServiceWiresReleaseInfo(t *testing.T) {
 }
 
 func TestNewCLIServiceLoadsDotenvBeforeConfig(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
 	tmp := t.TempDir()
 	xdgHome := filepath.Join(tmp, ".config")
 	configDir := filepath.Join(xdgHome, "eget")

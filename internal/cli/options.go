@@ -53,7 +53,9 @@ func applyGlobalNetworkConfig(opts *install.Options, cfg *cfgpkg.File) {
 		}
 	}
 	if cfg.Global.ProxyURL != nil {
-		opts.ProxyURL = *cfg.Global.ProxyURL
+		if !util.GlobalProxyDisabled(opts.NoProxy) {
+			opts.ProxyURL = *cfg.Global.ProxyURL
+		}
 	}
 	if cfg.Ghproxy.Enable != nil {
 		opts.GhproxyEnabled = *cfg.Ghproxy.Enable
@@ -124,6 +126,14 @@ func installOptionsFromUpdate(opts *UpdateOptions) install.Options {
 		BatchConcurrencySet: opts.BatchConcurrency >= 0,
 		Asset:               splitAssetFilters(opts.Asset),
 	}
+}
+
+func (s *cliService) applyGlobalFlags(opts install.Options) install.Options {
+	if s != nil && s.noProxy {
+		opts.NoProxy = true
+		opts.ProxyURL = ""
+	}
+	return opts
 }
 
 func splitAssetFilters(value string) []string {

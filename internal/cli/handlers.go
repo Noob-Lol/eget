@@ -13,7 +13,7 @@ func (s *cliService) handle(name string, options any) error {
 	switch name {
 	case "install":
 		opts := options.(*InstallOptions)
-		cliInstallOpts := installOptionsFromInstall(opts)
+		cliInstallOpts := s.applyGlobalFlags(installOptionsFromInstall(opts))
 		if opts.InstallAll {
 			if len(opts.Targets) > 0 {
 				return fmt.Errorf("install --all cannot be used with target")
@@ -61,11 +61,11 @@ func (s *cliService) handle(name string, options any) error {
 		return nil
 	case "download":
 		opts := options.(*DownloadOptions)
-		_, err := s.appService.DownloadTarget(opts.Target, installOptionsFromDownload(opts))
+		_, err := s.appService.DownloadTarget(opts.Target, s.applyGlobalFlags(installOptionsFromDownload(opts)))
 		return err
 	case "add":
 		opts := options.(*AddOptions)
-		err := s.cfgService.AddPackage(opts.Target, opts.Name, installOptionsFromAdd(opts))
+		err := s.cfgService.AddPackage(opts.Target, opts.Name, s.applyGlobalFlags(installOptionsFromAdd(opts)))
 		if err == nil {
 			pkgName := opts.Name
 			if pkgName == "" {

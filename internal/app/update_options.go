@@ -208,7 +208,9 @@ func applyConfigNetworkOptions(cfg *cfgpkg.File, opts install.Options) install.O
 	if opts.CacheDir == "" {
 		opts.CacheDir, _ = expandPath(util.DerefString(cfg.Global.CacheDir))
 	}
-	if opts.ProxyURL == "" {
+	if util.GlobalProxyDisabled(opts.NoProxy) {
+		opts.ProxyURL = ""
+	} else if opts.ProxyURL == "" {
 		opts.ProxyURL = util.DerefString(cfg.Global.ProxyURL)
 	}
 	if cfg.ApiCache.Enable != nil {

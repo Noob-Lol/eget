@@ -83,7 +83,11 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		repoKey = repo
 	}
 
-	merged := cfgpkg.MergeInstallOptions(cfg.Global, cfg.Repos[repoKey], pkg, cfgpkg.CLIOverrides{
+	global := cfg.Global
+	if util.GlobalProxyDisabled(cli.NoProxy) {
+		global.ProxyURL = nil
+	}
+	merged := cfgpkg.MergeInstallOptions(global, cfg.Repos[repoKey], pkg, cfgpkg.CLIOverrides{
 		ExtractAll:       boolOpt(cli.All),
 		AssetFilters:     stringsOpt(cli.Asset),
 		CacheDir:         stringOpt(cli.CacheDir),
@@ -185,6 +189,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		CacheName:           cacheName,
 		CacheVersion:        cacheVersion,
 		ProxyURL:            merged.ProxyURL,
+		NoProxy:             cli.NoProxy,
 		UserAgent:           merged.UserAgent,
 		APICacheEnabled:     apiCacheEnabled,
 		APICacheDir:         apiCacheDir,

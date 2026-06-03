@@ -35,6 +35,7 @@ type App struct {
 	commands  []*gcli.Command
 	resetters []func()
 	verbose   *bool
+	noProxy   *bool
 	lastErr   error
 	stdout    io.Writer
 }
@@ -75,7 +76,7 @@ func Main(args []string, stdout, stderr io.Writer) error {
 	var serviceErr error
 	cliApp = newApp(func(name string, options any) error {
 		if service == nil && serviceErr == nil {
-			service, serviceErr = newCLIService()
+			service, serviceErr = newCLIService(cliApp.NoProxy())
 		}
 		if serviceErr != nil {
 			return serviceErr
@@ -110,8 +111,10 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 	inner.Desc = "Easy install and download tools from GitHub, SourceForge and more"
 	inner.Version = buildVersionString()
 	verbose := false
-	app := &App{inner: inner, verbose: &verbose, stdout: stdout}
+	noProxy := false
+	app := &App{inner: inner, verbose: &verbose, noProxy: &noProxy, stdout: stdout}
 	cliApp = app
+	inner.Flags().BoolOpt(app.noProxy, "no-proxy", "", false, "Disable global.proxy_url")
 	inner.On(gcli.EvtAppRunError, func(ctx *gcli.HookCtx) bool {
 		if errV := ctx.Get("err"); errV != nil {
 			if err, ok := errV.(error); ok {
@@ -143,6 +146,9 @@ func (a *App) add(cmd *gcli.Command, reset func()) {
 
 func (a *App) RunWithArgs(args []string) error {
 	a.lastErr = nil
+	if a.noProxy != nil {
+		*a.noProxy = false
+	}
 	for _, reset := range a.resetters {
 		reset()
 	}
@@ -163,6 +169,10 @@ func (a *App) RunWithArgs(args []string) error {
 
 func (a *App) Verbose() bool {
 	return a.verbose != nil && *a.verbose
+}
+
+func (a *App) NoProxy() bool {
+	return a.noProxy != nil && *a.noProxy
 }
 
 func (a *App) consumeVerboseArgs(args []string) []string {
@@ -438,7 +448,7 @@ func findCommandArg(args []string) (string, int) {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch arg {
-		case "-v", "--verbose", "-V", "--version", "-h", "--help":
+		case "-v", "--verbose", "--no-proxy", "-V", "--version", "-h", "--help":
 			continue
 		}
 		if strings.HasPrefix(arg, "-") {

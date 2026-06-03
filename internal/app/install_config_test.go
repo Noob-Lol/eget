@@ -12,6 +12,7 @@ import (
 )
 
 func TestInstallTargetUsesConfiguredDefaults(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
 	cfg := mustLoadFromString(t, `
 [global]
 target = "~/.local/bin"
@@ -57,6 +58,47 @@ proxy_url = "http://127.0.0.1:7890"
 	if expected := filepath.Join(expectedCache, "api-cache"); runner.opts.APICacheDir != expected {
 		t.Fatalf("expected derived api cache dir, got %q", runner.opts.APICacheDir)
 	}
+}
+
+func TestInstallTargetNoProxySkipsConfiguredProxyURL(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	cfg := mustLoadFromString(t, `
+[global]
+proxy_url = "http://127.0.0.1:7890"
+`)
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("junegunn/fzf", install.Options{NoProxy: true})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "", runner.opts.ProxyURL)
+	assert.True(t, runner.opts.NoProxy)
+}
+
+func TestInstallTargetNoProxyEnvSkipsConfiguredProxyURL(t *testing.T) {
+	t.Setenv("NO_PROXY", "1")
+	cfg := mustLoadFromString(t, `
+[global]
+proxy_url = "http://127.0.0.1:7890"
+`)
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("junegunn/fzf", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "", runner.opts.ProxyURL)
 }
 
 func TestInstallOptionsIncludeCacheMirrorConfig(t *testing.T) {

@@ -32,6 +32,7 @@ type Options struct {
 	CacheName           string
 	CacheVersion        string
 	ProxyURL            string
+	NoProxy             bool
 	UserAgent           string
 	APICacheEnabled     bool
 	APICacheDir         string

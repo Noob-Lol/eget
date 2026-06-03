@@ -21,7 +21,8 @@ import (
 	"github.com/inherelab/eget/internal/util"
 )
 
-func newCLIService() (*cliService, error) {
+func newCLIService(noProxyOpt ...bool) (*cliService, error) {
+	noProxy := len(noProxyOpt) > 0 && noProxyOpt[0]
 	if err := cfgpkg.LoadDotenv(); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to load dotenv: %v\n", err)
 	}
@@ -30,6 +31,7 @@ func newCLIService() (*cliService, error) {
 		return nil, err
 	}
 	defaultOpts := install.Options{}
+	defaultOpts.NoProxy = noProxy
 	applyGlobalNetworkConfig(&defaultOpts, cfg)
 	defaultClientOpts := install.ClientOptions(defaultOpts)
 	githubClient := client.NewGitHubClient(defaultClientOpts)
@@ -167,7 +169,7 @@ func newCLIService() (*cliService, error) {
 		Installer:      &appService,
 	}
 	cacheService := appcache.Service{Config: cfg, Now: time.Now}
-	sdkService, err := app.NewDefaultSDKService(cfg)
+	sdkService, err := app.NewDefaultSDKService(cfg, noProxy)
 	if err != nil {
 		return nil, err
 	}
@@ -185,6 +187,7 @@ func newCLIService() (*cliService, error) {
 		cacheService:      cacheService,
 		stderr:            os.Stderr,
 		proxyURL:          defaultOpts.ProxyURL,
+		noProxy:           noProxy,
 	}, nil
 }
 

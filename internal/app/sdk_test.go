@@ -12,6 +12,7 @@ import (
 )
 
 func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
 	tmp := t.TempDir()
 	configPath := filepath.Join(tmp, "eget.toml")
 	t.Setenv("EGET_CONFIG", configPath)
@@ -70,6 +71,18 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 	assert.Eq(t, "http://mirror.local:8686", service.CacheMirror.URL)
 	assert.Eq(t, 4*time.Second, service.CacheMirror.Timeout)
 	assert.False(t, service.CacheMirror.Fallback)
+}
+
+func TestNewDefaultSDKServiceSkipsProxyURLWhenNoProxyEnabled(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	proxyURL := "http://127.0.0.1:7890"
+	cfg := cfgpkg.NewFile()
+	cfg.Global.ProxyURL = &proxyURL
+
+	service, err := NewDefaultSDKService(cfg, true)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "", service.ClientOpts.ProxyURL)
 }
 
 func TestNewDefaultSDKServiceLoadsConfigWhenNil(t *testing.T) {

@@ -97,7 +97,7 @@ sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 - `target`: CLI 工具默认安装目录。
 - `gui_target`: 免安装 GUI 应用默认安装目录。
 - `cache_dir`: 缓存根目录。原始下载缓存、API cache、SDK 下载缓存和 SDK index 都基于此目录派生。
-- `proxy_url`: HTTP 层代理。GitHub 查询和远程下载都会使用它。
+- `proxy_url`: HTTP 层代理。GitHub 查询、远程下载和 SDK 请求都会使用它。运行时可用 app 级选项 `--no-proxy` 临时禁用该配置；环境变量 `NO_PROXY` 非空时也会禁用 `global.proxy_url`。
 - `user_agent`: HTTP 请求默认 `User-Agent`。为空时使用内置浏览器 UA；配置后覆盖默认值。
 - `system`: 默认目标平台，格式为 `GOOS/GOARCH`，例如 `windows/amd64`。
 - `sys7z_path`: 可选 7z 可执行文件路径。为空时会从 `PATH` 依次查找 `7z`、`7zz`、`7za`。
