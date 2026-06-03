@@ -46,6 +46,33 @@ func TestCacheFilePathWithMetaUsesNameAndVersionFallbacks(t *testing.T) {
 	assert.True(t, strings.HasSuffix(base, ".bin"))
 }
 
+func TestCacheFilePathWithMetaAddsPlatformWhenNameHasNoPlatform(t *testing.T) {
+	got := CacheFilePathWithMeta(t.TempDir(), "https://example.com/download?id=123", CacheMeta{
+		Name:    "claude",
+		Version: "2.1.160",
+		OS:      "linux",
+		Arch:    "amd64",
+	})
+	base := filepath.Base(got)
+
+	assert.True(t, strings.HasPrefix(base, "claude-2.1.160-linux-amd64-"))
+	assert.True(t, strings.HasSuffix(base, ".bin"))
+}
+
+func TestCacheFilePathWithMetaDoesNotDuplicatePlatformFromName(t *testing.T) {
+	got := CacheFilePathWithMeta(t.TempDir(), "https://downloads.example.com/gomi_Linux_x86_64.tar.gz", CacheMeta{
+		Name:    "gomi",
+		Version: "v1.6.3",
+		OS:      "linux",
+		Arch:    "amd64",
+	})
+	base := filepath.Base(got)
+
+	assert.True(t, strings.HasPrefix(base, "gomi_Linux_x86_64-1.6.3-"))
+	assert.False(t, strings.Contains(base, "linux-amd64"))
+	assert.True(t, strings.HasSuffix(base, ".tar.gz"))
+}
+
 func TestCacheFilePathWithMetaKeepsAssetNameAndUsesMetaVersion(t *testing.T) {
 	got := CacheFilePathWithMeta(t.TempDir(), "https://downloads.example.com/files/tool-linux-amd64.tar.gz", CacheMeta{
 		Name:    "tool",

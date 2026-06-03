@@ -27,7 +27,7 @@ func (r *InstallRunner) materializeRunAsset(body []byte, url string, opts Option
 	if IsLocalFile(url) {
 		return url, nil
 	}
-	target := CacheFilePathWithMeta(opts.CacheDir, url, CacheMeta{Name: opts.CacheName, Version: opts.CacheVersion})
+	target := CacheFilePathWithMeta(opts.CacheDir, url, cacheMetaFromOptions(opts))
 	if target == "" {
 		target = filepath.Join(os.TempDir(), filepath.Base(url))
 	}

@@ -20,7 +20,7 @@ import (
 const downloadProgressRedrawFreq = 256 * 1024
 
 func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResult, error) {
-	cachePath := CacheFilePathWithMeta(opts.CacheDir, url, CacheMeta{Name: opts.CacheName, Version: opts.CacheVersion})
+	cachePath := CacheFilePathWithMeta(opts.CacheDir, url, cacheMetaFromOptions(opts))
 	output := r.Stdout
 	if output == nil || opts.Quiet {
 		output = io.Discard
@@ -85,6 +85,26 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 		}
 	}
 	return downloadBodyResult{Body: body, ModTime: parseHTTPTime(result.LastModified)}, nil
+}
+
+func cacheMetaFromOptions(opts Options) CacheMeta {
+	goos, goarch := cachePlatformFromOptions(opts)
+	return CacheMeta{Name: opts.CacheName, Version: opts.CacheVersion, OS: goos, Arch: goarch}
+}
+
+func cachePlatformFromOptions(opts Options) (string, string) {
+	if opts.URLTemplate.ResolvedVars != nil {
+		goos := opts.URLTemplate.ResolvedVars["os"]
+		goarch := opts.URLTemplate.ResolvedVars["arch"]
+		if goos != "" && goarch != "" {
+			return goos, goarch
+		}
+	}
+	parts := strings.SplitN(opts.System, "/", 2)
+	if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+		return parts[0], parts[1]
+	}
+	return "", ""
 }
 
 func tryCacheMirrorDownload(cachePath string, opts Options) (bool, error) {

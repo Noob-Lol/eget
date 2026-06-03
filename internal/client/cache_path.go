@@ -14,6 +14,8 @@ import (
 type CacheMeta struct {
 	Name    string
 	Version string
+	OS      string
+	Arch    string
 }
 
 func CacheFilePath(cacheDir, rawURL string) string {
@@ -38,6 +40,10 @@ func CacheFilePathWithMeta(cacheDir, rawURL string, meta CacheMeta) string {
 		name = "download"
 	}
 	version := cacheVersion(rawURL, u, fileName, meta.Version)
+	platform := cachePlatform(name, meta.OS, meta.Arch)
+	if platform != "" {
+		version = version + "-" + platform
+	}
 	return filepath.Join(cacheDir, "pkg-cache", fmt.Sprintf("%s-%s-%s%s", safeCachePart(name), safeCachePart(version), shortURLHash(rawURL), ext))
 }
 
@@ -111,6 +117,41 @@ func isGenericCacheName(name, ext string) bool {
 		return false
 	}
 }
+
+func cachePlatform(name, goos, goarch string) string {
+	goos = strings.ToLower(strings.TrimSpace(goos))
+	goarch = strings.ToLower(strings.TrimSpace(goarch))
+	if goos == "" || goarch == "" || nameHasPlatform(name) {
+		return ""
+	}
+	return safeCachePart(goos) + "-" + safeCachePart(goarch)
+}
+
+func nameHasPlatform(name string) bool {
+	tokens := cacheNameTokens(name)
+	return hasAnyCacheToken(tokens, cacheOSTokens...) || hasAnyCacheToken(tokens, cacheArchTokens...)
+}
+
+func cacheNameTokens(name string) []string {
+	lower := strings.ToLower(name)
+	return strings.FieldsFunc(lower, func(r rune) bool {
+		return r == '-' || r == '_' || r == '.' || r == '/' || r == '\\'
+	})
+}
+
+func hasAnyCacheToken(tokens []string, aliases ...string) bool {
+	for _, token := range tokens {
+		for _, alias := range aliases {
+			if token == alias {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+var cacheOSTokens = []string{"windows", "win", "win32", "win64", "darwin", "macos", "osx", "linux", "freebsd", "openbsd", "netbsd", "android", "illumos", "solaris", "plan9"}
+var cacheArchTokens = []string{"amd64", "x86_64", "x64", "386", "x86", "i386", "arm64", "aarch64", "arm32", "armv6", "armv7", "arm", "riscv64"}
 
 var cacheVersionPattern = regexp.MustCompile(`(?i)(?:^|[^0-9])v?(\d+(?:\.\d+)+(?:[-+][0-9A-Za-z.-]+)?)`)
 

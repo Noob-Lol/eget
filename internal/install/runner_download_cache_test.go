@@ -53,6 +53,60 @@ func TestCacheFilePathUsesMetadataForOpaqueURL(t *testing.T) {
 	}
 }
 
+func TestDownloadBodyAddsPlatformToOpaqueCacheName(t *testing.T) {
+	cacheDir := t.TempDir()
+	url := "https://example.com/download?id=123"
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("binary")),
+		}, nil
+	}
+
+	runner := &InstallRunner{}
+	_, err := runner.downloadBody(url, Options{
+		CacheDir:     cacheDir,
+		CacheName:    "claude",
+		CacheVersion: "2.1.160",
+		System:       "linux/amd64",
+	})
+
+	assert.NoErr(t, err)
+	matches, err := filepath.Glob(filepath.Join(cacheDir, "pkg-cache", "claude-2.1.160-linux-amd64-*.bin"))
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(matches))
+}
+
+func TestDownloadBodyAddsTemplateResolvedPlatformToCacheName(t *testing.T) {
+	cacheDir := t.TempDir()
+	url := "https://example.com/claude/latest"
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("binary")),
+		}, nil
+	}
+
+	runner := &InstallRunner{}
+	_, err := runner.downloadBody(url, Options{
+		CacheDir:     cacheDir,
+		CacheName:    "claude",
+		CacheVersion: "2.1.160",
+		URLTemplate: URLTemplateOptions{
+			ResolvedVars: map[string]string{"os": "darwin", "arch": "arm64"},
+		},
+	})
+
+	assert.NoErr(t, err)
+	matches, err := filepath.Glob(filepath.Join(cacheDir, "pkg-cache", "claude-2.1.160-darwin-arm64-*.bin"))
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(matches))
+}
+
 func TestDownloadBodyUsesCacheWhenAvailable(t *testing.T) {
 	cacheDir := t.TempDir()
 	url := "https://example.com/tool.tar.gz"
