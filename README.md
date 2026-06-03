@@ -140,6 +140,20 @@ eget sdk index show go
 
 ### Cache Management
 
+`eget cache` manages the local cache directory. The top-level command also has a short alias:
+
+```bash
+eget ca status
+eget ca list --root sdk
+```
+
+Subcommands:
+
+- `cache clean`: remove selected cache files.
+- `cache list`: list cache files by root (`all`, `pkg`, `api`, `sdk`, `sdk-index`, `partial`).
+- `cache status`: show cache directory usage summary.
+- `cache serve`: serve cache files over a read-only HTTP server.
+
 `eget cache clean` removes local cache files from `global.cache_dir`. By default it removes package, API, SDK download, and partial download cache files older than 3 days. SDK index cache is kept by default; use `--sdk-index` when you explicitly want to clear it.
 
 ```bash
@@ -147,6 +161,7 @@ eget cache clean
 eget cache clean --dry-run --older 7d
 eget cache clean --dry-run --json
 eget cache clean --api --all
+eget ca clean --sdk --partial --older 12h
 ```
 
 Inspect cache contents:
@@ -154,6 +169,7 @@ Inspect cache contents:
 ```bash
 eget cache status
 eget cache list --root sdk
+eget cache list --root sdk-index
 eget cache list --json
 ```
 

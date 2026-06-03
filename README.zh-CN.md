@@ -140,6 +140,20 @@ eget sdk index show go
 
 ### 缓存管理
 
+`eget cache` 用于管理本机缓存目录。顶层命令也支持短别名：
+
+```bash
+eget ca status
+eget ca list --root sdk
+```
+
+子命令：
+
+- `cache clean`: 清理选定的缓存文件。
+- `cache list`: 按缓存根目录列出文件，支持 `all`、`pkg`、`api`、`sdk`、`sdk-index`、`partial`。
+- `cache status`: 查看缓存目录占用摘要。
+- `cache serve`: 以只读 HTTP 服务暴露缓存文件。
+
 `eget cache clean` 用于清理 `global.cache_dir` 下的本机缓存。默认清理 3 天前的 package 下载缓存、API cache、SDK 下载缓存和未完成下载状态。SDK index 默认保留；如果确认要清理 SDK index，请显式使用 `--sdk-index`。
 
 ```bash
@@ -147,6 +161,7 @@ eget cache clean
 eget cache clean --dry-run --older 7d
 eget cache clean --dry-run --json
 eget cache clean --api --all
+eget ca clean --sdk --partial --older 12h
 ```
 
 查看缓存内容和状态：
@@ -154,6 +169,7 @@ eget cache clean --api --all
 ```bash
 eget cache status
 eget cache list --root sdk
+eget cache list --root sdk-index
 eget cache list --json
 ```
 
