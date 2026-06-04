@@ -63,7 +63,27 @@ func autoExtractCurrentPlatformExecutables(candidates []ExtractedFile, opts Opti
 		}
 		selected = append(selected, candidate)
 	}
-	return selected, len(selected) > 0
+	return flattenAutoExtractedExecutableNames(selected), len(selected) > 0
+}
+
+func flattenAutoExtractedExecutableNames(files []ExtractedFile) []ExtractedFile {
+	if len(files) == 0 {
+		return files
+	}
+	seen := make(map[string]bool, len(files))
+	for _, file := range files {
+		base := filepath.Base(firstNonEmpty(file.Name, file.ArchiveName))
+		if base == "." || base == string(filepath.Separator) || base == "" || seen[base] {
+			return files
+		}
+		seen[base] = true
+	}
+	flattened := make([]ExtractedFile, len(files))
+	for i, file := range files {
+		file.Name = filepath.Base(firstNonEmpty(file.Name, file.ArchiveName))
+		flattened[i] = file
+	}
+	return flattened
 }
 
 func isExecutableForGOOS(file ExtractedFile, goos string) bool {

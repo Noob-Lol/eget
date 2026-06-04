@@ -379,6 +379,86 @@ func TestRunAutoExtractsMultipleWindowsExecutables(t *testing.T) {
 	}
 }
 
+func TestRunAutoExtractsNestedPlatformExecutablesToOutputRoot(t *testing.T) {
+	assetURL := "https://example.com/uv.zip"
+	archive := zipBytesWithModes(t, map[string]zipTestFile{
+		"uv-x86_64-unknown-linux-gnu/uv":        {body: "uv", mode: 0o755},
+		"uv-x86_64-unknown-linux-gnu/uvx":       {body: "uvx", mode: 0o755},
+		"uv-x86_64-unknown-linux-gnu/README.md": {body: "readme", mode: 0o644},
+	})
+	outputDir := t.TempDir()
+
+	svc := NewDefaultService(nil, nil)
+	svc.SystemDetectorFactory = func(goos, goarch string) (Detector, error) {
+		assert.Eq(t, "linux", goos)
+		assert.Eq(t, "amd64", goarch)
+		return &fakeDetector{name: assetURL}, nil
+	}
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(archive)),
+		}, nil
+	}
+
+	runner := NewRunner(svc)
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+	result, err := runner.Run(assetURL, Options{
+		Name:   "uv",
+		Output: outputDir,
+		System: "linux/amd64",
+	})
+	if err != nil {
+		t.Fatalf("run install: %v", err)
+	}
+
+	gotFiles := append([]string(nil), result.ExtractedFiles...)
+	wantFiles := []string{
+		filepath.Join(outputDir, "uv"),
+		filepath.Join(outputDir, "uvx"),
+	}
+	sort.Strings(gotFiles)
+	sort.Strings(wantFiles)
+	assert.Eq(t, wantFiles, gotFiles)
+	for _, file := range result.ExtractedFiles {
+		if _, err := os.Stat(file); err != nil {
+			t.Fatalf("expected extracted file %s: %v", file, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "uv-x86_64-unknown-linux-gnu", "uv")); !os.IsNotExist(err) {
+		t.Fatalf("expected platform directory not to be created, stat err=%v", err)
+	}
+}
+
+type zipTestFile struct {
+	body string
+	mode os.FileMode
+}
+
+func zipBytesWithModes(t *testing.T, files map[string]zipTestFile) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	for name, file := range files {
+		header := &zip.FileHeader{Name: name, Method: zip.Store}
+		header.SetMode(file.mode)
+		w, err := zw.CreateHeader(header)
+		if err != nil {
+			t.Fatalf("create zip file: %v", err)
+		}
+		if _, err := w.Write([]byte(file.body)); err != nil {
+			t.Fatalf("write zip file: %v", err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+	return buf.Bytes()
+}
+
 func zipBytes(t *testing.T, files map[string]string) []byte {
 	t.Helper()
 	var buf bytes.Buffer
