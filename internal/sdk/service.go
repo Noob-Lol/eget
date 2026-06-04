@@ -27,9 +27,11 @@ type Service struct {
 }
 
 type InstallOptions struct {
-	Force    bool
-	Progress func(size int64) io.Writer
-	OnStart  func(target string, version string, host string)
+	Force          bool
+	Progress       func(size int64) io.Writer
+	OnStart        func(target string, version string, host string)
+	OnArchiveReady func(result DownloadResult)
+	OnExtractStart func(archivePath string, installPath string)
 }
 
 type PlatformOptions struct {

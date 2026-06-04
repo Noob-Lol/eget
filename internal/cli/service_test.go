@@ -76,6 +76,12 @@ func (f *fakeSDKService) InstallMany(_ context.Context, targets []string, opts s
 		if opts.OnStart != nil {
 			opts.OnStart(target, "1.21.1", "example.com")
 		}
+		if opts.OnArchiveReady != nil {
+			opts.OnArchiveReady(sdk.DownloadResult{Path: "/cache/go.zip", FromCache: true})
+		}
+		if opts.OnExtractStart != nil {
+			opts.OnExtractStart("/cache/go.zip", "/sdks/go1.21.1")
+		}
 	}
 	return f.installResults, f.err
 }

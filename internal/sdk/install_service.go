@@ -59,6 +59,9 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 	if err != nil {
 		return InstallResult{}, err
 	}
+	if opts.OnArchiveReady != nil {
+		opts.OnArchiveReady(downloadResult)
+	}
 
 	tmpDir := filepath.Join(s.sdkRoot(cfg), ".eget-tmp", fmt.Sprintf("%s-%s-%d", cfg.Name, archive.Version, s.now().UnixNano()))
 	if err := os.RemoveAll(tmpDir); err != nil {
@@ -80,6 +83,9 @@ func (s Service) Install(ctx context.Context, rawTarget string, opts InstallOpti
 	data, err := os.ReadFile(downloadResult.Path)
 	if err != nil {
 		return InstallResult{}, err
+	}
+	if opts.OnExtractStart != nil {
+		opts.OnExtractStart(downloadResult.Path, installPath)
 	}
 	if withOptions, ok := direct.(interface {
 		ExtractAllToWithOptions([]byte, string, install.ArchiveExtractOptions) ([]string, error)

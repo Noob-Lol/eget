@@ -33,6 +33,8 @@ func TestHandleSDKInstallPrintsResults(t *testing.T) {
 	assert.NotNil(t, fake.installOpts.Progress)
 	got := out.String()
 	assert.Contains(t, got, "Install SDK go@1.21.1 -> 1.21.1 from example.com")
+	assert.Contains(t, got, "Use cached SDK archive: /cache/go.zip")
+	assert.Contains(t, got, "Extract SDK archive: /cache/go.zip -> /sdks/go1.21.1")
 	assert.Contains(t, got, "go@1.21.1")
 	assert.Contains(t, got, "/sdks/go1.21.1")
 	assert.Contains(t, got, "cached")

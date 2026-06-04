@@ -23,6 +23,14 @@ func (s *cliService) handleSDKInstall(opts *SDKInstallOptions) error {
 		OnStart: func(target string, version string, host string) {
 			ccolor.Printf(" - Install SDK %s -> %s from %s\n", target, version, host)
 		},
+		OnArchiveReady: func(result sdk.DownloadResult) {
+			if result.FromCache {
+				ccolor.Printf(" - Use cached SDK archive: %s\n", result.Path)
+			}
+		},
+		OnExtractStart: func(archivePath string, installPath string) {
+			ccolor.Printf(" - Extract SDK archive: %s -> %s\n", archivePath, installPath)
+		},
 	})
 	if err != nil {
 		return err
