@@ -103,9 +103,14 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 	}
 	var failures []error
 	for _, target := range opts.Targets {
-		if _, err := s.updService.UpdatePackage(target, installOpts); err != nil {
+		result, err := s.updService.UpdatePackageStatus(target, installOpts)
+		if err != nil {
 			ccolor.Fprintf(s.stderrWriter(), "<yellow>update_failed</> %s: %v\n", target, err)
 			failures = append(failures, err)
+			continue
+		}
+		if !result.Updated {
+			ccolor.Cyanf("%s is already up to date: %s\n", target, result.InstalledTag)
 		}
 	}
 	if len(failures) > 0 {

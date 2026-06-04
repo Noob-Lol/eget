@@ -26,33 +26,52 @@ type UpdateResult struct {
 	Result RunResult
 }
 
+type UpdatePackageResult struct {
+	Name         string
+	Target       string
+	InstalledTag string
+	LatestTag    string
+	Updated      bool
+	Result       RunResult
+}
+
 func (s UpdateService) UpdatePackage(nameOrRepo string, cli install.Options) (RunResult, error) {
+	result, err := s.UpdatePackageStatus(nameOrRepo, cli)
+	return result.Result, err
+}
+
+func (s UpdateService) UpdatePackageStatus(nameOrRepo string, cli install.Options) (UpdatePackageResult, error) {
 	cfg, err := s.loadConfig()
 	if err != nil {
-		return RunResult{}, err
+		return UpdatePackageResult{}, err
 	}
 	installed, err := s.loadInstalled()
 	if err != nil {
-		return RunResult{}, err
+		return UpdatePackageResult{}, err
 	}
 
 	item, entry, managed, ok := findUpdateTarget(cfg, installed, nameOrRepo)
 	if !ok {
-		return RunResult{}, fmt.Errorf("update target %q is not configured or installed; use install first", nameOrRepo)
+		return UpdatePackageResult{}, fmt.Errorf("update target %q is not configured or installed; use install first", nameOrRepo)
 	}
 	if !item.Installed {
-		return RunResult{}, fmt.Errorf("update target %q is not installed; use install first", nameOrRepo)
+		return UpdatePackageResult{}, fmt.Errorf("update target %q is not installed; use install first", nameOrRepo)
 	}
 	if s.LatestInfo == nil {
-		return RunResult{}, fmt.Errorf("latest info checker is required")
+		return UpdatePackageResult{}, fmt.Errorf("latest info checker is required")
 	}
 	enrichListItemFromInstalledEntry(&item, entry)
 	check := checkOutdatedItem(item, s.LatestInfo)
 	if check.failure != nil {
-		return RunResult{}, check.failure.Error
+		return UpdatePackageResult{}, check.failure.Error
 	}
+	latestTag := item.InstalledTag
+	if check.outdated != nil {
+		latestTag = check.outdated.LatestTag
+	}
+	status := UpdatePackageResult{Name: item.Name, Target: item.Repo, InstalledTag: item.InstalledTag, LatestTag: latestTag}
 	if check.outdated == nil {
-		return RunResult{}, nil
+		return status, nil
 	}
 
 	target := item.Name
@@ -64,7 +83,13 @@ func (s UpdateService) UpdatePackage(nameOrRepo string, cli install.Options) (Ru
 	opts.Operation = install.OperationUpdate
 	opts.CurrentVersion = item.InstalledTag
 	opts.TargetVersion = check.outdated.LatestTag
-	return s.Install.InstallTarget(target, opts)
+	result, err := s.Install.InstallTarget(target, opts)
+	if err != nil {
+		return UpdatePackageResult{}, err
+	}
+	status.Result = result
+	status.Updated = true
+	return status, nil
 }
 
 func (s UpdateService) UpdateAllPackages(cli install.Options) ([]UpdateResult, error) {

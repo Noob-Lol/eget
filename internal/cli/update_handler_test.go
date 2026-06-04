@@ -96,6 +96,41 @@ func TestHandleUpdateWarnsAndContinuesAfterTargetFailure(t *testing.T) {
 	assert.Contains(t, gotErr, "file is being used by another process")
 }
 
+func TestHandleUpdatePrintsAlreadyUpToDateTarget(t *testing.T) {
+	installer := &fakeUpdateInstallerForCLI{}
+	svc := &cliService{
+		updService: app.UpdateService{
+			Install: installer,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["xenv"] = cfgpkg.Section{Repo: util.StringPtr("inhere/xenv")}
+				return cfg, nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"inhere/xenv": {Repo: "inhere/xenv", Tag: "v1.2.3"},
+				}}, nil
+			},
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				assert.Eq(t, "inhere/xenv", target.Repo)
+				return app.LatestInfo{Tag: "v1.2.3"}, nil
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleUpdate(&UpdateOptions{Targets: []string{"xenv"}})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 0, len(installer.targets))
+	got := ccolor.ClearCode(out.String())
+	assert.Contains(t, got, "xenv is already up to date")
+	assert.Contains(t, got, "v1.2.3")
+}
+
 func TestHandleUpdateRejectsUnimplementedDryRunAndInteractive(t *testing.T) {
 	svc := &cliService{}
 
