@@ -148,7 +148,7 @@ func sdkDownloadMetaPath(req DownloadRequest) string {
 
 func completeCacheMatches(path, metaPath string, req DownloadRequest) (bool, downloadMeta) {
 	meta, ok := loadDownloadMeta(metaPath)
-	if !ok || meta.URL != req.URL || meta.Filename != req.Filename {
+	if !ok || meta.Filename != req.Filename {
 		return false, downloadMeta{}
 	}
 	info, err := os.Stat(path)

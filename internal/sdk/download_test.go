@@ -71,6 +71,49 @@ func TestDownloadArchiveUsesCompleteCacheWhenMetaMatches(t *testing.T) {
 	assert.Eq(t, int64(len("archive")), result.Size)
 }
 
+func TestDownloadArchiveUsesCompleteCacheWhenOnlyMetaURLDiffers(t *testing.T) {
+	var originHit bool
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		originHit = true
+		_, _ = w.Write([]byte("origin"))
+	}))
+	defer origin.Close()
+
+	cacheDir := t.TempDir()
+	req := DownloadRequest{
+		URL:      origin.URL + "/go.tar.gz",
+		CacheDir: cacheDir,
+		SDK:      "go",
+		Version:  "1.21.13",
+		Filename: "go1.21.13.linux-amd64.tar.gz",
+	}
+	finalPath := sdkDownloadFinalPath(req)
+	if err := os.MkdirAll(filepath.Dir(finalPath), 0o755); err != nil {
+		t.Fatalf("mkdir cache: %v", err)
+	}
+	if err := os.WriteFile(finalPath, []byte("archive"), 0o644); err != nil {
+		t.Fatalf("write complete cache: %v", err)
+	}
+	if err := saveDownloadMeta(sdkDownloadMetaPath(req), downloadMeta{
+		Schema:   1,
+		URL:      "https://mirrors.aliyun.com/golang/go1.21.13.linux-amd64.tar.gz",
+		Filename: req.Filename,
+		Size:     int64(len("archive")),
+	}); err != nil {
+		t.Fatalf("write meta: %v", err)
+	}
+
+	result, err := DownloadArchive(context.Background(), req)
+	if err != nil {
+		t.Fatalf("download archive: %v", err)
+	}
+
+	assert.False(t, originHit)
+	assert.True(t, result.FromCache)
+	assert.Eq(t, finalPath, result.Path)
+	assert.Eq(t, int64(len("archive")), result.Size)
+}
+
 func TestDownloadArchiveUsesCacheMirrorBeforeOrigin(t *testing.T) {
 	var originHit bool
 	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
