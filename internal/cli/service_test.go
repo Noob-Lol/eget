@@ -234,13 +234,19 @@ func (f *fakeRunnerForCLI) Run(target string, opts install.Options) (app.RunResu
 }
 
 type fakeUpdateInstallerForCLI struct {
-	targets []string
-	options []install.Options
+	targets     []string
+	options     []install.Options
+	errByTarget map[string]error
 }
 
 func (f *fakeUpdateInstallerForCLI) InstallTarget(target string, opts install.Options, extras ...app.InstallExtras) (app.RunResult, error) {
 	f.targets = append(f.targets, target)
 	f.options = append(f.options, opts)
+	if f.errByTarget != nil {
+		if err := f.errByTarget[target]; err != nil {
+			return app.RunResult{}, err
+		}
+	}
 	return app.RunResult{}, nil
 }
 

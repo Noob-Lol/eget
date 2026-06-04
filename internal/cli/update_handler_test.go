@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"strings"
@@ -53,6 +54,46 @@ func TestHandleUpdateUpdatesMultipleTargets(t *testing.T) {
 	if len(installer.options) != 2 || !installer.options[0].Quiet || !installer.options[1].Quiet {
 		t.Fatalf("expected cli update options to propagate, got %#v", installer.options)
 	}
+}
+
+func TestHandleUpdateWarnsAndContinuesAfterTargetFailure(t *testing.T) {
+	installer := &fakeUpdateInstallerForCLI{
+		errByTarget: map[string]error{
+			"codex": errors.New("file is being used by another process"),
+		},
+	}
+	svc := &cliService{
+		stderr: &bytes.Buffer{},
+		updService: app.UpdateService{
+			Install: installer,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["codex"] = cfgpkg.Section{Repo: util.StringPtr("openai/codex")}
+				cfg.Packages["dbx"] = cfgpkg.Section{Repo: util.StringPtr("owner/dbx")}
+				cfg.Packages["uv"] = cfgpkg.Section{Repo: util.StringPtr("astral-sh/uv")}
+				return cfg, nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"openai/codex": {Repo: "openai/codex", Tag: "v1.0.0"},
+					"owner/dbx":    {Repo: "owner/dbx", Tag: "v1.0.0"},
+					"astral-sh/uv": {Repo: "astral-sh/uv", Tag: "v1.0.0"},
+				}}, nil
+			},
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				return app.LatestInfo{Tag: "v2.0.0"}, nil
+			},
+		},
+	}
+
+	err := svc.handleUpdate(&UpdateOptions{Targets: []string{"codex", "dbx", "uv"}})
+
+	assert.Err(t, err)
+	assert.Contains(t, err.Error(), "1 update failed")
+	assert.Eq(t, []string{"codex", "dbx", "uv"}, installer.targets)
+	gotErr := ccolor.ClearCode(svc.stderr.(*bytes.Buffer).String())
+	assert.Contains(t, gotErr, "update_failed codex")
+	assert.Contains(t, gotErr, "file is being used by another process")
 }
 
 func TestHandleUpdateRejectsUnimplementedDryRunAndInteractive(t *testing.T) {

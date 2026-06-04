@@ -101,10 +101,15 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 	if len(opts.Targets) == 0 {
 		return fmt.Errorf("update target is required")
 	}
+	var failures []error
 	for _, target := range opts.Targets {
 		if _, err := s.updService.UpdatePackage(target, installOpts); err != nil {
-			return err
+			ccolor.Fprintf(s.stderrWriter(), "<yellow>update_failed</> %s: %v\n", target, err)
+			failures = append(failures, err)
 		}
+	}
+	if len(failures) > 0 {
+		return fmt.Errorf("%d update failed", len(failures))
 	}
 	return nil
 }
