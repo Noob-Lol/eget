@@ -3,9 +3,11 @@ package app
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
+	"github.com/inherelab/eget/internal/install"
 	storepkg "github.com/inherelab/eget/internal/installed"
 	"github.com/inherelab/eget/internal/util"
 )
@@ -61,10 +63,100 @@ func (s UninstallService) Uninstall(target string) (UninstallResult, error) {
 		}
 		result.RemovedFiles = append(result.RemovedFiles, file)
 	}
+	if err := removePortableGUIDirs(entry); err != nil {
+		return UninstallResult{}, err
+	}
 	if err := s.Store.Remove(key); err != nil {
 		return UninstallResult{}, err
 	}
 	return result, nil
+}
+
+func removePortableGUIDirs(entry storepkg.Entry) error {
+	if !entry.IsGUI || entry.InstallMode != install.InstallModePortable || len(entry.ExtractedFiles) == 0 {
+		return nil
+	}
+	for _, file := range entry.ExtractedFiles {
+		dir, err := filepath.Abs(filepath.Dir(file))
+		if err != nil {
+			return err
+		}
+		for _, root := range portableGUIUninstallRoots(entry) {
+			rootPath, err := filepath.Abs(root.path)
+			if err != nil {
+				return err
+			}
+			if !pathWithinOrEqual(rootPath, dir) {
+				continue
+			}
+			if err := removeEmptyDirsUpTo(dir, rootPath, root.keepRoot); err != nil {
+				return err
+			}
+			break
+		}
+	}
+	return nil
+}
+
+type uninstallRoot struct {
+	path     string
+	keepRoot bool
+}
+
+func portableGUIUninstallRoots(entry storepkg.Entry) []uninstallRoot {
+	roots := []uninstallRoot{}
+	if output, _ := stringOption(entry.Options, "output", "target"); output != "" {
+		roots = append(roots, uninstallRoot{path: output})
+	}
+	if guiTarget, _ := stringOption(entry.Options, "gui_target"); guiTarget != "" {
+		roots = append(roots, uninstallRoot{path: guiTarget, keepRoot: true})
+	}
+	return roots
+}
+
+func removeEmptyDirsUpTo(dir, root string, keepRoot bool) error {
+	for pathWithinOrEqual(root, dir) {
+		if keepRoot && samePath(dir, root) {
+			return nil
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
+		}
+		if len(entries) > 0 {
+			return nil
+		}
+		if err := os.Remove(dir); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		if samePath(dir, root) {
+			return nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return nil
+		}
+		dir = parent
+	}
+	return nil
+}
+
+func pathWithinOrEqual(root, path string) bool {
+	if samePath(root, path) {
+		return true
+	}
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator))
+}
+
+func samePath(a, b string) bool {
+	return filepath.Clean(a) == filepath.Clean(b)
 }
 
 func (s UninstallService) resolveTarget(target string) (uninstallTarget, error) {

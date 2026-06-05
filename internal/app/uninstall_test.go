@@ -270,6 +270,91 @@ func TestUninstallPreservesGUIInstallerMetadata(t *testing.T) {
 	}
 }
 
+func TestUninstallPortableGUIRemovesEmptyInstallDirectory(t *testing.T) {
+	tmp := t.TempDir()
+	appDir := filepath.Join(tmp, "PicoClaw")
+	binPath := filepath.Join(appDir, "picoclaw.exe")
+	if err := os.MkdirAll(appDir, 0o755); err != nil {
+		t.Fatalf("mkdir app dir: %v", err)
+	}
+	if err := os.WriteFile(binPath, []byte("bin"), 0o755); err != nil {
+		t.Fatalf("write bin: %v", err)
+	}
+
+	store := &fakeInstalledStoreWithLoad{
+		cfg: &storepkg.Config{
+			Installed: map[string]storepkg.Entry{
+				"sipeed/picoclaw": {
+					Repo:           "sipeed/picoclaw",
+					IsGUI:          true,
+					InstallMode:    install.InstallModePortable,
+					ExtractedFiles: []string{binPath},
+					Options:        map[string]any{"output": appDir},
+				},
+			},
+		},
+	}
+	svc := UninstallService{
+		Store: store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	if _, err := svc.Uninstall("sipeed/picoclaw"); err != nil {
+		t.Fatalf("uninstall portable GUI: %v", err)
+	}
+	if _, err := os.Stat(appDir); !os.IsNotExist(err) {
+		t.Fatalf("expected empty portable GUI install dir to be removed, stat err=%v", err)
+	}
+}
+
+func TestUninstallPortableGUIKeepsSharedGuiTarget(t *testing.T) {
+	tmp := t.TempDir()
+	guiTarget := filepath.Join(tmp, "Programs")
+	appDir := filepath.Join(guiTarget, "PicoClaw")
+	binPath := filepath.Join(appDir, "picoclaw.exe")
+	if err := os.MkdirAll(appDir, 0o755); err != nil {
+		t.Fatalf("mkdir app dir: %v", err)
+	}
+	if err := os.WriteFile(binPath, []byte("bin"), 0o755); err != nil {
+		t.Fatalf("write bin: %v", err)
+	}
+
+	store := &fakeInstalledStoreWithLoad{
+		cfg: &storepkg.Config{
+			Installed: map[string]storepkg.Entry{
+				"sipeed/picoclaw": {
+					Repo:           "sipeed/picoclaw",
+					IsGUI:          true,
+					InstallMode:    install.InstallModePortable,
+					ExtractedFiles: []string{binPath},
+					Options: map[string]any{
+						"output":     filepath.Join(tmp, "bin"),
+						"gui_target": guiTarget,
+					},
+				},
+			},
+		},
+	}
+	svc := UninstallService{
+		Store: store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	if _, err := svc.Uninstall("sipeed/picoclaw"); err != nil {
+		t.Fatalf("uninstall portable GUI: %v", err)
+	}
+	if _, err := os.Stat(appDir); !os.IsNotExist(err) {
+		t.Fatalf("expected app subdir to be removed, stat err=%v", err)
+	}
+	if _, err := os.Stat(guiTarget); err != nil {
+		t.Fatalf("expected shared gui target to remain, stat err=%v", err)
+	}
+}
+
 func TestUninstallFailsWhenInstalledEntryMissing(t *testing.T) {
 	store := &fakeInstalledStoreWithLoad{
 		cfg: &storepkg.Config{
