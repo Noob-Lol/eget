@@ -49,12 +49,14 @@ func entryToMap(entry Entry) map[string]any {
 	data := map[string]any{
 		"repo":            entry.Repo,
 		"target":          entry.Target,
-		"installed_at":    entry.InstalledAt,
+		"installed_at":    compactStoreTime(entry.InstalledAt),
 		"url":             entry.URL,
 		"asset":           entry.Asset,
 		"extracted_files": append([]string(nil), entry.ExtractedFiles...),
 		"options":         entry.Options,
-		"release_date":    entry.ReleaseDate,
+	}
+	if !entry.UpdatedAt.IsZero() {
+		data["updated_at"] = compactStoreTime(entry.UpdatedAt)
 	}
 	if entry.Tool != "" {
 		data["tool"] = entry.Tool

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	forge "github.com/inherelab/eget/internal/source/forge"
@@ -102,12 +103,38 @@ func (s *Store) Record(target string, entry Entry) error {
 	if config.Installed == nil {
 		config.Installed = make(map[string]Entry)
 	}
+	recordedAt := compactStoreTime(entry.InstalledAt)
+	entry.InstalledAt = recordedAt
+	legacyKey := NormalizeRepoName(entry.Repo)
+	existing, hasExisting := config.Installed[key]
+	if !hasExisting && legacyKey != "" && legacyKey != key {
+		existing, hasExisting = config.Installed[legacyKey]
+	}
+	if hasExisting {
+		if !existing.InstalledAt.IsZero() {
+			entry.InstalledAt = compactStoreTime(existing.InstalledAt)
+		}
+		if entry.UpdatedAt.IsZero() {
+			entry.UpdatedAt = recordedAt
+			if entry.UpdatedAt.IsZero() {
+				entry.UpdatedAt = compactStoreTime(time.Now())
+			}
+		}
+	}
+	entry.UpdatedAt = compactStoreTime(entry.UpdatedAt)
 	config.Installed[key] = entry
-	if legacyKey := NormalizeRepoName(entry.Repo); legacyKey != "" && legacyKey != key {
+	if legacyKey != "" && legacyKey != key {
 		delete(config.Installed, legacyKey)
 	}
 
 	return s.Save(config)
+}
+
+func compactStoreTime(value time.Time) time.Time {
+	if value.IsZero() {
+		return time.Time{}
+	}
+	return value.UTC().Truncate(time.Second)
 }
 
 func (s *Store) Remove(target string) error {

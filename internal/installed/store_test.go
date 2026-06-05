@@ -3,6 +3,7 @@ package installed
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,7 +92,6 @@ func TestStoreSaveRoundTripWithExtendedFields(t *testing.T) {
 		LookupEnv: func(string) (string, bool) { return "", false },
 	})
 
-	releasedAt := time.Unix(1710003600, 0).UTC()
 	cfg := &Config{
 		Installed: map[string]Entry{
 			"gookit/gitw": {
@@ -106,12 +106,11 @@ func TestStoreSaveRoundTripWithExtendedFields(t *testing.T) {
 					"tag":    "v0.3.6",
 					"system": "windows/amd64",
 				},
-				Version:     "v0.3.6",
-				Tag:         "v0.3.6",
-				ReleaseDate: releasedAt,
-				Desc:        "Git release changelog generator",
-				Homepage:    "https://gookit.github.io/gitw",
-				RepoURL:     "https://github.com/gookit/gitw",
+				Version:  "v0.3.6",
+				Tag:      "v0.3.6",
+				Desc:     "Git release changelog generator",
+				Homepage: "https://gookit.github.io/gitw",
+				RepoURL:  "https://github.com/gookit/gitw",
 			},
 		},
 	}
@@ -132,14 +131,88 @@ func TestStoreSaveRoundTripWithExtendedFields(t *testing.T) {
 	if entry.Tool != "chlog" || entry.Tag != "v0.3.6" || entry.Version != "v0.3.6" {
 		t.Fatalf("expected extended fields to round-trip, got %#v", entry)
 	}
-	if !entry.ReleaseDate.Equal(releasedAt) {
-		t.Fatalf("expected release date %v, got %v", releasedAt, entry.ReleaseDate)
-	}
 	assert.Eq(t, "Git release changelog generator", entry.Desc)
 	assert.Eq(t, "https://gookit.github.io/gitw", entry.Homepage)
 	assert.Eq(t, "https://github.com/gookit/gitw", entry.RepoURL)
 	if entry.Options["system"] != "windows/amd64" {
 		t.Fatalf("expected options to round-trip, got %#v", entry.Options)
+	}
+}
+
+func TestStoreRecordUpdatePreservesInstalledAtAndSetsUpdatedAt(t *testing.T) {
+	tmp := t.TempDir()
+	store := NewStore(Options{
+		HomeDir:   filepath.Join(tmp, "home"),
+		GOOS:      "linux",
+		LookupEnv: func(string) (string, bool) { return "", false },
+	})
+
+	zone := time.FixedZone("PDT", -7*60*60)
+	installedAt := time.Date(2026, 6, 5, 5, 1, 10, 498134022, zone)
+	updatedAt := installedAt.Add(2 * time.Hour)
+
+	err := store.Record("gookit/gitw", Entry{
+		Repo:        "gookit/gitw",
+		InstalledAt: installedAt,
+		URL:         "https://github.com/gookit/gitw/releases/download/v0.3.6/gitw.tar.gz",
+		Asset:       "gitw.tar.gz",
+	})
+	assert.NoErr(t, err)
+
+	cfg, err := store.Load()
+	assert.NoErr(t, err)
+	if !cfg.Installed["gookit/gitw"].UpdatedAt.IsZero() {
+		t.Fatalf("expected first install to omit updated_at, got %#v", cfg.Installed["gookit/gitw"])
+	}
+
+	err = store.Record("gookit/gitw", Entry{
+		Repo:        "gookit/gitw",
+		InstalledAt: updatedAt,
+		URL:         "https://github.com/gookit/gitw/releases/download/v0.3.7/gitw.tar.gz",
+		Asset:       "gitw.tar.gz",
+	})
+	assert.NoErr(t, err)
+
+	cfg, err = store.Load()
+	assert.NoErr(t, err)
+	entry := cfg.Installed["gookit/gitw"]
+	assert.Eq(t, installedAt.UTC().Truncate(time.Second), entry.InstalledAt)
+	assert.Eq(t, updatedAt.UTC().Truncate(time.Second), entry.UpdatedAt)
+}
+
+func TestStoreSaveOmitsReleaseDateAndFormatsTimesCompactly(t *testing.T) {
+	tmp := t.TempDir()
+	store := NewStore(Options{
+		HomeDir:   filepath.Join(tmp, "home"),
+		GOOS:      "linux",
+		LookupEnv: func(string) (string, bool) { return "", false },
+	})
+
+	zone := time.FixedZone("PDT", -7*60*60)
+	cfg := &Config{
+		Installed: map[string]Entry{
+			"gookit/gitw": {
+				Repo:        "gookit/gitw",
+				InstalledAt: time.Date(2026, 6, 5, 5, 1, 10, 498134022, zone),
+				UpdatedAt:   time.Date(2026, 6, 5, 7, 1, 10, 498134022, zone),
+				URL:         "https://github.com/gookit/gitw/releases/download/v0.3.7/gitw.tar.gz",
+				Asset:       "gitw.tar.gz",
+				ReleaseDate: time.Date(2026, 6, 1, 1, 2, 3, 4, time.UTC),
+			},
+		},
+	}
+
+	assert.NoErr(t, store.Save(cfg))
+
+	data, err := os.ReadFile(store.Path())
+	assert.NoErr(t, err)
+	body := string(data)
+	if strings.Contains(body, "release_date") {
+		t.Fatalf("expected release_date to be omitted, got:\n%s", body)
+	}
+	assert.Contains(t, body, "updated_at")
+	if strings.Contains(body, ".498134022") || strings.Contains(body, "-07:00") {
+		t.Fatalf("expected compact UTC timestamps, got:\n%s", body)
 	}
 }
 
@@ -306,6 +379,8 @@ func TestStoreRecordPackageKeyRemovesLegacyRepoKey(t *testing.T) {
 	if _, ok := cfg.Installed["gookit/greq"]; ok {
 		t.Fatalf("expected legacy repo key to be removed, got %#v", cfg.Installed)
 	}
+	assert.Eq(t, time.Unix(1710000000, 0).UTC(), cfg.Installed["greq"].InstalledAt)
+	assert.Eq(t, time.Unix(1710000002, 0).UTC(), cfg.Installed["greq"].UpdatedAt)
 	assert.Eq(t, "greq.exe", cfg.Installed["greq"].Asset)
 	assert.Eq(t, "gbench.exe", cfg.Installed["gbench"].Asset)
 }

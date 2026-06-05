@@ -6,6 +6,7 @@ type Entry struct {
 	Repo           string         `toml:"repo" mapstructure:"repo"`
 	Target         string         `toml:"target" mapstructure:"target"`
 	InstalledAt    time.Time      `toml:"installed_at" mapstructure:"installed_at"`
+	UpdatedAt      time.Time      `toml:"updated_at,omitempty" mapstructure:"updated_at"`
 	URL            string         `toml:"url" mapstructure:"url"`
 	Asset          string         `toml:"asset" mapstructure:"asset"`
 	Desc           string         `toml:"desc,omitempty" mapstructure:"desc"`
