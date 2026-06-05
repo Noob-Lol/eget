@@ -18,6 +18,8 @@ type RemovableInstalledStore interface {
 type UninstallResult struct {
 	Repo         string
 	RemovedFiles []string
+	IsGUI        bool
+	InstallMode  string
 }
 
 type uninstallTarget struct {
@@ -47,7 +49,11 @@ func (s UninstallService) Uninstall(target string) (UninstallResult, error) {
 		return UninstallResult{}, fmt.Errorf("installed entry not found for %q", resolved.Key)
 	}
 
-	result := UninstallResult{Repo: firstNonEmpty(entry.Repo, resolved.Repo)}
+	result := UninstallResult{
+		Repo:        firstNonEmpty(entry.Repo, resolved.Repo),
+		IsGUI:       entry.IsGUI,
+		InstallMode: entry.InstallMode,
+	}
 	for _, file := range entry.ExtractedFiles {
 		err := os.Remove(file)
 		if err != nil && !os.IsNotExist(err) {

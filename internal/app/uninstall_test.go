@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
+	"github.com/inherelab/eget/internal/install"
 	storepkg "github.com/inherelab/eget/internal/installed"
 	"github.com/inherelab/eget/internal/util"
 )
@@ -233,6 +234,39 @@ func TestUninstallFindsLegacyRepoKeyByRepoName(t *testing.T) {
 	}
 	if len(store.removeCalls) != 1 || store.removeCalls[0] != "tinyhumansai/openhuman" {
 		t.Fatalf("expected installed record removal for repo key, got %#v", store.removeCalls)
+	}
+}
+
+func TestUninstallPreservesGUIInstallerMetadata(t *testing.T) {
+	store := &fakeInstalledStoreWithLoad{
+		cfg: &storepkg.Config{
+			Installed: map[string]storepkg.Entry{
+				"ansxuman/Clauge": {
+					Repo:        "ansxuman/Clauge",
+					IsGUI:       true,
+					InstallMode: install.InstallModeInstaller,
+				},
+			},
+		},
+	}
+	svc := UninstallService{
+		Store: store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["Clauge"] = cfgpkg.Section{Repo: util.StringPtr("ansxuman/Clauge")}
+			return cfg, nil
+		},
+	}
+
+	result, err := svc.Uninstall("Clauge")
+	if err != nil {
+		t.Fatalf("uninstall GUI installer: %v", err)
+	}
+	if !result.IsGUI || result.InstallMode != install.InstallModeInstaller {
+		t.Fatalf("expected GUI installer metadata, got %#v", result)
+	}
+	if len(result.RemovedFiles) != 0 {
+		t.Fatalf("expected no removed files, got %#v", result.RemovedFiles)
 	}
 }
 
