@@ -60,7 +60,7 @@ func (s *cliService) handleList(opts *ListOptions) error {
 			return nil
 		}
 
-		ccolor.Infoln("Outdated Packages:")
+		printListTitle("Outdated Packages", len(items))
 		cols := []string{"Name", "Repo", "Version", "Latest version", "Published At"}
 		rows := make([][]any, 0, len(items))
 		for _, item := range items {
@@ -101,11 +101,13 @@ func (s *cliService) handleList(opts *ListOptions) error {
 
 	switch {
 	case opts != nil && opts.NoInstalled:
-		ccolor.Infoln("Not Installed Packages:")
+		printListTitle("Not Installed Packages", len(items))
+	case opts != nil && opts.GUI:
+		printListTitle("GUI Packages", len(items))
 	case opts != nil && opts.All:
-		ccolor.Infoln("Managed Packages:")
+		printListTitle("Managed Packages", len(items))
 	case opts == nil || !opts.GUI:
-		ccolor.Infoln("Installed Packages:")
+		printListTitle("Installed Packages", len(items))
 	}
 	cols := []string{"Name", "Repo", "Version", "Source", "Update Time"}
 	rows := make([][]any, 0, len(items))
@@ -114,6 +116,10 @@ func (s *cliService) handleList(opts *ListOptions) error {
 	}
 	ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 	return nil
+}
+
+func printListTitle(title string, count int) {
+	ccolor.Infof("%s (%d):\n", title, count)
 }
 
 func (s *cliService) handleShow(opts *ShowOptions) error {

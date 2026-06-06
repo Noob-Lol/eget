@@ -60,7 +60,7 @@ func TestHandleListOutdatedPrintsOnlyOutdatedInstalledPackages(t *testing.T) {
 	}
 
 	got := out.String()
-	if !strings.Contains(got, "Outdated Packages:") {
+	if !strings.Contains(got, "Outdated Packages (1):") {
 		t.Fatalf("expected outdated packages title, got %q", got)
 	}
 	if !strings.Contains(strings.ToLower(got), "latest version") {
@@ -235,7 +235,7 @@ func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 	}
 
 	got := out.String()
-	if !strings.Contains(got, "Installed Packages:") {
+	if !strings.Contains(got, "Installed Packages (2):") {
 		t.Fatalf("expected installed packages title, got %q", got)
 	}
 	if !strings.Contains(strings.ToLower(got), "name") || !strings.Contains(strings.ToLower(got), "version") {
@@ -294,7 +294,7 @@ func TestHandleListAllPrintsManagedAndInstalledPackages(t *testing.T) {
 	}
 
 	got := out.String()
-	if !strings.Contains(got, "Managed Packages:") {
+	if !strings.Contains(got, "Managed Packages (2):") {
 		t.Fatalf("expected managed packages title, got %q", got)
 	}
 	if !strings.Contains(got, "Source") || !strings.Contains(got, "Update Time") {
@@ -347,7 +347,7 @@ func TestHandleListNoInstalledPrintsOnlyManagedMissingPackages(t *testing.T) {
 	}
 
 	got := out.String()
-	if !strings.Contains(got, "Not Installed Packages:") {
+	if !strings.Contains(got, "Not Installed Packages (1):") {
 		t.Fatalf("expected not installed packages title, got %q", got)
 	}
 	if !strings.Contains(got, "ripgrep") || !strings.Contains(got, "No-Install") {
@@ -384,6 +384,9 @@ func TestHandleListGUIPrintsOnlyGUIPackages(t *testing.T) {
 		t.Fatalf("handle list gui: %v", err)
 	}
 	got := out.String()
+	if !strings.Contains(got, "GUI Packages (1):") {
+		t.Fatalf("expected gui packages title, got %q", got)
+	}
 	if !strings.Contains(got, "picoclaw") || strings.Contains(got, "chlog") {
 		t.Fatalf("expected only gui package output, got %q", got)
 	}
