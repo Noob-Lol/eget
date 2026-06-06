@@ -137,7 +137,7 @@ func sortSearchResults(results []SearchResult, sortValue string) {
 		sort.SliceStable(results, func(i, j int) bool {
 			return compareVersion(results[i].Version, results[j].Version) < 0
 		})
-	case "desc":
+	case "", "desc":
 		sort.SliceStable(results, func(i, j int) bool {
 			return compareVersion(results[i].Version, results[j].Version) > 0
 		})

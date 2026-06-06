@@ -85,6 +85,39 @@ func TestServiceSearchIndexLimitsResults(t *testing.T) {
 	assert.Eq(t, 3, len(all))
 }
 
+func TestServiceSearchIndexDefaultsToVersionDescSort(t *testing.T) {
+	root := t.TempDir()
+	cfg := testSDKConfig(root)
+	svc := Service{
+		Config:     cfg,
+		IndexCache: IndexCache{Dir: filepath.Join(root, "index")},
+		GOOS:       "linux",
+		GOARCH:     "amd64",
+	}
+	err := svc.IndexCache.Save(Index{
+		Schema: 1,
+		SDK:    "go",
+		Items: []IndexItem{
+			{Version: "1.21.13", Stable: true, Files: []IndexFile{{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "go1.21.13.linux-amd64.tar.gz"}}},
+			{Version: "1.23.0", Stable: true, Files: []IndexFile{{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "go1.23.0.linux-amd64.tar.gz"}}},
+			{Version: "1.22.5", Stable: true, Files: []IndexFile{{OS: "linux", Arch: "amd64", Ext: "tar.gz", Filename: "go1.22.5.linux-amd64.tar.gz"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("save index: %v", err)
+	}
+
+	results, err := svc.SearchIndex("go", SearchOptions{Keywords: []string{"linux amd64"}, Number: 0})
+	if err != nil {
+		t.Fatalf("search index: %v", err)
+	}
+
+	assert.Eq(t, 3, len(results))
+	assert.Eq(t, "1.23.0", results[0].Version)
+	assert.Eq(t, "1.22.5", results[1].Version)
+	assert.Eq(t, "1.21.13", results[2].Version)
+}
+
 func TestServiceSearchIndexSupportsRegexAndVersionSort(t *testing.T) {
 	root := t.TempDir()
 	cfg := testSDKConfig(root)
