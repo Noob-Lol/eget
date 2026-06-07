@@ -85,6 +85,88 @@ func TestNewDefaultSDKServiceSkipsProxyURLWhenNoProxyEnabled(t *testing.T) {
 	assert.Eq(t, "", service.ClientOpts.ProxyURL)
 }
 
+func TestNewDefaultSDKServiceUsesHTTPProxyConfig(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	cfg := cfgpkg.NewFile()
+	proxyURL := "http://127.0.0.1:10801"
+	cfg.HTTPProxy.URL = &proxyURL
+	cfg.HTTPProxy.Exclude = []string{"mydev.com"}
+
+	service, err := NewDefaultSDKService(cfg)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, proxyURL, service.ClientOpts.ProxyURL)
+	assert.Eq(t, []string{"mydev.com"}, service.ClientOpts.ProxyExclude)
+}
+
+func TestNewDefaultSDKServiceHTTPProxyEnableFalseDisables(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	cfg := cfgpkg.NewFile()
+	proxyURL := "http://127.0.0.1:10801"
+	enabled := false
+	cfg.HTTPProxy.URL = &proxyURL
+	cfg.HTTPProxy.Enable = &enabled
+
+	service, err := NewDefaultSDKService(cfg)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "", service.ClientOpts.ProxyURL)
+	assert.Eq(t, []string(nil), service.ClientOpts.ProxyExclude)
+}
+
+func TestNewDefaultSDKServiceHTTPProxyPrefersNewBlockOverLegacy(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	cfg := cfgpkg.NewFile()
+	legacyURL := "http://127.0.0.1:10801"
+	currentURL := "http://127.0.0.1:10802"
+	cfg.Global.ProxyURL = &legacyURL
+	cfg.HTTPProxy.URL = &currentURL
+
+	service, err := NewDefaultSDKService(cfg)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, currentURL, service.ClientOpts.ProxyURL)
+}
+
+func TestNewDefaultSDKServiceNoProxyHostListBecomesProxyExclude(t *testing.T) {
+	t.Setenv("NO_PROXY", "mydev.com,*.corp.local")
+	cfg := cfgpkg.NewFile()
+	proxyURL := "http://127.0.0.1:10801"
+	cfg.HTTPProxy.URL = &proxyURL
+
+	service, err := NewDefaultSDKService(cfg)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, proxyURL, service.ClientOpts.ProxyURL)
+	assert.Eq(t, []string{"mydev.com", "*.corp.local"}, service.ClientOpts.ProxyExclude)
+}
+
+func TestNewDefaultSDKServiceNoProxyDisableValueDisablesProxy(t *testing.T) {
+	t.Setenv("NO_PROXY", "1")
+	cfg := cfgpkg.NewFile()
+	proxyURL := "http://127.0.0.1:10801"
+	cfg.HTTPProxy.URL = &proxyURL
+
+	service, err := NewDefaultSDKService(cfg)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "", service.ClientOpts.ProxyURL)
+	assert.Eq(t, []string(nil), service.ClientOpts.ProxyExclude)
+}
+
+func TestNewDefaultSDKServiceLegacyProxyFallbackWhenHTTPProxyAbsent(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	cfg := cfgpkg.NewFile()
+	proxyURL := "http://127.0.0.1:10801"
+	cfg.Global.ProxyURL = &proxyURL
+
+	service, err := NewDefaultSDKService(cfg)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, proxyURL, service.ClientOpts.ProxyURL)
+	assert.Eq(t, []string(nil), service.ClientOpts.ProxyExclude)
+}
+
 func TestNewDefaultSDKServiceLoadsConfigWhenNil(t *testing.T) {
 	tmp := t.TempDir()
 	configPath := filepath.Join(tmp, "eget.toml")

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/inherelab/eget/internal/client"
@@ -50,9 +51,12 @@ func sdkClientOptionsFromConfig(cfg *cfgpkg.File, noProxyOpt ...bool) client.Opt
 	if cfg == nil {
 		return opts
 	}
-	if cfg.Global.ProxyURL != nil && !util.GlobalProxyDisabled(noProxy) {
-		opts.ProxyURL = *cfg.Global.ProxyURL
-	}
+	proxy := cfgpkg.ResolveHTTPProxy(cfg, cfgpkg.ProxyResolveOptions{
+		NoProxy:    noProxy,
+		EnvNoProxy: os.Getenv("NO_PROXY"),
+	})
+	opts.ProxyURL = proxy.URL
+	opts.ProxyExclude = append([]string(nil), proxy.Exclude...)
 	if cfg.Global.UserAgent != nil {
 		opts.UserAgent = *cfg.Global.UserAgent
 	}

@@ -1222,7 +1222,7 @@ git commit -m "feat: use http_proxy for package network options"
 - Modify: `docs/example.eget.toml`
 - Modify: `docs/superpowers/specs/2026-06-06-http-proxy-config-design.md` if implementation details differ from design
 
-- [ ] **Step 1: Run impact analysis**
+- [x] **Step 1: Run impact analysis**
 
 ```bash
 npx gitnexus impact NewDefaultSDKService --repo eget --direction upstream
@@ -1231,7 +1231,7 @@ npx gitnexus impact sdkClientOptionsFromConfig --repo eget --direction upstream
 
 Expected: LOW/MEDIUM. If HIGH/CRITICAL, report before editing.
 
-- [ ] **Step 2: Write failing SDK tests**
+- [x] **Step 2: Write failing SDK tests**
 
 In `internal/app/sdk_test.go`, add:
 
@@ -1276,7 +1276,7 @@ func TestNewDefaultSDKServiceHTTPProxyPrefersNewBlockOverLegacy(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Verify RED**
+- [x] **Step 3: Verify RED**
 
 Run:
 
@@ -1286,7 +1286,7 @@ go test ./internal/app -run "TestNewDefaultSDKService.*HTTPProxy" -count=1
 
 Expected: compile or test failure because `sdkClientOptionsFromConfig` does not use `http_proxy`.
 
-- [ ] **Step 4: Implement SDK resolver integration**
+- [x] **Step 4: Implement SDK resolver integration**
 
 In `internal/app/sdk.go`, update `sdkClientOptionsFromConfig`:
 
@@ -1301,7 +1301,7 @@ opts.ProxyExclude = append([]string(nil), proxy.Exclude...)
 
 Remove direct `cfg.Global.ProxyURL` read.
 
-- [ ] **Step 5: Verify GREEN**
+- [x] **Step 5: Verify GREEN**
 
 Run:
 
@@ -1312,7 +1312,7 @@ go test ./internal/sdk -count=1
 
 Expected: PASS.
 
-- [ ] **Step 6: Update config docs**
+- [x] **Step 6: Update config docs**
 
 In `docs/config.md`, update proxy sections:
 
@@ -1335,7 +1335,7 @@ exclude = ["mydev.com", "*.corp.local", "10.0.0.0/8"]
 
 Mirror the same content in `docs/config.zh-CN.md`.
 
-- [ ] **Step 7: Update example config**
+- [x] **Step 7: Update example config**
 
 In `docs/example.eget.toml`, replace or supplement:
 
@@ -1355,7 +1355,7 @@ exclude = []
 
 Keep a comment noting `global.proxy_url` legacy fallback only if the example already documents compatibility comments.
 
-- [ ] **Step 8: Verify docs references**
+- [x] **Step 8: Verify docs references**
 
 Run:
 
@@ -1365,7 +1365,7 @@ rg "global.proxy_url|proxy_url|http_proxy|NO_PROXY" docs/config.md docs/config.z
 
 Expected: docs mention `[http_proxy]` as preferred and `global.proxy_url` as legacy fallback.
 
-- [ ] **Step 9: Full verification**
+- [x] **Step 9: Full verification**
 
 Run:
 
@@ -1381,7 +1381,7 @@ Expected:
 - `git diff --check`: no output.
 - GitNexus affected scope matches config/client/app/sdk proxy paths. If HIGH/CRITICAL, inspect and summarize before committing.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add internal/app/sdk.go internal/app/sdk_test.go docs/config.md docs/config.zh-CN.md docs/example.eget.toml docs/superpowers/specs/2026-06-06-http-proxy-config-design.md

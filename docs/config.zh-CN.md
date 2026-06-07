@@ -55,7 +55,9 @@ EGET_SELF_UPDATE_SOURCE=https://example.com/tools/eget/
 ```toml
 [global]
 github_token = "${GITHUB_TOKEN}"
-proxy_url = "${PROXY_URL}"
+
+[http_proxy]
+url = "${PROXY_URL}"
 ```
 
 不要把 `.env` 提交到版本库。
@@ -65,6 +67,7 @@ proxy_url = "${PROXY_URL}"
 支持的配置块：
 
 - `[global]`: 全局默认值、网络和缓存配置。
+- `[http_proxy]`: 首选的全局 HTTP 层代理配置。
 - `[api_cache]`: provider 元数据 API 响应缓存。
 - `[cache_mirror]`: 局域网缓存 mirror 客户端配置。
 - `[ghproxy]`: GitHub URL 重写代理。
@@ -81,7 +84,6 @@ proxy_url = "${PROXY_URL}"
 target = "~/.local/bin"
 gui_target = "~/Applications"
 cache_dir = "~/.cache/eget"
-proxy_url = ""
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 system = ""
 sys7z_path = ""
@@ -97,7 +99,7 @@ sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 - `target`: CLI 工具默认安装目录。
 - `gui_target`: 免安装 GUI 应用默认安装目录。
 - `cache_dir`: 缓存根目录。原始下载缓存、API cache、SDK 下载缓存和 SDK index 都基于此目录派生。
-- `proxy_url`: HTTP 层代理。GitHub 查询、远程下载和 SDK 请求都会使用它。运行时可用 app 级选项 `--no-proxy` 临时禁用该配置；环境变量 `NO_PROXY` 非空时也会禁用 `global.proxy_url`。
+- `proxy_url`: 旧版 HTTP 层代理 fallback。优先使用 `[http_proxy].url`；只有未配置 `[http_proxy]` 时才会读取 `global.proxy_url`。
 - `user_agent`: HTTP 请求默认 `User-Agent`。为空时使用内置浏览器 UA；配置后覆盖默认值。
 - `system`: 默认目标平台，格式为 `GOOS/GOARCH`，例如 `windows/amd64`。
 - `sys7z_path`: 可选 7z 可执行文件路径。为空时会从 `PATH` 依次查找 `7z`、`7zz`、`7za`。
@@ -114,6 +116,27 @@ sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 - API cache 文件写入 `{cache_dir}/api-cache/`。
 - SDK 归档下载缓存写入 `{cache_dir}/sdk-downloads/`。
 - SDK index JSON 缓存写入 `{cache_dir}/sdk-index/`。
+
+## HTTP Proxy
+
+使用 `[http_proxy]` 配置全局 HTTP 层代理：
+
+```toml
+[http_proxy]
+enable = true
+url = "http://127.0.0.1:10801"
+exclude = ["mydev.com", "*.corp.local", "10.0.0.0/8"]
+```
+
+字段说明：
+
+- `enable`: 是否启用配置中的 HTTP 代理。`false` 会禁用该配置代理。
+- `url`: GitHub 查询、远程下载和 SDK 请求使用的代理地址。为空时禁用该配置代理。
+- `exclude`: host 匹配规则，匹配到的请求会跳过配置代理。
+
+app 级 `--no-proxy` 选项会在单次运行中禁用配置代理。`NO_PROXY=1`、`NO_PROXY=true`、`NO_PROXY=yes` 或 `NO_PROXY=on` 也会禁用配置代理。其他逗号分隔的 `NO_PROXY` 值，例如 `NO_PROXY=mydev.com,*.corp.local`，会合并到 `exclude`。
+
+未配置 `[http_proxy]` 时仍会读取 `global.proxy_url` 作为旧版 fallback。`[http_proxy]` 是首选配置，并且存在时优先于 `global.proxy_url`。
 
 ## API Cache
 
@@ -182,7 +205,7 @@ fallbacks = []
 - `support_api`: 启用后也会重写 `api.github.com` 请求。
 - `fallbacks`: 主代理失败后按顺序尝试的备用代理地址。
 
-> `proxy_url` 和 `ghproxy` 不是同一种能力。`proxy_url` 是 HTTP 层代理，`ghproxy` 是请求 URL 重写，两者可以同时启用。
+> `http_proxy` 和 `ghproxy` 不是同一种能力。`[http_proxy]` 是 HTTP 层代理，`ghproxy` 是请求 URL 重写，两者可以同时启用。旧版 `global.proxy_url` 只是 `[http_proxy].url` 的 fallback。
 
 ## Package 配置
 
@@ -291,7 +314,7 @@ extract_file = "markview"
 - `{ext}`: 经过 `ext_map` 处理后的扩展名；未设置 `ext_map` 时 Windows 默认 `.exe`，Linux/macOS 默认空字符串。
 - `{libc}`: Linux 下检测到 libc 后经过 `libc_map` 处理的值；非 Linux 或未检测到时为空。
 
-`run-asset` 不是通用 `post_install`。它只执行当前下载并已通过 checksum 校验的 asset，参数必须是数组，不会经过 shell，也不会执行额外脚本。template 的 `latest_url` 和 `checksum_url_template` 是任意站点 metadata，请求会复用 `proxy_url`、`disable_ssl` 等 HTTP 配置，但不会被强制归类为 provider API cache。
+`run-asset` 不是通用 `post_install`。它只执行当前下载并已通过 checksum 校验的 asset，参数必须是数组，不会经过 shell，也不会执行额外脚本。template 的 `latest_url` 和 `checksum_url_template` 是任意站点 metadata，请求会复用 `[http_proxy]`、`disable_ssl` 等 HTTP 配置，但不会被强制归类为 provider API cache。
 
 ## SDK 配置
 

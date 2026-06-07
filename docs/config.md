@@ -55,7 +55,9 @@ EGET_SELF_UPDATE_SOURCE=https://example.com/tools/eget/
 ```toml
 [global]
 github_token = "${GITHUB_TOKEN}"
-proxy_url = "${PROXY_URL}"
+
+[http_proxy]
+url = "${PROXY_URL}"
 ```
 
 Keep `.env` out of version control.
@@ -65,6 +67,7 @@ Keep `.env` out of version control.
 Supported sections:
 
 - `[global]`: global defaults and network/cache settings.
+- `[http_proxy]`: preferred global HTTP-layer proxy settings.
 - `[api_cache]`: metadata API response cache.
 - `[cache_mirror]`: LAN cache mirror client settings.
 - `[ghproxy]`: GitHub URL rewrite proxy.
@@ -81,7 +84,6 @@ Example:
 target = "~/.local/bin"
 gui_target = "~/Applications"
 cache_dir = "~/.cache/eget"
-proxy_url = ""
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 system = ""
 sys7z_path = ""
@@ -97,7 +99,7 @@ Fields:
 - `target`: default install directory for CLI tools.
 - `gui_target`: default install directory for portable GUI applications.
 - `cache_dir`: default cache root. Raw downloads, API cache files, SDK downloads, and SDK indexes are derived from this directory.
-- `proxy_url`: HTTP-layer proxy for remote requests. GitHub lookups, remote downloads, and SDK requests use it. The app-level `--no-proxy` option disables this setting for one run; a non-empty `NO_PROXY` environment variable also disables `global.proxy_url`.
+- `proxy_url`: legacy HTTP-layer proxy fallback. Prefer `[http_proxy].url`; `global.proxy_url` is only read when `[http_proxy]` is not configured.
 - `user_agent`: default HTTP `User-Agent`. When empty, eget uses the built-in browser UA; configured values override the default.
 - `system`: default target platform in `GOOS/GOARCH` form, for example `windows/amd64`.
 - `sys7z_path`: optional 7z executable path. When empty, eget searches `PATH` for `7z`, `7zz`, then `7za`.
@@ -114,6 +116,27 @@ Directory semantics:
 - API cache files are stored under `{cache_dir}/api-cache/`.
 - SDK archive downloads are stored under `{cache_dir}/sdk-downloads/`.
 - SDK index JSON files are stored under `{cache_dir}/sdk-index/`.
+
+## HTTP Proxy
+
+Use `[http_proxy]` for global HTTP-layer proxy settings:
+
+```toml
+[http_proxy]
+enable = true
+url = "http://127.0.0.1:10801"
+exclude = ["mydev.com", "*.corp.local", "10.0.0.0/8"]
+```
+
+Fields:
+
+- `enable`: whether to enable the configured HTTP proxy. `false` disables this config proxy.
+- `url`: proxy URL used by GitHub lookups, remote downloads, and SDK requests. An empty URL disables this config proxy.
+- `exclude`: host rules that skip the configured proxy for matching request hosts.
+
+The app-level `--no-proxy` option disables configured HTTP proxy settings for one run. `NO_PROXY=1`, `NO_PROXY=true`, `NO_PROXY=yes`, or `NO_PROXY=on` also disables configured proxy settings. Other comma-separated `NO_PROXY` values, such as `NO_PROXY=mydev.com,*.corp.local`, are merged into `exclude`.
+
+`global.proxy_url` is still read as a legacy fallback when `[http_proxy]` is not configured. `[http_proxy]` is preferred and wins over `global.proxy_url` when present.
 
 ## API Cache
 
@@ -182,7 +205,7 @@ Fields:
 - `support_api`: also rewrite `api.github.com` requests when enabled.
 - `fallbacks`: fallback proxy hosts tried in order when the primary proxy fails.
 
-`proxy_url` and `ghproxy` solve different problems. `proxy_url` is an HTTP-layer proxy, while `ghproxy` rewrites request URLs. They can be enabled together.
+`http_proxy` and `ghproxy` solve different problems. `[http_proxy]` is an HTTP-layer proxy, while `ghproxy` rewrites request URLs. They can be enabled together. Legacy `global.proxy_url` is only a fallback for `[http_proxy].url`.
 
 ## Package Sections
 
@@ -291,7 +314,7 @@ Fields:
 - `{ext}`: extension after `ext_map`; defaults to `.exe` on Windows and empty on Linux/macOS when `ext_map` is not set.
 - `{libc}`: Linux libc value after `libc_map`; empty outside Linux or when libc is unknown.
 
-`run-asset` is not a general `post_install`. It only executes the downloaded asset after checksum verification, arguments must be an array, and no shell is used. Template `latest_url` and `checksum_url_template` values are arbitrary site metadata. Requests reuse HTTP options such as `proxy_url` and `disable_ssl`, but they are not forced into provider API cache classification.
+`run-asset` is not a general `post_install`. It only executes the downloaded asset after checksum verification, arguments must be an array, and no shell is used. Template `latest_url` and `checksum_url_template` values are arbitrary site metadata. Requests reuse HTTP options such as `[http_proxy]` and `disable_ssl`, but they are not forced into provider API cache classification.
 
 ## SDK Sections
 
