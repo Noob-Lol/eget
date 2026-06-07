@@ -48,6 +48,7 @@ type cliService struct {
 	lookupUserHome     func(string) (string, error)
 	fileExists         func(string) bool
 	proxyURL           string
+	proxyExclude       []string
 	noProxy            bool
 }
 

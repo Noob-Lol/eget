@@ -203,6 +203,40 @@ func TestHandleListOutdatedPrintsSingleProxyNoticeAndCacheSummary(t *testing.T) 
 	}
 }
 
+func TestHandleListOutdatedSkipsProxyNoticeWhenGitHubAPIExcluded(t *testing.T) {
+	svc := &cliService{
+		proxyURL:      "http://127.0.0.1:1081",
+		proxyExclude: []string{"api.github.com"},
+		listService: app.ListService{
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				return app.LatestInfo{Tag: "v14.0.0"}, nil
+			},
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+				return cfg, nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+				}}, nil
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	svc.stderr = &stderr
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleList(&ListOptions{Outdated: true})
+
+	assert.NoErr(t, err)
+	gotErr := ccolor.ClearCode(stderr.String())
+	assert.NotContains(t, gotErr, "http_proxy for GitHub API request")
+}
+
 func TestHandleListPrintsOnlyInstalledPackagesByDefault(t *testing.T) {
 	now := time.Date(2026, 5, 5, 13, 20, 19, 0, time.FixedZone("CST", 8*60*60))
 	svc := &cliService{

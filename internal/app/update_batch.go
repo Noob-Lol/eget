@@ -13,7 +13,9 @@ func (s UpdateService) UpdateCandidates(candidates []OutdatedItem, cli install.O
 	if err != nil {
 		return nil, err
 	}
-	cli = applyConfigNetworkOptions(cfg, cli)
+	if !isAppInstallService(s.Install) {
+		cli = applyConfigNetworkOptions(cfg, cli)
+	}
 	if err := validateRawConcurrencyOptions(cli); err != nil {
 		return nil, err
 	}
@@ -46,6 +48,15 @@ func (s UpdateService) UpdateCandidates(candidates []OutdatedItem, cli install.O
 		})
 	}
 	return results, nil
+}
+
+func isAppInstallService(installer Installer) bool {
+	switch installer.(type) {
+	case Service, *Service:
+		return true
+	default:
+		return false
+	}
 }
 
 func (s UpdateService) updateCandidatesConcurrent(candidates []OutdatedItem, cli install.Options, batch int) ([]UpdateResult, error) {

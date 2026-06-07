@@ -8,6 +8,7 @@ import (
 	"github.com/gookit/cliui/progress"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/client"
+	"github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 )
 
@@ -82,6 +83,9 @@ func suppressOutdatedNetworkNotices(cacheNotices io.Writer) func() {
 
 func (s *cliService) printOutdatedProxyNotice() {
 	if s == nil || s.proxyURL == "" {
+		return
+	}
+	if config.ProxyExcluded("api.github.com", s.proxyExclude) {
 		return
 	}
 	ccolor.Fprintf(s.stderrWriter(), " - Using <ylw>http_proxy for GitHub API request</>: %s\n", s.proxyURL)

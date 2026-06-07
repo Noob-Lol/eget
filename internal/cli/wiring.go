@@ -187,6 +187,7 @@ func newCLIService(noProxyOpt ...bool) (*cliService, error) {
 		cacheService:      cacheService,
 		stderr:            os.Stderr,
 		proxyURL:          defaultOpts.ProxyURL,
+		proxyExclude:      append([]string(nil), defaultOpts.ProxyExclude...),
 		noProxy:           noProxy,
 	}, nil
 }

@@ -349,6 +349,80 @@ func TestUpdateAllPackagesCLIProxyURLOverridesHTTPProxyConfig(t *testing.T) {
 	assert.Eq(t, cliURL, installer.options[0].ProxyURL)
 }
 
+func TestUpdateAllPackagesWithAppInstallerPreservesPackageProxyOverride(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	cfg := cfgpkg.NewFile()
+	globalURL := "http://127.0.0.1:10801"
+	packageURL := "http://127.0.0.1:10802"
+	cfg.HTTPProxy.URL = &globalURL
+	cfg.Packages["rg"] = cfgpkg.Section{
+		Repo:     util.StringPtr("BurntSushi/ripgrep"),
+		ProxyURL: &packageURL,
+	}
+	runner := &fakeRunner{}
+	installSvc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+	updateSvc := UpdateService{
+		Install: installSvc,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	_, err := updateSvc.UpdateAllPackages(install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, packageURL, runner.opts.ProxyURL)
+}
+
+func TestUpdateAllPackagesWithAppInstallerPreservesRepoProxyOverride(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	cfg := cfgpkg.NewFile()
+	globalURL := "http://127.0.0.1:10801"
+	repoURL := "http://127.0.0.1:10802"
+	cfg.HTTPProxy.URL = &globalURL
+	cfg.Repos["BurntSushi/ripgrep"] = cfgpkg.Section{ProxyURL: &repoURL}
+	cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+	runner := &fakeRunner{}
+	installSvc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+	updateSvc := UpdateService{
+		Install: installSvc,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	_, err := updateSvc.UpdateAllPackages(install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, repoURL, runner.opts.ProxyURL)
+}
+
 func TestUpdateAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testing.T) {
 	block := make(chan struct{})
 	installer := &fakeInstallService{block: block}
