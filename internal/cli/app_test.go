@@ -99,6 +99,39 @@ func TestMain_GlobalVerboseFlagParsesBeforeCommand(t *testing.T) {
 	}
 }
 
+func TestMain_GlobalVerboseFlagAppearsInAppHelp(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApp(nil, &stdout, &stderr)
+
+	err := app.RunWithArgs([]string{"--help"})
+
+	assert.NoErr(t, err)
+	help := stdout.String() + stderr.String()
+	assert.Contains(t, help, "--no-proxy")
+	assert.Contains(t, help, "--verbose")
+	assert.Contains(t, help, "-v")
+}
+
+func TestMain_GlobalVerboseFlagResetsBetweenRuns(t *testing.T) {
+	calls := make([]commandCall, 0, 2)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApp(handler, &stdout, &stderr)
+	assert.NoErr(t, app.RunWithArgs([]string{"-v", "install", "inhere/markview"}))
+	assert.True(t, app.Verbose())
+
+	assert.NoErr(t, app.RunWithArgs([]string{"install", "inhere/markview"}))
+
+	assert.Eq(t, 2, len(calls))
+	assert.False(t, app.Verbose())
+}
+
 func TestMain_GlobalNoProxyFlagParsesBeforeCommand(t *testing.T) {
 	calls := make([]commandCall, 0, 1)
 	handler := func(name string, options any) error {

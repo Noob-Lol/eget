@@ -114,7 +114,8 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 	noProxy := false
 	app := &App{inner: inner, verbose: &verbose, noProxy: &noProxy, stdout: stdout}
 	cliApp = app
-	inner.Flags().BoolOpt(app.noProxy, "no-proxy", "", false, "Disable global.proxy_url")
+	inner.Flags().BoolOpt(app.verbose, "verbose", "v", false, "Show detailed debug information")
+	inner.Flags().BoolOpt(app.noProxy, "no-proxy", "", false, "Disable http proxy for request")
 	inner.On(gcli.EvtAppRunError, func(ctx *gcli.HookCtx) bool {
 		if errV := ctx.Get("err"); errV != nil {
 			if err, ok := errV.(error); ok {
@@ -146,6 +147,9 @@ func (a *App) add(cmd *gcli.Command, reset func()) {
 
 func (a *App) RunWithArgs(args []string) error {
 	a.lastErr = nil
+	if a.verbose != nil {
+		*a.verbose = false
+	}
 	if a.noProxy != nil {
 		*a.noProxy = false
 	}
@@ -157,7 +161,6 @@ func (a *App) RunWithArgs(args []string) error {
 			arg.Reset()
 		}
 	}
-	args = a.consumeVerboseArgs(args)
 	if err := validateKnownFlags(args); err != nil {
 		return err
 	}
@@ -173,26 +176,6 @@ func (a *App) Verbose() bool {
 
 func (a *App) NoProxy() bool {
 	return a.noProxy != nil && *a.noProxy
-}
-
-func (a *App) consumeVerboseArgs(args []string) []string {
-	if a.verbose != nil {
-		*a.verbose = false
-	}
-	if len(args) == 0 {
-		return args
-	}
-	cleaned := make([]string, 0, len(args))
-	for _, arg := range args {
-		if arg == "-v" || arg == "--verbose" {
-			if a.verbose != nil {
-				*a.verbose = true
-			}
-			continue
-		}
-		cleaned = append(cleaned, arg)
-	}
-	return cleaned
 }
 
 func buildVersionString() string {
