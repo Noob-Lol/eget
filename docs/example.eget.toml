@@ -13,7 +13,6 @@ sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 
 # 首选全局 HTTP 层代理配置；global.proxy_url 仍作为旧版 fallback 支持。
 [http_proxy]
-enable = false
 url = ""
 exclude = []
 

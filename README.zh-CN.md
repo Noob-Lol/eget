@@ -20,7 +20,7 @@
 - SDK 下载：支持 Go、Node 等多版本 SDK 归档下载，带索引缓存、断点续传和独立 SDK 安装记录。
 - 并发下载：大文件会自动使用 HTTP Range 分片并发下载，安装或更新全部包时会自动批量并发下载。
 - 查询与搜索：支持查询 GitHub release 信息、SourceForge 最新版本和 assets，并使用 GitHub 搜索语法查找仓库。
-- 缓存与代理：支持下载缓存、API 响应缓存、`proxy_url` 和 `ghproxy`，适合网络受限或重复安装场景。
+- 缓存与代理：支持下载缓存、API 响应缓存、`[http_proxy]` 和 `ghproxy`，适合网络受限或重复安装场景。
 - 配置化使用：支持全局配置、仓库配置和 `packages.<name>` 托管包配置，配置文件和 installed store 默认位于 `~/.config/eget/`。
 
 ## 安装
@@ -340,7 +340,7 @@ eget config set global.target ~/.local/bin
 - 支持 `init`、`list` / `ls`、`doctor`、`path [--check] [target]`、`get KEY`、`set KEY VALUE`。
 - `config path` 用于输出单个本地路径，方便脚本使用。支持的 target 有 `config_dir`、`config_file`（默认）、`env_file`、`bin_dir`、`cache_dir`、`sdk_dir`、`pkg_store_file`、`sdk_store_file`。设置 `--check` 后输出格式为 `path, exists: bool`。
 - `config doctor` 会输出本机 config/cache/store/install 相关路径、存在性、可写性，以及敏感配置是否已设置；不会打印 secret 原文。
-- 读取 `eget.toml` 前会加载可选的 `~/.config/eget/.env`，因此配置值可以继续写成 `github_token = "${GITHUB_TOKEN}"`、`proxy_url = "${PROXY_URL}"`，敏感信息无需直接写进配置文件。
+- 读取 `eget.toml` 前会加载可选的 `~/.config/eget/.env`，因此配置值可以继续写成 `github_token = "${GITHUB_TOKEN}"`、`[http_proxy].url = "${PROXY_URL}"`，敏感信息无需直接写进配置文件。
 
 ## 主要选项
 
@@ -434,6 +434,7 @@ SourceForge 查询目标使用 `sourceforge:<project>`、`sourceforge:<project>/
 配置同时支持：
 
 - `[global]`
+- `[http_proxy]`
 - `["owner/repo"]`
 - `[packages.<name>]`
 - `[sdk.<name>]`
@@ -444,9 +445,12 @@ SourceForge 查询目标使用 `sourceforge:<project>`、`sourceforge:<project>/
 [global]
 target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
-proxy_url = "http://127.0.0.1:7890"
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 sdk_target = "~/.local/sdks"
+
+[http_proxy]
+url = "http://127.0.0.1:7890"
+exclude = []
 
 [packages.markview]
 repo = "inhere/markview"

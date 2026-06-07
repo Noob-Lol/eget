@@ -20,7 +20,7 @@
 - SDK downloads: install versioned SDK archives such as Go and Node with index cache, resumable downloads, and a separate SDK installed store.
 - Concurrent downloads: automatically split large files into HTTP Range chunks for parallel download, and run package downloads concurrently when installing or updating all packages.
 - Query and search: query GitHub release info, query SourceForge latest/assets, and search repositories with native GitHub search qualifiers.
-- Cache and proxy support: use download cache, API response cache, `proxy_url`, and `ghproxy` for restricted networks or repeated installs.
+- Cache and proxy support: use download cache, API response cache, `[http_proxy]`, and `ghproxy` for restricted networks or repeated installs.
 - Config-driven usage: configure global defaults, repo-level options, and `packages.<name>` managed packages; config and installed store default to `~/.config/eget/`.
 
 ## Install
@@ -340,7 +340,7 @@ The target argument accepted by `install` and `download` can be:
 - Supports `init`, `list` / `ls`, `doctor`, `path [--check] [target]`, `get KEY`, and `set KEY VALUE`.
 - `config path` prints one local path for scripting. Supported targets are `config_dir`, `config_file` (default), `env_file`, `bin_dir`, `cache_dir`, `sdk_dir`, `pkg_store_file`, and `sdk_store_file`. With `--check`, output is `path, exists: bool`.
 - `config doctor` prints local config/cache/store/install paths, existence checks, writability checks, and set/unset status for sensitive config values without printing secret values.
-- Loads optional dotenv variables from the config directory before reading `eget.toml`, so config values such as `github_token = "${GITHUB_TOKEN}"` and `proxy_url = "${PROXY_URL}"` can reference secrets without storing them directly in the config file. Set `EGET_CONFIG_DIR` to move `.env`, `eget.toml`, and install store files together.
+- Loads optional dotenv variables from the config directory before reading `eget.toml`, so config values such as `github_token = "${GITHUB_TOKEN}"` and `[http_proxy].url = "${PROXY_URL}"` can reference secrets without storing them directly in the config file. Set `EGET_CONFIG_DIR` to move `.env`, `eget.toml`, and install store files together.
 
 ## Main Options
 
@@ -438,6 +438,7 @@ The config file is resolved in this order:
 Supported config sections:
 
 - `[global]`
+- `[http_proxy]`
 - `["owner/repo"]`
 - `[packages.<name>]`
 - `[sdk.<name>]`
@@ -448,9 +449,12 @@ Minimal example:
 [global]
 target = "~/.local/bin"
 cache_dir = "~/.cache/eget"
-proxy_url = "http://127.0.0.1:7890"
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 sdk_target = "~/.local/sdks"
+
+[http_proxy]
+url = "http://127.0.0.1:7890"
+exclude = []
 
 [packages.markview]
 repo = "inhere/markview"
