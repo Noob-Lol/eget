@@ -145,6 +145,31 @@ func TestDumpConfigStringIncludesCacheMirror(t *testing.T) {
 	assert.Contains(t, text, "fallback = false")
 }
 
+func TestHTTPProxySectionRoundTrip(t *testing.T) {
+	proxyURL := "http://127.0.0.1:10801"
+	enabled := true
+	cfg := NewFile()
+	cfg.HTTPProxy.URL = &proxyURL
+	cfg.HTTPProxy.Enable = &enabled
+	cfg.HTTPProxy.Exclude = []string{"mydev.com", "*.corp.local", "10.0.0.0/8"}
+
+	dumped, err := dumpConfigString(cfg)
+
+	assert.NoErr(t, err)
+	assert.Contains(t, dumped, "[http_proxy]")
+	assert.Contains(t, dumped, `url = "http://127.0.0.1:10801"`)
+	assert.Contains(t, dumped, "enable = true")
+	assert.Contains(t, dumped, "exclude")
+
+	loaded := newConfigManager()
+	assert.NoErr(t, loaded.Config().LoadStrings("toml", dumped))
+	decoded, err := decodeConfigFile(loaded)
+	assert.NoErr(t, err)
+	assert.Eq(t, proxyURL, *decoded.HTTPProxy.URL)
+	assert.True(t, *decoded.HTTPProxy.Enable)
+	assert.Eq(t, []string{"mydev.com", "*.corp.local", "10.0.0.0/8"}, decoded.HTTPProxy.Exclude)
+}
+
 func TestDecodeAndBindStruct(t *testing.T) {
 	cfg := NewFile()
 	target := "~/.local/bin"
@@ -339,6 +364,19 @@ func TestSetByPathSupportsGlobalSys7zPath(t *testing.T) {
 		t.Fatal("expected global.sys7z_path to be set")
 	}
 	assert.Eq(t, "C:/Tools/7z.exe", value)
+}
+
+func TestSetByPathHTTPProxyFields(t *testing.T) {
+	cfg := NewFile()
+
+	assert.NoErr(t, SetByPath(cfg, "http_proxy.url", "127.0.0.1:10801"))
+	assert.Eq(t, "http://127.0.0.1:10801", *cfg.HTTPProxy.URL)
+
+	assert.NoErr(t, SetByPath(cfg, "http_proxy.enable", "false"))
+	assert.False(t, *cfg.HTTPProxy.Enable)
+
+	assert.NoErr(t, SetByPath(cfg, "http_proxy.exclude", "mydev.com,*.corp.local"))
+	assert.Eq(t, []string{"mydev.com", "*.corp.local"}, cfg.HTTPProxy.Exclude)
 }
 
 func TestPackageURLTemplateFieldsRoundTrip(t *testing.T) {

@@ -59,6 +59,9 @@ func TestConfigInit(t *testing.T) {
 	if cfg.Global.ProxyURL == nil || *cfg.Global.ProxyURL != "" {
 		t.Fatalf("expected default global.proxy_url, got %#v", cfg.Global.ProxyURL)
 	}
+	if cfg.HTTPProxy.URL != nil && *cfg.HTTPProxy.URL != "" {
+		t.Fatalf("expected default http_proxy.url to be empty, got %#v", cfg.HTTPProxy.URL)
+	}
 	if cfg.Global.UserAgent == nil || *cfg.Global.UserAgent == "" {
 		t.Fatalf("expected default global.user_agent, got %#v", cfg.Global.UserAgent)
 	}

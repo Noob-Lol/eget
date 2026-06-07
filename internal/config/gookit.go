@@ -28,6 +28,9 @@ func decodeConfigFile(cfg *configutil.Manager) (*File, error) {
 	if err := cfg.MapOnExists("global", &conf.Global); err != nil {
 		return nil, err
 	}
+	if err := cfg.MapOnExists("http_proxy", &conf.HTTPProxy); err != nil {
+		return nil, err
+	}
 	if err := cfg.MapOnExists("api_cache", &conf.ApiCache); err != nil {
 		return nil, err
 	}
@@ -69,6 +72,7 @@ func encodeConfigFile(file *File) *configutil.Manager {
 
 	data := map[string]any{
 		"global":       sectionToMap(file.Global),
+		"http_proxy":   httpProxyToMap(file.HTTPProxy),
 		"api_cache":    apiCacheToMap(file.ApiCache),
 		"ghproxy":      ghproxyToMap(file.Ghproxy),
 		"cache_mirror": cacheMirrorToMap(file.CacheMirror),
@@ -152,7 +156,7 @@ func sortedAnyKeys(items map[string]any) []string {
 
 func isReservedConfigRootKey(key string) bool {
 	switch key {
-	case "global", "api_cache", "ghproxy", "cache_mirror", "packages", "sdk":
+	case "global", "http_proxy", "api_cache", "ghproxy", "cache_mirror", "packages", "sdk":
 		return true
 	default:
 		return false
@@ -166,7 +170,13 @@ func normalizePathValue(key string, value any) (any, bool) {
 	}
 
 	switch pathFieldName(key) {
-	case "proxy_url":
+	case "proxy_url", "url":
+		if strings.HasPrefix(key, "http_proxy.") && text != "" && !strings.HasPrefix(text, "http") {
+			text = "http://" + text
+		}
+		if pathFieldName(key) == "url" {
+			return text, true
+		}
 		if text != "" && !strings.HasPrefix(text, "http") {
 			text = "http://" + text
 		}
@@ -185,6 +195,11 @@ func normalizePathValue(key string, value any) (any, bool) {
 		return parsed, true
 	case "asset_filters", "fallbacks", "ignore_update_packages", "install_args":
 		return splitAndTrim(text), true
+	case "exclude":
+		if strings.HasPrefix(key, "http_proxy.") {
+			return splitAndTrim(text), true
+		}
+		return text, true
 	default:
 		return text, true
 	}
@@ -351,6 +366,20 @@ func sectionToMap(section Section) map[string]any {
 	}
 	if section.BatchConcurrency != nil {
 		data["batch_concurrency"] = *section.BatchConcurrency
+	}
+	return data
+}
+
+func httpProxyToMap(section HTTPProxySection) map[string]any {
+	data := map[string]any{}
+	if section.Enable != nil {
+		data["enable"] = *section.Enable
+	}
+	if section.URL != nil {
+		data["url"] = *section.URL
+	}
+	if len(section.Exclude) > 0 {
+		data["exclude"] = append([]string(nil), section.Exclude...)
 	}
 	return data
 }

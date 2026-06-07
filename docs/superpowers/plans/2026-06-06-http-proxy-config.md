@@ -170,7 +170,7 @@ exclude = ["mydev.com", "*.corp.local", "10.0.0.0/8"]
 - Modify: `internal/app/config.go`
 - Modify: `internal/app/config_test.go`
 
-- [ ] **Step 1: Run impact analysis**
+- [x] **Step 1: Run impact analysis**
 
 Run before editing symbols:
 
@@ -183,7 +183,7 @@ npx gitnexus impact SetByPath --repo eget --direction upstream
 
 Expected: LOW or known config-surface risk. If HIGH/CRITICAL, report before editing.
 
-- [ ] **Step 2: Write failing config round-trip tests**
+- [x] **Step 2: Write failing config round-trip tests**
 
 In `internal/config/gookit_test.go`, add:
 
@@ -215,7 +215,7 @@ func TestHTTPProxySectionRoundTrip(t *testing.T) {
 
 Adjust helper names if existing tests use a different load helper.
 
-- [ ] **Step 3: Write failing SetByPath tests**
+- [x] **Step 3: Write failing SetByPath tests**
 
 In `internal/config/gookit_test.go`, add:
 
@@ -234,7 +234,7 @@ func TestSetByPathHTTPProxyFields(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: Write failing dotenv expansion test**
+- [x] **Step 4: Write failing dotenv expansion test**
 
 In `internal/config/loader_dotenv_test.go`, extend or add:
 
@@ -251,7 +251,7 @@ url = "${PROXY_URL}"
 
 Use the actual helper already present in this test file.
 
-- [ ] **Step 5: Verify RED**
+- [x] **Step 5: Verify RED**
 
 Run:
 
@@ -261,7 +261,7 @@ go test ./internal/config -run "TestHTTPProxy|TestSetByPathHTTPProxy|TestLoadHTT
 
 Expected: compile failure because `HTTPProxy` / `HTTPProxySection` does not exist or tests fail because the config block is not decoded.
 
-- [ ] **Step 6: Implement config model**
+- [x] **Step 6: Implement config model**
 
 In `internal/config/model.go`, add:
 
@@ -279,7 +279,7 @@ Add to `File`:
 HTTPProxy HTTPProxySection `toml:"http_proxy" mapstructure:"http_proxy"`
 ```
 
-- [ ] **Step 7: Implement decode/encode**
+- [x] **Step 7: Implement decode/encode**
 
 In `internal/config/gookit.go`:
 
@@ -321,7 +321,7 @@ Add reserved root key:
 case "global", "http_proxy", "api_cache", "ghproxy", "cache_mirror", "packages", "sdk":
 ```
 
-- [ ] **Step 8: Normalize `http_proxy` path values**
+- [x] **Step 8: Normalize `http_proxy` path values**
 
 Update `normalizePathValue`:
 
@@ -343,7 +343,7 @@ case "exclude":
 
 Keep existing bool normalization for `enable`.
 
-- [ ] **Step 9: Update default config init**
+- [x] **Step 9: Update default config init**
 
 In `internal/app/config.go`, update `NewDefaultConfigFile` or equivalent initializer to include an empty `[http_proxy]` only if current config init writes explicit empty sections. If current style avoids empty optional sections, leave it out and document that `[http_proxy]` is user-added.
 
@@ -355,7 +355,7 @@ if cfg.HTTPProxy.URL != nil && *cfg.HTTPProxy.URL != "" {
 }
 ```
 
-- [ ] **Step 10: Verify GREEN**
+- [x] **Step 10: Verify GREEN**
 
 Run:
 
@@ -366,7 +366,7 @@ go test ./internal/app -run TestConfig -count=1
 
 Expected: PASS.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add internal/config/model.go internal/config/gookit.go internal/config/gookit_test.go internal/config/loader_dotenv_test.go internal/app/config.go internal/app/config_test.go

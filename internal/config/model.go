@@ -84,11 +84,18 @@ type CacheMirrorSection struct {
 	Fallback *bool   `toml:"fallback" mapstructure:"fallback"`
 }
 
+type HTTPProxySection struct {
+	Enable  *bool    `toml:"enable" mapstructure:"enable"`
+	URL     *string  `toml:"url" mapstructure:"url"`
+	Exclude []string `toml:"exclude" mapstructure:"exclude"`
+}
+
 type File struct {
 	Meta struct {
 		Keys []string
 	}
 	Global      Section            `toml:"global" mapstructure:"global"`
+	HTTPProxy   HTTPProxySection   `toml:"http_proxy" mapstructure:"http_proxy"`
 	ApiCache    APICacheSection    `toml:"api_cache" mapstructure:"api_cache"`
 	Ghproxy     GhproxySection     `toml:"ghproxy" mapstructure:"ghproxy"`
 	CacheMirror CacheMirrorSection `toml:"cache_mirror" mapstructure:"cache_mirror"`

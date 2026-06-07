@@ -60,3 +60,18 @@ proxy_url = "${PROXY_URL}"
 	assert.Eq(t, "secret-token", *cfg.Global.GithubToken)
 	assert.Eq(t, "http://127.0.0.1:7890", *cfg.Global.ProxyURL)
 }
+
+func TestLoadHTTPProxyURLEnvExpansion(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+	writeTestFile(t, configPath, `
+[http_proxy]
+url = "${PROXY_URL}"
+`)
+	t.Setenv("PROXY_URL", "http://127.0.0.1:10801")
+
+	cfg, err := LoadFile(configPath)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "http://127.0.0.1:10801", *cfg.HTTPProxy.URL)
+}
