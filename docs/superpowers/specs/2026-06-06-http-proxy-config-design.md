@@ -428,8 +428,8 @@ ProxyExclude
 当前文案：
 
 ```text
- - Using proxy_url for GitHub API request: http://127.0.0.1:10801
- - Using proxy_url for download request: http://127.0.0.1:10801
+ - Using http_proxy for GitHub API request: http://127.0.0.1:10801
+ - Using http_proxy for download request: http://127.0.0.1:10801
 ```
 
 建议改为：

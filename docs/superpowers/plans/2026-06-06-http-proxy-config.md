@@ -1189,7 +1189,7 @@ If Task 3 changed notice wording to `http_proxy`, update `internal/cli/outdated_
 ccolor.Fprintf(s.stderrWriter(), " - Using <ylw>http_proxy for GitHub API request</>: %s\n", s.proxyURL)
 ```
 
-Update `internal/cli/list_handler_test.go` expected string from `proxy_url for GitHub API request` to `http_proxy for GitHub API request`.
+Update `internal/cli/list_handler_test.go` expected string from the old `proxy_url` notice wording to `http_proxy for GitHub API request`.
 
 - [x] **Step 10: Verify GREEN**
 
@@ -1395,7 +1395,7 @@ git commit -m "feat: use http_proxy for sdk network options"
 **Files:**
 - Modify only files needed by failures discovered in this task.
 
-- [ ] **Step 1: Search for stale direct global proxy usage**
+- [x] **Step 1: Search for stale direct global proxy usage**
 
 Run:
 
@@ -1409,7 +1409,7 @@ Expected:
 - Runtime network paths use `ResolveHTTPProxy` or receive already resolved `ProxyURL`/`ProxyExclude`.
 - Notice wording is consistent.
 
-- [ ] **Step 2: Verify command-level no-proxy behavior**
+- [x] **Step 2: Verify command-level no-proxy behavior**
 
 Run targeted tests:
 
@@ -1420,7 +1420,7 @@ go test ./internal/app -run "NoProxy|Proxy" -count=1
 
 Expected: PASS.
 
-- [ ] **Step 3: Verify full suite**
+- [x] **Step 3: Verify full suite**
 
 Run:
 
@@ -1432,7 +1432,7 @@ npx gitnexus detect-changes --repo eget
 
 Expected: PASS / no diff check output. Record GitNexus risk in final response or commit notes.
 
-- [ ] **Step 4: Final commit if needed**
+- [x] **Step 4: Final commit if needed**
 
 If Task 6 required fixes:
 
