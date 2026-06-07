@@ -11,6 +11,7 @@ import (
 
 type Options struct {
 	ProxyURL          string
+	ProxyExclude      []string
 	APICacheEnabled   bool
 	APICacheDir       string
 	APICacheTime      int
@@ -48,7 +49,7 @@ func GetWithOptions(rawURL string, opts Options) (*http.Response, error) {
 		return nil, err
 	}
 
-	if isGitHubAPIRequest(originalURL) {
+	if isGitHubAPIRequest(originalURL) && shouldUseConfiguredProxy(rawURL, opts.ProxyURL, opts.ProxyExclude) {
 		printProxyNotice("GitHub API request", opts.ProxyURL)
 	}
 

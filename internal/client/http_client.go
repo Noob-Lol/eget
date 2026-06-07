@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/inherelab/eget/internal/config"
 	"golang.org/x/net/http/httpproxy"
 )
 
@@ -24,7 +25,7 @@ func ProbeLastModified(rawURL string, opts Options) string {
 }
 
 func newHTTPClient(opts Options) (*http.Client, error) {
-	proxyFunc, err := ProxyFuncFor(opts.ProxyURL)
+	proxyFunc, err := ProxyFuncFor(opts.ProxyURL, opts.ProxyExclude)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +35,11 @@ func newHTTPClient(opts Options) (*http.Client, error) {
 	}}, nil
 }
 
-func ProxyFuncFor(proxyURL string) (func(*http.Request) (*url.URL, error), error) {
+func ProxyFuncFor(proxyURL string, excludes ...[]string) (func(*http.Request) (*url.URL, error), error) {
+	var exclude []string
+	if len(excludes) > 0 {
+		exclude = excludes[0]
+	}
 	if proxyURL == "" {
 		proxyFunc := httpproxy.FromEnvironment().ProxyFunc()
 		return func(req *http.Request) (*url.URL, error) {
@@ -45,7 +50,12 @@ func ProxyFuncFor(proxyURL string) (func(*http.Request) (*url.URL, error), error
 	if err != nil {
 		return nil, fmt.Errorf("invalid proxy_url %q: %w", proxyURL, err)
 	}
-	return http.ProxyURL(parsed), nil
+	return func(req *http.Request) (*url.URL, error) {
+		if config.ProxyExcluded(req.URL.Host, exclude) {
+			return nil, nil
+		}
+		return parsed, nil
+	}, nil
 }
 
 func requestWithOptions(method, rawURL, rangeHeader string, opts Options) (*http.Response, error) {

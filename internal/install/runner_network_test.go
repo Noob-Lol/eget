@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestDownloadPrintsProxyNoticeForRemoteRequest(t *testing.T) {
@@ -24,6 +27,7 @@ func TestDownloadPrintsProxyNoticeForRemoteRequest(t *testing.T) {
 		if opts.ProxyURL != "http://127.0.0.1:7890" {
 			t.Fatalf("expected proxy url to propagate, got %q", opts.ProxyURL)
 		}
+		assert.Eq(t, []string{"github.com"}, opts.ProxyExclude)
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader("network-data")),
@@ -32,12 +36,12 @@ func TestDownloadPrintsProxyNoticeForRemoteRequest(t *testing.T) {
 
 	err := Download("https://example.com/tool.tar.gz", io.Discard, func(size int64) io.Writer {
 		return io.Discard
-	}, Options{ProxyURL: "http://127.0.0.1:7890"})
+	}, Options{ProxyURL: "http://127.0.0.1:7890", ProxyExclude: []string{"github.com"}})
 	if err != nil {
 		t.Fatalf("Download(): %v", err)
 	}
 
-	if got := notice.String(); !strings.Contains(got, "proxy_url for download request") {
+	if got := notice.String(); !strings.Contains(got, "http_proxy for download request") {
 		t.Fatalf("expected download proxy notice, got %q", got)
 	}
 }
@@ -67,7 +71,7 @@ func TestDownloadSkipsProxyNoticeForLocalFile(t *testing.T) {
 }
 
 func TestNewHTTPGetterUsesProxyURL(t *testing.T) {
-	proxyFunc, err := proxyFuncFor("http://127.0.0.1:7890")
+	proxyFunc, err := proxyFuncFor("http://127.0.0.1:7890", nil)
 	if err != nil {
 		t.Fatalf("proxyFuncFor: %v", err)
 	}
@@ -89,7 +93,7 @@ func TestNewHTTPGetterUsesProxyURL(t *testing.T) {
 }
 
 func TestProxyFuncForRejectsInvalidProxyURL(t *testing.T) {
-	_, err := proxyFuncFor("://bad-proxy")
+	_, err := proxyFuncFor("://bad-proxy", nil)
 	if err == nil {
 		t.Fatal("expected invalid proxy url error")
 	}
@@ -106,7 +110,7 @@ func TestProxyFuncForFallsBackToEnvironment(t *testing.T) {
 	t.Setenv("NO_PROXY", "")
 	t.Setenv("no_proxy", "")
 	t.Setenv("REQUEST_METHOD", "")
-	proxyFunc, err := proxyFuncFor("")
+	proxyFunc, err := proxyFuncFor("", nil)
 	if err != nil {
 		t.Fatalf("proxyFuncFor env fallback: %v", err)
 	}
@@ -121,6 +125,41 @@ func TestProxyFuncForFallsBackToEnvironment(t *testing.T) {
 	if proxyURL.String() != "http://127.0.0.1:7891" {
 		t.Fatalf("expected env proxy url http://127.0.0.1:7891, got %q", proxyURL.String())
 	}
+}
+
+func TestProxyFuncForSkipsExcludedHost(t *testing.T) {
+	proxyFunc, err := proxyFuncFor("http://127.0.0.1:7890", []string{"github.com"})
+	assert.NoErr(t, err)
+
+	cases := []struct {
+		name      string
+		rawURL    string
+		wantProxy bool
+	}{
+		{name: "exact host", rawURL: "https://github.com/owner/repo"},
+		{name: "subdomain", rawURL: "https://api.github.com/repos/owner/repo"},
+		{name: "non excluded", rawURL: "https://example.com/file.zip", wantProxy: true},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := proxyFunc(httptest.NewRequest(http.MethodGet, tt.rawURL, nil))
+			assert.NoErr(t, err)
+			if !tt.wantProxy {
+				assert.Eq(t, (*url.URL)(nil), got)
+				return
+			}
+			assert.Eq(t, "http://127.0.0.1:7890", got.String())
+		})
+	}
+}
+
+func TestClientOptionsCopiesProxyExclude(t *testing.T) {
+	opts := ClientOptions(Options{ProxyExclude: []string{"github.com"}})
+
+	assert.Eq(t, []string{"github.com"}, opts.ProxyExclude)
+	opts.ProxyExclude[0] = "example.com"
+	assert.Eq(t, []string{"github.com"}, ClientOptions(Options{ProxyExclude: []string{"github.com"}}).ProxyExclude)
 }
 
 func TestGetWithOptionsPrintsProxyNoticeForGitHubAPI(t *testing.T) {
@@ -145,7 +184,7 @@ func TestGetWithOptionsPrintsProxyNoticeForGitHubAPI(t *testing.T) {
 	}
 	_ = resp.Body.Close()
 
-	if got := notice.String(); !strings.Contains(got, "proxy_url for GitHub API request") {
+	if got := notice.String(); !strings.Contains(got, "http_proxy for GitHub API request") {
 		t.Fatalf("expected GitHub API proxy notice, got %q", got)
 	}
 }

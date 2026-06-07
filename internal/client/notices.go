@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/gookit/goutil/x/ccolor"
+	"github.com/inherelab/eget/internal/config"
 )
 
 func SetVerbose(enabled bool, writer io.Writer) {
@@ -55,7 +58,18 @@ func printProxyNotice(kind, proxyURL string) {
 	}
 	proxyNoticeSeen[key] = struct{}{}
 	proxyNoticeMu.Unlock()
-	ccolor.Fprintf(proxyNoticeWriter, " - Using <ylw>proxy_url for %s</>: %s\n", kind, proxyURL)
+	ccolor.Fprintf(proxyNoticeWriter, " - Using <ylw>http_proxy for %s</>: %s\n", kind, proxyURL)
+}
+
+func shouldUseConfiguredProxy(rawURL, proxyURL string, exclude []string) bool {
+	if strings.TrimSpace(proxyURL) == "" {
+		return false
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	return !config.ProxyExcluded(parsed.Host, exclude)
 }
 
 func proxyNoticeKey(kind, proxyURL string, writer io.Writer) string {

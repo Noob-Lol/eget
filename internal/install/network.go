@@ -25,6 +25,7 @@ var verboseEnabled bool
 func ClientOptions(opts Options) client.Options {
 	return client.Options{
 		ProxyURL:          opts.ProxyURL,
+		ProxyExclude:      append([]string(nil), opts.ProxyExclude...),
 		APICacheEnabled:   opts.APICacheEnabled,
 		APICacheDir:       opts.APICacheDir,
 		APICacheTime:      opts.APICacheTime,
@@ -139,6 +140,6 @@ func APICacheFilePath(cacheDir, rawURL string) string {
 	return client.APICacheFilePath(cacheDir, rawURL)
 }
 
-func proxyFuncFor(proxyURL string) (func(*http.Request) (*url.URL, error), error) {
-	return client.ProxyFuncFor(proxyURL)
+func proxyFuncFor(proxyURL string, exclude []string) (func(*http.Request) (*url.URL, error), error) {
+	return client.ProxyFuncFor(proxyURL, exclude)
 }

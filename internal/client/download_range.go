@@ -40,7 +40,9 @@ func DownloadWithResult(rawURL string, out io.Writer, getbar func(size int64) io
 		return DownloadResult{}, err
 	}
 
-	printProxyNotice("download request", opts.ProxyURL)
+	if shouldUseConfiguredProxy(rawURL, opts.ProxyURL, opts.ProxyExclude) {
+		printProxyNotice("download request", opts.ProxyURL)
+	}
 
 	if opts.ChunkConcurrency != 1 {
 		if remote, ok := probeDownloadFile(rawURL, opts); ok && remote.AcceptRange {

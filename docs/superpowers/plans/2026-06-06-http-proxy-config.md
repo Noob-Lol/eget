@@ -777,7 +777,7 @@ git commit -m "feat: resolve http_proxy config"
 - Modify: `internal/install/network.go`
 - Modify: `internal/install/runner_network_test.go`
 
-- [ ] **Step 1: Run impact analysis**
+- [x] **Step 1: Run impact analysis**
 
 ```bash
 npx gitnexus impact ProxyFuncFor --repo eget --direction upstream
@@ -787,7 +787,7 @@ npx gitnexus impact NewHTTPGetter --repo eget --direction upstream
 
 If `Options` is ambiguous, use the concrete uid returned for `internal/client/network.go`.
 
-- [ ] **Step 2: Write failing client proxy tests**
+- [x] **Step 2: Write failing client proxy tests**
 
 In `internal/install/runner_network_test.go` or `internal/client/http_client_test.go`, add:
 
@@ -815,7 +815,7 @@ func TestProxyFuncForSkipsExcludedHost(t *testing.T) {
 
 Use package imports already present in the selected test file.
 
-- [ ] **Step 3: Write failing proxy notice test**
+- [x] **Step 3: Write failing proxy notice test**
 
 In `internal/client/notices_test.go`, add a test that calls the notice helper through `GetWithOptions` or a small exported/internal helper and asserts:
 
@@ -831,7 +831,7 @@ assert.Contains(t, got, "http_proxy for GitHub API request")
 
 when not excluded.
 
-- [ ] **Step 4: Verify RED**
+- [x] **Step 4: Verify RED**
 
 Run:
 
@@ -842,7 +842,7 @@ go test ./internal/install -run TestProxy -count=1
 
 Expected: compile failure because `ProxyFuncFor` does not accept exclude, or test failure because proxy is not skipped.
 
-- [ ] **Step 5: Extend client options**
+- [x] **Step 5: Extend client options**
 
 In `internal/client/network.go`:
 
@@ -854,7 +854,7 @@ type Options struct {
 }
 ```
 
-- [ ] **Step 6: Update `ProxyFuncFor` signature**
+- [x] **Step 6: Update `ProxyFuncFor` signature**
 
 In `internal/client/http_client.go`:
 
@@ -889,7 +889,7 @@ func ProxyFuncFor(proxyURL string, exclude []string) (func(*http.Request) (*url.
 
 Import `internal/config` in `internal/client/http_client.go`.
 
-- [ ] **Step 7: Update all `ProxyFuncFor` callers**
+- [x] **Step 7: Update all `ProxyFuncFor` callers**
 
 Search:
 
@@ -909,7 +909,7 @@ or equivalent local package call:
 ProxyFuncFor(opts.ProxyURL, opts.ProxyExclude)
 ```
 
-- [ ] **Step 8: Update proxy notice behavior**
+- [x] **Step 8: Update proxy notice behavior**
 
 In `internal/client/notices.go`, add:
 
@@ -946,7 +946,7 @@ If updating wording, change the notice body to:
 ccolor.Fprintf(proxyNoticeWriter, " - Using <ylw>http_proxy for %s</>: %s\n", kind, proxyURL)
 ```
 
-- [ ] **Step 9: Extend install options**
+- [x] **Step 9: Extend install options**
 
 In `internal/install/options.go`:
 
@@ -962,7 +962,7 @@ ProxyExclude: append([]string(nil), opts.ProxyExclude...),
 
 when building `client.Options`.
 
-- [ ] **Step 10: Verify GREEN**
+- [x] **Step 10: Verify GREEN**
 
 Run:
 
@@ -974,7 +974,7 @@ go test ./internal/client ./internal/install
 
 Expected: PASS.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add internal/client/network.go internal/client/http_client.go internal/client/notices.go internal/client/notices_test.go internal/client/download_file.go internal/client/download_range.go internal/install/options.go internal/install/network.go internal/install/runner_network_test.go

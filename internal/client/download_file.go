@@ -55,7 +55,9 @@ func DownloadFile(rawURL, target string, getbar func(size int64) io.Writer, opts
 		return downloadLocalFile(rawURL, target)
 	}
 
-	printProxyNotice("download request", opts.ProxyURL)
+	if shouldUseConfiguredProxy(rawURL, opts.ProxyURL, opts.ProxyExclude) {
+		printProxyNotice("download request", opts.ProxyURL)
+	}
 
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return DownloadFileResult{}, err
