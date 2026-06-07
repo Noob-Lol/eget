@@ -13,6 +13,8 @@ import (
 	"github.com/inherelab/eget/internal/config"
 )
 
+var downloadNoticeURLs = map[string]int{}
+
 func SetVerbose(enabled bool, writer io.Writer) {
 	verboseEnabled = enabled
 	if writer == nil {
@@ -79,16 +81,28 @@ func shouldUseConfiguredProxy(rawURL, proxyURL string, exclude []string) bool {
 	return shouldUseConfiguredProxyURL(parsed, proxyURL, exclude)
 }
 
-func downloadNoticeURL(rawURL string, opts Options) string {
-	parsed, err := urlpkgParse(rawURL)
-	if err != nil {
-		return rawURL
+func setDownloadNoticeURLForRequest(rawURL string) func() {
+	proxyNoticeMu.Lock()
+	downloadNoticeURLs[rawURL]++
+	proxyNoticeMu.Unlock()
+	return func() {
+		proxyNoticeMu.Lock()
+		if downloadNoticeURLs[rawURL] <= 1 {
+			delete(downloadNoticeURLs, rawURL)
+		} else {
+			downloadNoticeURLs[rawURL]--
+		}
+		proxyNoticeMu.Unlock()
 	}
-	attempts := requestAttemptURLs(rawURL, parsed, opts)
-	if len(attempts) == 0 {
-		return rawURL
+}
+
+func printDownloadProxyNoticeForRequest(rawURL string, parsed *url.URL, opts Options) {
+	proxyNoticeMu.Lock()
+	_, isDownload := downloadNoticeURLs[rawURL]
+	proxyNoticeMu.Unlock()
+	if isDownload && shouldUseConfiguredProxyURL(parsed, opts.ProxyURL, opts.ProxyExclude) {
+		printProxyNotice("download request", opts.ProxyURL)
 	}
-	return attempts[0]
 }
 
 func proxyNoticeKey(kind, proxyURL string, writer io.Writer) string {
@@ -112,6 +126,7 @@ func resetProxyNoticeStateForTest() {
 	proxyNoticeMu.Lock()
 	defer proxyNoticeMu.Unlock()
 	proxyNoticeSeen = map[string]struct{}{}
+	downloadNoticeURLs = map[string]int{}
 }
 
 func printAPICacheNotice(cachePath string) {

@@ -17,17 +17,15 @@ import (
 func TestDownloadPrintsProxyNoticeForRemoteRequest(t *testing.T) {
 	var notice bytes.Buffer
 	origNoticeWriter := proxyNoticeWriter
-	origGetWithOptions := downloadGetWithOptions
+	origHTTPDo := httpDo
 	defer func() {
 		proxyNoticeWriter = origNoticeWriter
-		downloadGetWithOptions = origGetWithOptions
+		httpDo = origHTTPDo
 	}()
 	proxyNoticeWriter = &notice
-	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
-		if opts.ProxyURL != "http://127.0.0.1:7890" {
-			t.Fatalf("expected proxy url to propagate, got %q", opts.ProxyURL)
-		}
-		assert.Eq(t, []string{"github.com"}, opts.ProxyExclude)
+	var requested string
+	httpDo = func(client *http.Client, req *http.Request) (*http.Response, error) {
+		requested = req.URL.String()
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader("network-data")),
@@ -40,6 +38,7 @@ func TestDownloadPrintsProxyNoticeForRemoteRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Download(): %v", err)
 	}
+	assert.Eq(t, "https://example.com/tool.tar.gz", requested)
 
 	if got := notice.String(); !strings.Contains(got, "http_proxy for download request") {
 		t.Fatalf("expected download proxy notice, got %q", got)

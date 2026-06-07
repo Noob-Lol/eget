@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -17,11 +18,9 @@ func TestProxyNoticePrintsOncePerKindAndProxyURL(t *testing.T) {
 	var notice bytes.Buffer
 	origNoticeWriter := proxyNoticeWriter
 	origHTTPDo := httpDo
-	origDownloadGet := downloadGetWithOptions
 	defer func() {
 		proxyNoticeWriter = origNoticeWriter
 		httpDo = origHTTPDo
-		downloadGetWithOptions = origDownloadGet
 		resetProxyNoticeStateForTest()
 	}()
 	proxyNoticeWriter = &notice
@@ -30,12 +29,6 @@ func TestProxyNoticePrintsOncePerKindAndProxyURL(t *testing.T) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(`{}`)),
-		}, nil
-	}
-	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(strings.NewReader(`download`)),
 		}, nil
 	}
 
@@ -176,14 +169,14 @@ func TestGetWithOptionsProxyNoticeUsesGhproxyAttemptHost(t *testing.T) {
 func TestDownloadProxyNoticeUsesGhproxyAttemptHost(t *testing.T) {
 	var notice bytes.Buffer
 	origNoticeWriter := proxyNoticeWriter
-	origDownloadGet := downloadGetWithOptions
+	origHTTPDo := httpDo
 	defer func() {
 		proxyNoticeWriter = origNoticeWriter
-		downloadGetWithOptions = origDownloadGet
+		httpDo = origHTTPDo
 		resetProxyNoticeStateForTest()
 	}()
 	proxyNoticeWriter = &notice
-	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+	httpDo = func(client *http.Client, req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(`download`)),
@@ -223,6 +216,48 @@ func TestDownloadProxyNoticeUsesGhproxyAttemptHost(t *testing.T) {
 			assert.Contains(t, got, tt.want)
 		})
 	}
+}
+
+func TestDownloadProxyNoticeUsesGhproxyFallbackAttemptHost(t *testing.T) {
+	var notice bytes.Buffer
+	origNoticeWriter := proxyNoticeWriter
+	origHTTPDo := httpDo
+	defer func() {
+		proxyNoticeWriter = origNoticeWriter
+		httpDo = origHTTPDo
+		resetProxyNoticeStateForTest()
+	}()
+	proxyNoticeWriter = &notice
+	resetProxyNoticeStateForTest()
+	attempts := 0
+	httpDo = func(client *http.Client, req *http.Request) (*http.Response, error) {
+		attempts++
+		if req.URL.Host == "excluded.proxy.test" {
+			return nil, errors.New("primary unavailable")
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(`download`)),
+		}, nil
+	}
+
+	var out bytes.Buffer
+	_, err := DownloadWithResult("https://github.com/gookit/gitw/releases/download/v0.3.6/tool.tar.gz", &out, func(int64) io.Writer {
+		return io.Discard
+	}, Options{
+		ProxyURL:         "http://127.0.0.1:7890",
+		ProxyExclude:     []string{"excluded.proxy.test"},
+		GhproxyEnabled:   true,
+		GhproxyHostURL:   "https://excluded.proxy.test",
+		GhproxyFallbacks: []string{"https://allowed.proxy.test"},
+		ChunkConcurrency: 1,
+	})
+	assert.NoErr(t, err)
+	assert.Eq(t, 2, attempts)
+	assert.Eq(t, "download", out.String())
+
+	got := ccolor.ClearCode(notice.String())
+	assert.Contains(t, got, "http_proxy for download request")
 }
 
 func mustParseURLForTest(rawURL string) *url.URL {

@@ -73,6 +73,7 @@ func GetWithOptions(rawURL string, opts Options) (*http.Response, error) {
 			return nil, err
 		}
 		setDefaultHeaders(req, opts)
+		printDownloadProxyNoticeForRequest(rawURL, req.URL, opts)
 		if isGitHubAPIRequest(originalURL) && shouldUseConfiguredProxyURL(req.URL, opts.ProxyURL, opts.ProxyExclude) {
 			printProxyNotice("GitHub API request", opts.ProxyURL)
 		}

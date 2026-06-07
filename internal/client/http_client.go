@@ -77,6 +77,7 @@ func requestWithOptions(method, rawURL, rangeHeader string, opts Options) (*http
 			return nil, err
 		}
 		setDefaultHeaders(req, opts)
+		printDownloadProxyNoticeForRequest(rawURL, req.URL, opts)
 		if attemptURL != rawURL {
 			verbosef("ghproxy rewrite: %s -> %s", rawURL, attemptURL)
 		}
