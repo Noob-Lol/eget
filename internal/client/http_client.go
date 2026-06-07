@@ -35,11 +35,7 @@ func newHTTPClient(opts Options) (*http.Client, error) {
 	}}, nil
 }
 
-func ProxyFuncFor(proxyURL string, excludes ...[]string) (func(*http.Request) (*url.URL, error), error) {
-	var exclude []string
-	if len(excludes) > 0 {
-		exclude = excludes[0]
-	}
+func ProxyFuncFor(proxyURL string, exclude []string) (func(*http.Request) (*url.URL, error), error) {
 	if proxyURL == "" {
 		proxyFunc := httpproxy.FromEnvironment().ProxyFunc()
 		return func(req *http.Request) (*url.URL, error) {

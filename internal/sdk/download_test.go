@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -34,6 +35,26 @@ type sdkTestClientChunk struct {
 	Start int64 `json:"start"`
 	End   int64 `json:"end"`
 	Done  bool  `json:"done"`
+}
+
+func TestNewDownloadHTTPClientPropagatesProxyExclude(t *testing.T) {
+	httpClient, err := newDownloadHTTPClient(client.Options{
+		ProxyURL:     "http://127.0.0.1:7890",
+		ProxyExclude: []string{"github.com"},
+	})
+	assert.NoErr(t, err)
+
+	transport, ok := httpClient.Transport.(*http.Transport)
+	assert.True(t, ok)
+	excludedReq := httptest.NewRequest(http.MethodGet, "https://api.github.com/repos/owner/repo", nil)
+	got, err := transport.Proxy(excludedReq)
+	assert.NoErr(t, err)
+	assert.Eq(t, (*url.URL)(nil), got)
+
+	allowedReq := httptest.NewRequest(http.MethodGet, "https://example.com/archive.tar.gz", nil)
+	got, err = transport.Proxy(allowedReq)
+	assert.NoErr(t, err)
+	assert.Eq(t, "http://127.0.0.1:7890", got.String())
 }
 
 func TestDownloadArchiveUsesCompleteCacheWhenMetaMatches(t *testing.T) {

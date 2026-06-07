@@ -55,7 +55,7 @@ func DownloadFile(rawURL, target string, getbar func(size int64) io.Writer, opts
 		return downloadLocalFile(rawURL, target)
 	}
 
-	if shouldUseConfiguredProxy(rawURL, opts.ProxyURL, opts.ProxyExclude) {
+	if shouldUseConfiguredProxy(downloadNoticeURL(rawURL, opts), opts.ProxyURL, opts.ProxyExclude) {
 		printProxyNotice("download request", opts.ProxyURL)
 	}
 

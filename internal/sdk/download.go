@@ -185,7 +185,7 @@ func saveDownloadMeta(path string, meta downloadMeta) error {
 }
 
 func newDownloadHTTPClient(opts client.Options) (*http.Client, error) {
-	proxyFunc, err := client.ProxyFuncFor(opts.ProxyURL)
+	proxyFunc, err := client.ProxyFuncFor(opts.ProxyURL, opts.ProxyExclude)
 	if err != nil {
 		return nil, err
 	}

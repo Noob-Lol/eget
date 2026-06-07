@@ -49,10 +49,6 @@ func GetWithOptions(rawURL string, opts Options) (*http.Response, error) {
 		return nil, err
 	}
 
-	if isGitHubAPIRequest(originalURL) && shouldUseConfiguredProxy(rawURL, opts.ProxyURL, opts.ProxyExclude) {
-		printProxyNotice("GitHub API request", opts.ProxyURL)
-	}
-
 	cachePath, useAPICache := resolvedAPICachePath(opts, rawURL, originalURL)
 	if useAPICache {
 		if resp, ok, err := loadAPICacheResponse(cachePath, opts.APICacheTime); err != nil {
@@ -77,6 +73,9 @@ func GetWithOptions(rawURL string, opts Options) (*http.Response, error) {
 			return nil, err
 		}
 		setDefaultHeaders(req, opts)
+		if isGitHubAPIRequest(originalURL) && shouldUseConfiguredProxyURL(req.URL, opts.ProxyURL, opts.ProxyExclude) {
+			printProxyNotice("GitHub API request", opts.ProxyURL)
+		}
 
 		if attemptURL != rawURL {
 			verbosef("ghproxy rewrite: %s -> %s", rawURL, attemptURL)

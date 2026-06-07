@@ -61,15 +61,34 @@ func printProxyNotice(kind, proxyURL string) {
 	ccolor.Fprintf(proxyNoticeWriter, " - Using <ylw>http_proxy for %s</>: %s\n", kind, proxyURL)
 }
 
-func shouldUseConfiguredProxy(rawURL, proxyURL string, exclude []string) bool {
+func shouldUseConfiguredProxyURL(parsed *url.URL, proxyURL string, exclude []string) bool {
 	if strings.TrimSpace(proxyURL) == "" {
 		return false
 	}
+	if parsed == nil {
+		return false
+	}
+	return !config.ProxyExcluded(parsed.Host, exclude)
+}
+
+func shouldUseConfiguredProxy(rawURL, proxyURL string, exclude []string) bool {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
 		return false
 	}
-	return !config.ProxyExcluded(parsed.Host, exclude)
+	return shouldUseConfiguredProxyURL(parsed, proxyURL, exclude)
+}
+
+func downloadNoticeURL(rawURL string, opts Options) string {
+	parsed, err := urlpkgParse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	attempts := requestAttemptURLs(rawURL, parsed, opts)
+	if len(attempts) == 0 {
+		return rawURL
+	}
+	return attempts[0]
 }
 
 func proxyNoticeKey(kind, proxyURL string, writer io.Writer) string {

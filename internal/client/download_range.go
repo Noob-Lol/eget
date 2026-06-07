@@ -40,7 +40,7 @@ func DownloadWithResult(rawURL string, out io.Writer, getbar func(size int64) io
 		return DownloadResult{}, err
 	}
 
-	if shouldUseConfiguredProxy(rawURL, opts.ProxyURL, opts.ProxyExclude) {
+	if shouldUseConfiguredProxy(downloadNoticeURL(rawURL, opts), opts.ProxyURL, opts.ProxyExclude) {
 		printProxyNotice("download request", opts.ProxyURL)
 	}
 
