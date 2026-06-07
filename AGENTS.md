@@ -15,7 +15,6 @@
 > **IMPORTANT**: 需要实时更新，正在进行的工作和关键md文档链接；**已完成的需要移除**，不能一直累计，总数不能超过10条。
 
 <!-- PROCESSING WORKS:START -->
-- [ ] HTTP Proxy Config Implementation Plan: `docs/superpowers/plans/2026-06-06-http-proxy-config.md`
 
 <!-- PROCESSING WORKS:END -->
 
