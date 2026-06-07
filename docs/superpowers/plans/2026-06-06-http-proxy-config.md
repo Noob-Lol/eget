@@ -382,7 +382,7 @@ git commit -m "feat: add http_proxy config model"
 - Create: `internal/config/proxy_test.go`
 - Modify: `internal/util/proxy.go`
 
-- [ ] **Step 1: Run impact analysis**
+- [x] **Step 1: Run impact analysis**
 
 ```bash
 npx gitnexus impact GlobalProxyDisabled --repo eget --direction upstream
@@ -390,7 +390,7 @@ npx gitnexus impact GlobalProxyDisabled --repo eget --direction upstream
 
 Expected: LOW/MEDIUM. If HIGH/CRITICAL, report before editing.
 
-- [ ] **Step 2: Write failing resolver tests**
+- [x] **Step 2: Write failing resolver tests**
 
 Create `internal/config/proxy_test.go` with tests:
 
@@ -477,7 +477,7 @@ func TestResolveHTTPProxyMergesExcludeRules(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Write failing exclude tests**
+- [x] **Step 3: Write failing exclude tests**
 
 In `internal/config/proxy_test.go`, add:
 
@@ -522,7 +522,7 @@ func TestProxyExcludedIgnoresStarRule(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: Verify RED**
+- [x] **Step 4: Verify RED**
 
 Run:
 
@@ -532,7 +532,7 @@ go test ./internal/config -run "TestResolveHTTPProxy|TestProxyExcluded" -count=1
 
 Expected: compile failure because resolver functions do not exist.
 
-- [ ] **Step 5: Implement resolver types**
+- [x] **Step 5: Implement resolver types**
 
 Create `internal/config/proxy.go`:
 
@@ -560,7 +560,7 @@ type ProxyResolveOptions struct {
 }
 ```
 
-- [ ] **Step 6: Implement `ResolveHTTPProxy`**
+- [x] **Step 6: Implement `ResolveHTTPProxy`**
 
 In `internal/config/proxy.go`:
 
@@ -619,7 +619,7 @@ func firstNonEmptyProxyURL(values ...string) string {
 }
 ```
 
-- [ ] **Step 7: Implement NO_PROXY parsing**
+- [x] **Step 7: Implement NO_PROXY parsing**
 
 In `internal/config/proxy.go`:
 
@@ -650,7 +650,7 @@ func ParseNoProxyExclude(value string) []string {
 }
 ```
 
-- [ ] **Step 8: Implement exclude matching**
+- [x] **Step 8: Implement exclude matching**
 
 In `internal/config/proxy.go`:
 
@@ -716,7 +716,7 @@ func splitHostPort(value string) (string, string) {
 }
 ```
 
-- [ ] **Step 9: Update `util.GlobalProxyDisabled` compatibility**
+- [x] **Step 9: Update `util.GlobalProxyDisabled` compatibility**
 
 Keep the existing function signature for current callers:
 
@@ -744,7 +744,7 @@ func GlobalProxyDisabledWithEnv(noProxy bool, envNoProxy string) bool {
 
 This changes old behavior intentionally: `NO_PROXY=mydev.com` no longer disables all config proxy; it becomes an exclude rule through `config.ParseNoProxyExclude`.
 
-- [ ] **Step 10: Verify GREEN**
+- [x] **Step 10: Verify GREEN**
 
 Run:
 
@@ -755,7 +755,7 @@ go test ./internal/util -run TestGlobalProxy -count=1
 
 Expected: PASS. If `internal/util` has no tests, `go test ./internal/util` should pass.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add internal/config/proxy.go internal/config/proxy_test.go internal/util/proxy.go
