@@ -6,7 +6,10 @@ import (
 )
 
 func GlobalProxyDisabled(noProxy bool) bool {
-	return GlobalProxyDisabledWithEnv(noProxy, os.Getenv("NO_PROXY"))
+	if noProxy {
+		return true
+	}
+	return strings.TrimSpace(os.Getenv("NO_PROXY")) != ""
 }
 
 func GlobalProxyDisabledWithEnv(noProxy bool, envNoProxy string) bool {
