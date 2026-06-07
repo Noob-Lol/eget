@@ -195,7 +195,7 @@ func TestHandleListOutdatedPrintsSingleProxyNoticeAndCacheSummary(t *testing.T) 
 	}
 
 	gotErr := ccolor.ClearCode(stderr.String())
-	if strings.Count(gotErr, "proxy_url for GitHub API request") != 1 {
+	if strings.Count(gotErr, "http_proxy for GitHub API request") != 1 {
 		t.Fatalf("expected one proxy notice, got %q", gotErr)
 	}
 	if !strings.Contains(gotErr, "Reused api_cache files: 3") {

@@ -84,7 +84,7 @@ func (s *cliService) printOutdatedProxyNotice() {
 	if s == nil || s.proxyURL == "" {
 		return
 	}
-	ccolor.Fprintf(s.stderrWriter(), " - Using <ylw>proxy_url for GitHub API request</>: %s\n", s.proxyURL)
+	ccolor.Fprintf(s.stderrWriter(), " - Using <ylw>http_proxy for GitHub API request</>: %s\n", s.proxyURL)
 }
 
 func (s *cliService) printAPICacheSummary(count int) {

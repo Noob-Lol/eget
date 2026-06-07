@@ -190,6 +190,165 @@ func TestUpdateAllPackagesNoProxySkipsConfiguredProxyURL(t *testing.T) {
 	assert.True(t, installer.options[0].NoProxy)
 }
 
+func TestUpdateAllPackagesUsesHTTPProxyConfig(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	installer := &fakeInstallService{}
+	proxyURL := "http://127.0.0.1:10801"
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.HTTPProxy.URL = &proxyURL
+			cfg.HTTPProxy.Exclude = []string{"mydev.com"}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	_, err := svc.UpdateAllPackages(install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(installer.options))
+	assert.Eq(t, proxyURL, installer.options[0].ProxyURL)
+	assert.Eq(t, []string{"mydev.com"}, installer.options[0].ProxyExclude)
+}
+
+func TestUpdateAllPackagesHTTPProxyEnableFalseDisablesConfiguredProxy(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	installer := &fakeInstallService{}
+	enabled := false
+	proxyURL := "http://127.0.0.1:10801"
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.HTTPProxy.Enable = &enabled
+			cfg.HTTPProxy.URL = &proxyURL
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	_, err := svc.UpdateAllPackages(install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(installer.options))
+	assert.Eq(t, "", installer.options[0].ProxyURL)
+}
+
+func TestUpdateAllPackagesHTTPProxyPrefersNewBlockOverLegacy(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	installer := &fakeInstallService{}
+	legacyURL := "http://127.0.0.1:7890"
+	proxyURL := "http://127.0.0.1:10801"
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Global.ProxyURL = &legacyURL
+			cfg.HTTPProxy.URL = &proxyURL
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	_, err := svc.UpdateAllPackages(install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(installer.options))
+	assert.Eq(t, proxyURL, installer.options[0].ProxyURL)
+}
+
+func TestUpdateAllPackagesNoProxyEnvAddsProxyExcludeOrDisablesProxy(t *testing.T) {
+	proxyURL := "http://127.0.0.1:10801"
+	newService := func(installer *fakeInstallService) UpdateService {
+		return UpdateService{
+			Install: installer,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.HTTPProxy.URL = &proxyURL
+				cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+				return cfg, nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+				}}, nil
+			},
+			LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+				return LatestInfo{Tag: "v14.0.0"}, nil
+			},
+		}
+	}
+
+	t.Setenv("NO_PROXY", "api.github.com")
+	installer := &fakeInstallService{}
+	_, err := newService(installer).UpdateAllPackages(install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, proxyURL, installer.options[0].ProxyURL)
+	assert.Eq(t, []string{"api.github.com"}, installer.options[0].ProxyExclude)
+
+	t.Setenv("NO_PROXY", "1")
+	installer = &fakeInstallService{}
+	_, err = newService(installer).UpdateAllPackages(install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, "", installer.options[0].ProxyURL)
+}
+
+func TestUpdateAllPackagesCLIProxyURLOverridesHTTPProxyConfig(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	installer := &fakeInstallService{}
+	proxyURL := "http://127.0.0.1:10801"
+	cliURL := "http://127.0.0.1:10802"
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.HTTPProxy.URL = &proxyURL
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v14.0.0"}, nil
+		},
+	}
+
+	_, err := svc.UpdateAllPackages(install.Options{ProxyURL: cliURL})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(installer.options))
+	assert.Eq(t, cliURL, installer.options[0].ProxyURL)
+}
+
 func TestUpdateAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testing.T) {
 	block := make(chan struct{})
 	installer := &fakeInstallService{block: block}

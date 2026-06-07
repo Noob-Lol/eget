@@ -995,7 +995,7 @@ git commit -m "feat: apply proxy excludes to http client"
 - Modify: `internal/cli/install_handler_test.go`
 - Modify: `internal/cli/list_handler_test.go`
 
-- [ ] **Step 1: Run impact analysis**
+- [x] **Step 1: Run impact analysis**
 
 ```bash
 npx gitnexus impact resolveInstallOptionsWithConfig --repo eget --direction upstream
@@ -1005,7 +1005,7 @@ npx gitnexus impact applyGlobalNetworkConfig --repo eget --direction upstream
 
 Expected: LOW/MEDIUM. If HIGH/CRITICAL, report before editing.
 
-- [ ] **Step 2: Write failing install config tests**
+- [x] **Step 2: Write failing install config tests**
 
 In `internal/app/install_config_test.go`, add or update tests:
 
@@ -1040,7 +1040,7 @@ Add tests for:
 - `NO_PROXY=mydev.com` becomes `ProxyExclude`.
 - `NO_PROXY=1` disables.
 
-- [ ] **Step 3: Write failing update tests**
+- [x] **Step 3: Write failing update tests**
 
 In `internal/app/update_batch_test.go` or `internal/app/update_package_test.go`, add:
 
@@ -1077,7 +1077,7 @@ func TestUpdateAllPackagesUsesHTTPProxyConfig(t *testing.T) {
 
 Adjust fake names to existing test helpers.
 
-- [ ] **Step 4: Write failing CLI global network tests**
+- [x] **Step 4: Write failing CLI global network tests**
 
 In `internal/cli/install_handler_test.go`, update `TestApplyGlobalNetworkConfig...` or add:
 
@@ -1097,7 +1097,7 @@ func TestApplyGlobalNetworkConfigUsesHTTPProxy(t *testing.T) {
 }
 ```
 
-- [ ] **Step 5: Verify RED**
+- [x] **Step 5: Verify RED**
 
 Run:
 
@@ -1108,7 +1108,7 @@ go test ./internal/cli -run "TestApplyGlobalNetworkConfig.*Proxy|TestHandleListO
 
 Expected: tests fail because app/cli still use `cfg.Global.ProxyURL`.
 
-- [ ] **Step 6: Implement install resolver integration**
+- [x] **Step 6: Implement install resolver integration**
 
 In `internal/app/install_resolve.go`, replace direct global proxy mutation:
 
@@ -1149,7 +1149,7 @@ ProxyExclude: append([]string(nil), proxy.Exclude...),
 
 If `merged.ProxyURL` can override `proxy.URL`, ensure `ProxyExclude` still comes from resolver. If cleaner, skip `global.ProxyURL` mutation and set `ProxyURL: proxy.URL` directly after merge.
 
-- [ ] **Step 7: Implement update network integration**
+- [x] **Step 7: Implement update network integration**
 
 In `internal/app/update_options.go`, update `applyConfigNetworkOptions`:
 
@@ -1165,7 +1165,7 @@ opts.ProxyExclude = append([]string(nil), proxy.Exclude...)
 
 Keep cache/api/ghproxy logic unchanged.
 
-- [ ] **Step 8: Implement CLI global network integration**
+- [x] **Step 8: Implement CLI global network integration**
 
 In `internal/cli/options.go`, update `applyGlobalNetworkConfig`:
 
@@ -1181,7 +1181,7 @@ opts.ProxyExclude = append([]string(nil), proxy.Exclude...)
 
 Remove direct `cfg.Global.ProxyURL` read.
 
-- [ ] **Step 9: Update outdated progress notice wording**
+- [x] **Step 9: Update outdated progress notice wording**
 
 If Task 3 changed notice wording to `http_proxy`, update `internal/cli/outdated_progress.go`:
 
@@ -1191,7 +1191,7 @@ ccolor.Fprintf(s.stderrWriter(), " - Using <ylw>http_proxy for GitHub API reques
 
 Update `internal/cli/list_handler_test.go` expected string from `proxy_url for GitHub API request` to `http_proxy for GitHub API request`.
 
-- [ ] **Step 10: Verify GREEN**
+- [x] **Step 10: Verify GREEN**
 
 Run:
 
@@ -1203,7 +1203,7 @@ go test ./internal/app ./internal/cli
 
 Expected: PASS.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add internal/app/install_resolve.go internal/app/update_options.go internal/cli/options.go internal/cli/outdated_progress.go internal/app/install_config_test.go internal/app/update_batch_test.go internal/cli/install_handler_test.go internal/cli/list_handler_test.go

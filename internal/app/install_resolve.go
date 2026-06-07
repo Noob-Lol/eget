@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
@@ -83,15 +84,22 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		repoKey = repo
 	}
 
+	repoSection := cfg.Repos[repoKey]
+	proxy := cfgpkg.ResolveHTTPProxy(cfg, cfgpkg.ProxyResolveOptions{
+		NoProxy:     cli.NoProxy,
+		EnvNoProxy:  os.Getenv("NO_PROXY"),
+		OverrideURL: cli.ProxyURL,
+		PackageURL:  util.DerefString(pkg.ProxyURL),
+		RepoURL:     util.DerefString(repoSection.ProxyURL),
+	})
 	global := cfg.Global
-	if util.GlobalProxyDisabled(cli.NoProxy) {
-		global.ProxyURL = nil
-	}
-	merged := cfgpkg.MergeInstallOptions(global, cfg.Repos[repoKey], pkg, cfgpkg.CLIOverrides{
+	global.ProxyURL = nil
+	repoSection.ProxyURL = nil
+	pkg.ProxyURL = nil
+	merged := cfgpkg.MergeInstallOptions(global, repoSection, pkg, cfgpkg.CLIOverrides{
 		ExtractAll:       boolOpt(cli.All),
 		AssetFilters:     stringsOpt(cli.Asset),
 		CacheDir:         stringOpt(cli.CacheDir),
-		ProxyURL:         stringOpt(cli.ProxyURL),
 		DownloadOnly:     boolOpt(cli.DownloadOnly),
 		File:             stringOpt(cli.ExtractFile),
 		IsGUI:            boolOpt(cli.IsGUI),
@@ -188,7 +196,8 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		CacheDir:            cacheDir,
 		CacheName:           cacheName,
 		CacheVersion:        cacheVersion,
-		ProxyURL:            merged.ProxyURL,
+		ProxyURL:            proxy.URL,
+		ProxyExclude:        append([]string(nil), proxy.Exclude...),
 		NoProxy:             cli.NoProxy,
 		UserAgent:           merged.UserAgent,
 		APICacheEnabled:     apiCacheEnabled,

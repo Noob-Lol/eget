@@ -1,6 +1,7 @@
 package app
 
 import (
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -208,11 +209,13 @@ func applyConfigNetworkOptions(cfg *cfgpkg.File, opts install.Options) install.O
 	if opts.CacheDir == "" {
 		opts.CacheDir, _ = expandPath(util.DerefString(cfg.Global.CacheDir))
 	}
-	if util.GlobalProxyDisabled(opts.NoProxy) {
-		opts.ProxyURL = ""
-	} else if opts.ProxyURL == "" {
-		opts.ProxyURL = util.DerefString(cfg.Global.ProxyURL)
-	}
+	proxy := cfgpkg.ResolveHTTPProxy(cfg, cfgpkg.ProxyResolveOptions{
+		NoProxy:     opts.NoProxy,
+		EnvNoProxy:  os.Getenv("NO_PROXY"),
+		OverrideURL: opts.ProxyURL,
+	})
+	opts.ProxyURL = proxy.URL
+	opts.ProxyExclude = append([]string(nil), proxy.Exclude...)
 	if cfg.ApiCache.Enable != nil {
 		opts.APICacheEnabled = *cfg.ApiCache.Enable
 	}

@@ -101,6 +101,145 @@ proxy_url = "http://127.0.0.1:7890"
 	assert.Eq(t, "", runner.opts.ProxyURL)
 }
 
+func TestInstallTargetUsesHTTPProxyConfig(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	cfg := cfgpkg.NewFile()
+	proxyURL := "http://127.0.0.1:10801"
+	cfg.HTTPProxy.URL = &proxyURL
+	cfg.HTTPProxy.Exclude = []string{"mydev.com"}
+	cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("fzf", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "http://127.0.0.1:10801", runner.opts.ProxyURL)
+	assert.Eq(t, []string{"mydev.com"}, runner.opts.ProxyExclude)
+}
+
+func TestInstallTargetHTTPProxyEnableFalseDisablesConfiguredProxy(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	enabled := false
+	proxyURL := "http://127.0.0.1:10801"
+	cfg := cfgpkg.NewFile()
+	cfg.HTTPProxy.Enable = &enabled
+	cfg.HTTPProxy.URL = &proxyURL
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("junegunn/fzf", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "", runner.opts.ProxyURL)
+}
+
+func TestInstallTargetHTTPProxyFallsBackToLegacyGlobalProxyURL(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	proxyURL := "http://127.0.0.1:7890"
+	cfg := cfgpkg.NewFile()
+	cfg.Global.ProxyURL = &proxyURL
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("junegunn/fzf", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, proxyURL, runner.opts.ProxyURL)
+}
+
+func TestInstallTargetHTTPProxyWinsOverLegacyGlobalProxyURL(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	legacyURL := "http://127.0.0.1:7890"
+	proxyURL := "http://127.0.0.1:10801"
+	cfg := cfgpkg.NewFile()
+	cfg.Global.ProxyURL = &legacyURL
+	cfg.HTTPProxy.URL = &proxyURL
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("junegunn/fzf", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, proxyURL, runner.opts.ProxyURL)
+}
+
+func TestInstallTargetNoProxyHostListAddsProxyExclude(t *testing.T) {
+	t.Setenv("NO_PROXY", "api.github.com,*.corp.local")
+	proxyURL := "http://127.0.0.1:10801"
+	cfg := cfgpkg.NewFile()
+	cfg.HTTPProxy.URL = &proxyURL
+	cfg.HTTPProxy.Exclude = []string{"mydev.com"}
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("junegunn/fzf", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, proxyURL, runner.opts.ProxyURL)
+	assert.Eq(t, []string{"mydev.com", "api.github.com", "*.corp.local"}, runner.opts.ProxyExclude)
+}
+
+func TestInstallTargetHTTPProxyAllowsPackageRepoAndCLIProxyURLOverrides(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	globalURL := "http://127.0.0.1:10801"
+	repoURL := "http://127.0.0.1:10802"
+	packageURL := "http://127.0.0.1:10803"
+	cliURL := "http://127.0.0.1:10804"
+	cfg := cfgpkg.NewFile()
+	cfg.HTTPProxy.URL = &globalURL
+	cfg.Repos["junegunn/fzf"] = cfgpkg.Section{ProxyURL: &repoURL}
+	cfg.Packages["fzf"] = cfgpkg.Section{
+		Repo:     util.StringPtr("junegunn/fzf"),
+		ProxyURL: &packageURL,
+	}
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("fzf", install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, packageURL, runner.opts.ProxyURL)
+
+	cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+	_, err = svc.InstallTarget("fzf", install.Options{})
+	assert.NoErr(t, err)
+	assert.Eq(t, repoURL, runner.opts.ProxyURL)
+
+	_, err = svc.InstallTarget("fzf", install.Options{ProxyURL: cliURL})
+	assert.NoErr(t, err)
+	assert.Eq(t, cliURL, runner.opts.ProxyURL)
+}
+
 func TestInstallOptionsIncludeCacheMirrorConfig(t *testing.T) {
 	cacheDir := t.TempDir()
 	cfg := cfgpkg.NewFile()

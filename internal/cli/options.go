@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -52,11 +53,13 @@ func applyGlobalNetworkConfig(opts *install.Options, cfg *cfgpkg.File) {
 			opts.APICacheDir = filepath.Join(cacheDir, "api-cache")
 		}
 	}
-	if cfg.Global.ProxyURL != nil {
-		if !util.GlobalProxyDisabled(opts.NoProxy) {
-			opts.ProxyURL = *cfg.Global.ProxyURL
-		}
-	}
+	proxy := cfgpkg.ResolveHTTPProxy(cfg, cfgpkg.ProxyResolveOptions{
+		NoProxy:     opts.NoProxy,
+		EnvNoProxy:  os.Getenv("NO_PROXY"),
+		OverrideURL: opts.ProxyURL,
+	})
+	opts.ProxyURL = proxy.URL
+	opts.ProxyExclude = append([]string(nil), proxy.Exclude...)
 	if cfg.Ghproxy.Enable != nil {
 		opts.GhproxyEnabled = *cfg.Ghproxy.Enable
 	}

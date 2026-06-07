@@ -130,6 +130,99 @@ func TestApplyGlobalNetworkConfigSkipsProxyURLWhenNoProxyEnvSet(t *testing.T) {
 	assert.Eq(t, "", opts.ProxyURL)
 }
 
+func TestApplyGlobalNetworkConfigUsesHTTPProxy(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	proxyURL := "http://127.0.0.1:10801"
+	cfg := cfgpkg.NewFile()
+	cfg.HTTPProxy.URL = &proxyURL
+	cfg.HTTPProxy.Exclude = []string{"mydev.com"}
+
+	opts := install.Options{}
+	applyGlobalNetworkConfig(&opts, cfg)
+
+	assert.Eq(t, proxyURL, opts.ProxyURL)
+	assert.Eq(t, []string{"mydev.com"}, opts.ProxyExclude)
+}
+
+func TestApplyGlobalNetworkConfigHTTPProxyEnableFalseDisablesConfiguredProxy(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	enabled := false
+	proxyURL := "http://127.0.0.1:10801"
+	cfg := cfgpkg.NewFile()
+	cfg.HTTPProxy.Enable = &enabled
+	cfg.HTTPProxy.URL = &proxyURL
+
+	opts := install.Options{}
+	applyGlobalNetworkConfig(&opts, cfg)
+
+	assert.Eq(t, "", opts.ProxyURL)
+}
+
+func TestApplyGlobalNetworkConfigHTTPProxyFallsBackToLegacyGlobalProxyURL(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	proxyURL := "http://127.0.0.1:7890"
+	cfg := cfgpkg.NewFile()
+	cfg.Global.ProxyURL = &proxyURL
+
+	opts := install.Options{}
+	applyGlobalNetworkConfig(&opts, cfg)
+
+	assert.Eq(t, proxyURL, opts.ProxyURL)
+}
+
+func TestApplyGlobalNetworkConfigHTTPProxyWinsOverLegacyGlobalProxyURL(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	legacyURL := "http://127.0.0.1:7890"
+	proxyURL := "http://127.0.0.1:10801"
+	cfg := cfgpkg.NewFile()
+	cfg.Global.ProxyURL = &legacyURL
+	cfg.HTTPProxy.URL = &proxyURL
+
+	opts := install.Options{}
+	applyGlobalNetworkConfig(&opts, cfg)
+
+	assert.Eq(t, proxyURL, opts.ProxyURL)
+}
+
+func TestApplyGlobalNetworkConfigNoProxyHostListAddsProxyExclude(t *testing.T) {
+	t.Setenv("NO_PROXY", "api.github.com,*.corp.local")
+	proxyURL := "http://127.0.0.1:10801"
+	cfg := cfgpkg.NewFile()
+	cfg.HTTPProxy.URL = &proxyURL
+	cfg.HTTPProxy.Exclude = []string{"mydev.com"}
+
+	opts := install.Options{}
+	applyGlobalNetworkConfig(&opts, cfg)
+
+	assert.Eq(t, proxyURL, opts.ProxyURL)
+	assert.Eq(t, []string{"mydev.com", "api.github.com", "*.corp.local"}, opts.ProxyExclude)
+}
+
+func TestApplyGlobalNetworkConfigNoProxyEnvDisablesHTTPProxy(t *testing.T) {
+	t.Setenv("NO_PROXY", "1")
+	proxyURL := "http://127.0.0.1:10801"
+	cfg := cfgpkg.NewFile()
+	cfg.HTTPProxy.URL = &proxyURL
+
+	opts := install.Options{}
+	applyGlobalNetworkConfig(&opts, cfg)
+
+	assert.Eq(t, "", opts.ProxyURL)
+}
+
+func TestApplyGlobalNetworkConfigCLIProxyURLOverridesHTTPProxy(t *testing.T) {
+	t.Setenv("NO_PROXY", "")
+	proxyURL := "http://127.0.0.1:10801"
+	cliURL := "http://127.0.0.1:10802"
+	cfg := cfgpkg.NewFile()
+	cfg.HTTPProxy.URL = &proxyURL
+
+	opts := install.Options{ProxyURL: cliURL}
+	applyGlobalNetworkConfig(&opts, cfg)
+
+	assert.Eq(t, cliURL, opts.ProxyURL)
+}
+
 func TestInstallOptionsFromDownloadEnablesArchiveExtractionWhenRequested(t *testing.T) {
 	opts := installOptionsFromDownload(&DownloadOptions{
 		File: "tool,LICENSE",
