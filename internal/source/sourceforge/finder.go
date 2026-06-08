@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"sort"
 	"strings"
 	"time"
 )
@@ -131,7 +132,7 @@ func LatestVersion(project, sourcePath string, getter HTTPGetter) (LatestInfo, e
 		if info, ok := latestDownloadableFileInfo(files); ok {
 			return info, nil
 		}
-		return LatestInfo{}, fmt.Errorf("could not determine SourceForge latest version for %s", project)
+		return LatestInfo{}, sourceForgeLatestNotFoundError(project, sourcePath, files)
 	}
 	return releaseInfo(finder, versions[0])
 }
@@ -235,6 +236,48 @@ func latestDownloadableFileInfo(files []File) (LatestInfo, bool) {
 		PublishedAt: latest.PublishedAt,
 		AssetsCount: count,
 	}, true
+}
+
+func sourceForgeLatestNotFoundError(project, sourcePath string, files []File) error {
+	base := fmt.Sprintf("could not determine SourceForge latest version for %s", project)
+	if strings.TrimSpace(sourcePath) != "" {
+		return fmt.Errorf("%s", base)
+	}
+
+	candidates := candidateDirectories(files)
+	if len(candidates) == 0 {
+		return fmt.Errorf("%s", base)
+	}
+
+	var b strings.Builder
+	b.WriteString(base)
+	b.WriteString("\ntry: eget q \"sf:")
+	b.WriteString(project)
+	b.WriteString("/")
+	b.WriteString(strings.Trim(candidates[0].FullPath, "/"))
+	b.WriteString("\"\ncandidate directories:")
+	for _, candidate := range candidates {
+		b.WriteString("\n  ")
+		b.WriteString(sourceForgeReleaseTag(candidate))
+	}
+	return fmt.Errorf("%s", b.String())
+}
+
+func candidateDirectories(files []File) []File {
+	candidates := make([]File, 0, len(files))
+	for _, file := range files {
+		if file.Type == TypeDirectory {
+			candidates = append(candidates, file)
+		}
+	}
+	sort.SliceStable(candidates, func(i, j int) bool {
+		left, right := candidates[i], candidates[j]
+		if !left.PublishedAt.Equal(right.PublishedAt) {
+			return left.PublishedAt.After(right.PublishedAt)
+		}
+		return strings.ToLower(sourceForgeReleaseTag(left)) < strings.ToLower(sourceForgeReleaseTag(right))
+	})
+	return candidates
 }
 
 func versionFromFilename(name string) string {

@@ -2,6 +2,7 @@ package sourceforge
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -135,4 +136,37 @@ net.sf.files = {
 	assert.Eq(t, "qbittorrent-win32/qbittorrent-5.2.0", info.Path)
 	assert.Eq(t, 2, info.AssetsCount)
 	assert.Eq(t, time.Date(2026, 5, 3, 19, 10, 36, 0, time.UTC), info.PublishedAt)
+}
+
+func TestLatestVersionSuggestsCandidateDirectoriesWhenRootIsAmbiguous(t *testing.T) {
+	getter := &fakeGetter{responses: map[string]string{
+		"https://sourceforge.net/projects/NSIS/files/": `
+<script>
+net.sf.files = {
+  "Legacy NSIS": {"name":"Legacy NSIS","full_path":"/Legacy NSIS","type":"d","mtime":1031616000},
+  "NSIS 2": {"name":"NSIS 2","full_path":"/NSIS 2","type":"d","mtime":1459555200},
+  "NSIS 2 Pre-release": {"name":"NSIS 2 Pre-release","full_path":"/NSIS 2 Pre-release","type":"d","mtime":1117238400},
+  "NSIS 3": {"name":"NSIS 3","full_path":"/NSIS 3","type":"d","mtime":1776556800},
+  "NSIS 3 Pre-release": {"name":"NSIS 3 Pre-release","full_path":"/NSIS 3 Pre-release","type":"d","mtime":1468022400},
+  "OldFiles": {"name":"OldFiles","full_path":"/OldFiles","type":"d","mtime":983923200}
+};
+</script>`,
+	}}
+
+	_, err := LatestVersion("NSIS", "", getter)
+
+	if err == nil {
+		t.Fatal("expected ambiguous root error")
+	}
+	msg := err.Error()
+	assert.Contains(t, msg, "could not determine SourceForge latest version for NSIS")
+	assert.Contains(t, msg, `try: eget q "sf:NSIS/NSIS 3"`)
+	assert.Contains(t, msg, "candidate directories:")
+	assert.Contains(t, msg, "  NSIS 3")
+	assert.Contains(t, msg, "  NSIS 3 Pre-release")
+	assert.Contains(t, msg, "  NSIS 2")
+	if strings.Index(msg, "NSIS 3") > strings.Index(msg, "NSIS 2") {
+		t.Fatalf("expected newest candidate first, got %q", msg)
+	}
+	assert.Eq(t, []string{"https://sourceforge.net/projects/NSIS/files/"}, getter.requests)
 }
