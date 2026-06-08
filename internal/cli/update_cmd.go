@@ -33,7 +33,7 @@ func newUpdateCmd(handler CommandHandler) (*gcli.Command, func()) {
 		c.BoolOpt(&opts.Self, "self", "", false, "Update eget itself")
 		c.StrOpt(&opts.SelfSource, "self-source", "", "", "Self update source base URL or latest.yaml URL")
 		c.StrOpt(&opts.Tag, "tag", "", "", "Release tag")
-		c.StrOpt(&opts.System, "system", "", "", "Target system")
+		c.StrOpt(&opts.System, "system", "", "", "Target system. eg: linux/amd64")
 		c.StrOpt(&opts.To, "to", "", "", "Install destination")
 		c.StrOpt(&opts.File, "file", "", "", "File to extract, multi use comma split, support glob")
 		c.StrOpt(&opts.Asset, "asset", "a", "", "Asset filter, multi use comma split")
