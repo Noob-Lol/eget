@@ -56,6 +56,39 @@ func TestHandleUninstallYesSkipsConfirmation(t *testing.T) {
 	assert.Eq(t, []string{"gookit/gitw"}, store.removeKeys)
 }
 
+func TestHandleUninstallPurgeRemovesPackageConfig(t *testing.T) {
+	tmp := t.TempDir()
+	bin := filepath.Join(tmp, "fd")
+	assert.NoErr(t, os.WriteFile(bin, []byte("fd"), 0o644))
+	store := &fakeUninstallStoreForCLI{
+		cfg: &storepkg.Config{Installed: map[string]storepkg.Entry{
+			"sharkdp/fd": {Repo: "sharkdp/fd", ExtractedFiles: []string{bin}},
+		}},
+	}
+	cfg := cfgpkg.NewFile()
+	cfg.Packages["fd"] = cfgpkg.Section{Repo: strPtrForUninstallTest("sharkdp/fd")}
+	saved := false
+	svc := &cliService{
+		uninstallService: app.UninstallService{
+			Store: store,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				return cfg, nil
+			},
+			SaveConfig: func(file *cfgpkg.File) error {
+				saved = true
+				return nil
+			},
+		},
+	}
+
+	err := svc.handle("uninstall", &UninstallOptions{Target: "fd", Yes: true, Purge: true})
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"sharkdp/fd"}, store.removeKeys)
+	assert.True(t, saved)
+	_, ok := cfg.Packages["fd"]
+	assert.False(t, ok)
+}
+
 func TestHandleUninstallPrintsGUIInstallerManualHint(t *testing.T) {
 	store := &fakeUninstallStoreForCLI{
 		cfg: &storepkg.Config{Installed: map[string]storepkg.Entry{

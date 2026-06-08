@@ -147,3 +147,28 @@ func TestMain_GlobalNoProxyFlagParsesBeforeCommand(t *testing.T) {
 	assert.Eq(t, 1, len(calls))
 	assert.True(t, app.NoProxy())
 }
+
+func TestMain_UninstallPurgeFlagParsesBeforeTarget(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	app := newApp(handler, &stdout, &stderr)
+	err := app.RunWithArgs([]string{"rm", "--purge", "fzf"})
+	if err != nil {
+		t.Fatalf("run rm --purge: %v", err)
+	}
+	assert.Eq(t, 1, len(calls))
+
+	opts, ok := calls[0].options.(*UninstallOptions)
+	if !ok {
+		t.Fatalf("expected uninstall options, got %T", calls[0].options)
+	}
+	assert.Eq(t, "uninstall", calls[0].name)
+	assert.Eq(t, "fzf", opts.Target)
+	assert.True(t, opts.Purge)
+}

@@ -294,6 +294,7 @@ eget config set global.target ~/.local/bin
 `uninstall`(alias: `uni`, `rm`)
 
 - 删除已安装文件并清理 installed store 记录，不移除 `[packages.<name>]` 配置。
+- 使用 `--purge` 可同时删除匹配的 `[packages.<name>]` 配置；不会清理 package 下载缓存。
 
 `list`(alias: `ls`)
 

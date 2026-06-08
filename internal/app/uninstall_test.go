@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/gookit/goutil/testutil/assert"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 	storepkg "github.com/inherelab/eget/internal/installed"
@@ -23,6 +24,137 @@ func (f *fakeInstalledStoreWithLoad) Load() (*storepkg.Config, error) {
 func (f *fakeInstalledStoreWithLoad) Remove(target string) error {
 	f.removeCalls = append(f.removeCalls, target)
 	return nil
+}
+
+func TestUninstallWithPurgeRemovesPackageConfig(t *testing.T) {
+	tmp := t.TempDir()
+	binPath := filepath.Join(tmp, "fzf")
+	if err := os.WriteFile(binPath, []byte("bin"), 0o755); err != nil {
+		t.Fatalf("write bin: %v", err)
+	}
+
+	store := &fakeInstalledStoreWithLoad{
+		cfg: &storepkg.Config{
+			Installed: map[string]storepkg.Entry{
+				"junegunn/fzf": {
+					Repo:           "junegunn/fzf",
+					ExtractedFiles: []string{binPath},
+				},
+			},
+		},
+	}
+	cfg := cfgpkg.NewFile()
+	cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+	saved := false
+	svc := UninstallService{
+		Store: store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+		SaveConfig: func(file *cfgpkg.File) error {
+			saved = true
+			return nil
+		},
+	}
+
+	_, err := svc.UninstallWithOptions("fzf", UninstallOptions{Purge: true})
+	if err != nil {
+		t.Fatalf("uninstall with purge: %v", err)
+	}
+
+	if _, ok := cfg.Packages["fzf"]; ok {
+		t.Fatalf("expected packages.fzf to be removed, got %#v", cfg.Packages)
+	}
+	if !saved {
+		t.Fatal("expected config to be saved")
+	}
+}
+
+func TestUninstallWithPurgeRemovesUniqueRepoMatchedPackageConfig(t *testing.T) {
+	tmp := t.TempDir()
+	binPath := filepath.Join(tmp, "fd")
+	if err := os.WriteFile(binPath, []byte("bin"), 0o755); err != nil {
+		t.Fatalf("write bin: %v", err)
+	}
+
+	store := &fakeInstalledStoreWithLoad{
+		cfg: &storepkg.Config{
+			Installed: map[string]storepkg.Entry{
+				"sharkdp/fd": {
+					Repo:           "sharkdp/fd",
+					ExtractedFiles: []string{binPath},
+				},
+			},
+		},
+	}
+	cfg := cfgpkg.NewFile()
+	cfg.Packages["fd"] = cfgpkg.Section{Repo: util.StringPtr("sharkdp/fd")}
+	svc := UninstallService{
+		Store: store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+		SaveConfig: func(file *cfgpkg.File) error {
+			return nil
+		},
+	}
+
+	result, err := svc.UninstallWithOptions("sharkdp/fd", UninstallOptions{Purge: true})
+	if err != nil {
+		t.Fatalf("uninstall repo with purge: %v", err)
+	}
+
+	assert.Eq(t, "fd", result.PurgedConfig)
+	if _, ok := cfg.Packages["fd"]; ok {
+		t.Fatalf("expected packages.fd to be removed, got %#v", cfg.Packages)
+	}
+}
+
+func TestUninstallWithPurgeKeepsConfigWhenRepoMatchIsAmbiguous(t *testing.T) {
+	tmp := t.TempDir()
+	binPath := filepath.Join(tmp, "greq")
+	if err := os.WriteFile(binPath, []byte("bin"), 0o755); err != nil {
+		t.Fatalf("write bin: %v", err)
+	}
+
+	store := &fakeInstalledStoreWithLoad{
+		cfg: &storepkg.Config{
+			Installed: map[string]storepkg.Entry{
+				"gookit/greq": {
+					Repo:           "gookit/greq",
+					ExtractedFiles: []string{binPath},
+				},
+			},
+		},
+	}
+	cfg := cfgpkg.NewFile()
+	cfg.Packages["greq"] = cfgpkg.Section{Repo: util.StringPtr("gookit/greq")}
+	cfg.Packages["gbench"] = cfgpkg.Section{Repo: util.StringPtr("gookit/greq")}
+	saved := false
+	svc := UninstallService{
+		Store: store,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+		SaveConfig: func(file *cfgpkg.File) error {
+			saved = true
+			return nil
+		},
+	}
+
+	result, err := svc.UninstallWithOptions("gookit/greq", UninstallOptions{Purge: true})
+	if err != nil {
+		t.Fatalf("uninstall ambiguous repo with purge: %v", err)
+	}
+
+	assert.Eq(t, "", result.PurgedConfig)
+	assert.False(t, saved)
+	if _, ok := cfg.Packages["greq"]; !ok {
+		t.Fatal("expected packages.greq to remain")
+	}
+	if _, ok := cfg.Packages["gbench"]; !ok {
+		t.Fatal("expected packages.gbench to remain")
+	}
 }
 
 func TestUninstallPackageRemovesRecordedFilesAndInstalledEntry(t *testing.T) {

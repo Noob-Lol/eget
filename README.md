@@ -294,6 +294,7 @@ The target argument accepted by `install` and `download` can be:
 `uninstall` (aliases: `uni`, `rm`)
 
 - Removes installed files and clears the installed store entry without deleting `[packages.<name>]`.
+- Use `--purge` to also remove the matching `[packages.<name>]` definition from config. It does not remove package download cache files.
 
 `list` (alias: `ls`)
 

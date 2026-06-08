@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"runtime"
 
+	"github.com/inherelab/eget/internal/app"
 	"github.com/inherelab/eget/internal/cli/prompts"
 	"github.com/inherelab/eget/internal/install"
 )
@@ -28,13 +29,14 @@ func (s *cliService) handleUninstall(opts *UninstallOptions) error {
 			return fmt.Errorf("remove cancelled")
 		}
 	}
-	result, err := s.uninstallService.Uninstall(opts.Target)
+	result, err := s.uninstallService.UninstallWithOptions(opts.Target, app.UninstallOptions{Purge: opts.Purge})
 	if err != nil {
 		return err
 	}
 	fmt.Printf("repo: %s\n", result.Repo)
 	if len(result.RemovedFiles) == 0 {
 		fmt.Println("removed_files: 0")
+		printPurgedConfig(result.PurgedConfig)
 		printManualUninstallHint(result.IsGUI, result.InstallMode)
 		return nil
 	}
@@ -42,8 +44,15 @@ func (s *cliService) handleUninstall(opts *UninstallOptions) error {
 	for _, file := range result.RemovedFiles {
 		fmt.Printf("removed: %s\n", file)
 	}
+	printPurgedConfig(result.PurgedConfig)
 	printManualUninstallHint(result.IsGUI, result.InstallMode)
 	return nil
+}
+
+func printPurgedConfig(name string) {
+	if name != "" {
+		fmt.Printf("purged_config: %s\n", name)
+	}
 }
 
 func printManualUninstallHint(isGUI bool, installMode string) {

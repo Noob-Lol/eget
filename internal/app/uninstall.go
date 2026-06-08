@@ -22,6 +22,11 @@ type UninstallResult struct {
 	RemovedFiles []string
 	IsGUI        bool
 	InstallMode  string
+	PurgedConfig string
+}
+
+type UninstallOptions struct {
+	Purge bool
 }
 
 type uninstallTarget struct {
@@ -32,9 +37,14 @@ type uninstallTarget struct {
 type UninstallService struct {
 	Store      RemovableInstalledStore
 	LoadConfig func() (*cfgpkg.File, error)
+	SaveConfig func(*cfgpkg.File) error
 }
 
 func (s UninstallService) Uninstall(target string) (UninstallResult, error) {
+	return s.UninstallWithOptions(target, UninstallOptions{})
+}
+
+func (s UninstallService) UninstallWithOptions(target string, opts UninstallOptions) (UninstallResult, error) {
 	resolved, err := s.resolveTarget(target)
 	if err != nil {
 		return UninstallResult{}, err
@@ -42,11 +52,11 @@ func (s UninstallService) Uninstall(target string) (UninstallResult, error) {
 	if s.Store == nil {
 		return UninstallResult{}, fmt.Errorf("installed store is required")
 	}
-	cfg, err := s.Store.Load()
+	installedCfg, err := s.Store.Load()
 	if err != nil {
 		return UninstallResult{}, err
 	}
-	entry, key, ok := findUninstallEntry(cfg, resolved)
+	entry, key, ok := findUninstallEntry(installedCfg, resolved)
 	if !ok {
 		return UninstallResult{}, fmt.Errorf("installed entry not found for %q", resolved.Key)
 	}
@@ -68,6 +78,17 @@ func (s UninstallService) Uninstall(target string) (UninstallResult, error) {
 	}
 	if err := s.Store.Remove(key); err != nil {
 		return UninstallResult{}, err
+	}
+	if opts.Purge {
+		configFile, err := s.loadConfig()
+		if err != nil {
+			return UninstallResult{}, err
+		}
+		purgedConfig, err := s.purgePackageConfig(configFile, resolved)
+		if err != nil {
+			return UninstallResult{}, err
+		}
+		result.PurgedConfig = purgedConfig
 	}
 	return result, nil
 }
@@ -177,6 +198,39 @@ func (s UninstallService) resolveTarget(target string) (uninstallTarget, error) 
 	return uninstallTarget{Key: target}, nil
 }
 
+func (s UninstallService) purgePackageConfig(cfg *cfgpkg.File, target uninstallTarget) (string, error) {
+	if cfg == nil || len(cfg.Packages) == 0 {
+		return "", nil
+	}
+	name, ok := purgePackageName(cfg, target)
+	if !ok {
+		return "", nil
+	}
+	delete(cfg.Packages, name)
+	return name, s.saveConfig(cfg)
+}
+
+func purgePackageName(cfg *cfgpkg.File, target uninstallTarget) (string, bool) {
+	if _, ok := cfg.Packages[target.Key]; ok {
+		return target.Key, true
+	}
+	if target.Repo == "" {
+		return "", false
+	}
+	match := ""
+	normalizedRepo := storepkg.NormalizeRepoName(target.Repo)
+	for name, pkg := range cfg.Packages {
+		repo := util.DerefString(pkg.Repo)
+		if repo == target.Repo || storepkg.NormalizeRepoName(repo) == normalizedRepo {
+			if match != "" {
+				return "", false
+			}
+			match = name
+		}
+	}
+	return match, match != ""
+}
+
 func findUninstallEntry(cfg *storepkg.Config, target uninstallTarget) (storepkg.Entry, string, bool) {
 	if cfg == nil || cfg.Installed == nil {
 		return storepkg.Entry{}, "", false
@@ -213,4 +267,15 @@ func (s UninstallService) loadConfig() (*cfgpkg.File, error) {
 		return s.LoadConfig()
 	}
 	return cfgpkg.Load()
+}
+
+func (s UninstallService) saveConfig(cfg *cfgpkg.File) error {
+	if s.SaveConfig != nil {
+		return s.SaveConfig(cfg)
+	}
+	path, err := cfgpkg.ResolveWritablePath()
+	if err != nil {
+		return err
+	}
+	return cfgpkg.Save(path, cfg)
 }

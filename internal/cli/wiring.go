@@ -143,6 +143,9 @@ func newCLIService(noProxyOpt ...bool) (*cliService, error) {
 	}
 	uninstallService := app.UninstallService{
 		Store: store,
+		SaveConfig: func(file *cfgpkg.File) error {
+			return cfgpkg.Save(cfgPath, file)
+		},
 	}
 	appService := app.Service{
 		Runner: runner,

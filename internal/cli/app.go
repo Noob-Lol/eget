@@ -342,8 +342,10 @@ var commandFlagSpecs = map[string]flagSpec{
 		bools:  setOf("json", "j"),
 		values: setOf("sort", "order", "limit", "l"),
 	},
-	"show":      {},
-	"uninstall": {},
+	"show": {},
+	"uninstall": {
+		bools: setOf("yes", "y", "purge"),
+	},
 	"config": {
 		subs: map[string]flagSpec{
 			"init": {},
