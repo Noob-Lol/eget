@@ -1,6 +1,7 @@
 package install
 
 import (
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -19,6 +20,39 @@ func selectionPlatform(opts Options) (string, string) {
 		return parts[0], parts[1]
 	}
 	return goos, goarch
+}
+
+func autoSelectAssetCandidate(candidates []string, opts Options) (string, bool) {
+	goos, goarch := selectionPlatform(opts)
+	if !strings.EqualFold(goos, "windows") {
+		return "", false
+	}
+
+	return autoSelectWindowsMSVCAsset(candidates, goos, goarch)
+}
+
+func autoSelectWindowsMSVCAsset(candidates []string, goos, goarch string) (string, bool) {
+	var selected string
+	sawGNU := false
+	for _, candidate := range candidates {
+		tokens := platformTokens(path.Base(candidate))
+		if !hasAnyToken(tokens, osAliases(goos)...) || !hasAnyToken(tokens, archAliases(goarch)...) {
+			return "", false
+		}
+		if hasAnyToken(tokens, "gnu") {
+			sawGNU = true
+			continue
+		}
+		if hasAnyToken(tokens, "msvc") {
+			if selected != "" {
+				return "", false
+			}
+			selected = candidate
+			continue
+		}
+		return "", false
+	}
+	return selected, selected != "" && sawGNU
 }
 
 func autoSelectExtractedFile(candidates []ExtractedFile, goos, goarch string) (ExtractedFile, bool) {

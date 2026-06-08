@@ -52,6 +52,9 @@ func (r *InstallRunner) resolveCandidate(target string, candidates []string, opt
 	if selected := uniqueCandidateForName(candidates, opts.Name); selected != "" {
 		return selected, nil
 	}
+	if selected, ok := autoSelectAssetCandidate(candidates, opts); ok {
+		return selected, nil
+	}
 
 	previousAssets, _, _ := r.loadInstalled()
 	if previous := previousAssets[storepkg.NormalizeRepoName(target)]; previous != "" {

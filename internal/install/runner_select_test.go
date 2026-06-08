@@ -50,6 +50,62 @@ func TestResolveCandidateKeepsPromptWhenNameMatchIsAmbiguous(t *testing.T) {
 	assert.Eq(t, "https://github.com/gookit/greq/releases/download/v0.6.0/gbench-lite-v0.6.0-windows-amd64.zip", got)
 }
 
+func TestResolveCandidateAutoSelectsWindowsMSVCVariant(t *testing.T) {
+	runner := &InstallRunner{Stderr: io.Discard}
+	runner.Prompt = func(title, filterPrompt string, choices []string) (int, error) {
+		t.Fatalf("expected Windows MSVC variant to avoid prompt, got choices %#v", choices)
+		return 0, nil
+	}
+
+	got, err := runner.resolveCandidate("sharkdp/fd", []string{
+		"https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-pc-windows-gnu.zip",
+		"https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-pc-windows-msvc.zip",
+	}, Options{System: "windows/amd64"}, "v10.4.2")
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-pc-windows-msvc.zip", got)
+}
+
+func TestResolveCandidateKeepsPromptForNonToolchainWindowsVariants(t *testing.T) {
+	runner := &InstallRunner{Stderr: io.Discard}
+	prompted := false
+	runner.Prompt = func(title, filterPrompt string, choices []string) (int, error) {
+		prompted = true
+		assert.Eq(t, []string{
+			"tool-v1.0.0-x86_64-pc-windows-msvc.zip",
+			"tool-v1.0.0-x86_64-pc-windows-portable.zip",
+		}, choices)
+		return 1, nil
+	}
+
+	got, err := runner.resolveCandidate("owner/tool", []string{
+		"https://github.com/owner/tool/releases/download/v1.0.0/tool-v1.0.0-x86_64-pc-windows-msvc.zip",
+		"https://github.com/owner/tool/releases/download/v1.0.0/tool-v1.0.0-x86_64-pc-windows-portable.zip",
+	}, Options{System: "windows/amd64"}, "v1.0.0")
+
+	assert.NoErr(t, err)
+	assert.True(t, prompted)
+	assert.Eq(t, "https://github.com/owner/tool/releases/download/v1.0.0/tool-v1.0.0-x86_64-pc-windows-portable.zip", got)
+}
+
+func TestResolveCandidateKeepsPromptForWindowsToolchainArchMismatch(t *testing.T) {
+	runner := &InstallRunner{Stderr: io.Discard}
+	prompted := false
+	runner.Prompt = func(title, filterPrompt string, choices []string) (int, error) {
+		prompted = true
+		return 0, nil
+	}
+
+	got, err := runner.resolveCandidate("sharkdp/fd", []string{
+		"https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-pc-windows-gnu.zip",
+		"https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-pc-windows-msvc.zip",
+	}, Options{System: "windows/arm64"}, "v10.4.2")
+
+	assert.NoErr(t, err)
+	assert.True(t, prompted)
+	assert.Eq(t, "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-pc-windows-gnu.zip", got)
+}
+
 func TestResolveExtractedFileUsesExtractedFilePromptTitle(t *testing.T) {
 	runner := &InstallRunner{Stderr: io.Discard}
 	prompted := false
