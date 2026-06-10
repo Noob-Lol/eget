@@ -40,7 +40,7 @@ func outputPath(file ExtractedFile, output string, all bool, preferredName strin
 		os.MkdirAll(output, 0o755)
 		return filepath.Join(output, out), nil
 	}
-	if output != "" && util.IsDirectory(output) {
+	if output != "" && outputIsDirectoryTarget(output) {
 		return filepath.Join(output, out), nil
 	}
 	if output != "" {
@@ -57,6 +57,10 @@ func outputPath(file ExtractedFile, output string, all bool, preferredName strin
 		return filepath.Join(os.Getenv("EGET_BIN"), out), nil
 	}
 	return out, nil
+}
+
+func outputIsDirectoryTarget(output string) bool {
+	return util.IsDirectory(output) || strings.HasSuffix(output, "/") || strings.HasSuffix(output, "\\")
 }
 
 func firstRenameMap(items []map[string]string) map[string]string {

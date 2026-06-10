@@ -1,9 +1,12 @@
 package install
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestOutputPathUsesHeuristicExecutableRename(t *testing.T) {
@@ -71,6 +74,16 @@ func TestOutputPathKeepsExplicitFileOutput(t *testing.T) {
 	if got != outputFile {
 		t.Fatalf("expected explicit file output %q, got %q", outputFile, got)
 	}
+}
+
+func TestOutputPathTreatsExplicitTrailingSeparatorAsDirectory(t *testing.T) {
+	file := ExtractedFile{Name: "default-arm64-v8a.jar", mode: 0o666}
+	outputDir := filepath.Join(t.TempDir(), "v1.1.7") + string(os.PathSeparator)
+	got, err := outputPath(file, outputDir, false, "", true)
+	if err != nil {
+		t.Fatalf("outputPath(): %v", err)
+	}
+	assert.Eq(t, filepath.Join(outputDir, "default-arm64-v8a.jar"), got)
 }
 
 func TestOutputPathKeepsArchiveDirectoriesForExtractAll(t *testing.T) {

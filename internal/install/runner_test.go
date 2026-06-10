@@ -87,6 +87,35 @@ func TestRunDownloadOnlyPreservesLastModifiedTimestampWithoutCache(t *testing.T)
 	assert.Eq(t, modTime, info.ModTime().UTC())
 }
 
+func TestRunDownloadOnlyTreatsTrailingSeparatorOutputAsDirectory(t *testing.T) {
+	body := []byte("asset-data")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+
+	outputDir := filepath.Join(t.TempDir(), "v1.1.7") + string(os.PathSeparator)
+	runner := NewRunner(NewDefaultService(nil, nil))
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+
+	result, err := runner.Run(server.URL+"/default-arm64-v8a.jar", Options{
+		DownloadOnly:   true,
+		Output:         outputDir,
+		OutputExplicit: true,
+	})
+	if err != nil {
+		t.Fatalf("download asset: %v", err)
+	}
+
+	want := filepath.Join(outputDir, "default-arm64-v8a.jar")
+	assert.Eq(t, []string{want}, result.ExtractedFiles)
+	data, err := os.ReadFile(want)
+	assert.NoErr(t, err)
+	assert.Eq(t, body, data)
+}
+
 func TestRunExtractFilePreservesArchiveDirectoryTimestamp(t *testing.T) {
 	dirTime := time.Date(2024, 4, 5, 6, 7, 8, 0, time.UTC)
 	remoteTime := time.Date(2026, 4, 30, 11, 32, 59, 0, time.UTC)
