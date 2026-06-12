@@ -56,7 +56,7 @@ type showResultDisplay struct {
 	Version        string         `mapstructure:"Version"`
 	Tag            string         `mapstructure:"Tag"`
 	InstalledAt    string         `mapstructure:"InstalledAt"`
-	ReleaseDate    string         `mapstructure:"ReleaseDate"`
+	UpdatedAt      string         `mapstructure:"UpdatedAt"`
 	Asset          string         `mapstructure:"Asset"`
 	AssetURL       string         `mapstructure:"AssetURL"`
 	Tool           string         `mapstructure:"Tool"`
@@ -203,7 +203,7 @@ func ShowResultToDisplay(result app.ShowResult) showResultDisplay {
 		Version:        result.Version,
 		Tag:            result.Tag,
 		InstalledAt:    CompactTime(result.InstalledAt),
-		ReleaseDate:    CompactTime(result.ReleaseDate),
+		UpdatedAt:      CompactTime(result.UpdatedAt),
 		Asset:          result.Asset,
 		AssetURL:       result.AssetURL,
 		Tool:           result.Tool,
@@ -542,5 +542,3 @@ func PrintSearchResult(result app.SearchResult) {
 		fmt.Println("---")
 	}
 }
-
-

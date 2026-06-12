@@ -30,7 +30,7 @@ type ShowResult struct {
 	Version        string
 	Tag            string
 	InstalledAt    time.Time
-	ReleaseDate    time.Time
+	UpdatedAt      time.Time
 	Asset          string
 	AssetURL       string
 	Tool           string
@@ -149,7 +149,7 @@ func applyInstalledEntryToShowResult(result *ShowResult, entry storepkg.Entry) {
 	result.Version = firstNonEmpty(entry.Version, entry.Tag)
 	result.Tag = entry.Tag
 	result.InstalledAt = entry.InstalledAt
-	result.ReleaseDate = entry.ReleaseDate
+	result.UpdatedAt = entry.UpdatedAt
 	result.Asset = entry.Asset
 	result.AssetURL = entry.URL
 	result.Tool = entry.Tool

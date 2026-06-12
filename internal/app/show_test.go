@@ -12,7 +12,7 @@ import (
 
 func TestShowPackageMergesConfiguredAndInstalledDetails(t *testing.T) {
 	installedAt := time.Date(2026, 5, 17, 9, 0, 0, 0, time.UTC)
-	releaseDate := time.Date(2026, 5, 16, 8, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2026, 5, 18, 10, 0, 0, 0, time.UTC)
 	svc := ShowService{
 		LoadConfig: func() (*cfgpkg.File, error) {
 			cfg := cfgpkg.NewFile()
@@ -34,7 +34,7 @@ func TestShowPackageMergesConfiguredAndInstalledDetails(t *testing.T) {
 					ExtractedFiles: []string{"/usr/local/bin/fzf"},
 					Tag:            "v0.50.0",
 					Version:        "v0.50.0",
-					ReleaseDate:    releaseDate,
+					UpdatedAt:      updatedAt,
 					Desc:           "Repository fzf description",
 					Homepage:       "https://junegunn.github.io/fzf",
 					RepoURL:        "https://github.com/junegunn/fzf",
@@ -56,6 +56,7 @@ func TestShowPackageMergesConfiguredAndInstalledDetails(t *testing.T) {
 	assert.True(t, got.Configured)
 	assert.True(t, got.Installed)
 	assert.Eq(t, "v0.50.0", got.Version)
+	assert.Eq(t, updatedAt, got.UpdatedAt)
 	assert.Eq(t, []string{"/usr/local/bin/fzf"}, got.ExtractedFiles)
 }
 
