@@ -66,6 +66,25 @@ func TestResolveCandidateAutoSelectsWindowsMSVCVariant(t *testing.T) {
 	assert.Eq(t, "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-pc-windows-msvc.zip", got)
 }
 
+func TestResolveCandidateAutoSelectsPreviousAssetPattern(t *testing.T) {
+	runner := &InstallRunner{Stderr: io.Discard}
+	runner.InstalledLoad = func() (map[string]string, map[string]string, error) {
+		return map[string]string{"upx": "upx-5.1.0-win64.zip"}, nil, nil
+	}
+	runner.Prompt = func(title, filterPrompt string, choices []string) (int, error) {
+		t.Fatalf("expected previous asset pattern to avoid prompt, got choices %#v", choices)
+		return 0, nil
+	}
+
+	got, err := runner.resolveCandidate("upx", []string{
+		"https://github.com/upx/upx/releases/download/v5.2.0/upx-5.2.0-win32.zip",
+		"https://github.com/upx/upx/releases/download/v5.2.0/upx-5.2.0-win64.zip",
+	}, Options{System: "windows/amd64"}, "v5.2.0")
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "https://github.com/upx/upx/releases/download/v5.2.0/upx-5.2.0-win64.zip", got)
+}
+
 func TestResolveCandidateKeepsPromptForNonToolchainWindowsVariants(t *testing.T) {
 	runner := &InstallRunner{Stderr: io.Discard}
 	prompted := false

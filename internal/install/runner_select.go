@@ -58,6 +58,9 @@ func (r *InstallRunner) resolveCandidate(target string, candidates []string, opt
 
 	previousAssets, _, _ := r.loadInstalled()
 	if previous := previousAssets[storepkg.NormalizeRepoName(target)]; previous != "" {
+		if selected := uniqueCandidateForPreviousAsset(candidates, previous); selected != "" {
+			return selected, nil
+		}
 		for _, candidate := range candidates {
 			if path.Base(candidate) == previous {
 				if r.Stderr != nil {
@@ -119,6 +122,41 @@ func uniqueCandidateForName(candidates []string, name string) string {
 		match = candidate
 	}
 	return match
+}
+
+func uniqueCandidateForPreviousAsset(candidates []string, previous string) string {
+	previousSignature := assetSelectionSignature(previous)
+	if previousSignature == "" {
+		return ""
+	}
+	match := ""
+	for _, candidate := range candidates {
+		if assetSelectionSignature(path.Base(candidate)) != previousSignature {
+			continue
+		}
+		if match != "" {
+			return ""
+		}
+		match = candidate
+	}
+	return match
+}
+
+func assetSelectionSignature(name string) string {
+	tokens := platformTokens(name)
+	kept := make([]string, 0, len(tokens))
+	seen := make(map[string]bool, len(tokens))
+	for _, token := range tokens {
+		if token == "" || versionTokenPattern.MatchString(token) {
+			continue
+		}
+		if seen[token] {
+			continue
+		}
+		seen[token] = true
+		kept = append(kept, token)
+	}
+	return strings.Join(kept, "\x00")
 }
 
 func normalizedAssetNameHint(name string) string {
