@@ -97,8 +97,14 @@ func effectiveBatchConcurrency(value, total int) int {
 	if total <= 1 {
 		return 1
 	}
-	if value <= 0 {
+	if value == 1 {
 		return 1
+	}
+	if value <= 0 {
+		if total < defaultAutoBatchConcurrency {
+			return total
+		}
+		return defaultAutoBatchConcurrency
 	}
 	if value > total {
 		return total

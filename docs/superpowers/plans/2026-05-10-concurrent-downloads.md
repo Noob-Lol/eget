@@ -19,7 +19,7 @@
   - `1`：不并发。
   - `>1`：指定并发上限。
 - `chunk_concurrency = 0` 首版自动策略：服务端支持 Range 且文件足够大时最多 5 个分片。
-- `batch_concurrency = 0` 首版自动策略：先等价于串行，后续可根据任务数和网络环境调整。
+- `batch_concurrency = 0` 自动策略：最多使用 `min(total packages, 6)` 个 worker。
 - 小文件不启用 Range 分片。建议最小分片大小为 `4 MiB`，至少能拆出 2 个有效分片才并发。
 - `--chunk N` 是最大分片数，不是强制分片数。
 - 不做断点续传，不改变缓存文件语义，不引入 partial cache。
@@ -1001,7 +1001,7 @@ git commit -m "feat(progress): support concurrent download output"
 
 `batch_concurrency` 控制 `install --all` 和 `update --all` 的包任务并发。
 
-- `0`: 自动，当前等价于串行。
+- `0`: 自动，当前最多使用 `min(total packages, 6)` 个 worker。
 - `1`: 串行。
 - `>1`: 请求的 worker 数。
 

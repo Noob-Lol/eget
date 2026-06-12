@@ -56,7 +56,7 @@ eget install --tag nightly inhere/markview
 7. Select an extractor and extract the requested files.
 8. Write the package installed store.
 
-`install --all` reads `[packages]`, sorts package names, and reuses the single-package install flow for each entry. `--batch N` or `global.batch_concurrency > 1` enables fixed-worker scheduling while preserving stable result ordering.
+`install --all` reads `[packages]`, sorts package names, and reuses the single-package install flow for each entry. `--batch N` or `global.batch_concurrency` controls fixed-worker scheduling while preserving stable result ordering; `0` auto-selects up to 6 workers and `1` forces serial execution.
 
 ## Download Flow
 
@@ -173,7 +173,7 @@ Config data structures live in `internal/config/model.go`. Full user-facing fiel
 
 Chunking only starts when the server supports Range requests and returns a usable `Content-Length`.
 
-`batch_concurrency` controls package-level task concurrency for `install --all` and `update --all`. It is global/CLI-scoped because it controls the whole batch scheduler.
+`batch_concurrency` controls package-level task concurrency for `install --all`, `update --all`, `list --outdated`, and `update --check`. It is global/CLI-scoped because it controls the whole batch scheduler. `0` auto-selects up to 6 workers, `1` is serial, and values greater than `1` request a fixed worker count.
 
 ## Stores
 

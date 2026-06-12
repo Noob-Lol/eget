@@ -293,6 +293,73 @@ func TestListOutdatedPackagesUsesConfiguredBatchConcurrencyAndPreservesOrder(t *
 	}())
 }
 
+func TestListOutdatedPackagesUsesAutoBatchConcurrency(t *testing.T) {
+	block := make(chan struct{})
+	batch := 0
+	var mu sync.Mutex
+	active := 0
+	maxActive := 0
+	svc := ListService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Global.BatchConcurrency = &batch
+			cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			cfg.Packages["fd"] = cfgpkg.Section{Repo: util.StringPtr("sharkdp/fd")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.1.0"},
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v0.1.0"},
+				"sharkdp/fd":         {Repo: "sharkdp/fd", Tag: "v0.1.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			mu.Lock()
+			active++
+			if active > maxActive {
+				maxActive = active
+			}
+			mu.Unlock()
+
+			<-block
+
+			mu.Lock()
+			active--
+			mu.Unlock()
+			return LatestInfo{Tag: "v1.0.0"}, nil
+		},
+	}
+
+	done := make(chan []OutdatedItem, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		items, _, _, err := svc.ListOutdatedPackages()
+		if err != nil {
+			errCh <- err
+			return
+		}
+		done <- items
+	}()
+
+	waitForMaxActive(t, func() int {
+		mu.Lock()
+		defer mu.Unlock()
+		return maxActive
+	}, 3)
+	close(block)
+
+	select {
+	case err := <-errCh:
+		t.Fatalf("list outdated packages: %v", err)
+	case items := <-done:
+		assert.Eq(t, []string{"fd", "fzf", "rg"}, []string{items[0].Name, items[1].Name, items[2].Name})
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for list outdated packages")
+	}
+}
+
 func TestListOutdatedPackagesReportsCheckProgress(t *testing.T) {
 	var mu sync.Mutex
 	var progress []int

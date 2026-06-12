@@ -104,7 +104,7 @@ Fields:
 - `system`: default target platform in `GOOS/GOARCH` form, for example `windows/amd64`.
 - `sys7z_path`: optional 7z executable path. When empty, eget searches `PATH` for `7z`, `7zz`, then `7za`.
 - `chunk_concurrency`: default remote download chunk concurrency. `0` means the built-in default behavior.
-- `batch_concurrency`: default concurrency for batch package operations. `0` means serial or command-specific default behavior.
+- `batch_concurrency`: default concurrency for batch package operations and outdated checks. `0` auto-selects up to 6 workers, `1` forces serial execution, and values greater than `1` use that many workers up to the package count.
 - `ignore_update_packages`: package names skipped by `list --outdated`, `update --check`, and `update --all`.
 - `sdk_target`: SDK installation root. Relative SDK `target` values are resolved under this root.
 - `sdk_ext_map`: default SDK archive extension map by Go OS name. SDK-level `ext_map` overrides it.

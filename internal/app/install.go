@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	maxChunkConcurrency = 32
-	maxBatchConcurrency = 16
+	maxChunkConcurrency         = 32
+	maxBatchConcurrency         = 16
+	defaultAutoBatchConcurrency = 6
 )
 
 type RunResult = install.RunResult

@@ -471,3 +471,52 @@ func TestUpdateAllPackagesUsesBatchConcurrencyAndPreservesResultOrder(t *testing
 	}
 	assert.Eq(t, 2, installer.currentMaxActive())
 }
+
+func TestUpdateAllPackagesUsesAutoBatchConcurrency(t *testing.T) {
+	block := make(chan struct{})
+	installer := &fakeInstallService{block: block}
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+			cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+			cfg.Packages["fd"] = cfgpkg.Section{Repo: util.StringPtr("sharkdp/fd")}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.1.0"},
+				"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v0.1.0"},
+				"sharkdp/fd":         {Repo: "sharkdp/fd", Tag: "v0.1.0"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			return LatestInfo{Tag: "v1.0.0"}, nil
+		},
+	}
+
+	done := make(chan []UpdateResult, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		results, err := svc.UpdateAllPackages(install.Options{BatchConcurrency: 0, BatchConcurrencySet: true})
+		if err != nil {
+			errCh <- err
+			return
+		}
+		done <- results
+	}()
+
+	waitForMaxActive(t, func() int { return installer.currentMaxActive() }, 3)
+	close(block)
+
+	select {
+	case err := <-errCh:
+		t.Fatalf("update all packages: %v", err)
+	case results := <-done:
+		assert.Eq(t, []string{"fd", "fzf", "rg"}, []string{results[0].Name, results[1].Name, results[2].Name})
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for update all")
+	}
+	assert.Eq(t, 3, installer.currentMaxActive())
+}

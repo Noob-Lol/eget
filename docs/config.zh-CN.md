@@ -104,7 +104,7 @@ sdk_ext_map = { windows = "zip", linux = "tar.gz", darwin = "tar.gz" }
 - `system`: 默认目标平台，格式为 `GOOS/GOARCH`，例如 `windows/amd64`。
 - `sys7z_path`: 可选 7z 可执行文件路径。为空时会从 `PATH` 依次查找 `7z`、`7zz`、`7za`。
 - `chunk_concurrency`: 远程下载分块并发数。`0` 表示使用内置默认行为。
-- `batch_concurrency`: 批量 package 操作并发数。`0` 表示串行或使用命令自己的默认行为。
+- `batch_concurrency`: 批量 package 操作和更新检查并发数。`0` 自动选择最多 6 个 worker，`1` 强制串行，大于 `1` 表示最多使用该数量的 worker。
 - `ignore_update_packages`: 在 `list --outdated`、`update --check`、`update --all` 中跳过的 package 名称。
 - `sdk_target`: SDK 安装根目录。SDK 配置里的相对 `target` 会基于该目录解析。
 - `sdk_ext_map`: SDK 默认归档扩展名映射，key 使用 Go OS 名称。SDK 级别 `ext_map` 会覆盖它。

@@ -107,13 +107,13 @@ min_chunk_size = 4 MiB
 
 也就是说，`--chunk N` 表示用户允许的最大分片并发数，不表示必须强行切出 `N` 个分片。
 
-`batch_concurrency = 0` 表示自动选择批处理并发。第一版建议实际使用：
+`batch_concurrency = 0` 表示自动选择批处理并发。当前实际使用：
 
 ```text
-effective batch concurrency = 1
+effective batch concurrency = min(total packages, 6)
 ```
 
-批处理 auto 初始保持串行，因为多包安装会影响输出顺序、installed store 写入、GUI installer 行为和 provider 限流。用户可以通过 `--batch N` 显式开启并发。
+`batch_concurrency = 1` 保持串行；用户可以通过 `--batch N` 或 `global.batch_concurrency = N` 显式设置 worker 数。
 
 ## 优先级
 
