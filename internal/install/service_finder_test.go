@@ -299,6 +299,27 @@ func TestSelectFinder(t *testing.T) {
 		assert.Eq(t, []string{"https://example.com/latest"}, requests)
 	})
 
+	t.Run("pkg-template target", func(t *testing.T) {
+		svc.TemplateGetterFactory = nil
+		finder, tool, err := svc.SelectFinder("pkg-template:mydev:markview", &Options{
+			URLTemplate: URLTemplateOptions{
+				LatestURL:   "http://mydev.lan/tools/markview/latest.yaml",
+				URLTemplate: "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}",
+			},
+		})
+		if err != nil {
+			t.Fatalf("SelectFinder(pkg-template): %v", err)
+		}
+		assert.Eq(t, "markview", tool)
+		got, ok := finder.(*urltemplate.Finder)
+		if !ok {
+			t.Fatalf("finder type = %T, want *urltemplate.Finder", finder)
+		}
+		assert.Eq(t, "markview", got.Name)
+		assert.Eq(t, "http://mydev.lan/tools/markview/latest.yaml", got.Config.LatestURL)
+		assert.Eq(t, "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}", got.Config.URLTemplate)
+	})
+
 	t.Run("invalid target", func(t *testing.T) {
 		if _, _, err := svc.SelectFinder("invalid-target", &Options{}); err == nil {
 			t.Fatal("expected invalid target error")

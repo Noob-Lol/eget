@@ -8,6 +8,7 @@ import (
 
 	"github.com/inherelab/eget/internal/cachemirror"
 	"github.com/inherelab/eget/internal/source/forge"
+	"github.com/inherelab/eget/internal/source/pkgtemplate"
 	"github.com/inherelab/eget/internal/source/sourceforge"
 	"github.com/inherelab/eget/internal/source/urltemplate"
 )
@@ -103,6 +104,7 @@ const (
 	TargetSourceForge TargetKind = "sourceforge"
 	TargetForge       TargetKind = "forge"
 	TargetTemplate    TargetKind = "template"
+	TargetPkgTemplate TargetKind = "pkg_template"
 )
 
 var githubURLPattern = regexp.MustCompile(`^(http(s)?://)?github\.com/[\w\-_.,]+/[\w\-_.,]+(.git)?(/)?$`)
@@ -129,6 +131,8 @@ func DetectTargetKind(target string) TargetKind {
 		return TargetSourceForge
 	case forge.IsTarget(target):
 		return TargetForge
+	case pkgtemplate.IsTarget(target):
+		return TargetPkgTemplate
 	case urltemplate.IsTarget(target):
 		return TargetTemplate
 	case IsGitHubURL(target):
@@ -146,6 +150,8 @@ func TargetKindDisplayName(kind TargetKind) string {
 	switch kind {
 	case TargetRepo, TargetGitHubURL:
 		return "github"
+	case TargetPkgTemplate:
+		return "pkg-template"
 	default:
 		return string(kind)
 	}

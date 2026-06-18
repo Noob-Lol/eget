@@ -423,7 +423,7 @@ git commit -m "feat(source): parse pkg-template targets"
 - Modify: `internal/install/service.go`
 - Test: `internal/install/service_finder_test.go`
 
-- [ ] **Step 1: Write finder test**
+- [x] **Step 1: Write finder test**
 
 Add to `internal/install/service_finder_test.go`:
 
@@ -457,7 +457,7 @@ If imports are missing, add:
 "github.com/inherelab/eget/internal/source/urltemplate"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run:
 
@@ -467,7 +467,7 @@ go test ./internal/install -run TestSelectFinderForPkgTemplateTarget -count=1
 
 Expected: invalid argument or unknown target kind.
 
-- [ ] **Step 3: Add target kind detection**
+- [x] **Step 3: Add target kind detection**
 
 In `internal/install/options.go`, import:
 
@@ -495,7 +495,7 @@ case TargetPkgTemplate:
 	return "pkg-template"
 ```
 
-- [ ] **Step 4: Select URL template finder for pkg-template**
+- [x] **Step 4: Select URL template finder for pkg-template**
 
 In `internal/install/service.go`, import:
 
@@ -527,7 +527,7 @@ case TargetPkgTemplate:
 	}, templateTarget.Package, nil
 ```
 
-- [ ] **Step 5: Run install tests**
+- [x] **Step 5: Run install tests**
 
 Run:
 
@@ -538,7 +538,7 @@ go test ./internal/install -run 'TestSelectFinderForPkgTemplateTarget|TestSelect
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit install finder support**
+- [x] **Step 6: Commit install finder support**
 
 Run:
 

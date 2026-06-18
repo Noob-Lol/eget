@@ -13,6 +13,7 @@ import (
 	"github.com/inherelab/eget/internal/install/detect"
 	forge "github.com/inherelab/eget/internal/source/forge"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
+	"github.com/inherelab/eget/internal/source/pkgtemplate"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
 	"github.com/inherelab/eget/internal/source/urltemplate"
 	"github.com/inherelab/eget/internal/util"
@@ -193,6 +194,25 @@ func (s *Service) SelectFinder(target string, opts *Options) (Finder, string, er
 			Libc:   libc,
 			Getter: getter,
 		}, templateTarget.ID, nil
+	case TargetPkgTemplate:
+		templateTarget, err := pkgtemplate.ParseTarget(target)
+		if err != nil {
+			return nil, "", err
+		}
+		getter := urltemplate.HTTPGetter(NewHTTPGetter(*opts))
+		if s.TemplateGetterFactory != nil {
+			getter = s.TemplateGetterFactory(*opts)
+		}
+		goos, goarch, libc := urltemplate.EffectiveSystem(opts.System, runtime.GOOS, runtime.GOARCH, urltemplate.DetectLibc, urltemplate.FixDarwinRosetta)
+		return &urltemplate.Finder{
+			Name:   templateTarget.Package,
+			Config: urlTemplateConfigFromOptions(opts.URLTemplate),
+			Tag:    opts.Tag,
+			GOOS:   goos,
+			GOARCH: goarch,
+			Libc:   libc,
+			Getter: getter,
+		}, templateTarget.Package, nil
 	default:
 		return nil, "", fmt.Errorf("invalid argument (must be of the form `user/repo`)")
 	}
