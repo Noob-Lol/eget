@@ -60,6 +60,24 @@
   - [x] eget update --self --check 命令, 先显示一下从哪个 host 检测的更新
   - [x] eget config doctor 输出本机配置、缓存、store、安装目录等诊断信息
 
+## [x] registry 功能
+
+之前 eget 通过 template 支持了内部工具分发问题，现在使用中发现 内部工具不少时，但是配置格式都差不多，每次都是名称调整一下，
+但是都得手动复制一份修改下名称才行，内部工具较多时不方便添加使用。
+
+思考是否可以新增 `[registry]` 板块配置有很多可用工具的站点(内部或公开的) 
+
+```toml
+[registry.mydev]
+latest_template = "http://mydev.lan/tools/{name}/latest.yaml"
+pkg_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}" 
+```
+
+使用
+- eget add mydev:markview
+- eget ins mydev:markview  # 直接安装
+- eget ins --add mydev:markview
+
 ## search 结果展示 ✅
 
 ```txt
