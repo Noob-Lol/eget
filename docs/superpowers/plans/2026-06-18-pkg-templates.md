@@ -1456,7 +1456,7 @@ git commit -m "docs: document pkg_templates usage"
 **Files:**
 - All implementation files from previous tasks
 
-- [ ] **Step 1: Run package-focused tests**
+- [x] **Step 1: Run package-focused tests**
 
 Run:
 
@@ -1466,7 +1466,7 @@ go test ./internal/source/pkgtemplate ./internal/config ./internal/install ./int
 
 Expected: PASS.
 
-- [ ] **Step 2: Run full test suite**
+- [x] **Step 2: Run full test suite**
 
 Run:
 
@@ -1476,7 +1476,7 @@ go test ./...
 
 Expected: PASS. This is required because pkg_templates touches install/update/list main package flows.
 
-- [ ] **Step 3: Run GitNexus change detection before final commit or handoff**
+- [x] **Step 3: Run GitNexus change detection before final commit or handoff**
 
 Run:
 
@@ -1486,7 +1486,7 @@ npx gitnexus detect-changes --repo eget
 
 Expected: changed symbols and affected flows match config/pkg-template/install/update/docs. If risk is HIGH or CRITICAL, stop and report before proceeding.
 
-- [ ] **Step 4: Review staged diff**
+- [x] **Step 4: Review staged diff**
 
 Run:
 
@@ -1498,7 +1498,7 @@ git diff --cached --stat
 
 Expected: only intended files are modified or staged. Do not stage unrelated existing modifications such as `AGENTS.md` or `CLAUDE.md` unless they are directly part of the implementation.
 
-- [ ] **Step 5: Final implementation commit if needed**
+- [x] **Step 5: Final implementation commit if needed**
 
 If previous task commits already covered every change, no extra commit is needed. If there are final verification fixes, first run `git status --short` and identify the exact intended files, then stage only those files. Example for a final app resolution fix:
 
