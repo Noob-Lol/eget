@@ -73,6 +73,7 @@ url = "${PROXY_URL}"
 - `[ghproxy]`: GitHub URL 重写代理。
 - `["owner/repo"]`: ~旧版直接 package 配置~。
 - `[packages.<name>]`: 命名 package 配置。
+- `[pkg_templates.<name>]`: 可复用的 package URL template 配置。
 - `[sdk.<name>]`: SDK 下载和 index 配置。
 
 ## Global 配置
@@ -315,6 +316,31 @@ extract_file = "markview"
 - `{libc}`: Linux 下检测到 libc 后经过 `libc_map` 处理的值；非 Linux 或未检测到时为空。
 
 `run-asset` 不是通用 `post_install`。它只执行当前下载并已通过 checksum 校验的 asset，参数必须是数组，不会经过 shell，也不会执行额外脚本。template 的 `latest_url` 和 `checksum_url_template` 是任意站点 metadata，请求会复用 `[http_proxy]`、`disable_ssl` 等 HTTP 配置，但不会被强制归类为 provider API cache。
+
+### pkg_templates
+
+`[pkg_templates.<name>]` 用于复用一组 package template 字段，适合内部工具发布规则一致、只有工具名不同的场景。
+
+```toml
+[pkg_templates.mydev]
+latest_url = "http://mydev.lan/tools/{name}/latest.yaml"
+latest_format = "yaml"
+url_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+
+[packages.markview]
+repo = "pkg-template:mydev:markview"
+```
+
+也可以直接使用短别名：
+
+```bash
+eget add mydev:markview
+eget install mydev:markview
+eget install --add mydev:markview
+```
+
+短别名只在 `mydev` 匹配已配置的 `[pkg_templates.mydev]` 时生效。落盘配置保留轻量引用 `repo = "pkg-template:mydev:markview"`，不会把 URL 展开写入 package。
 
 ## SDK 配置
 

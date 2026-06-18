@@ -73,6 +73,7 @@ Supported sections:
 - `[ghproxy]`: GitHub URL rewrite proxy.
 - `["owner/repo"]`: legacy direct package section.
 - `[packages.<name>]`: named package section.
+- `[pkg_templates.<name>]`: reusable package URL template section.
 - `[sdk.<name>]`: SDK download and index section.
 
 ## Global Section
@@ -315,6 +316,31 @@ Fields:
 - `{libc}`: Linux libc value after `libc_map`; empty outside Linux or when libc is unknown.
 
 `run-asset` is not a general `post_install`. It only executes the downloaded asset after checksum verification, arguments must be an array, and no shell is used. Template `latest_url` and `checksum_url_template` values are arbitrary site metadata. Requests reuse HTTP options such as `[http_proxy]` and `disable_ssl`, but they are not forced into provider API cache classification.
+
+### pkg_templates
+
+`[pkg_templates.<name>]` reuses package template fields for internal tools that share the same release layout and differ only by tool name.
+
+```toml
+[pkg_templates.mydev]
+latest_url = "http://mydev.lan/tools/{name}/latest.yaml"
+latest_format = "yaml"
+url_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+
+[packages.markview]
+repo = "pkg-template:mydev:markview"
+```
+
+Short aliases are also supported:
+
+```bash
+eget add mydev:markview
+eget install mydev:markview
+eget install --add mydev:markview
+```
+
+The short alias is active only when `mydev` matches a configured `[pkg_templates.mydev]` section. Persisted package config keeps the lightweight reference `repo = "pkg-template:mydev:markview"` and does not expand template URLs into the package section.
 
 ## SDK Sections
 

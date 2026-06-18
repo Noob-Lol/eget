@@ -438,6 +438,7 @@ SourceForge 查询目标使用 `sourceforge:<project>`、`sourceforge:<project>/
 - `[http_proxy]`
 - `["owner/repo"]`
 - `[packages.<name>]`
+- `[pkg_templates.<name>]`
 - `[sdk.<name>]`
 
 最小示例：
@@ -484,6 +485,13 @@ checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 install_action = "run-asset"
 install_args = ["install", "latest"]
 
+[pkg_templates.mydev]
+latest_url = "http://mydev.lan/tools/{name}/latest.yaml"
+url_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+
+[packages.markview_internal]
+repo = "pkg-template:mydev:markview"
+
 [sdk.go]
 aliases = ["golang"]
 target = "gosdk/go{version}"
@@ -524,7 +532,7 @@ eget config init
 
 默认会写入 `~/.config/eget/eget.toml`。
 
-`template:<id>` 可用于独立下载站 package，例如 Claude Code 这种通过 latest metadata 和 URL 模板发布的工具。`run-asset` 只执行已下载并通过 checksum 校验的 asset，不是通用 `post_install`。完整配置说明见 [docs/config.zh-CN.md](docs/config.zh-CN.md)，包括全局字段、package 配置、Template Package Source、SDK 配置、缓存目录、安装记录文件、ghproxy、API cache 和 SDK index 设置。SDK 专题使用说明见 [docs/sdk-usage.md](docs/sdk-usage.md)。
+`template:<id>` 可用于独立下载站 package，例如 Claude Code 这种通过 latest metadata 和 URL 模板发布的工具。`run-asset` 只执行已下载并通过 checksum 校验的 asset，不是通用 `post_install`。如果多个内部工具使用同一发布规则，可以用 `pkg_templates` 复用配置，并直接运行 `eget add mydev:markview` 或 `eget install mydev:markview`。完整配置说明见 [docs/config.zh-CN.md](docs/config.zh-CN.md)，包括全局字段、package 配置、Template Package Source、pkg_templates、SDK 配置、缓存目录、安装记录文件、ghproxy、API cache 和 SDK index 设置。SDK 专题使用说明见 [docs/sdk-usage.md](docs/sdk-usage.md)。
 
 ## 构建与测试
 

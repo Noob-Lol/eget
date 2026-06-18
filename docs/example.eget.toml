@@ -72,6 +72,13 @@ checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 install_action = "run-asset"
 install_args = ["install", "latest"]
 
+# Reusable package template for internal tools with the same release layout.
+[pkg_templates.mydev]
+latest_url = "http://mydev.lan/tools/{name}/latest.yaml"
+latest_format = "yaml"
+url_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+ext_map = { windows = ".exe", linux = "", darwin = "" }
+
 # SDK download examples. `eget sdk` only downloads and installs SDKs;
 # environment activation remains the responsibility of tools like kite xenv.
 [sdk.go]

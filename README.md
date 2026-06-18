@@ -442,6 +442,7 @@ Supported config sections:
 - `[http_proxy]`
 - `["owner/repo"]`
 - `[packages.<name>]`
+- `[pkg_templates.<name>]`
 - `[sdk.<name>]`
 
 Minimal example:
@@ -488,6 +489,13 @@ checksum_json_path = "platforms.{os}-{arch}{libc}.checksum"
 install_action = "run-asset"
 install_args = ["install", "latest"]
 
+[pkg_templates.mydev]
+latest_url = "http://mydev.lan/tools/{name}/latest.yaml"
+url_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+
+[packages.markview_internal]
+repo = "pkg-template:mydev:markview"
+
 [sdk.go]
 aliases = ["golang"]
 target = "gosdk/go{version}"
@@ -528,7 +536,7 @@ eget config init
 
 By default, this writes `~/.config/eget/eget.toml`.
 
-`template:<id>` can describe packages from independent download sites, such as Claude Code tools published through latest metadata and URL templates. `run-asset` only executes the downloaded asset after checksum verification; it is not a general `post_install`. See [docs/config.md](docs/config.md) for the full configuration reference, including global fields, package sections, Template Package Source, SDK sections, cache directories, installed-state files, ghproxy, API cache, and SDK index settings. For SDK-specific usage, see [docs/sdk-usage.md](docs/sdk-usage.md).
+`template:<id>` can describe packages from independent download sites, such as Claude Code tools published through latest metadata and URL templates. `run-asset` only executes the downloaded asset after checksum verification; it is not a general `post_install`. When multiple internal tools share one release layout, `pkg_templates` can reuse that template, and you can run `eget add mydev:markview` or `eget install mydev:markview` directly. See [docs/config.md](docs/config.md) for the full configuration reference, including global fields, package sections, Template Package Source, pkg_templates, SDK sections, cache directories, installed-state files, ghproxy, API cache, and SDK index settings. For SDK-specific usage, see [docs/sdk-usage.md](docs/sdk-usage.md).
 
 ## Build and Test
 

@@ -37,6 +37,10 @@
 - [x] 新增命令 show 用于显示 package 详情: 配置信息+installed 信息, 包括版本, 安装路径, 状态, 项目主页URL 等
 - [x] 增强 asset filters 支持平台前缀规则，只会在当前平台生效。例如: `windows:zip`, `linux:tar.gz`, `darwin:tar.gz`
 - [x] sdk 内置 go, node, jdk 的配置模板，方便快速配置后使用。默认不初始化到配置，通过 sdk config add 初始化到配置的 sdk 下。
+- [x] pkg_templates 功能。
+  - [x] 通过 `[pkg_templates.<name>]` 复用 `latest_url`、`url_template` 等 template package 字段。
+  - [x] 支持 `eget add mydev:markview`、`eget install mydev:markview` 和 `eget install --add mydev:markview`。
+  - [x] 落盘 package 保留轻量引用：`repo = "pkg-template:mydev:markview"`。
 - [x] 新增 eget 缓存管理命令 `cache` 第一期。
   - [x] `cache clean` 清理下载文件、API cache、SDK 下载缓存和未完成下载状态，默认清理 3 天前的缓存。
   - [x] `cache serve` 启动只读内网 server，分享 package/sdk cache 文件。

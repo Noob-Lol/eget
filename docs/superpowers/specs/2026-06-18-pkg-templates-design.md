@@ -346,3 +346,7 @@ go test ./...
 - `{name}` 只是扩展现有模板变量使用场景，不新增下载引擎。
 - CLI 短别名只在匹配已配置模板时生效，降低和现有 provider target 冲突的风险。
 - package 配置保留轻量引用，便于统一调整内部工具发布规则。
+
+## 实施确认
+
+实施计划见 [2026-06-18-pkg-templates.md](../plans/2026-06-18-pkg-templates.md)。实现保持 `pkg_templates` 只做本地模板复用，不扩展为 registry/index/search。
