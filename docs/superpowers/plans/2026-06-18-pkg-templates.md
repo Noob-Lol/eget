@@ -1114,7 +1114,7 @@ git commit -m "feat(app): add pkg-template package references"
 - Test: `internal/app/update_package_test.go`
 - Test: `internal/app/show_test.go`
 
-- [ ] **Step 1: Write latest-check tests**
+- [x] **Step 1: Write latest-check tests**
 
 Add to `internal/app/list_outdated_test.go`:
 
@@ -1184,7 +1184,7 @@ func TestListUpdateCandidatesChecksPkgTemplateTarget(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -1194,7 +1194,7 @@ go test ./internal/app -run 'TestListOutdatedPackagesChecksPkgTemplateRepo|TestL
 
 Expected: latest target package section does not include rendered template fields.
 
-- [ ] **Step 3: Enrich list/update items with pkg-template section**
+- [x] **Step 3: Enrich list/update items with pkg-template section**
 
 In `internal/app/list.go`, enrich configured list items immediately after they are built from `cfg.Packages`, before writing them into `byName`. Add this helper:
 
@@ -1250,7 +1250,7 @@ item = resolveListItemPackageTemplate(cfg, item)
 
 不要在 `findUpdateTarget` 或 `ListUpdateCandidatesForTargets` 里重复做 enrichment。这些路径已经通过 `ListService.ListPackages()` 解析 target，因此 `ListPackages` 里的单点 enrichment 是 list、update-all 和指定 target update 检查的共同来源。
 
-- [ ] **Step 4: CLI latest checker handles pkg-template**
+- [x] **Step 4: CLI latest checker handles pkg-template**
 
 In `internal/cli/wiring.go`, import `pkgtemplate` and add before `urltemplate.ParseTarget`:
 
@@ -1271,7 +1271,7 @@ if pkgTarget, err := pkgtemplate.ParseTarget(repo); err == nil {
 
 Keep existing `template:` behavior unchanged.
 
-- [ ] **Step 5: Show displays lightweight repo**
+- [x] **Step 5: Show displays lightweight repo**
 
 If `show` already displays `pkg-template:mydev:markview` through existing repo fields, only add a regression test in `internal/app/show_test.go`:
 
@@ -1299,7 +1299,7 @@ func TestShowPackageDisplaysPkgTemplateRepo(t *testing.T) {
 }
 ```
 
-- [ ] **Step 6: Run focused app/cli tests**
+- [x] **Step 6: Run focused app/cli tests**
 
 Run:
 
@@ -1311,7 +1311,7 @@ go test ./internal/cli -run 'Template|PkgTemplate' -count=1
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit latest/update/show support**
+- [x] **Step 7: Commit latest/update/show support**
 
 Run:
 

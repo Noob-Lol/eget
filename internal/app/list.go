@@ -98,6 +98,7 @@ func (s ListService) ListPackages() ([]ListItem, error) {
 		if pkg.IsGUI != nil && *pkg.IsGUI {
 			item.IsGUI = true
 		}
+		item = resolveListItemPackageTemplate(cfg, item)
 		byName[name] = item
 	}
 
@@ -160,6 +161,46 @@ func (s ListService) ListPackages() ([]ListItem, error) {
 		items = append(items, byName[name])
 	}
 	return items, nil
+}
+
+func resolveListItemPackageTemplate(cfg *cfgpkg.File, item ListItem) ListItem {
+	source, err := resolveInstallSourceSection(cfg, item.Repo)
+	if err != nil {
+		return item
+	}
+	if util.DerefString(source.URLTemplate) == "" && util.DerefString(source.LatestURL) == "" {
+		return item
+	}
+	item.Package = latestCheckSectionFromSourceAndPackage(source, item.Package)
+	return item
+}
+
+func latestCheckSectionFromSourceAndPackage(source, pkg cfgpkg.Section) cfgpkg.Section {
+	merged := cfgpkg.MergeInstallOptions(cfgpkg.Section{}, source, pkg, cfgpkg.CLIOverrides{})
+	section := pkg
+	section.LatestURL = stringPtrIfNotEmpty(merged.LatestURL)
+	section.LatestFormat = stringPtrIfNotEmpty(merged.LatestFormat)
+	section.LatestJSONPath = stringPtrIfNotEmpty(merged.LatestJSONPath)
+	section.VersionRegex = stringPtrIfNotEmpty(merged.VersionRegex)
+	section.URLTemplate = stringPtrIfNotEmpty(merged.URLTemplate)
+	section.OSMap = util.CloneStringMap(merged.OSMap)
+	section.ArchMap = util.CloneStringMap(merged.ArchMap)
+	section.ExtMap = util.CloneStringMap(merged.ExtMap)
+	section.LibcMap = util.CloneStringMap(merged.LibcMap)
+	section.ChecksumURLTemplate = stringPtrIfNotEmpty(merged.ChecksumURLTemplate)
+	section.ChecksumFormat = stringPtrIfNotEmpty(merged.ChecksumFormat)
+	section.ChecksumJSONPath = stringPtrIfNotEmpty(merged.ChecksumJSONPath)
+	section.ChecksumRegex = stringPtrIfNotEmpty(merged.ChecksumRegex)
+	section.InstallAction = stringPtrIfNotEmpty(merged.InstallAction)
+	section.InstallArgs = append([]string(nil), merged.InstallArgs...)
+	return section
+}
+
+func stringPtrIfNotEmpty(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return util.StringPtr(value)
 }
 
 func (s ListService) ListInstalledPackages() ([]ListItem, error) {

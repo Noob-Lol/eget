@@ -149,6 +149,28 @@ func TestShowPackageFindsLegacyRepoKeyByRepoName(t *testing.T) {
 	assert.True(t, got.IsGUI)
 }
 
+func TestShowPackageDisplaysPkgTemplateRepo(t *testing.T) {
+	cfg := cfgpkg.NewFile()
+	cfg.Packages["markview"] = cfgpkg.Section{
+		Repo: util.StringPtr("pkg-template:mydev:markview"),
+		Desc: util.StringPtr("Markdown preview"),
+	}
+	svc := ShowService{
+		LoadConfig: func() (*cfgpkg.File, error) { return cfg, nil },
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{}}, nil
+		},
+	}
+
+	got, err := svc.ShowPackage("markview")
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "markview", got.Name)
+	assert.Eq(t, "pkg-template:mydev:markview", got.Repo)
+	assert.Eq(t, "Markdown preview", got.Desc)
+	assert.Eq(t, "", got.RepoURL)
+}
+
 func TestShowPackageReturnsErrorForMissingTarget(t *testing.T) {
 	svc := ShowService{
 		LoadConfig: func() (*cfgpkg.File, error) {

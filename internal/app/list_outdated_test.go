@@ -221,6 +221,39 @@ func TestListOutdatedPackagesChecksForgeRepo(t *testing.T) {
 	assert.Eq(t, "v9.0.0", items[0].LatestTag)
 }
 
+func TestListOutdatedPackagesChecksPkgTemplateRepo(t *testing.T) {
+	cfg := cfgpkg.NewFile()
+	cfg.PkgTemplates["mydev"] = cfgpkg.Section{
+		LatestURL:   util.StringPtr("http://mydev.lan/tools/{name}/latest.yaml"),
+		URLTemplate: util.StringPtr("http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"),
+	}
+	cfg.Packages["markview"] = cfgpkg.Section{Repo: util.StringPtr("pkg-template:mydev:markview")}
+	installed := &storepkg.Config{Installed: map[string]storepkg.Entry{
+		"markview": {Repo: "pkg-template:mydev:markview", Target: "pkg-template:mydev:markview", Tag: "1.0.0"},
+	}}
+	var got LatestCheckTarget
+	svc := ListService{
+		LoadConfig:    func() (*cfgpkg.File, error) { return cfg, nil },
+		LoadInstalled: func() (*storepkg.Config, error) { return installed, nil },
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			got = target
+			return LatestInfo{Tag: "1.1.0"}, nil
+		},
+	}
+
+	items, failures, checked, err := svc.ListOutdatedPackages()
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 0, len(failures))
+	assert.Eq(t, 1, checked)
+	assert.Eq(t, 1, len(items))
+	assert.Eq(t, "pkg-template:mydev:markview", got.Repo)
+	if got.Package.LatestURL == nil {
+		t.Fatal("expected rendered latest_url in latest check package")
+	}
+	assert.Eq(t, "http://mydev.lan/tools/markview/latest.yaml", *got.Package.LatestURL)
+}
+
 func TestListOutdatedPackagesUsesConfiguredBatchConcurrencyAndPreservesOrder(t *testing.T) {
 	block := make(chan struct{})
 	batch := 2

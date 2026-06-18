@@ -16,6 +16,7 @@ import (
 	storepkg "github.com/inherelab/eget/internal/installed"
 	forge "github.com/inherelab/eget/internal/source/forge"
 	sourcegithub "github.com/inherelab/eget/internal/source/github"
+	"github.com/inherelab/eget/internal/source/pkgtemplate"
 	sourcesf "github.com/inherelab/eget/internal/source/sourceforge"
 	"github.com/inherelab/eget/internal/source/urltemplate"
 	"github.com/inherelab/eget/internal/util"
@@ -101,6 +102,18 @@ func newCLIService(noProxyOpt ...bool) (*cliService, error) {
 				return app.LatestInfo{}, err
 			}
 			return app.LatestInfo{Tag: info.Tag, PublishedAt: info.PublishedAt}, nil
+		}
+		if pkgTarget, err := pkgtemplate.ParseTarget(repo); err == nil {
+			finder := urltemplate.Finder{
+				Name:   pkgTarget.Package,
+				Config: urlTemplateConfigFromSection(target.Package),
+				Getter: client.NewHTTPGetter(defaultClientOpts),
+			}
+			info, err := finder.Latest()
+			if err != nil {
+				return app.LatestInfo{}, err
+			}
+			return app.LatestInfo{Tag: info.Version, PublishedAt: info.PublishedAt}, nil
 		}
 		if templateTarget, err := urltemplate.ParseTarget(repo); err == nil {
 			finder := urltemplate.Finder{
