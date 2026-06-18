@@ -237,7 +237,7 @@ git commit -m "feat(config): add pkg_templates section"
 - Create: `internal/source/pkgtemplate/target.go`
 - Create: `internal/source/pkgtemplate/target_test.go`
 
-- [ ] **Step 1: Write parser tests**
+- [x] **Step 1: Write parser tests**
 
 Create `internal/source/pkgtemplate/target_test.go`:
 
@@ -310,7 +310,7 @@ func TestResolveAlias(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run:
 
@@ -320,7 +320,7 @@ go test ./internal/source/pkgtemplate -count=1
 
 Expected: package directory has no implementation.
 
-- [ ] **Step 3: Implement parser**
+- [x] **Step 3: Implement parser**
 
 Create `internal/source/pkgtemplate/target.go`:
 
@@ -396,7 +396,7 @@ func isKnownPrefix(prefix string) bool {
 }
 ```
 
-- [ ] **Step 4: Run parser tests**
+- [x] **Step 4: Run parser tests**
 
 Run:
 
@@ -407,7 +407,7 @@ go test ./internal/source/pkgtemplate -count=1
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit parser**
+- [x] **Step 5: Commit parser**
 
 Run:
 
