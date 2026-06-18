@@ -1,73 +1,73 @@
-# pkg_templates Implementation Plan
+# pkg_templates 实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **给 agentic workers:** 必须使用子技能：推荐 `superpowers:subagent-driven-development`，也可以使用 `superpowers:executing-plans` 按任务执行本计划。步骤使用 checkbox (`- [ ]`) 跟踪进度。
 
-**Goal:** Add `pkg_templates` so one configured package template can back many internal tools via canonical `pkg-template:<template>:<package>` targets and short CLI aliases such as `mydev:markview`.
+**目标:** 增加 `pkg_templates`，让一个配置好的 package 模板可以通过规范 target `pkg-template:<template>:<package>` 和 CLI 短别名 `mydev:markview` 支持多个内部工具。
 
-**Architecture:** Keep template configuration resolution in the config/app layer, then hand execution to the existing `urltemplate.Finder` path. Add a small `internal/source/pkgtemplate` package for canonical target parsing and short-alias resolution. Do not create a new downloader or registry service.
+**架构:** 模板配置解析放在 config/app 层完成，然后继续交给现有 `urltemplate.Finder` 执行下载解析。新增一个小的 `internal/source/pkgtemplate` 包，只负责规范 target 解析和短别名解析。不新增下载器，也不实现 registry 服务。
 
-**Tech Stack:** Go, gookit config/TOML loader, existing `internal/config.Section`, existing `internal/source/urltemplate`, existing install/update/list/show app services, `github.com/gookit/goutil/testutil/assert`.
+**技术栈:** Go、gookit config/TOML loader、现有 `internal/config.Section`、现有 `internal/source/urltemplate`、现有 install/update/list/show app service，以及 `github.com/gookit/goutil/testutil/assert`。
 
 ---
 
-## Design Review
+## 方案复审
 
-The design is sound with one important implementation constraint: `latest_url` currently goes directly to `urltemplate.Finder.Latest()` and is not rendered before the HTTP request. `pkg_templates` therefore must render template-level string fields that can use `{name}` before creating install options, or the finder will request URLs containing a literal `{name}`.
+方案方向可行，但有一个关键实现约束：`latest_url` 当前会直接进入 `urltemplate.Finder.Latest()` 发起 HTTP 请求，请求前不会自动渲染模板变量。因此 `pkg_templates` 必须在创建 install options 前，先渲染 template section 中允许使用 `{name}` 的字符串字段，否则 finder 会请求包含字面量 `{name}` 的 URL。
 
-Keep the implementation boundary conservative:
+实现边界保持保守：
 
-- `internal/source/pkgtemplate` only parses and normalizes targets.
-- `internal/config` only loads, dumps, and merges `PkgTemplates`.
-- `internal/app` resolves short aliases and expands template sections into package install options.
-- `internal/install` only needs to recognize canonical `pkg-template:` targets and turn them into the existing `urltemplate.Finder`.
+- `internal/source/pkgtemplate` 只解析和规范化 target。
+- `internal/config` 只负责加载、输出和合并 `PkgTemplates`。
+- `internal/app` 负责解析短别名，并把 template section 展开成 package install options。
+- `internal/install` 只需要识别规范 `pkg-template:` target，并转交给现有 `urltemplate.Finder`。
 
-This implementation will touch more than 3 logical files. Before executing code changes, confirm implementation scope with the user per project rule.
+本实现会修改超过 3 个逻辑文件。按项目规则，执行代码变更前必须再次向用户确认实施范围。
 
-## File Map
+## 文件地图
 
 - Create: `internal/source/pkgtemplate/target.go`
-  - Canonical target parser for `pkg-template:<template>:<package>`.
-  - Short alias resolver for `<template>:<package>` using configured template names.
+  - 规范 target `pkg-template:<template>:<package>` 解析。
+  - 基于已配置模板名解析短别名 `<template>:<package>`。
 - Create: `internal/source/pkgtemplate/target_test.go`
-  - Parser and alias resolution tests.
+  - parser 和 alias resolution 测试。
 - Modify: `internal/config/model.go`
-  - Add `PkgTemplates map[string]Section` to `File`.
+  - 给 `File` 增加 `PkgTemplates map[string]Section`。
 - Modify: `internal/config/loader.go`
-  - Initialize `PkgTemplates`.
+  - 初始化 `PkgTemplates`。
 - Modify: `internal/config/gookit.go`
-  - Load/dump `[pkg_templates]`, reserve root key, support path get/set.
+  - 加载/输出 `[pkg_templates]`、保留 root key、支持 path get/set。
 - Modify: `internal/config/gookit_test.go`
-  - Round-trip tests for `[pkg_templates.mydev]`.
+  - `[pkg_templates.mydev]` round-trip 测试。
 - Modify: `internal/config/merge.go`
-  - Add helper to merge global + pkg-template + package + CLI without treating pkg-template as legacy repo.
+  - 增加 global + pkg-template + package + CLI 合并 helper，不把 pkg-template 当 legacy repo section。
 - Modify: `internal/config/merge_test.go`
-  - Precedence tests for `pkg_templates`.
+  - `pkg_templates` 优先级测试。
 - Modify: `internal/install/options.go`
-  - Add `TargetPkgTemplate` detection.
+  - 增加 `TargetPkgTemplate` 识别。
 - Modify: `internal/install/service.go`
-  - Select `urltemplate.Finder` for canonical pkg-template targets.
+  - 为规范 pkg-template target 选择 `urltemplate.Finder`。
 - Modify: `internal/install/service_finder_test.go`
-  - Finder tests for `pkg-template:mydev:markview`.
+  - `pkg-template:mydev:markview` finder 测试。
 - Modify: `internal/app/config.go`
-  - `AddPackage` and name inference for short aliases and canonical pkg-template targets.
+  - `AddPackage` 和短别名/规范 pkg-template target 的 name inference。
 - Modify: `internal/app/install_resolve.go`
-  - Resolve configured packages and raw short aliases into canonical pkg-template run target plus merged URL template options.
+  - 把已配置 package 和原始短别名解析为规范 pkg-template run target，并合并 URL template options。
 - Modify: `internal/app/install_record.go`
-  - Treat `TargetPkgTemplate` as a managed target and source-backed version target.
+  - 将 `TargetPkgTemplate` 视为 managed target 和 source-backed version target。
 - Modify: `internal/app/install_config_test.go`
-  - Install option resolution tests for configured and short-alias pkg-template targets.
+  - 已配置 package 和短别名 pkg-template 的 install option resolution 测试。
 - Modify: `internal/app/install_add_test.go`
-  - `install --add` writes lightweight repo reference.
+  - `install --add` 写入轻量 repo 引用。
 - Modify: `internal/app/update_package_test.go`, `internal/app/list_outdated_test.go`, `internal/app/update_candidates_test.go`
-  - Ensure latest checks receive rendered template package data.
+  - 确保 latest check 收到已渲染的 template package 数据。
 - Modify: `internal/cli/wiring.go`
-  - Latest checker handles `pkg-template:` by using existing URL template latest flow.
+  - latest checker 使用现有 URL template latest 流程处理 `pkg-template:`。
 - Modify: `internal/cli/handlers.go`
-  - Add output name inference for `install --add mydev:markview`.
+  - 增加 `install --add mydev:markview` 输出名称推导。
 - Modify: `internal/cli/install_handler_test.go`
-  - CLI short alias and output tests.
+  - CLI 短别名和输出测试。
 - Modify: `docs/config.md`, `docs/config.zh-CN.md`, `docs/example.eget.toml`, `README.md`, `README.zh-CN.md`, `docs/TODO.md`
-  - User documentation and task tracker update after implementation.
+  - 实现完成后更新用户文档和任务跟踪。
 
 ## Task 0: Execution Scope Confirmation
 
