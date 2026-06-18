@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
+	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
+	"github.com/inherelab/eget/internal/util"
 )
 
 func TestInstallTargetWithAddRecordsManagedPackage(t *testing.T) {
@@ -93,6 +95,37 @@ func TestInstallTargetWithAddRecordsForgePackage(t *testing.T) {
 	if len(config.opts.Asset) != 2 || config.opts.Asset[0] != "linux" || config.opts.Asset[1] != "amd64" {
 		t.Fatalf("expected asset filters to be forwarded, got %#v", config.opts.Asset)
 	}
+}
+
+func TestInstallTargetWithAddRecordsPkgTemplatePackage(t *testing.T) {
+	runner := &fakeRunner{
+		result: RunResult{
+			URL:            "http://mydev.lan/tools/markview/markview-windows-amd64.exe",
+			Tool:           "markview",
+			ExtractedFiles: []string{"./markview.exe"},
+		},
+	}
+	config := &fakeConfigRecorder{}
+	cfg := cfgpkg.NewFile()
+	cfg.PkgTemplates["mydev"] = cfgpkg.Section{
+		LatestURL:   util.StringPtr("http://mydev.lan/tools/{name}/latest.yaml"),
+		URLTemplate: util.StringPtr("http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"),
+	}
+	svc := Service{
+		Runner: runner,
+		Config: config,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("mydev:markview", install.Options{}, InstallExtras{AddToConfig: true, PackageOpts: install.Options{}})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "pkg-template:mydev:markview", runner.target)
+	assert.Eq(t, "pkg-template:mydev:markview", config.repo)
+	assert.Eq(t, "markview", config.name)
+	assert.Eq(t, "markview", config.opts.Name)
 }
 
 func TestInstallTargetWithAddPersistsConfirmedGUIInstaller(t *testing.T) {

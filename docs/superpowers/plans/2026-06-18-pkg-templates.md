@@ -889,7 +889,7 @@ git commit -m "feat(app): resolve pkg-template packages"
 - Modify: `internal/cli/handlers.go`
 - Test: `internal/cli/install_handler_test.go`
 
-- [ ] **Step 1: Write add config test**
+- [x] **Step 1: Write add config test**
 
 Add to `internal/app/add_test.go`:
 
@@ -928,7 +928,7 @@ cfgpkg "github.com/inherelab/eget/internal/config"
 "github.com/inherelab/eget/internal/util"
 ```
 
-- [ ] **Step 2: Write install --add test**
+- [x] **Step 2: Write install --add test**
 
 Add to `internal/app/install_add_test.go`:
 
@@ -965,7 +965,7 @@ func TestInstallTargetWithAddRecordsPkgTemplatePackage(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run:
 
@@ -975,7 +975,7 @@ go test ./internal/app -run 'TestAddPackageWritesPkgTemplateReference|TestInstal
 
 Expected: name inference or managed target validation fails.
 
-- [ ] **Step 4: Implement AddPackage short alias support**
+- [x] **Step 4: Implement AddPackage short alias support**
 
 In `internal/app/config.go`, import `pkgtemplate`.
 
@@ -1000,7 +1000,7 @@ if pkgTarget, pkgErr := pkgtemplate.ParseTarget(repo); pkgErr == nil {
 
 This requires importing `internal/source/pkgtemplate`.
 
-- [ ] **Step 5: Allow pkg-template as managed config target**
+- [x] **Step 5: Allow pkg-template as managed config target**
 
 In `internal/app/install_record.go`, update `isManagedConfigTarget`:
 
@@ -1023,7 +1023,7 @@ if kind := install.DetectTargetKind(repo); kind == install.TargetTemplate || kin
 }
 ```
 
-- [ ] **Step 6: Name inference before install**
+- [x] **Step 6: Name inference before install**
 
 In `internal/app/install.go`, keep the existing early `inferAddPackageName` call for normal repo targets. Then, after `resolveInstallRequest` returns `recordTarget`, fill missing `install --add` package metadata from the resolved record target.
 
@@ -1038,7 +1038,7 @@ if len(extras) > 0 && extras[0].AddToConfig && extras[0].PackageName == "" {
 
 Place it after `resolveInstallRequest` and before `installResolvedTarget`.
 
-- [ ] **Step 7: CLI add output name inference**
+- [x] **Step 7: CLI add output name inference**
 
 In `internal/app/config.go`, add this helper near `ResolvePackageName`:
 
@@ -1081,7 +1081,7 @@ func TestHandleAddPrintsPkgTemplateAliasName(t *testing.T) {
 }
 ```
 
-- [ ] **Step 8: Run focused tests**
+- [x] **Step 8: Run focused tests**
 
 Run:
 
@@ -1093,7 +1093,7 @@ go test ./internal/cli -run 'TestHandleAddPrintsPkgTemplateAliasName|TestHandleA
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit add support**
+- [x] **Step 9: Commit add support**
 
 Run:
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inherelab/eget/internal/app"
+	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 )
 
@@ -71,6 +72,10 @@ func (s *cliService) handle(name string, options any) error {
 			if pkgName == "" {
 				if inferred, inferErr := app.ResolvePackageName(opts.Target, opts.Name); inferErr == nil {
 					pkgName = inferred
+				} else if cfg, loadErr := s.loadConfigForPackageName(); loadErr == nil {
+					if inferred, inferErr := app.ResolvePackageNameWithConfig(cfg, opts.Target, opts.Name); inferErr == nil {
+						pkgName = inferred
+					}
 				}
 			}
 			ccolor.Infof("✓ Added package config: %s -> %s\n", pkgName, opts.Target)
@@ -136,6 +141,13 @@ func (s *cliService) handle(name string, options any) error {
 	default:
 		return ErrNotImplemented
 	}
+}
+
+func (s *cliService) loadConfigForPackageName() (*cfgpkg.File, error) {
+	if s.cfgService.Load != nil {
+		return s.cfgService.Load()
+	}
+	return cfgpkg.Load()
 }
 
 func splitTargets(args []string) []string {

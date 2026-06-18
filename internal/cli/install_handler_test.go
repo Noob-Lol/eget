@@ -328,6 +328,33 @@ func TestHandleAddPrintsInferredPackageName(t *testing.T) {
 	}
 }
 
+func TestHandleAddPrintsPkgTemplateAliasName(t *testing.T) {
+	var saved *cfgpkg.File
+	cfg := cfgpkg.NewFile()
+	cfg.PkgTemplates["mydev"] = cfgpkg.Section{
+		LatestURL:   util.StringPtr("http://mydev.lan/tools/{name}/latest.yaml"),
+		URLTemplate: util.StringPtr("http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"),
+	}
+	svc := &cliService{
+		cfgService: app.ConfigService{
+			Load: func() (*cfgpkg.File, error) { return cfg, nil },
+			Save: func(path string, file *cfgpkg.File) error {
+				saved = file
+				return nil
+			},
+		},
+	}
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handle("add", &AddOptions{Target: "mydev:markview"})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "pkg-template:mydev:markview", *saved.Packages["markview"].Repo)
+	assert.Contains(t, out.String(), "Added package config: markview -> mydev:markview")
+}
+
 func TestHandleInstallAcceptsManagedPackageName(t *testing.T) {
 	svc := &cliService{
 		appService: app.Service{

@@ -7,6 +7,7 @@ import (
 	"github.com/gookit/goutil/testutil/assert"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
+	"github.com/inherelab/eget/internal/util"
 )
 
 func TestAddPackage(t *testing.T) {
@@ -110,6 +111,33 @@ func TestAddPackageWithCustomName(t *testing.T) {
 	if _, ok := cfg.Packages["myfzf"]; !ok {
 		t.Fatal("expected packages.myfzf to be created")
 	}
+}
+
+func TestAddPackageWritesPkgTemplateReference(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+	cfg := cfgpkg.NewFile()
+	cfg.PkgTemplates["mydev"] = cfgpkg.Section{
+		LatestURL:   util.StringPtr("http://mydev.lan/tools/{name}/latest.yaml"),
+		URLTemplate: util.StringPtr("http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"),
+	}
+
+	svc := ConfigService{
+		ConfigPath: configPath,
+		Load: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+		Save: cfgpkg.Save,
+	}
+
+	assert.NoErr(t, svc.AddPackage("mydev:markview", "", install.Options{}))
+
+	loaded, err := cfgpkg.LoadFile(configPath)
+	assert.NoErr(t, err)
+	pkg, ok := loaded.Packages["markview"]
+	assert.True(t, ok)
+	assert.Eq(t, "pkg-template:mydev:markview", *pkg.Repo)
+	assert.Eq(t, "markview", *pkg.Name)
 }
 
 func TestAddPackagePersistsChunkConcurrency(t *testing.T) {

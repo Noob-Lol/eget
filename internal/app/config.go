@@ -10,6 +10,7 @@ import (
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
 	forge "github.com/inherelab/eget/internal/source/forge"
+	"github.com/inherelab/eget/internal/source/pkgtemplate"
 	"github.com/inherelab/eget/internal/source/sourceforge"
 	"github.com/inherelab/eget/internal/util"
 )
@@ -44,6 +45,9 @@ func (s ConfigService) AddPackage(repo, name string, opts install.Options) error
 		return err
 	}
 
+	if normalized, ok := pkgtemplate.ResolveAlias(repo, configuredTemplateNames(cfg)); ok {
+		repo = normalized
+	}
 	repo, name, opts, err = ResolvePackageConfig(repo, name, opts)
 	if err != nil {
 		return err
@@ -67,7 +71,24 @@ func ResolvePackageName(repo, name string) (string, error) {
 	return resolvedName, err
 }
 
+func ResolvePackageNameWithConfig(cfg *cfgpkg.File, repo, name string) (string, error) {
+	if cfg == nil {
+		cfg = cfgpkg.NewFile()
+	}
+	if normalized, ok := pkgtemplate.ResolveAlias(repo, configuredTemplateNames(cfg)); ok {
+		repo = normalized
+	}
+	return ResolvePackageName(repo, name)
+}
+
 func ResolvePackageConfig(repo, name string, opts install.Options) (string, string, install.Options, error) {
+	if pkgTarget, pkgErr := pkgtemplate.ParseTarget(repo); pkgErr == nil {
+		repo = pkgTarget.Normalized
+		if name == "" {
+			name = pkgTarget.Package
+		}
+	}
+
 	if sfTarget, sfErr := sourceforge.ParseTarget(repo); sfErr == nil {
 		repo = sfTarget.Normalized
 		if opts.SourcePath == "" {

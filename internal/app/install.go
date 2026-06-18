@@ -62,6 +62,10 @@ func (s Service) InstallTarget(target string, opts install.Options, extras ...In
 	if err != nil {
 		return RunResult{}, err
 	}
+	if len(extras) > 0 && extras[0].AddToConfig && extras[0].PackageName == "" {
+		extras[0].PackageName = recordTarget
+		extras[0].PackageOpts.Name = recordTarget
+	}
 	opts = applyDefaultInstallTarget(opts)
 	if err := validateConcurrencyOptions(opts); err != nil {
 		return RunResult{}, err

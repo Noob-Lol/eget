@@ -15,7 +15,7 @@ import (
 
 func isManagedConfigTarget(target string) bool {
 	switch install.DetectTargetKind(target) {
-	case install.TargetRepo, install.TargetGitHubURL, install.TargetSourceForge, install.TargetForge, install.TargetTemplate:
+	case install.TargetRepo, install.TargetGitHubURL, install.TargetSourceForge, install.TargetForge, install.TargetTemplate, install.TargetPkgTemplate:
 		return true
 	default:
 		return false
@@ -48,7 +48,8 @@ func (s Service) installResolvedTarget(runTarget, recordTarget string, opts inst
 	tag, releaseDate := tagFromReleaseURL(result.URL), time.Time{}
 	isSourceForge := sourcesf.IsTarget(repo)
 	isForge := forge.IsTarget(repo)
-	isTemplate := install.DetectTargetKind(runTarget) == install.TargetTemplate
+	kind := install.DetectTargetKind(runTarget)
+	isTemplate := kind == install.TargetTemplate || kind == install.TargetPkgTemplate
 	if tag == "" && isTemplate {
 		tag = result.Version
 	}
@@ -105,7 +106,7 @@ func (s Service) installResolvedTarget(runTarget, recordTarget string, opts inst
 }
 
 func shouldFetchReleaseInfo(repo string) bool {
-	if install.DetectTargetKind(repo) == install.TargetTemplate {
+	if kind := install.DetectTargetKind(repo); kind == install.TargetTemplate || kind == install.TargetPkgTemplate {
 		return false
 	}
 	if sourcesf.IsTarget(repo) {
