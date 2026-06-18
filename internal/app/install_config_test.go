@@ -413,6 +413,106 @@ install_args = ["install", "latest"]
 	assert.Eq(t, []string{"install", "latest"}, runner.opts.URLTemplate.InstallArgs)
 }
 
+func TestInstallTargetResolvesPkgTemplateShortAlias(t *testing.T) {
+	cfg := mustLoadFromString(t, `
+[pkg_templates.mydev]
+latest_url = "http://mydev.lan/tools/{name}/latest.yaml"
+latest_format = "yaml"
+url_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+os_map = { windows = "win" }
+arch_map = { amd64 = "x64" }
+ext_map = { windows = ".exe" }
+`)
+	runner := &fakeRunner{result: RunResult{URL: "http://mydev.lan/tools/markview/markview-win-x64.exe", Tool: "markview", ExtractedFiles: []string{"./markview.exe"}}}
+	svc := Service{Runner: runner, LoadConfig: func() (*cfgpkg.File, error) { return cfg, nil }}
+
+	_, err := svc.InstallTarget("mydev:markview", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "pkg-template:mydev:markview", runner.target)
+	assert.Eq(t, "http://mydev.lan/tools/markview/latest.yaml", runner.opts.URLTemplate.LatestURL)
+	assert.Eq(t, "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}", runner.opts.URLTemplate.URLTemplate)
+	assert.Eq(t, map[string]string{"windows": "win"}, runner.opts.URLTemplate.OSMap)
+	assert.Eq(t, map[string]string{"amd64": "x64"}, runner.opts.URLTemplate.ArchMap)
+	assert.Eq(t, map[string]string{"windows": ".exe"}, runner.opts.URLTemplate.ExtMap)
+}
+
+func TestInstallTargetResolvesConfiguredPkgTemplatePackageWithOverride(t *testing.T) {
+	cfg := mustLoadFromString(t, `
+[global]
+target = "~/global-bin"
+
+[pkg_templates.mydev]
+latest_url = "http://mydev.lan/tools/{name}/latest.yaml"
+latest_format = "yaml"
+url_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+os_map = { windows = "win" }
+arch_map = { amd64 = "x64" }
+ext_map = { windows = ".exe" }
+
+[packages.markview]
+repo = "pkg-template:mydev:markview"
+desc = "Markdown preview"
+target = "~/package-bin"
+url_template = "http://override/{name}-{version}{ext}"
+ext_map = { windows = ".zip" }
+`)
+	runner := &fakeRunner{result: RunResult{URL: "http://mydev.lan/tools/markview/markview-windows-amd64.zip", Tool: "markview", ExtractedFiles: []string{"./markview.exe"}}}
+	svc := Service{Runner: runner, LoadConfig: func() (*cfgpkg.File, error) { return cfg, nil }}
+
+	_, err := svc.InstallTarget("markview", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "pkg-template:mydev:markview", runner.target)
+	assert.Eq(t, "http://mydev.lan/tools/markview/latest.yaml", runner.opts.URLTemplate.LatestURL)
+	assert.Eq(t, "http://override/{name}-{version}{ext}", runner.opts.URLTemplate.URLTemplate)
+	assert.Eq(t, map[string]string{"windows": "win"}, runner.opts.URLTemplate.OSMap)
+	assert.Eq(t, map[string]string{"amd64": "x64"}, runner.opts.URLTemplate.ArchMap)
+	assert.Eq(t, map[string]string{"windows": ".zip"}, runner.opts.URLTemplate.ExtMap)
+	assert.Contains(t, runner.opts.Output, "package-bin")
+}
+
+func TestInstallTargetShortAliasUsesConfiguredPkgTemplateOverride(t *testing.T) {
+	cfg := mustLoadFromString(t, `
+[pkg_templates.mydev]
+latest_url = "http://mydev.lan/tools/{name}/latest.yaml"
+url_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+ext_map = { windows = ".exe" }
+
+[packages.markview]
+repo = "pkg-template:mydev:markview"
+ext_map = { windows = ".zip" }
+`)
+	runner := &fakeRunner{result: RunResult{URL: "http://mydev.lan/tools/markview/markview-windows-amd64.zip", Tool: "markview", ExtractedFiles: []string{"./markview.exe"}}}
+	svc := Service{Runner: runner, LoadConfig: func() (*cfgpkg.File, error) { return cfg, nil }}
+
+	_, err := svc.InstallTarget("mydev:markview", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "pkg-template:mydev:markview", runner.target)
+	assert.Eq(t, map[string]string{"windows": ".zip"}, runner.opts.URLTemplate.ExtMap)
+}
+
+func TestInstallTargetShortAliasUsesCustomNamedPkgTemplatePackage(t *testing.T) {
+	cfg := mustLoadFromString(t, `
+[pkg_templates.mydev]
+latest_url = "http://mydev.lan/tools/{name}/latest.yaml"
+url_template = "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+
+[packages.mv]
+repo = "pkg-template:mydev:markview"
+target = "~/custom-bin"
+`)
+	runner := &fakeRunner{result: RunResult{URL: "http://mydev.lan/tools/markview/markview-windows-amd64", Tool: "markview", ExtractedFiles: []string{"./markview"}}}
+	svc := Service{Runner: runner, LoadConfig: func() (*cfgpkg.File, error) { return cfg, nil }}
+
+	_, err := svc.InstallTarget("mydev:markview", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "pkg-template:mydev:markview", runner.target)
+	assert.Contains(t, runner.opts.Output, "custom-bin")
+}
+
 func TestInstallTargetAppliesManagedPackageOptionsWhenTargetIsRepo(t *testing.T) {
 	cfg := mustLoadFromString(t, `
 [packages.erd]

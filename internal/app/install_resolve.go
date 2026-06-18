@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/install"
+	"github.com/inherelab/eget/internal/source/pkgtemplate"
+	"github.com/inherelab/eget/internal/source/urltemplate"
 	"github.com/inherelab/eget/internal/util"
 )
 
@@ -19,12 +22,23 @@ func (s Service) resolveInstallRequest(target string, cli install.Options, prefe
 }
 
 func (s Service) resolveInstallRequestWithConfig(cfg *cfgpkg.File, target string, cli install.Options, preferCacheDir bool) (string, string, install.Options, error) {
+	if normalized, ok := pkgtemplate.ResolveAlias(target, configuredTemplateNames(cfg)); ok {
+		target = normalized
+	}
+	if pkgName, ok := configuredPkgTemplatePackageName(cfg, target); ok {
+		target = pkgName
+	}
+
 	if pkg, ok := cfg.Packages[target]; ok {
 		repo := util.DerefString(pkg.Repo)
 		if repo == "" {
 			return "", "", install.Options{}, fmt.Errorf("package %q has no repo", target)
 		}
-		opts, err := s.resolveInstallOptionsWithConfig(cfg, repo, pkg, cli, preferCacheDir)
+		source, err := resolveInstallSourceSection(cfg, repo)
+		if err != nil {
+			return "", "", install.Options{}, err
+		}
+		opts, err := s.resolveInstallOptionsWithConfig(cfg, repo, source, pkg, cli, preferCacheDir)
 		if err != nil {
 			return "", "", install.Options{}, err
 		}
@@ -32,7 +46,12 @@ func (s Service) resolveInstallRequestWithConfig(cfg *cfgpkg.File, target string
 	}
 
 	pkg := packageSectionForRepoTarget(cfg, target)
-	opts, err := s.resolveInstallOptionsWithConfig(cfg, target, pkg, cli, preferCacheDir)
+	target, pkg = resolveRawPkgTemplateTarget(cfg, target, pkg)
+	source, err := resolveInstallSourceSection(cfg, target)
+	if err != nil {
+		return "", "", install.Options{}, err
+	}
+	opts, err := s.resolveInstallOptionsWithConfig(cfg, target, source, pkg, cli, preferCacheDir)
 	if err != nil {
 		return "", "", install.Options{}, err
 	}
@@ -70,33 +89,114 @@ func packageSectionForRepoTarget(cfg *cfgpkg.File, target string) cfgpkg.Section
 	return cfgpkg.Section{}
 }
 
+func configuredTemplateNames(cfg *cfgpkg.File) map[string]struct{} {
+	names := make(map[string]struct{}, len(cfg.PkgTemplates))
+	for name := range cfg.PkgTemplates {
+		names[name] = struct{}{}
+	}
+	return names
+}
+
+func configuredPkgTemplatePackageName(cfg *cfgpkg.File, target string) (string, bool) {
+	parsed, err := pkgtemplate.ParseTarget(target)
+	if err != nil {
+		return "", false
+	}
+	if pkg, ok := cfg.Packages[parsed.Package]; ok && util.DerefString(pkg.Repo) == parsed.Normalized {
+		return parsed.Package, true
+	}
+
+	names := make([]string, 0, len(cfg.Packages))
+	for name := range cfg.Packages {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if util.DerefString(cfg.Packages[name].Repo) == parsed.Normalized {
+			return name, true
+		}
+	}
+	return "", false
+}
+
+func resolveInstallSourceSection(cfg *cfgpkg.File, repo string) (cfgpkg.Section, error) {
+	target, err := pkgtemplate.ParseTarget(repo)
+	if err != nil {
+		if repoKey, normErr := install.NormalizeRepoTarget(repo); normErr == nil {
+			return cfg.Repos[repoKey], nil
+		}
+		return cfgpkg.Section{}, nil
+	}
+	template, ok := cfg.PkgTemplates[target.Template]
+	if !ok {
+		return cfgpkg.Section{}, fmt.Errorf("pkg template %q is not configured", target.Template)
+	}
+	if util.DerefString(template.LatestURL) == "" {
+		return cfgpkg.Section{}, fmt.Errorf("pkg template %q for package %q has no latest_url", target.Template, target.Package)
+	}
+	if util.DerefString(template.URLTemplate) == "" {
+		return cfgpkg.Section{}, fmt.Errorf("pkg template %q for package %q has no url_template", target.Template, target.Package)
+	}
+	return renderPkgTemplateSection(template, target.Package)
+}
+
+func resolveRawPkgTemplateTarget(cfg *cfgpkg.File, target string, pkg cfgpkg.Section) (string, cfgpkg.Section) {
+	if normalized, ok := pkgtemplate.ResolveAlias(target, configuredTemplateNames(cfg)); ok {
+		target = normalized
+	}
+	if parsed, err := pkgtemplate.ParseTarget(target); err == nil && pkg.Name == nil {
+		pkg.Name = util.StringPtr(parsed.Package)
+	}
+	return target, pkg
+}
+
+func renderPkgTemplateSection(section cfgpkg.Section, name string) (cfgpkg.Section, error) {
+	vars := map[string]string{"name": name}
+	render := func(ptr *string) (*string, error) {
+		if ptr == nil {
+			return nil, nil
+		}
+		value, err := urltemplate.Render(*ptr, vars)
+		if err != nil {
+			return nil, err
+		}
+		return &value, nil
+	}
+	var err error
+	if section.LatestURL, err = render(section.LatestURL); err != nil {
+		return cfgpkg.Section{}, err
+	}
+	if section.LatestJSONPath, err = render(section.LatestJSONPath); err != nil {
+		return cfgpkg.Section{}, err
+	}
+	return section, nil
+}
+
 func (s Service) resolveInstallOptions(target string, cli install.Options, preferCacheDir bool) (install.Options, error) {
 	cfg, err := s.loadConfig()
 	if err != nil {
 		return install.Options{}, err
 	}
-	return s.resolveInstallOptionsWithConfig(cfg, target, cfgpkg.Section{}, cli, preferCacheDir)
+	source, err := resolveInstallSourceSection(cfg, target)
+	if err != nil {
+		return install.Options{}, err
+	}
+	return s.resolveInstallOptionsWithConfig(cfg, target, source, cfgpkg.Section{}, cli, preferCacheDir)
 }
 
-func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string, pkg cfgpkg.Section, cli install.Options, preferCacheDir bool) (install.Options, error) {
-	repoKey := ""
-	if repo, err := install.NormalizeRepoTarget(target); err == nil {
-		repoKey = repo
-	}
-
-	repoSection := cfg.Repos[repoKey]
+func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string, source cfgpkg.Section, pkg cfgpkg.Section, cli install.Options, preferCacheDir bool) (install.Options, error) {
 	proxy := cfgpkg.ResolveHTTPProxy(cfg, cfgpkg.ProxyResolveOptions{
 		NoProxy:     cli.NoProxy,
 		EnvNoProxy:  os.Getenv("NO_PROXY"),
 		OverrideURL: cli.ProxyURL,
 		PackageURL:  util.DerefString(pkg.ProxyURL),
-		RepoURL:     util.DerefString(repoSection.ProxyURL),
+		RepoURL:     util.DerefString(source.ProxyURL),
 	})
 	global := cfg.Global
 	global.ProxyURL = nil
-	repoSection.ProxyURL = nil
+	source.ProxyURL = nil
 	pkg.ProxyURL = nil
-	merged := cfgpkg.MergeInstallOptions(global, repoSection, pkg, cfgpkg.CLIOverrides{
+	merged := cfgpkg.MergeInstallOptions(global, source, pkg, cfgpkg.CLIOverrides{
 		ExtractAll:       boolOpt(cli.All),
 		AssetFilters:     stringsOpt(cli.Asset),
 		CacheDir:         stringOpt(cli.CacheDir),

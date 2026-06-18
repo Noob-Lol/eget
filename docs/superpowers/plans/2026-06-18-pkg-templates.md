@@ -553,7 +553,7 @@ git commit -m "feat(install): support pkg-template targets"
 - Modify: `internal/app/install_resolve.go`
 - Test: `internal/app/install_config_test.go`
 
-- [ ] **Step 1: Write install resolution tests**
+- [x] **Step 1: Write install resolution tests**
 
 Add to `internal/app/install_config_test.go`:
 
@@ -659,7 +659,7 @@ target = "~/custom-bin"
 }
 ```
 
-- [ ] **Step 2: Run install resolution tests to verify they fail**
+- [x] **Step 2: Run install resolution tests to verify they fail**
 
 Run:
 
@@ -669,7 +669,7 @@ go test ./internal/app -run 'TestInstallTargetResolvesPkgTemplateShortAlias|Test
 
 Expected: target resolution fails or does not render `latest_url`.
 
-- [ ] **Step 3: Implement app resolution helpers**
+- [x] **Step 3: Implement app resolution helpers**
 
 In `internal/app/install_resolve.go`, add imports:
 
@@ -858,7 +858,7 @@ if err != nil {
 return s.resolveInstallOptionsWithConfig(cfg, target, source, cfgpkg.Section{}, cli, preferCacheDir)
 ```
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run:
 
@@ -869,7 +869,7 @@ go test ./internal/app -run 'TestInstallTargetResolvesPkgTemplateShortAlias|Test
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit app resolution**
+- [x] **Step 5: Commit app resolution**
 
 Run:
 
