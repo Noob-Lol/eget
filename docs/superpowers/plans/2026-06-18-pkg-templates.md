@@ -71,7 +71,7 @@
 - Read: `docs/superpowers/specs/2026-06-18-pkg-templates-design.md`
 - Read: `docs/superpowers/plans/2026-06-18-pkg-templates.md`
 
-- [ ] **Step 1: Confirm implementation scope**
+- [x] **Step 1: Confirm implementation scope**
 
 Send this exact confirmation request before editing Go implementation files:
 
@@ -79,7 +79,7 @@ Send this exact confirmation request before editing Go implementation files:
 本实现会修改超过 3 个逻辑文件，涉及 config、install、app、cli、文档和测试。确认后我会按计划分阶段实现并在每个阶段提交。是否继续实施？
 ```
 
-- [ ] **Step 2: Verify clean implementation staging discipline**
+- [x] **Step 2: Verify clean implementation staging discipline**
 
 Run:
 
