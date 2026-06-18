@@ -427,6 +427,49 @@ func TestPackageURLTemplateFieldsRoundTrip(t *testing.T) {
 	assert.Eq(t, []string{"install", "latest"}, pkg.InstallArgs)
 }
 
+func TestPkgTemplatesSectionRoundTrip(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "eget.toml")
+	latestURL := "http://mydev.lan/tools/{name}/latest.yaml"
+	latestFormat := "yaml"
+	urlTemplate := "http://mydev.lan/tools/{name}/{name}-{os}-{arch}{ext}"
+	checksumURL := "http://mydev.lan/tools/{name}/{version}/checksums.json"
+	checksumFormat := "json"
+	checksumPath := "platforms.{os}-{arch}.checksum"
+
+	cfg := NewFile()
+	cfg.PkgTemplates["mydev"] = Section{
+		LatestURL:           &latestURL,
+		LatestFormat:        &latestFormat,
+		URLTemplate:         &urlTemplate,
+		OSMap:               map[string]string{"windows": "win", "linux": "linux"},
+		ArchMap:             map[string]string{"amd64": "x64"},
+		ExtMap:              map[string]string{"windows": ".exe", "linux": ""},
+		ChecksumURLTemplate: &checksumURL,
+		ChecksumFormat:      &checksumFormat,
+		ChecksumJSONPath:    &checksumPath,
+	}
+
+	text, err := dumpConfigString(cfg)
+	assert.NoErr(t, err)
+	assert.Contains(t, text, "[pkg_templates.mydev]")
+	assert.Contains(t, text, `latest_url = "http://mydev.lan/tools/{name}/latest.yaml"`)
+
+	assert.NoErr(t, Save(configPath, cfg))
+	loaded, err := LoadFile(configPath)
+	assert.NoErr(t, err)
+	template := loaded.PkgTemplates["mydev"]
+	assert.Eq(t, latestURL, *template.LatestURL)
+	assert.Eq(t, latestFormat, *template.LatestFormat)
+	assert.Eq(t, urlTemplate, *template.URLTemplate)
+	assert.Eq(t, map[string]string{"windows": "win", "linux": "linux"}, template.OSMap)
+	assert.Eq(t, map[string]string{"amd64": "x64"}, template.ArchMap)
+	assert.Eq(t, map[string]string{"windows": ".exe", "linux": ""}, template.ExtMap)
+	assert.Eq(t, checksumURL, *template.ChecksumURLTemplate)
+	assert.Eq(t, checksumFormat, *template.ChecksumFormat)
+	assert.Eq(t, checksumPath, *template.ChecksumJSONPath)
+}
+
 func TestSaveAndLoadRoundTrip(t *testing.T) {
 	tmp := t.TempDir()
 	configPath := filepath.Join(tmp, "eget.toml")

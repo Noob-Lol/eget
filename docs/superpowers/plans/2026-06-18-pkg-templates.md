@@ -97,7 +97,7 @@ Expected: the existing unrelated dirty files may still appear. Do not stage unre
 - Modify: `internal/config/gookit.go`
 - Test: `internal/config/gookit_test.go`
 
-- [ ] **Step 1: Write failing config round-trip test**
+- [x] **Step 1: Write failing config round-trip test**
 
 Add this test to `internal/config/gookit_test.go` near `TestPackageURLTemplateFieldsRoundTrip`:
 
@@ -146,7 +146,7 @@ func TestPkgTemplatesSectionRoundTrip(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run:
 
@@ -156,7 +156,7 @@ go test ./internal/config -run TestPkgTemplatesSectionRoundTrip -count=1
 
 Expected: compile failure because `File.PkgTemplates` does not exist.
 
-- [ ] **Step 3: Add config model field and initialization**
+- [x] **Step 3: Add config model field and initialization**
 
 In `internal/config/model.go`, add to `File`:
 
@@ -180,7 +180,7 @@ In `internal/config/loader.go`, initialize:
 cfg.PkgTemplates = make(map[string]Section)
 ```
 
-- [ ] **Step 4: Load and dump `pkg_templates`**
+- [x] **Step 4: Load and dump `pkg_templates`**
 
 In `internal/config/gookit.go`, update `decodeConfigFile` after packages:
 
@@ -211,7 +211,7 @@ case "global", "http_proxy", "api_cache", "ghproxy", "cache_mirror", "packages",
 	return true
 ```
 
-- [ ] **Step 5: Run config test**
+- [x] **Step 5: Run config test**
 
 Run:
 
@@ -222,7 +222,7 @@ go test ./internal/config -run 'TestPkgTemplatesSectionRoundTrip|TestSaveAndLoad
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit config model**
+- [x] **Step 6: Commit config model**
 
 Run:
 

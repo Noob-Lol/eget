@@ -94,14 +94,15 @@ type File struct {
 	Meta struct {
 		Keys []string
 	}
-	Global      Section            `toml:"global" mapstructure:"global"`
-	HTTPProxy   HTTPProxySection   `toml:"http_proxy" mapstructure:"http_proxy"`
-	ApiCache    APICacheSection    `toml:"api_cache" mapstructure:"api_cache"`
-	Ghproxy     GhproxySection     `toml:"ghproxy" mapstructure:"ghproxy"`
-	CacheMirror CacheMirrorSection `toml:"cache_mirror" mapstructure:"cache_mirror"`
-	Repos       map[string]Section
-	Packages    map[string]Section    `toml:"packages" mapstructure:"packages"`
-	SDK         map[string]SDKSection `toml:"sdk" mapstructure:"sdk"`
+	Global       Section            `toml:"global" mapstructure:"global"`
+	HTTPProxy    HTTPProxySection   `toml:"http_proxy" mapstructure:"http_proxy"`
+	ApiCache     APICacheSection    `toml:"api_cache" mapstructure:"api_cache"`
+	Ghproxy      GhproxySection     `toml:"ghproxy" mapstructure:"ghproxy"`
+	CacheMirror  CacheMirrorSection `toml:"cache_mirror" mapstructure:"cache_mirror"`
+	Repos        map[string]Section
+	Packages     map[string]Section    `toml:"packages" mapstructure:"packages"`
+	PkgTemplates map[string]Section    `toml:"pkg_templates" mapstructure:"pkg_templates"`
+	SDK          map[string]SDKSection `toml:"sdk" mapstructure:"sdk"`
 }
 
 type Merged struct {

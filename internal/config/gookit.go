@@ -43,6 +43,9 @@ func decodeConfigFile(cfg *configutil.Manager) (*File, error) {
 	if err := cfg.MapOnExists("packages", &conf.Packages); err != nil {
 		return nil, err
 	}
+	if err := cfg.MapOnExists("pkg_templates", &conf.PkgTemplates); err != nil {
+		return nil, err
+	}
 	if err := cfg.MapOnExists("sdk", &conf.SDK); err != nil {
 		return nil, err
 	}
@@ -71,16 +74,20 @@ func encodeConfigFile(file *File) *configutil.Manager {
 	}
 
 	data := map[string]any{
-		"global":       sectionToMap(file.Global),
-		"http_proxy":   httpProxyToMap(file.HTTPProxy),
-		"api_cache":    apiCacheToMap(file.ApiCache),
-		"ghproxy":      ghproxyToMap(file.Ghproxy),
-		"cache_mirror": cacheMirrorToMap(file.CacheMirror),
-		"packages":     map[string]any{},
-		"sdk":          map[string]any{},
+		"global":        sectionToMap(file.Global),
+		"http_proxy":    httpProxyToMap(file.HTTPProxy),
+		"api_cache":     apiCacheToMap(file.ApiCache),
+		"ghproxy":       ghproxyToMap(file.Ghproxy),
+		"cache_mirror":  cacheMirrorToMap(file.CacheMirror),
+		"packages":      map[string]any{},
+		"pkg_templates": map[string]any{},
+		"sdk":           map[string]any{},
 	}
 	for name, section := range file.Packages {
 		data["packages"].(map[string]any)[name] = sectionToMap(section)
+	}
+	for name, section := range file.PkgTemplates {
+		data["pkg_templates"].(map[string]any)[name] = sectionToMap(section)
 	}
 	for name, section := range file.SDK {
 		data["sdk"].(map[string]any)[name] = sdkSectionToMap(section)
@@ -156,7 +163,7 @@ func sortedAnyKeys(items map[string]any) []string {
 
 func isReservedConfigRootKey(key string) bool {
 	switch key {
-	case "global", "http_proxy", "api_cache", "ghproxy", "cache_mirror", "packages", "sdk":
+	case "global", "http_proxy", "api_cache", "ghproxy", "cache_mirror", "packages", "pkg_templates", "sdk":
 		return true
 	default:
 		return false
