@@ -67,6 +67,10 @@ func (s ShowService) ShowPackage(target string) (ShowResult, error) {
 		result.Desc = util.DerefString(pkg.Desc)
 		result.ConfigTarget = util.DerefString(pkg.Target)
 		result.SourcePath = util.DerefString(pkg.SourcePath)
+		if pkg.IsGUI != nil {
+			result.IsGUI = *pkg.IsGUI
+		}
+		result.InstallMode = util.DerefString(pkg.InstallMode)
 	}
 	if installedOK {
 		applyInstalledEntryToShowResult(&result, entry)

@@ -42,6 +42,9 @@ func (s Service) resolveInstallRequestWithConfig(cfg *cfgpkg.File, target string
 		if err != nil {
 			return "", "", install.Options{}, err
 		}
+		if opts.Name == "" && opts.IsGUI && opts.InstallMode == install.InstallModePortable {
+			opts.Name = target
+		}
 		return repo, target, opts, nil
 	}
 

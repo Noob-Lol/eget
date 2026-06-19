@@ -192,6 +192,9 @@ func versionDisplaySuffix(opts Options) string {
 }
 
 func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downloadBodyResult, opts Options, output io.Writer) (RunResult, error) {
+	if portableGUIArchiveExtractAll(url, opts) {
+		opts.All = true
+	}
 	extractor, err := SelectExtractorAs[Extractor](r.Service, url, tool, &opts)
 	if err != nil {
 		return RunResult{}, err

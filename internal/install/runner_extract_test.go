@@ -147,3 +147,53 @@ func TestRunExtractAllStripsComponentsFromZipArchive(t *testing.T) {
 		t.Fatalf("expected stripped root directory to be absent, stat err=%v", err)
 	}
 }
+
+func TestRunPortableGUIArchiveExtractsAllToNamedGuiTarget(t *testing.T) {
+	assetURL := "https://example.com/v2rayN-windows-64-desktop.zip"
+	archive := zipBytes(t, map[string]string{
+		"v2rayN-windows-64/v2rayN.exe":             "exe",
+		"v2rayN-windows-64/bin/xray/xray.exe":      "xray",
+		"v2rayN-windows-64/guiConfigs/config.json": "config",
+	})
+	guiTarget := t.TempDir()
+
+	svc := NewDefaultService(nil, nil)
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(archive)),
+		}, nil
+	}
+
+	runner := NewRunner(svc)
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+	result, err := runner.Run(assetURL, Options{
+		Name:        "v2rayn",
+		GuiTarget:   guiTarget,
+		IsGUI:       true,
+		InstallMode: InstallModePortable,
+	})
+	if err != nil {
+		t.Fatalf("run portable gui archive: %v", err)
+	}
+
+	wantRoot := filepath.Join(guiTarget, "v2rayn")
+	assert.Eq(t, InstallModePortable, result.InstallMode)
+	assert.True(t, result.IsGUI)
+	assert.Eq(t, 3, len(result.ExtractedFiles))
+	for _, name := range []string{
+		filepath.Join(wantRoot, "v2rayN-windows-64", "v2rayN.exe"),
+		filepath.Join(wantRoot, "v2rayN-windows-64", "bin", "xray", "xray.exe"),
+		filepath.Join(wantRoot, "v2rayN-windows-64", "guiConfigs", "config.json"),
+	} {
+		if _, err := os.Stat(name); err != nil {
+			t.Fatalf("expected extracted file %s: %v", name, err)
+		}
+	}
+}

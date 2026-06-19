@@ -114,6 +114,38 @@ func TestInstallTargetPassesConfiguredInstallMode(t *testing.T) {
 	assert.Eq(t, install.InstallModeInstaller, runner.opts.InstallMode)
 }
 
+func TestInstallTargetUsesPackageNameForPortableGUI(t *testing.T) {
+	runner := &fakeRunner{result: RunResult{
+		URL:            "https://github.com/2dust/v2rayN/releases/download/7.22.7/v2rayN-windows-64-desktop.zip",
+		Asset:          "v2rayN-windows-64-desktop.zip",
+		IsGUI:          true,
+		InstallMode:    install.InstallModePortable,
+		ExtractedFiles: []string{"D:/env/tools/v2rayn/v2rayN-windows-64/v2rayN.exe"},
+	}}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			repo := "2dust/v2rayN"
+			isGUI := true
+			installMode := install.InstallModePortable
+			cfg.Packages["v2rayn"] = cfgpkg.Section{
+				Repo:        &repo,
+				IsGUI:       &isGUI,
+				InstallMode: &installMode,
+			}
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("v2rayn", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "v2rayn", runner.opts.Name)
+	assert.True(t, runner.opts.IsGUI)
+	assert.Eq(t, install.InstallModePortable, runner.opts.InstallMode)
+}
+
 func TestInstallTargetPassesCLIInstallMode(t *testing.T) {
 	runner := &fakeRunner{
 		result: RunResult{

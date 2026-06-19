@@ -171,6 +171,29 @@ func TestShowPackageDisplaysPkgTemplateRepo(t *testing.T) {
 	assert.Eq(t, "", got.RepoURL)
 }
 
+func TestShowPackageUsesConfiguredGUIFields(t *testing.T) {
+	installMode := "portable"
+	isGUI := true
+	cfg := cfgpkg.NewFile()
+	cfg.Packages["v2rayn"] = cfgpkg.Section{
+		Repo:        util.StringPtr("2dust/v2rayN"),
+		IsGUI:       &isGUI,
+		InstallMode: &installMode,
+	}
+	svc := ShowService{
+		LoadConfig: func() (*cfgpkg.File, error) { return cfg, nil },
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{}}, nil
+		},
+	}
+
+	got, err := svc.ShowPackage("v2rayn")
+
+	assert.NoErr(t, err)
+	assert.True(t, got.IsGUI)
+	assert.Eq(t, "portable", got.InstallMode)
+}
+
 func TestShowPackageReturnsErrorForMissingTarget(t *testing.T) {
 	svc := ShowService{
 		LoadConfig: func() (*cfgpkg.File, error) {

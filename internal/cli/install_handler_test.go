@@ -472,7 +472,7 @@ func TestHandleInstallAllInstallsManagedPackages(t *testing.T) {
 		},
 	}
 
-	err := svc.handle("install", &InstallOptions{InstallAll: true, Quiet: true})
+	err := svc.handle("install", &InstallOptions{InstallAll: true, Quiet: true, BatchConcurrency: 1})
 	if err != nil {
 		t.Fatalf("handle install --all: %v", err)
 	}

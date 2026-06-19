@@ -2,6 +2,7 @@ package install
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -11,9 +12,33 @@ import (
 
 func effectiveOutput(opts Options) string {
 	if opts.IsGUI && opts.InstallMode == InstallModePortable && !opts.OutputExplicit && opts.GuiTarget != "" {
+		if opts.Name != "" {
+			return filepath.Join(opts.GuiTarget, opts.Name)
+		}
 		return opts.GuiTarget
 	}
 	return opts.Output
+}
+
+func portableGUIArchiveExtractAll(assetURL string, opts Options) bool {
+	return opts.IsGUI &&
+		opts.InstallMode == InstallModePortable &&
+		opts.ExtractFile == "" &&
+		isExtractAllArchiveAsset(assetURL)
+}
+
+func isExtractAllArchiveAsset(assetURL string) bool {
+	name := strings.ToLower(path.Base(assetURL))
+	return strings.HasSuffix(name, ".zip") ||
+		strings.HasSuffix(name, ".7z") ||
+		strings.HasSuffix(name, ".tar") ||
+		strings.HasSuffix(name, ".tar.gz") ||
+		strings.HasSuffix(name, ".tgz") ||
+		strings.HasSuffix(name, ".tar.bz2") ||
+		strings.HasSuffix(name, ".tbz") ||
+		strings.HasSuffix(name, ".tar.xz") ||
+		strings.HasSuffix(name, ".txz") ||
+		strings.HasSuffix(name, ".tar.zst")
 }
 
 func outputPath(file ExtractedFile, output string, all bool, preferredName string, outputExplicit bool, renameFiles ...map[string]string) (string, error) {
