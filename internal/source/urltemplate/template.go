@@ -93,6 +93,17 @@ func ParseLatestPublishedAt(data []byte, cfg Config) (time.Time, error) {
 	return parsePublishedAt(value), nil
 }
 
+func ParseLatestDescription(data []byte, cfg Config) (string, error) {
+	if cfg.LatestFormat != "yaml" {
+		return "", nil
+	}
+	value, err := ExtractYAMLPath(data, "description")
+	if err != nil {
+		return "", nil
+	}
+	return strings.TrimSpace(value), nil
+}
+
 func ParseChecksum(data []byte, cfg Config) (string, error) {
 	value, err := parseMetadata(data, cfg.ChecksumFormat, cfg.ChecksumJSONPath, cfg.ChecksumRegex, "checksum")
 	if err != nil {

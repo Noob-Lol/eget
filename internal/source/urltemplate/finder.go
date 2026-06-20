@@ -29,6 +29,7 @@ type Finder struct {
 
 type LatestInfo struct {
 	Version     string
+	Description string
 	PublishedAt time.Time
 }
 
@@ -98,7 +99,11 @@ func (f *Finder) Latest() (LatestInfo, error) {
 	if err != nil {
 		return LatestInfo{}, err
 	}
-	return LatestInfo{Version: version, PublishedAt: publishedAt}, nil
+	description, err := ParseLatestDescription(data, cfg)
+	if err != nil {
+		return LatestInfo{}, err
+	}
+	return LatestInfo{Version: version, Description: description, PublishedAt: publishedAt}, nil
 }
 
 func (f *Finder) Vars() map[string]string {

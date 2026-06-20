@@ -38,7 +38,7 @@ func TestFinderFindsRenderedURLFromLatest(t *testing.T) {
 
 func TestFinderLatestReadsYAMLPublishedAt(t *testing.T) {
 	getter := &fakeGetter{responses: map[string]string{
-		"https://example.com/latest.yaml": "version: v1.2.5\nreleased_at: 2026-05-25T10:20:30Z\n",
+		"https://example.com/latest.yaml": "version: v1.2.5\ndescription: Markdown preview tool\nreleased_at: 2026-05-25T10:20:30Z\n",
 	}}
 	finder := Finder{
 		Name:   "markview",
@@ -54,6 +54,7 @@ func TestFinderLatestReadsYAMLPublishedAt(t *testing.T) {
 
 	assert.NoErr(t, err)
 	assert.Eq(t, "v1.2.5", info.Version)
+	assert.Eq(t, "Markdown preview tool", info.Description)
 	assert.Eq(t, time.Date(2026, 5, 25, 10, 20, 30, 0, time.UTC), info.PublishedAt)
 }
 
