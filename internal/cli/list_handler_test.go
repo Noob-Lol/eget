@@ -205,7 +205,7 @@ func TestHandleListOutdatedPrintsSingleProxyNoticeAndCacheSummary(t *testing.T) 
 
 func TestHandleListOutdatedSkipsProxyNoticeWhenGitHubAPIExcluded(t *testing.T) {
 	svc := &cliService{
-		proxyURL:      "http://127.0.0.1:1081",
+		proxyURL:     "http://127.0.0.1:1081",
 		proxyExclude: []string{"api.github.com"},
 		listService: app.ListService{
 			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
@@ -357,7 +357,12 @@ func TestHandleListNoInstalledPrintsOnlyManagedMissingPackages(t *testing.T) {
 		listService: app.ListService{
 			LoadConfig: func() (*cfgpkg.File, error) {
 				cfg := cfgpkg.NewFile()
+				cfg.PkgTemplates["kdev"] = cfgpkg.Section{
+					LatestURL:   util.StringPtr("https://example.com/{name}/latest.yaml"),
+					URLTemplate: util.StringPtr("https://example.com/{name}/{version}/{name}.zip"),
+				}
 				cfg.Packages["chlog"] = cfgpkg.Section{Repo: util.StringPtr("gookit/gitw")}
+				cfg.Packages["doccli"] = cfgpkg.Section{Repo: util.StringPtr("pkg-template:kdev:doccli")}
 				cfg.Packages["ripgrep"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
 				return cfg, nil
 			},
@@ -381,15 +386,24 @@ func TestHandleListNoInstalledPrintsOnlyManagedMissingPackages(t *testing.T) {
 	}
 
 	got := out.String()
-	if !strings.Contains(got, "Not Installed Packages (1):") {
+	if !strings.Contains(got, "Not Installed Packages (2):") {
 		t.Fatalf("expected not installed packages title, got %q", got)
 	}
-	if !strings.Contains(got, "ripgrep") || !strings.Contains(got, "No-Install") {
+	if !strings.Contains(got, "ripgrep") || !strings.Contains(got, "doccli") || !strings.Contains(got, "No-Install") {
 		t.Fatalf("expected managed-only package in output, got %q", got)
+	}
+	if !strings.Contains(got, "pkg-template") {
+		t.Fatalf("expected pkg-template source in output, got %q", got)
 	}
 	if strings.Contains(got, "chlog") || strings.Contains(got, "v0.3.6") {
 		t.Fatalf("expected installed package to be omitted, got %q", got)
 	}
+}
+
+func TestPackageSourceShowsPkgTemplate(t *testing.T) {
+	got := packageSource(app.ListItem{Repo: "pkg-template:kdev:doccli"})
+
+	assert.Eq(t, "pkg-template", got)
 }
 
 func TestHandleListGUIPrintsOnlyGUIPackages(t *testing.T) {

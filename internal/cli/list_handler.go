@@ -184,6 +184,8 @@ func packageSource(item app.ListItem) string {
 		return "forge"
 	case install.TargetTemplate:
 		return "template"
+	case install.TargetPkgTemplate:
+		return "pkg-template"
 	case install.TargetDirectURL:
 		return "url"
 	case install.TargetLocalFile:
