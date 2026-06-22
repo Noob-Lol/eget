@@ -56,6 +56,36 @@ func TestHandleUninstallYesSkipsConfirmation(t *testing.T) {
 	assert.Eq(t, []string{"gookit/gitw"}, store.removeKeys)
 }
 
+func TestHandleUninstallRemovesMultipleTargets(t *testing.T) {
+	tmp := t.TempDir()
+	fzf := filepath.Join(tmp, "fzf")
+	rg := filepath.Join(tmp, "rg")
+	assert.NoErr(t, os.WriteFile(fzf, []byte("fzf"), 0o644))
+	assert.NoErr(t, os.WriteFile(rg, []byte("rg"), 0o644))
+	store := &fakeUninstallStoreForCLI{
+		cfg: &storepkg.Config{Installed: map[string]storepkg.Entry{
+			"junegunn/fzf":       {Repo: "junegunn/fzf", ExtractedFiles: []string{fzf}},
+			"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", ExtractedFiles: []string{rg}},
+		}},
+	}
+	cfg := cfgpkg.NewFile()
+	cfg.Packages["fzf"] = cfgpkg.Section{Repo: strPtrForUninstallTest("junegunn/fzf")}
+	cfg.Packages["rg"] = cfgpkg.Section{Repo: strPtrForUninstallTest("BurntSushi/ripgrep")}
+	svc := &cliService{
+		uninstallService: app.UninstallService{
+			Store: store,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				return cfg, nil
+			},
+		},
+	}
+
+	err := svc.handle("uninstall", &UninstallOptions{Targets: []string{"fzf", "rg"}, Yes: true})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"junegunn/fzf", "BurntSushi/ripgrep"}, store.removeKeys)
+}
+
 func TestHandleUninstallPurgeRemovesPackageConfig(t *testing.T) {
 	tmp := t.TempDir()
 	bin := filepath.Join(tmp, "fd")

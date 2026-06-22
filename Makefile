@@ -15,7 +15,7 @@ LDFLAGS := -s -w \
 	-X main.GitHash=$(GIT_HASH) \
 	-X 'main.BuildTime=$(BUILD_TIME)'
 
-.PHONY: all build backend clean help latest
+.PHONY: all build backend clean clean-dist help latest
 
 ## all: build (default)
 all: build
@@ -44,7 +44,7 @@ DIST_DIR := dist
 DESCRIPTION := "Easy install and download tools from GitHub, SourceForge and more"
 
 ## build-all: cross-compile for all platforms
-build-all: dump-info build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows latest-yaml
+build-all: clean-dist dump-info build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows latest-yaml
 	ls -lh $(DIST_DIR)
 
 ## dump-info: dump build info
@@ -123,6 +123,12 @@ clean:
 	@rm -f $(BINARY)
 	@rm -rf $(DIST_DIR)
 	@echo "🧹 Cleaned"
+
+## clean-dist: remove old dist files
+clean-dist:
+	@rm -rf $(DIST_DIR)
+	@mkdir -p $(DIST_DIR)
+	@echo "🧹 Cleaned $(DIST_DIR)"
 
 ## help: show this help
 help:

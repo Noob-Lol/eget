@@ -27,6 +27,24 @@ func TestMain_RemoveBindsYesFlag(t *testing.T) {
 	assert.True(t, opts.Yes)
 }
 
+func TestMain_RemoveBindsMultipleTargets(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"rm", "--yes", "fzf", "rg"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	opts, ok := calls[0].options.(*UninstallOptions)
+	assert.True(t, ok)
+	assert.Eq(t, []string{"fzf", "rg"}, opts.Targets)
+	assert.True(t, opts.Yes)
+}
+
 func TestMain_UpdateBindsMultipleTargets(t *testing.T) {
 	tests := []struct {
 		name string

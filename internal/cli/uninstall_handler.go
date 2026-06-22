@@ -17,11 +17,27 @@ var openWindowsProgramsAndFeatures = func() error {
 }
 
 func (s *cliService) handleUninstall(opts *UninstallOptions) error {
-	if opts == nil || opts.Target == "" {
+	if opts == nil {
 		return fmt.Errorf("remove target is required")
 	}
+	targets := opts.Targets
+	if len(targets) == 0 && opts.Target != "" {
+		targets = []string{opts.Target}
+	}
+	if len(targets) == 0 {
+		return fmt.Errorf("remove target is required")
+	}
+	for _, target := range targets {
+		if err := s.uninstallOne(target, opts); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *cliService) uninstallOne(target string, opts *UninstallOptions) error {
 	if !opts.Yes {
-		confirmed, err := prompts.ConfirmRemove(opts.Target)
+		confirmed, err := prompts.ConfirmRemove(target)
 		if err != nil {
 			return err
 		}
@@ -29,7 +45,7 @@ func (s *cliService) handleUninstall(opts *UninstallOptions) error {
 			return fmt.Errorf("remove cancelled")
 		}
 	}
-	result, err := s.uninstallService.UninstallWithOptions(opts.Target, app.UninstallOptions{Purge: opts.Purge})
+	result, err := s.uninstallService.UninstallWithOptions(target, app.UninstallOptions{Purge: opts.Purge})
 	if err != nil {
 		return err
 	}
