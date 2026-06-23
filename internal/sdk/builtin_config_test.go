@@ -3,7 +3,7 @@ package sdk
 import (
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestFindBuiltinConfigResolvesNamesAndAliases(t *testing.T) {

@@ -6,7 +6,7 @@
 
 **Architecture:** 在 `internal/client` 建立统一的文件下载器，使用固定 offset 写入同一个 `.part` 文件，并通过 `.meta.json` 记录远端指纹和每个分片完成状态。`internal/install` 继续通过 `DownloadFile()` 写 cache 文件；`internal/sdk` 改为复用 client 下载器，只保留 SDK 自己的路径规划、完整 cache 命中判断和 `DownloadResult` 返回语义。
 
-**Tech Stack:** Go 标准库 `net/http`、`os.File.WriteAt`、`sync`、`encoding/json`、`context`；现有 `client.Options.ChunkConcurrency`、`httptest`、`github.com/gookit/goutil/testutil/assert`。
+**Tech Stack:** Go 标准库 `net/http`、`os.File.WriteAt`、`sync`、`encoding/json`、`context`；现有 `client.Options.ChunkConcurrency`、`httptest`、`github.com/gookit/goutil/x/assert`。
 
 ---
 

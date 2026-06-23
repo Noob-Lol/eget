@@ -6,7 +6,7 @@
 
 **Architecture:** 继续保持 `internal/app/cache` 作为 cache 领域能力边界，新增只读报表模型和 token/json-log server 选项；CLI 层只负责参数绑定、文本/JSON 输出和启动 HTTP server。`cache serve --token` 通过 handler 中间件保护 `/`、`/manifest.json`、`/files/*`、`/download/*`，默认允许 `/healthz` 无 token；`--json-log` 在 HTTP handler 外层记录结构化请求日志到 stderr。
 
-**Tech Stack:** Go, net/http, httptest, gookit/gcli, `encoding/json`, `github.com/gookit/goutil/testutil/assert`, GitNexus impact/detect-changes。
+**Tech Stack:** Go, net/http, httptest, gookit/gcli, `encoding/json`, `github.com/gookit/goutil/x/assert`, GitNexus impact/detect-changes。
 
 ---
 
@@ -208,7 +208,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 	"github.com/inherelab/eget/internal/util"
 )
@@ -630,7 +630,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestCacheServerTokenProtectsManifest(t *testing.T) {

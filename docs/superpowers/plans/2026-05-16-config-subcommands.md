@@ -6,7 +6,7 @@
 
 **Architecture:** `config` 顶层命令只负责承载子命令和展示帮助，不再直接绑定 `action/key/value` 位置参数。`init/list/get/set` 子命令在 CLI 层填充现有 `ConfigOptions`，继续调用 `handler("config", &snapshot)`，避免改动 `internal/cli/handlers.go` 和 app/config 业务服务。`RunWithArgs` 的 `validateKnownFlags` 需要理解 `config` 子命令参数边界，确保 `config get global.target`、`config set key value` 不被预校验误判。
 
-**Tech Stack:** Go 1.25、`github.com/gookit/gcli/v3`、现有 `internal/cli` 测试套件、`github.com/gookit/goutil/testutil/assert`。
+**Tech Stack:** Go 1.25、`github.com/gookit/gcli/v3`、现有 `internal/cli` 测试套件、`github.com/gookit/goutil/x/assert`。
 
 ---
 

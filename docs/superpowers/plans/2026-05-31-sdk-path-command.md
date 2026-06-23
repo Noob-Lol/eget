@@ -6,7 +6,7 @@
 
 **架构：** 路径选择逻辑放在 `internal/sdk.Service`，CLI 只负责解析参数和打印结果。`sdk path go` / `sdk path java` 解析 SDK 配置并输出基础目录；`sdk path go:1.20`、`sdk path go@1.21.5`、`sdk path java:17` 从 `sdk.installed.json` 读取已安装记录并返回匹配版本路径。
 
-**技术栈：** Go、gookit/gcli、现有 `internal/sdk` target 解析、SDK 配置解析、SDK installed store，以及 `github.com/gookit/goutil/testutil/assert`。
+**技术栈：** Go、gookit/gcli、现有 `internal/sdk` target 解析、SDK 配置解析、SDK installed store，以及 `github.com/gookit/goutil/x/assert`。
 
 ---
 

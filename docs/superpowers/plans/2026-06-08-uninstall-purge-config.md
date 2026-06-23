@@ -6,7 +6,7 @@
 
 **Architecture:** 保留现有 `Uninstall(target)` 默认行为，新增带 options 的卸载路径供 CLI `--purge` 调用。配置清理由 app 层完成，优先按 package name 删除，repo 目标仅在唯一匹配配置时删除，避免误删。
 
-**Tech Stack:** Go、`github.com/gookit/gcli/v3`、现有 `internal/app` 和 `internal/cli` 测试套件、`github.com/gookit/goutil/testutil/assert`。
+**Tech Stack:** Go、`github.com/gookit/gcli/v3`、现有 `internal/app` 和 `internal/cli` 测试套件、`github.com/gookit/goutil/x/assert`。
 
 ---
 

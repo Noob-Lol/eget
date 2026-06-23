@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 	"github.com/inherelab/eget/internal/cachemirror"
 	"github.com/inherelab/eget/internal/client"
 )

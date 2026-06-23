@@ -6,7 +6,7 @@
 
 **Architecture:** 保持现有安装主链路不变，只在 `InstallRunner.resolveCandidate()` 进入 prompt 前增加一次平台变体自动选择。平台判断复用 `selectionPlatform()` 和已有平台 token 工具，不能确定唯一候选时继续走原来的 prompt。
 
-**Tech Stack:** Go、现有 `internal/install` 测试套件、`github.com/gookit/goutil/testutil/assert`。
+**Tech Stack:** Go、现有 `internal/install` 测试套件、`github.com/gookit/goutil/x/assert`。
 
 ---
 

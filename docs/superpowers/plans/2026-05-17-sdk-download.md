@@ -6,7 +6,7 @@
 
 **Architecture:** 新增 `internal/sdk` 作为 SDK acquisition 核心包，负责 target 解析、配置合并、索引解析、可续传下载、解压安装和 `sdk.installed.json`。`internal/app/sdk.go` 只做配置路径、默认依赖和用例编排包装；`internal/cli/sdk_cmd.go` 使用 `gcli` 真正父子命令注册，不在一级命令中硬解析 `sdk install/list/remove/index`。
 
-**Tech Stack:** Go 1.25、`github.com/gookit/gcli/v3`、`github.com/gookit/goutil/testutil/assert`、`golang.org/x/net/html`、现有 `internal/client` HTTP 能力、现有 `internal/install` archive extractor。
+**Tech Stack:** Go 1.25、`github.com/gookit/gcli/v3`、`github.com/gookit/goutil/x/assert`、`golang.org/x/net/html`、现有 `internal/client` HTTP 能力、现有 `internal/install` archive extractor。
 
 ---
 

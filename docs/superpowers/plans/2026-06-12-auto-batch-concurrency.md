@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the existing scheduler shape and change only the shared effective batch calculation. `0` remains the auto sentinel, `1` remains explicit serial, and values greater than `1` remain explicit worker counts capped by package count and the existing max validation.
 
-**Tech Stack:** Go, existing `internal/app` batch schedulers, existing `github.com/gookit/goutil/testutil/assert` test style.
+**Tech Stack:** Go, existing `internal/app` batch schedulers, existing `github.com/gookit/goutil/x/assert` test style.
 
 ---
 

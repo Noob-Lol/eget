@@ -6,7 +6,7 @@
 
 **Architecture:** Reuse the existing SDK install resolution path by extracting shared archive-resolution logic from `Service.Install()`. Add a new SDK service method that downloads to the existing SDK archive cache, optionally copies the archive to an output directory, and returns a rich result for CLI rendering. Keep CLI changes aligned with existing `sdk install/list/search/index` routing and handler patterns.
 
-**Tech Stack:** Go, `github.com/gookit/gcli/v3`, `github.com/gookit/goutil/testutil/assert`, existing `internal/sdk.DownloadArchive`, existing SDK index/config/template logic.
+**Tech Stack:** Go, `github.com/gookit/gcli/v3`, `github.com/gookit/goutil/x/assert`, existing `internal/sdk.DownloadArchive`, existing SDK index/config/template logic.
 
 ---
 
@@ -97,7 +97,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestServiceDownloadExactVersionUsesURLTemplate(t *testing.T) {

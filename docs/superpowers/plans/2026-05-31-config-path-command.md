@@ -6,7 +6,7 @@
 
 **Architecture:** Extend the existing config command tree and reuse the existing `ConfigService` as the path resolver. CLI parsing stays in `internal/cli/config_cmd.go`, path target mapping lives in `internal/app/config.go`, and output rendering stays in `internal/cli/handlers.go`.
 
-**Tech Stack:** Go, gookit/gcli, existing `internal/config`, installed store, SDK store, and `github.com/gookit/goutil/testutil/assert`.
+**Tech Stack:** Go, gookit/gcli, existing `internal/config`, installed store, SDK store, and `github.com/gookit/goutil/x/assert`.
 
 ---
 

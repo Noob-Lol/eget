@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestFinderFindsRenderedURLFromLatest(t *testing.T) {

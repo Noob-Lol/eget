@@ -6,7 +6,7 @@
 
 **Architecture:** `server.go` 只增加根路径路由，HTML 数据整理和模板渲染放入 `internal/app/cache/ui.go`。UI 复用现有扫描、root scope 和 `/files/{relpath}` 下载 URL，不新增前端构建链路。
 
-**Tech Stack:** Go, `html/template`, `net/http/httptest`, `github.com/gookit/goutil/testutil/assert`。
+**Tech Stack:** Go, `html/template`, `net/http/httptest`, `github.com/gookit/goutil/x/assert`。
 
 ---
 

@@ -824,7 +824,7 @@ type ServeOptions struct {
 Go 单测断言继续使用项目规范：
 
 ```go
-github.com/gookit/goutil/testutil/assert
+github.com/gookit/goutil/x/assert
 ```
 
 同一方法多个用例使用 `t.Run()`。

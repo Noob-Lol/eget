@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestGitHubClientSearchBuildsRequestURL(t *testing.T) {

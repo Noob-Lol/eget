@@ -6,7 +6,7 @@
 
 **Architecture:** 核心逻辑放在 `internal/app/cache` 子包，CLI 只负责参数解析、调用服务和格式化输出。缓存扫描统一输出 `Entry`，`cache clean` 和 `cache serve /manifest.json` 复用同一套分类、路径安全和 root scope 逻辑，避免后续 mirror 阶段推翻协议。
 
-**Tech Stack:** Go, gookit/gcli, net/http, httptest, `github.com/gookit/goutil/testutil/assert`。
+**Tech Stack:** Go, gookit/gcli, net/http, httptest, `github.com/gookit/goutil/x/assert`。
 
 ---
 
@@ -98,7 +98,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestParseOlderDuration(t *testing.T) {
@@ -322,7 +322,7 @@ import (
 	"time"
 
 	cfgpkg "github.com/inherelab/eget/internal/config"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 ```
 
@@ -920,7 +920,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestCacheServerHealthz(t *testing.T) {
@@ -1811,7 +1811,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 	appcache "github.com/inherelab/eget/internal/app/cache"
 	cfgpkg "github.com/inherelab/eget/internal/config"
 )

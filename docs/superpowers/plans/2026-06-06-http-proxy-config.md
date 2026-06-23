@@ -6,7 +6,7 @@
 
 **Architecture:** 新增配置模型和 `internal/config` 层 proxy resolver，输出统一的 `ProxyConfig`。`internal/client` 的 proxy func 改为 request-aware，按请求 host 判断 exclude；`internal/app` 和 `internal/cli` 只负责把 resolver 结果透传到 install/sdk/client options。
 
-**Tech Stack:** Go, TOML/gookit config, existing `internal/config`, `internal/client`, `internal/install`, `internal/app`, SDK service, `github.com/gookit/goutil/testutil/assert`.
+**Tech Stack:** Go, TOML/gookit config, existing `internal/config`, `internal/client`, `internal/install`, `internal/app`, SDK service, `github.com/gookit/goutil/x/assert`.
 
 ---
 

@@ -6,7 +6,7 @@
 
 **Architecture:** 新增 `internal/source/urltemplate` 负责 template target 解析、平台变量渲染、latest/checksum 元数据读取。配置字段从 `config.Section` 合并到 `install.Options.URLTemplate`，`install.Service.SelectFinder` 将 `template:<id>` 渲染为单个下载 URL，`InstallRunner` 在下载和校验后根据 `install_action` 选择普通提取或执行已校验 asset。`list/update` 的 latest checker 改为接收 package section，确保 `template:<id>` 能用配置字段查询 latest。
 
-**Tech Stack:** Go, TOML/gookit config, existing `internal/client` HTTP/cache/proxy layer, existing install runner, installed store, `github.com/gookit/goutil/testutil/assert`。
+**Tech Stack:** Go, TOML/gookit config, existing `internal/client` HTTP/cache/proxy layer, existing install runner, installed store, `github.com/gookit/goutil/x/assert`。
 
 ---
 
@@ -241,7 +241,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestParseTarget(t *testing.T) {

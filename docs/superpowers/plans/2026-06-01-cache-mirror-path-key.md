@@ -6,7 +6,7 @@
 
 **Architecture:** 新增共享 `internal/cachemirror` 子包，集中 path-key 计算、配置默认值和 mirror 下载逻辑；服务端 `internal/app/cache` 只负责把现有扫描结果映射成 path-key 并安全返回文件；普通 install/download 和 SDK download 在本地缓存未命中后调用共享 mirror helper，命中后写入现有 cache path，后续校验、解压、安装流程不变。
 
-**Tech Stack:** Go, net/http, crypto/md5, httptest, gookit config, `github.com/gookit/goutil/testutil/assert`, GitNexus impact/detect-changes。
+**Tech Stack:** Go, net/http, crypto/md5, httptest, gookit config, `github.com/gookit/goutil/x/assert`, GitNexus impact/detect-changes。
 
 ---
 
@@ -159,7 +159,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestKeyForRelPathNormalizesSlashPath(t *testing.T) {
@@ -320,7 +320,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestDownloadToFileWritesMirrorHit(t *testing.T) {

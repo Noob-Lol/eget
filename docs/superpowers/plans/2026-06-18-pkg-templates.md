@@ -6,7 +6,7 @@
 
 **架构:** 模板配置解析放在 config/app 层完成，然后继续交给现有 `urltemplate.Finder` 执行下载解析。新增一个小的 `internal/source/pkgtemplate` 包，只负责规范 target 解析和短别名解析。不新增下载器，也不实现 registry 服务。
 
-**技术栈:** Go、gookit config/TOML loader、现有 `internal/config.Section`、现有 `internal/source/urltemplate`、现有 install/update/list/show app service，以及 `github.com/gookit/goutil/testutil/assert`。
+**技术栈:** Go、gookit config/TOML loader、现有 `internal/config.Section`、现有 `internal/source/urltemplate`、现有 install/update/list/show app service，以及 `github.com/gookit/goutil/x/assert`。
 
 ---
 
@@ -247,7 +247,7 @@ package pkgtemplate
 import (
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestParseTarget(t *testing.T) {

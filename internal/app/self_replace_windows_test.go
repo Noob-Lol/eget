@@ -5,7 +5,7 @@ package app
 import (
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestWindowsSelfReplaceScriptContainsQuotedPaths(t *testing.T) {

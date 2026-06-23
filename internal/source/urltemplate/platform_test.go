@@ -3,7 +3,7 @@ package urltemplate
 import (
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestEffectiveSystemUsesExplicitSystem(t *testing.T) {

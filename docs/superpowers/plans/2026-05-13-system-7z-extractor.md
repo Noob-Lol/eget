@@ -328,7 +328,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestResolveSystem7zPathUsesConfiguredPath(t *testing.T) {
