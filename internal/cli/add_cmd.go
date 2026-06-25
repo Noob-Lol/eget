@@ -25,10 +25,10 @@ func newAddCmd(handler CommandHandler) (*gcli.Command, func()) {
 	cmd.Config = func(c *gcli.Command) {
 		c.StrOpt(&opts.Name, "name", "", "", "Managed package name")
 		c.StrOpt(&opts.Tag, "tag", "", "", "Release tag")
-		c.StrOpt(&opts.System, "system", "", "", "Target system")
+		c.StrOpt(&opts.System, "system", "", "", "Target system. eg: linux/amd64")
 		c.StrOpt(&opts.To, "to", "", "", "Install destination")
-		c.StrOpt(&opts.File, "file", "", "", "File to extract")
-		c.StrOpt(&opts.Asset, "asset", "", "", "Asset filter")
+		c.StrOpt(&opts.File, "file", "", "", "File to extract, multi use comma split")
+		c.StrOpt(&opts.Asset, "asset", "", "", "Asset filter, multi use comma split")
 		c.StrOpt(&opts.Rename, "rename", "", "", "Rename extracted files, comma separated from=to pairs")
 		c.IntOpt(&opts.StripComponents, "strip-components", "", 0, "Strip leading archive path components when extracting all files")
 		c.BoolOpt(&opts.Source, "source", "", false, "Download source archive")
