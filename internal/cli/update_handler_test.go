@@ -167,7 +167,11 @@ func TestHandleUpdateSelfRunsSelfUpdateService(t *testing.T) {
 	fake := &fakeSelfUpdateCLIService{
 		result: app.SelfUpdateResult{CurrentVersion: "1.7.1", LatestVersion: "v1.7.2", Updated: true},
 	}
-	svc := &cliService{selfUpdateService: fake, stderr: io.Discard}
+	svc := &cliService{
+		selfUpdateService: fake,
+		stderr:            io.Discard,
+		lookupEnv:         func(string) (string, bool) { return "", false },
+	}
 
 	err := svc.handleUpdate(&UpdateOptions{Self: true, Tag: "v1.7.2", Asset: "custom,linux", Quiet: true})
 
@@ -181,7 +185,11 @@ func TestHandleUpdateSelfPassesSourceFromFlag(t *testing.T) {
 	fake := &fakeSelfUpdateCLIService{
 		result: app.SelfUpdateResult{CurrentVersion: "1.7.1", LatestVersion: "1.7.1-18-gabcd1234", Updated: true},
 	}
-	svc := &cliService{selfUpdateService: fake, stderr: io.Discard}
+	svc := &cliService{
+		selfUpdateService: fake,
+		stderr:            io.Discard,
+		lookupEnv:         func(string) (string, bool) { return "", false },
+	}
 
 	err := svc.handleUpdate(&UpdateOptions{Self: true, SelfSource: "https://example.com/tools/eget/"})
 

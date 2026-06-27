@@ -195,9 +195,10 @@ func validateNoFlagArgs(args []string) error {
 }
 
 type flagSpec struct {
-	bools  map[string]bool
-	values map[string]bool
-	subs   map[string]flagSpec
+	bools              map[string]bool
+	values             map[string]bool
+	subs               map[string]flagSpec
+	allowTrailingFlags bool
 }
 
 var commandAliases = map[string]string{
@@ -239,6 +240,14 @@ var commandFlagSpecs = map[string]flagSpec{
 	},
 	"sdk": {
 		subs: map[string]flagSpec{
+			"download": {
+				values:             setOf("os", "arch", "output", "o"),
+				allowTrailingFlags: true,
+			},
+			"dl": {
+				values:             setOf("os", "arch", "output", "o"),
+				allowTrailingFlags: true,
+			},
 			"install": {
 				bools: setOf("force", "f"),
 			},
@@ -264,16 +273,18 @@ var commandFlagSpecs = map[string]flagSpec{
 			"config": {
 				subs: map[string]flagSpec{
 					"add": {
-						bools:  setOf("all", "a", "force", "f"),
-						values: setOf("mirror", "m"),
+						bools:              setOf("all", "a", "force", "f"),
+						values:             setOf("mirror", "m"),
+						allowTrailingFlags: true,
 					},
 				},
 			},
 			"cfg": {
 				subs: map[string]flagSpec{
 					"add": {
-						bools:  setOf("all", "a", "force", "f"),
-						values: setOf("mirror", "m"),
+						bools:              setOf("all", "a", "force", "f"),
+						values:             setOf("mirror", "m"),
+						allowTrailingFlags: true,
 					},
 				},
 			},
@@ -393,13 +404,18 @@ func validateKnownFlags(args []string) error {
 			}
 		}
 	}
+	positionalSeen := false
 	for i := start; i < len(args); i++ {
 		arg := args[i]
 		if arg == "--" {
 			return nil
 		}
 		if !strings.HasPrefix(arg, "-") || arg == "-" {
-			return nil
+			positionalSeen = true
+			continue
+		}
+		if positionalSeen && !spec.allowTrailingFlags {
+			return fmt.Errorf("flags must appear before arguments: %s", arg)
 		}
 		name := strings.TrimLeft(arg, "-")
 		if eq := strings.IndexByte(name, '='); eq >= 0 {
