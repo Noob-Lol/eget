@@ -188,7 +188,7 @@ func normalizePathValue(key string, value any) (any, bool) {
 			text = "http://" + text
 		}
 		return text, true
-	case "extract_all", "is_gui", "download_only", "quiet", "show_hash", "download_source", "upgrade_only", "disable_ssl", "enable", "support_api", "fallback":
+	case "extract_all", "is_gui", "download_only", "quiet", "show_hash", "download_source", "upgrade_only", "disable_ssl", "enable", "fallback":
 		parsed, err := strconv.ParseBool(text)
 		if err != nil {
 			return nil, false
@@ -445,14 +445,8 @@ func apiCacheToMap(section APICacheSection) map[string]any {
 
 func ghproxyToMap(section GhproxySection) map[string]any {
 	data := map[string]any{}
-	if section.Enable != nil {
-		data["enable"] = *section.Enable
-	}
 	if section.HostURL != nil {
 		data["host_url"] = *section.HostURL
-	}
-	if section.SupportAPI != nil {
-		data["support_api"] = *section.SupportAPI
 	}
 	if len(section.Fallbacks) > 0 {
 		data["fallbacks"] = append([]string(nil), section.Fallbacks...)

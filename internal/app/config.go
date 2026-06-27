@@ -158,9 +158,7 @@ func (s ConfigService) ConfigInit() (string, error) {
 	sys7zPath := ""
 	apiCacheEnable := false
 	apiCacheTime := 300
-	ghproxyEnable := false
 	ghproxyHostURL := ""
-	ghproxySupportAPI := true
 	chunkConcurrency := 0
 	batchConcurrency := 0
 	file.Global.Target = &target
@@ -174,9 +172,7 @@ func (s ConfigService) ConfigInit() (string, error) {
 	file.Global.BatchConcurrency = &batchConcurrency
 	file.ApiCache.Enable = &apiCacheEnable
 	file.ApiCache.CacheTime = &apiCacheTime
-	file.Ghproxy.Enable = &ghproxyEnable
 	file.Ghproxy.HostURL = &ghproxyHostURL
-	file.Ghproxy.SupportAPI = &ghproxySupportAPI
 	file.Ghproxy.Fallbacks = []string{}
 	if err := cfgpkg.Save(path, file); err != nil {
 		return "", err

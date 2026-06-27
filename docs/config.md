@@ -193,20 +193,20 @@ Example:
 
 ```toml
 [ghproxy]
-enable = false
 host_url = ""
-support_api = true
 fallbacks = []
 ```
 
 Fields:
 
-- `enable`: enable GitHub URL rewriting.
 - `host_url`: primary proxy host, for example `https://ghfast.top/`.
-- `support_api`: also rewrite `api.github.com` requests when enabled.
 - `fallbacks`: fallback proxy hosts tried in order when the primary proxy fails.
 
-`http_proxy` and `ghproxy` solve different problems. `[http_proxy]` is an HTTP-layer proxy, while `ghproxy` rewrites request URLs. They can be enabled together. Legacy `global.proxy_url` is only a fallback for `[http_proxy].url`.
+`http_proxy` and `ghproxy` solve different problems. `[http_proxy]` is an HTTP-layer proxy, while `ghproxy` rewrites GitHub download URLs. `ghproxy` is only used by `download --ghproxy` and does not rewrite `api.github.com` requests. Legacy `global.proxy_url` is only a fallback for `[http_proxy].url`.
+
+```bash
+eget dl --ghproxy https://github.com/owner/repo/releases/download/v1.2.3/tool.zip
+```
 
 ## Package Sections
 

@@ -225,14 +225,8 @@ func applyConfigNetworkOptions(cfg *cfgpkg.File, opts install.Options) install.O
 	if opts.APICacheDir == "" && opts.CacheDir != "" {
 		opts.APICacheDir = filepath.Join(opts.CacheDir, "api-cache")
 	}
-	if cfg.Ghproxy.Enable != nil {
-		opts.GhproxyEnabled = *cfg.Ghproxy.Enable
-	}
 	if opts.GhproxyHostURL == "" {
 		opts.GhproxyHostURL = util.DerefString(cfg.Ghproxy.HostURL)
-	}
-	if cfg.Ghproxy.SupportAPI != nil {
-		opts.GhproxySupportAPI = *cfg.Ghproxy.SupportAPI
 	}
 	if len(opts.GhproxyFallbacks) == 0 && len(cfg.Ghproxy.Fallbacks) > 0 {
 		opts.GhproxyFallbacks = append([]string(nil), cfg.Ghproxy.Fallbacks...)

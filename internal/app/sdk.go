@@ -77,14 +77,8 @@ func sdkClientOptionsFromConfig(cfg *cfgpkg.File, noProxyOpt ...bool) client.Opt
 	if cfg.ApiCache.CacheTime != nil {
 		opts.APICacheTime = *cfg.ApiCache.CacheTime
 	}
-	if cfg.Ghproxy.Enable != nil {
-		opts.GhproxyEnabled = *cfg.Ghproxy.Enable
-	}
 	if cfg.Ghproxy.HostURL != nil {
 		opts.GhproxyHostURL = *cfg.Ghproxy.HostURL
-	}
-	if cfg.Ghproxy.SupportAPI != nil {
-		opts.GhproxySupportAPI = *cfg.Ghproxy.SupportAPI
 	}
 	if len(cfg.Ghproxy.Fallbacks) > 0 {
 		opts.GhproxyFallbacks = append([]string(nil), cfg.Ghproxy.Fallbacks...)

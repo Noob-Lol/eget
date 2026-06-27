@@ -71,10 +71,8 @@ type APICacheSection struct {
 }
 
 type GhproxySection struct {
-	Enable     *bool    `toml:"enable" mapstructure:"enable"`
-	HostURL    *string  `toml:"host_url" mapstructure:"host_url"`
-	SupportAPI *bool    `toml:"support_api" mapstructure:"support_api"`
-	Fallbacks  []string `toml:"fallbacks" mapstructure:"fallbacks"`
+	HostURL   *string  `toml:"host_url" mapstructure:"host_url"`
+	Fallbacks []string `toml:"fallbacks" mapstructure:"fallbacks"`
 }
 
 type CacheMirrorSection struct {

@@ -257,15 +257,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 	if cfg.ApiCache.CacheTime != nil {
 		apiCacheTime = *cfg.ApiCache.CacheTime
 	}
-	ghproxyEnabled := false
-	if cfg.Ghproxy.Enable != nil {
-		ghproxyEnabled = *cfg.Ghproxy.Enable
-	}
 	ghproxyHostURL := util.DerefString(cfg.Ghproxy.HostURL)
-	ghproxySupportAPI := false
-	if cfg.Ghproxy.SupportAPI != nil {
-		ghproxySupportAPI = *cfg.Ghproxy.SupportAPI
-	}
 	batchConcurrency := 0
 	if cli.BatchConcurrencySet || cli.BatchConcurrency > 0 {
 		batchConcurrency = cli.BatchConcurrency
@@ -307,9 +299,8 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		APICacheDir:         apiCacheDir,
 		APICacheTime:        apiCacheTime,
 		CacheMirror:         CacheMirrorOptionsFromConfig(cfg),
-		GhproxyEnabled:      ghproxyEnabled,
+		GhproxyEnabled:      cli.GhproxyEnabled,
 		GhproxyHostURL:      ghproxyHostURL,
-		GhproxySupportAPI:   ghproxySupportAPI,
 		GhproxyFallbacks:    append([]string(nil), cfg.Ghproxy.Fallbacks...),
 		System:              merged.System,
 		ExtractFile:         merged.File,

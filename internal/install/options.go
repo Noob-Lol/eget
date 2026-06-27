@@ -42,7 +42,6 @@ type Options struct {
 	CacheMirror         cachemirror.Options
 	GhproxyEnabled      bool
 	GhproxyHostURL      string
-	GhproxySupportAPI   bool
 	GhproxyFallbacks    []string
 	System              string
 	ExtractFile         string

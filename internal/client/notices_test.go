@@ -116,7 +116,7 @@ func TestGetWithOptionsSkipsProxyNoticeForExcludedGitHubAPI(t *testing.T) {
 	}
 }
 
-func TestGetWithOptionsProxyNoticeUsesGhproxyAttemptHost(t *testing.T) {
+func TestGetWithOptionsProxyNoticeIgnoresGhproxyForGitHubAPI(t *testing.T) {
 	var notice bytes.Buffer
 	origNoticeWriter := proxyNoticeWriter
 	origHTTPDo := httpDo
@@ -138,8 +138,8 @@ func TestGetWithOptionsProxyNoticeUsesGhproxyAttemptHost(t *testing.T) {
 		exclude []string
 		want    string
 	}{
-		{name: "original github excluded but ghproxy allowed", exclude: []string{"github.com"}, want: "http_proxy for GitHub API request"},
-		{name: "ghproxy excluded but original github allowed", exclude: []string{"gh.felicity.ac.cn"}, want: ""},
+		{name: "original github excluded", exclude: []string{"github.com"}, want: ""},
+		{name: "ghproxy excluded but api allowed", exclude: []string{"gh.felicity.ac.cn"}, want: "http_proxy for GitHub API request"},
 	}
 
 	for _, tt := range cases {
@@ -147,11 +147,10 @@ func TestGetWithOptionsProxyNoticeUsesGhproxyAttemptHost(t *testing.T) {
 			notice.Reset()
 			resetProxyNoticeStateForTest()
 			resp, err := GetWithOptions("https://api.github.com/repos/gookit/gitw/releases/latest", Options{
-				ProxyURL:          "http://127.0.0.1:7890",
-				ProxyExclude:      tt.exclude,
-				GhproxyEnabled:    true,
-				GhproxyHostURL:    "https://gh.felicity.ac.cn",
-				GhproxySupportAPI: true,
+				ProxyURL:       "http://127.0.0.1:7890",
+				ProxyExclude:   tt.exclude,
+				GhproxyEnabled: true,
+				GhproxyHostURL: "https://gh.felicity.ac.cn",
 			})
 			assert.NoErr(t, err)
 			_ = resp.Body.Close()

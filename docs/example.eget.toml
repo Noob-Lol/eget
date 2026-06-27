@@ -23,10 +23,8 @@ cache_time = 300 # unit: s
 
 # https://github.akams.cn/ 这里可以看到很多代理地址
 [ghproxy]
-enable = false
 # https://ghfast.top/, https://gh-proxy.com/ ...
 host_url = ""
-support_api = true # 是否支持 api.github.com 接口
 fallbacks = []
 
 [packages]

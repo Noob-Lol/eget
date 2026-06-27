@@ -12,7 +12,7 @@ func requestAttemptURLs(rawURL string, parsed *url.URL, opts Options) []string {
 	if parsed == nil {
 		return []string{rawURL}
 	}
-	if !isGitHubDownloadRequest(parsed) && !(opts.GhproxySupportAPI && isGitHubAPIRequest(parsed)) {
+	if !isGitHubDownloadRequest(parsed) {
 		return []string{rawURL}
 	}
 

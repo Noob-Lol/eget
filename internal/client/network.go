@@ -10,18 +10,17 @@ import (
 )
 
 type Options struct {
-	ProxyURL          string
-	ProxyExclude      []string
-	APICacheEnabled   bool
-	APICacheDir       string
-	APICacheTime      int
-	GhproxyEnabled    bool
-	GhproxyHostURL    string
-	GhproxySupportAPI bool
-	GhproxyFallbacks  []string
-	DisableSSL        bool
-	ChunkConcurrency  int
-	UserAgent         string
+	ProxyURL         string
+	ProxyExclude     []string
+	APICacheEnabled  bool
+	APICacheDir      string
+	APICacheTime     int
+	GhproxyEnabled   bool
+	GhproxyHostURL   string
+	GhproxyFallbacks []string
+	DisableSSL       bool
+	ChunkConcurrency int
+	UserAgent        string
 }
 
 type DownloadResult struct {

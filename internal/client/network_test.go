@@ -43,6 +43,24 @@ func TestGetWithOptionsKeepsSourceForgeDownloadUserAgentUnset(t *testing.T) {
 	assert.Eq(t, "", gotUA)
 }
 
+func TestGetWithOptionsDoesNotUseGhproxyForGitHubAPI(t *testing.T) {
+	var requested string
+	restoreHTTPDo := SetHTTPDoForTest(func(client *http.Client, req *http.Request) (*http.Response, error) {
+		requested = req.URL.String()
+		return jsonResponse(http.StatusOK, "200 OK", `{}`), nil
+	})
+	defer restoreHTTPDo()
+
+	resp, err := GetWithOptions("https://api.github.com/repos/gookit/gitw/releases/latest", Options{
+		GhproxyEnabled: true,
+		GhproxyHostURL: "https://gh.felicity.ac.cn",
+	})
+	assert.NoErr(t, err)
+	_ = resp.Body.Close()
+
+	assert.Eq(t, "https://api.github.com/repos/gookit/gitw/releases/latest", requested)
+}
+
 func TestGetWithOptionsUsesConfiguredUserAgent(t *testing.T) {
 	var gotUA string
 	restoreHTTPDo := SetHTTPDoForTest(func(client *http.Client, req *http.Request) (*http.Response, error) {

@@ -361,6 +361,8 @@ The target argument accepted by `install` and `download` can be:
 
 `install` and `download` also support `--fallback-versions N` for SourceForge targets. When the latest version folder does not contain a matching asset, eget scans up to `N` older version folders and uses the first folder where the current `--asset` / `--system` filters produce a single match.
 
+`download` also supports `--ghproxy` for full GitHub release asset URLs. It rewrites only `github.com` download URLs with the configured `[ghproxy].host_url` / `fallbacks`; it does not query or rewrite GitHub API requests.
+
 > Cache behavior is configured via `config set global.cache_dir ...` or the `cache_dir` field in the config file.
 > Package download cache files are stored under `{cache_dir}/pkg-cache`; provider metadata API cache, SDK downloads, and SDK indexes use `{cache_dir}/api-cache`, `{cache_dir}/sdk-downloads`, and `{cache_dir}/sdk-index`.
 

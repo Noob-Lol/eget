@@ -24,9 +24,7 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 	apiCacheTime := 180
 	disableSSL := true
 	chunkConcurrency := 3
-	ghproxyEnable := true
 	ghproxyHost := "https://gh.example.com"
-	ghproxySupportAPI := false
 	cacheMirrorEnable := true
 	cacheMirrorURL := "http://mirror.local:8686/"
 	cacheMirrorTimeout := 4
@@ -39,9 +37,7 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 	cfg.Global.ChunkConcurrency = &chunkConcurrency
 	cfg.ApiCache.Enable = &apiCacheEnable
 	cfg.ApiCache.CacheTime = &apiCacheTime
-	cfg.Ghproxy.Enable = &ghproxyEnable
 	cfg.Ghproxy.HostURL = &ghproxyHost
-	cfg.Ghproxy.SupportAPI = &ghproxySupportAPI
 	cfg.Ghproxy.Fallbacks = []string{"https://gh2.example.com"}
 	cfg.CacheMirror.Enable = &cacheMirrorEnable
 	cfg.CacheMirror.URL = &cacheMirrorURL
@@ -63,9 +59,8 @@ func TestNewDefaultSDKServiceUsesConfigPathsAndNetworkOptions(t *testing.T) {
 	assert.Eq(t, apiCacheTime, service.ClientOpts.APICacheTime)
 	assert.True(t, service.ClientOpts.DisableSSL)
 	assert.Eq(t, chunkConcurrency, service.ClientOpts.ChunkConcurrency)
-	assert.True(t, service.ClientOpts.GhproxyEnabled)
+	assert.False(t, service.ClientOpts.GhproxyEnabled)
 	assert.Eq(t, ghproxyHost, service.ClientOpts.GhproxyHostURL)
-	assert.False(t, service.ClientOpts.GhproxySupportAPI)
 	assert.Eq(t, []string{"https://gh2.example.com"}, service.ClientOpts.GhproxyFallbacks)
 	assert.True(t, service.CacheMirror.Enable)
 	assert.Eq(t, "http://mirror.local:8686", service.CacheMirror.URL)

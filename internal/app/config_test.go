@@ -74,14 +74,8 @@ func TestConfigInit(t *testing.T) {
 	if cfg.ApiCache.CacheTime == nil || *cfg.ApiCache.CacheTime != 300 {
 		t.Fatalf("expected default api_cache.cache_time=300, got %#v", cfg.ApiCache.CacheTime)
 	}
-	if cfg.Ghproxy.Enable == nil || *cfg.Ghproxy.Enable {
-		t.Fatalf("expected default ghproxy.enable=false, got %#v", cfg.Ghproxy.Enable)
-	}
 	if cfg.Ghproxy.HostURL == nil || *cfg.Ghproxy.HostURL != "" {
 		t.Fatalf("expected default ghproxy.host_url, got %#v", cfg.Ghproxy.HostURL)
-	}
-	if cfg.Ghproxy.SupportAPI == nil || !*cfg.Ghproxy.SupportAPI {
-		t.Fatalf("expected default ghproxy.support_api=true, got %#v", cfg.Ghproxy.SupportAPI)
 	}
 	if len(cfg.Ghproxy.Fallbacks) != 0 {
 		t.Fatalf("expected default ghproxy fallbacks, got %#v", cfg.Ghproxy.Fallbacks)

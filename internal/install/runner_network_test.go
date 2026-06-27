@@ -369,7 +369,7 @@ func TestGetWithOptionsUsesGhproxyForDownloads(t *testing.T) {
 	}
 }
 
-func TestGetWithOptionsUsesGhproxyForGitHubAPIWhenSupported(t *testing.T) {
+func TestGetWithOptionsDoesNotUseGhproxyForGitHubAPI(t *testing.T) {
 	origHTTPDo := httpDo
 	defer func() { httpDo = origHTTPDo }()
 
@@ -384,18 +384,17 @@ func TestGetWithOptionsUsesGhproxyForGitHubAPIWhenSupported(t *testing.T) {
 	}
 
 	resp, err := GetWithOptions("https://api.github.com/repos/gookit/gitw/releases/latest", Options{
-		GhproxyEnabled:    true,
-		GhproxyHostURL:    "https://gh.felicity.ac.cn",
-		GhproxySupportAPI: true,
+		GhproxyEnabled: true,
+		GhproxyHostURL: "https://gh.felicity.ac.cn",
 	})
 	if err != nil {
 		t.Fatalf("GetWithOptions(): %v", err)
 	}
 	_ = resp.Body.Close()
 
-	want := "https://gh.felicity.ac.cn/https://api.github.com/repos/gookit/gitw/releases/latest"
+	want := "https://api.github.com/repos/gookit/gitw/releases/latest"
 	if requested != want {
-		t.Fatalf("expected ghproxy rewritten api url %q, got %q", want, requested)
+		t.Fatalf("expected original api url %q, got %q", want, requested)
 	}
 }
 

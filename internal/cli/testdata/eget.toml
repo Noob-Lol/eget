@@ -9,8 +9,6 @@ enable = false
 cache_time = 300
 
 [ghproxy]
-enable = false
 host_url = ""
-support_api = true
 
 [packages]

@@ -43,6 +43,25 @@ func TestMain_InstallStandardOrderRoutesAndBindsOptions(t *testing.T) {
 	}
 }
 
+func TestMain_DownloadGhproxyFlagBindsOption(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"dl", "--ghproxy", "https://github.com/owner/repo/releases/download/v1.2.3/tool.zip"})
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	assert.Eq(t, "download", calls[0].name)
+	opts, ok := calls[0].options.(*DownloadOptions)
+	assert.True(t, ok)
+	assert.True(t, opts.Ghproxy)
+	assert.Eq(t, "https://github.com/owner/repo/releases/download/v1.2.3/tool.zip", opts.Target)
+}
+
 func TestMain_InstallBindsMultipleTargets(t *testing.T) {
 	tests := []struct {
 		name string

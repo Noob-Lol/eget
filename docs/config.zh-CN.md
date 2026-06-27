@@ -193,20 +193,20 @@ eget cache serve --token "$EGET_CACHE_TOKEN"
 
 ```toml
 [ghproxy]
-enable = false
 host_url = ""
-support_api = true
 fallbacks = []
 ```
 
 字段说明：
 
-- `enable`: 是否启用 GitHub URL 重写。
 - `host_url`: 主代理地址，例如 `https://ghfast.top/`。
-- `support_api`: 启用后也会重写 `api.github.com` 请求。
 - `fallbacks`: 主代理失败后按顺序尝试的备用代理地址。
 
-> `http_proxy` 和 `ghproxy` 不是同一种能力。`[http_proxy]` 是 HTTP 层代理，`ghproxy` 是请求 URL 重写，两者可以同时启用。旧版 `global.proxy_url` 只是 `[http_proxy].url` 的 fallback。
+> `http_proxy` 和 `ghproxy` 不是同一种能力。`[http_proxy]` 是 HTTP 层代理，`ghproxy` 是 GitHub 下载 URL 重写。`ghproxy` 只由 `download --ghproxy` 使用，不会重写 `api.github.com` 请求。旧版 `global.proxy_url` 只是 `[http_proxy].url` 的 fallback。
+
+```bash
+eget dl --ghproxy https://github.com/owner/repo/releases/download/v1.2.3/tool.zip
+```
 
 ## Package 配置
 

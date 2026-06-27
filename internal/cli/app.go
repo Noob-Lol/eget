@@ -218,7 +218,7 @@ var commandFlagSpecs = map[string]flagSpec{
 		values: setOf("tag", "system", "to", "file", "asset", "a", "rename", "name", "install-mode", "strip-components", "fallback-versions", "chunk", "batch"),
 	},
 	"download": {
-		bools:  setOf("source", "extract-all", "ea", "quiet"),
+		bools:  setOf("source", "extract-all", "ea", "quiet", "ghproxy"),
 		values: setOf("tag", "system", "to", "file", "asset", "a", "rename", "strip-components", "fallback-versions", "chunk"),
 	},
 	"add": {

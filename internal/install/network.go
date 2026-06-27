@@ -24,18 +24,17 @@ var verboseEnabled bool
 
 func ClientOptions(opts Options) client.Options {
 	return client.Options{
-		ProxyURL:          opts.ProxyURL,
-		ProxyExclude:      append([]string(nil), opts.ProxyExclude...),
-		APICacheEnabled:   opts.APICacheEnabled,
-		APICacheDir:       opts.APICacheDir,
-		APICacheTime:      opts.APICacheTime,
-		GhproxyEnabled:    opts.GhproxyEnabled,
-		GhproxyHostURL:    opts.GhproxyHostURL,
-		GhproxySupportAPI: opts.GhproxySupportAPI,
-		GhproxyFallbacks:  append([]string(nil), opts.GhproxyFallbacks...),
-		DisableSSL:        opts.DisableSSL,
-		ChunkConcurrency:  opts.ChunkConcurrency,
-		UserAgent:         opts.UserAgent,
+		ProxyURL:         opts.ProxyURL,
+		ProxyExclude:     append([]string(nil), opts.ProxyExclude...),
+		APICacheEnabled:  opts.APICacheEnabled,
+		APICacheDir:      opts.APICacheDir,
+		APICacheTime:     opts.APICacheTime,
+		GhproxyEnabled:   opts.GhproxyEnabled,
+		GhproxyHostURL:   opts.GhproxyHostURL,
+		GhproxyFallbacks: append([]string(nil), opts.GhproxyFallbacks...),
+		DisableSSL:       opts.DisableSSL,
+		ChunkConcurrency: opts.ChunkConcurrency,
+		UserAgent:        opts.UserAgent,
 	}
 }
 

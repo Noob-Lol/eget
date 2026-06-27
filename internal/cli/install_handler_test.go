@@ -242,6 +242,14 @@ func TestInstallOptionsFromDownloadEnablesArchiveExtractionWhenRequested(t *test
 	}
 }
 
+func TestInstallOptionsFromDownloadEnablesGhproxy(t *testing.T) {
+	opts := installOptionsFromDownload(&DownloadOptions{
+		Ghproxy: true,
+	})
+
+	assert.True(t, opts.GhproxyEnabled)
+}
+
 func TestHandleInstallPrintsAddedPackageMessage(t *testing.T) {
 	origStdout := os.Stdout
 	r, w, err := os.Pipe()

@@ -60,14 +60,8 @@ func applyGlobalNetworkConfig(opts *install.Options, cfg *cfgpkg.File) {
 	})
 	opts.ProxyURL = proxy.URL
 	opts.ProxyExclude = append([]string(nil), proxy.Exclude...)
-	if cfg.Ghproxy.Enable != nil {
-		opts.GhproxyEnabled = *cfg.Ghproxy.Enable
-	}
 	if cfg.Ghproxy.HostURL != nil {
 		opts.GhproxyHostURL = *cfg.Ghproxy.HostURL
-	}
-	if cfg.Ghproxy.SupportAPI != nil {
-		opts.GhproxySupportAPI = *cfg.Ghproxy.SupportAPI
 	}
 	if len(cfg.Ghproxy.Fallbacks) > 0 {
 		opts.GhproxyFallbacks = append([]string(nil), cfg.Ghproxy.Fallbacks...)
@@ -90,6 +84,7 @@ func installOptionsFromDownload(opts *DownloadOptions) install.Options {
 	base.ChunkConcurrency = opts.ChunkConcurrency
 	base.ChunkConcurrencySet = opts.ChunkConcurrency >= 0
 	base.StripComponents = opts.StripComponents
+	base.GhproxyEnabled = opts.Ghproxy
 	if hasMultipleFilePatterns(opts.File) {
 		base.All = true
 	}

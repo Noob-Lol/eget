@@ -361,6 +361,8 @@ eget config set global.target ~/.local/bin
 
 `install` 和 `download` 还支持 SourceForge 目标的 `--fallback-versions N`。当最新版本目录没有匹配资产时，eget 会最多扫描 `N` 个更旧版本目录，并使用第一个能被当前 `--asset` / `--system` 过滤条件唯一匹配的文件。
 
+`download` 还支持对完整 GitHub release asset URL 使用 `--ghproxy`。它只会用 `[ghproxy].host_url` / `fallbacks` 重写 `github.com` 下载 URL，不会查询或重写 GitHub API 请求。
+
 > 缓存目录请通过 `config set global.cache_dir ...` 或配置文件中的 `cache_dir` 设置。
 
 `install` 额外支持：
