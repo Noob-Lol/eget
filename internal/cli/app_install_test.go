@@ -436,18 +436,21 @@ func TestMain_InstallRejectsRemovedCacheDirFlag(t *testing.T) {
 	}
 }
 
-func TestMain_InstallRejectsFlagsAfterTarget(t *testing.T) {
+func TestMain_InstallBindsFlagsAfterTarget(t *testing.T) {
+	calls := make([]commandCall, 0, 1)
+	handler := func(name string, options any) error {
+		calls = append(calls, commandCall{name: name, options: options})
+		return nil
+	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	err := Main([]string{"install", "inhere/markview", "--tag", "nightly"}, &stdout, &stderr)
-	if err == nil {
-		t.Fatalf("expected parse error for trailing flags after target")
-	}
-	if !strings.Contains(err.Error(), "flags must appear before arguments") {
-		t.Fatalf("expected trailing-flag error, got %v", err)
-	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected stderr to be empty, got %q", stderr.String())
-	}
+	err := newApp(handler, &stdout, &stderr).RunWithArgs([]string{"install", "inhere/markview", "--tag", "nightly"})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 1, len(calls))
+	opts, ok := calls[0].options.(*InstallOptions)
+	assert.True(t, ok)
+	assert.Eq(t, []string{"inhere/markview"}, opts.Targets)
+	assert.Eq(t, "nightly", opts.Tag)
 }

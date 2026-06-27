@@ -172,3 +172,85 @@ func TestMain_UninstallPurgeFlagParsesBeforeTarget(t *testing.T) {
 	assert.Eq(t, "fzf", opts.Target)
 	assert.True(t, opts.Purge)
 }
+
+func TestMain_CommandFlagsParseAfterArguments(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   []string
+		assert func(t *testing.T, call commandCall)
+	}{
+		{
+			name: "download ghproxy",
+			args: []string{"dl", "https://github.com/owner/repo/releases/download/v1.2.3/tool.zip", "--ghproxy"},
+			assert: func(t *testing.T, call commandCall) {
+				assert.Eq(t, "download", call.name)
+				opts, ok := call.options.(*DownloadOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "https://github.com/owner/repo/releases/download/v1.2.3/tool.zip", opts.Target)
+				assert.True(t, opts.Ghproxy)
+			},
+		},
+		{
+			name: "add name",
+			args: []string{"add", "owner/repo", "--name", "tool"},
+			assert: func(t *testing.T, call commandCall) {
+				assert.Eq(t, "add", call.name)
+				opts, ok := call.options.(*AddOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "owner/repo", opts.Target)
+				assert.Eq(t, "tool", opts.Name)
+			},
+		},
+		{
+			name: "update tag",
+			args: []string{"update", "tool", "--tag", "nightly"},
+			assert: func(t *testing.T, call commandCall) {
+				assert.Eq(t, "update", call.name)
+				opts, ok := call.options.(*UpdateOptions)
+				assert.True(t, ok)
+				assert.Eq(t, []string{"tool"}, opts.Targets)
+				assert.Eq(t, "nightly", opts.Tag)
+			},
+		},
+		{
+			name: "query action",
+			args: []string{"query", "owner/repo", "--action", "assets"},
+			assert: func(t *testing.T, call commandCall) {
+				assert.Eq(t, "query", call.name)
+				opts, ok := call.options.(*QueryOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "owner/repo", opts.Target)
+				assert.Eq(t, "assets", opts.Action)
+			},
+		},
+		{
+			name: "search json",
+			args: []string{"search", "keyword", "--json"},
+			assert: func(t *testing.T, call commandCall) {
+				assert.Eq(t, "search", call.name)
+				opts, ok := call.options.(*SearchOptions)
+				assert.True(t, ok)
+				assert.Eq(t, "keyword", opts.Keyword)
+				assert.True(t, opts.JSON)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]commandCall, 0, 1)
+			handler := func(name string, options any) error {
+				calls = append(calls, commandCall{name: name, options: options})
+				return nil
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			err := newApp(handler, &stdout, &stderr).RunWithArgs(tt.args)
+
+			assert.NoErr(t, err)
+			assert.Eq(t, 1, len(calls))
+			tt.assert(t, calls[0])
+		})
+	}
+}

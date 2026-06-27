@@ -195,10 +195,9 @@ func validateNoFlagArgs(args []string) error {
 }
 
 type flagSpec struct {
-	bools              map[string]bool
-	values             map[string]bool
-	subs               map[string]flagSpec
-	allowTrailingFlags bool
+	bools  map[string]bool
+	values map[string]bool
+	subs   map[string]flagSpec
 }
 
 var commandAliases = map[string]string{
@@ -224,7 +223,7 @@ var commandFlagSpecs = map[string]flagSpec{
 	},
 	"add": {
 		bools:  setOf("source", "extract-all", "ea", "gui", "quiet"),
-		values: setOf("name", "tag", "system", "to", "file", "asset", "rename", "strip-components", "source", "chunk"),
+		values: setOf("name", "tag", "system", "to", "file", "asset", "rename", "strip-components", "chunk"),
 	},
 	"list": {
 		bools:  setOf("outdated", "old", "all", "a", "gui", "no-installed", "ni"),
@@ -240,131 +239,69 @@ var commandFlagSpecs = map[string]flagSpec{
 	},
 	"sdk": {
 		subs: map[string]flagSpec{
-			"download": {
-				values:             setOf("os", "arch", "output", "o"),
-				allowTrailingFlags: true,
-			},
-			"dl": {
-				values:             setOf("os", "arch", "output", "o"),
-				allowTrailingFlags: true,
-			},
-			"install": {
-				bools: setOf("force", "f"),
-			},
-			"i": {
-				bools: setOf("force", "f"),
-			},
-			"ins": {
-				bools: setOf("force", "f"),
-			},
-			"list": {
-				bools: setOf("json", "j"),
-			},
-			"ls": {
-				bools: setOf("json", "j"),
-			},
-			"remove": {},
-			"rm":     {},
-			"path":   {},
-			"search": {
-				bools:  setOf("json", "j"),
-				values: setOf("number", "n", "sort"),
-			},
+			"download": {values: setOf("os", "arch", "output", "o")},
+			"dl":       {values: setOf("os", "arch", "output", "o")},
+			"install":  {bools: setOf("force", "f")},
+			"i":        {bools: setOf("force", "f")},
+			"ins":      {bools: setOf("force", "f")},
+			"list":     {bools: setOf("json", "j")},
+			"ls":       {bools: setOf("json", "j")},
+			"remove":   {},
+			"rm":       {},
+			"path":     {},
+			"search":   {bools: setOf("json", "j"), values: setOf("number", "n", "sort")},
 			"config": {
 				subs: map[string]flagSpec{
-					"add": {
-						bools:              setOf("all", "a", "force", "f"),
-						values:             setOf("mirror", "m"),
-						allowTrailingFlags: true,
-					},
+					"add": {bools: setOf("all", "a", "force", "f"), values: setOf("mirror", "m")},
 				},
 			},
 			"cfg": {
 				subs: map[string]flagSpec{
-					"add": {
-						bools:              setOf("all", "a", "force", "f"),
-						values:             setOf("mirror", "m"),
-						allowTrailingFlags: true,
-					},
+					"add": {bools: setOf("all", "a", "force", "f"), values: setOf("mirror", "m")},
 				},
 			},
 			"index": {
 				subs: map[string]flagSpec{
-					"list": {
-						bools: setOf("json", "j"),
-					},
-					"ls": {
-						bools: setOf("json", "j"),
-					},
-					"show": {},
-					"refresh": {
-						bools: setOf("all", "a"),
-					},
-					"build": {
-						bools: setOf("all", "a"),
-					},
-					"clear": {
-						bools: setOf("all", "a"),
-					},
+					"list":    {bools: setOf("json", "j")},
+					"ls":      {bools: setOf("json", "j")},
+					"show":    {},
+					"refresh": {bools: setOf("all", "a")},
+					"build":   {bools: setOf("all", "a")},
+					"clear":   {bools: setOf("all", "a")},
 				},
 			},
 			"idx": {
 				subs: map[string]flagSpec{
-					"list": {
-						bools: setOf("json", "j"),
-					},
-					"ls": {
-						bools: setOf("json", "j"),
-					},
-					"show": {},
-					"refresh": {
-						bools: setOf("all", "a"),
-					},
-					"build": {
-						bools: setOf("all", "a"),
-					},
-					"clear": {
-						bools: setOf("all", "a"),
-					},
+					"list":    {bools: setOf("json", "j")},
+					"ls":      {bools: setOf("json", "j")},
+					"show":    {},
+					"refresh": {bools: setOf("all", "a")},
+					"build":   {bools: setOf("all", "a")},
+					"clear":   {bools: setOf("all", "a")},
 				},
 			},
 		},
 	},
 	"cache": {
 		subs: map[string]flagSpec{
-			"list": {
-				bools:  setOf("json", "j"),
-				values: setOf("root"),
-			},
-			"status": {
-				bools: setOf("json", "j"),
-			},
-			"clean": {
-				bools:  setOf("all", "a", "dry-run", "yes", "y", "pkg", "api", "sdk", "sdk-index", "partial", "json", "j"),
-				values: setOf("older"),
-			},
-			"serve": {
-				bools:  setOf("no-index", "json-log"),
-				values: setOf("host", "port", "p", "root", "token"),
-			},
+			"list":   {bools: setOf("json", "j"), values: setOf("root")},
+			"status": {bools: setOf("json", "j")},
+			"clean":  {bools: setOf("all", "a", "dry-run", "yes", "y", "pkg", "api", "sdk", "sdk-index", "partial", "json", "j"), values: setOf("older")},
+			"serve":  {bools: setOf("no-index", "json-log"), values: setOf("host", "port", "p", "root", "token")},
 		},
 	},
-	"search": {
-		bools:  setOf("json", "j"),
-		values: setOf("sort", "order", "limit", "l"),
-	},
-	"show": {},
-	"uninstall": {
-		bools: setOf("yes", "y", "purge"),
-	},
+	"search":    {bools: setOf("json", "j"), values: setOf("sort", "order", "limit", "l")},
+	"show":      {},
+	"uninstall": {bools: setOf("yes", "y", "purge")},
 	"config": {
 		subs: map[string]flagSpec{
-			"init": {},
-			"list": {},
-			"ls":   {},
-			"path": {bools: setOf("check")},
-			"get":  {},
-			"set":  {},
+			"init":   {},
+			"list":   {},
+			"ls":     {},
+			"doctor": {},
+			"path":   {bools: setOf("check")},
+			"get":    {},
+			"set":    {},
 		},
 	},
 }
@@ -378,44 +315,17 @@ func setOf(names ...string) map[string]bool {
 }
 
 func validateKnownFlags(args []string) error {
-	cmdName, start := findCommandArg(args)
-	if cmdName == "" {
+	spec, start := findCommandSpec(args)
+	if start < 0 {
 		return nil
 	}
-	spec, ok := commandFlagSpecs[cmdName]
-	if !ok {
-		return nil
-	}
-	if len(spec.subs) > 0 && start < len(args) {
-		subName := args[start]
-		if !strings.HasPrefix(subName, "-") {
-			if subSpec, ok := spec.subs[subName]; ok {
-				spec = subSpec
-				start++
-			}
-		}
-	}
-	if len(spec.subs) > 0 && start < len(args) {
-		subName := args[start]
-		if !strings.HasPrefix(subName, "-") {
-			if subSpec, ok := spec.subs[subName]; ok {
-				spec = subSpec
-				start++
-			}
-		}
-	}
-	positionalSeen := false
 	for i := start; i < len(args); i++ {
 		arg := args[i]
 		if arg == "--" {
 			return nil
 		}
 		if !strings.HasPrefix(arg, "-") || arg == "-" {
-			positionalSeen = true
 			continue
-		}
-		if positionalSeen && !spec.allowTrailingFlags {
-			return fmt.Errorf("flags must appear before arguments: %s", arg)
 		}
 		name := strings.TrimLeft(arg, "-")
 		if eq := strings.IndexByte(name, '='); eq >= 0 {
@@ -443,6 +353,30 @@ func validateKnownFlags(args []string) error {
 		return fmt.Errorf("option provided but not defined: %s", arg)
 	}
 	return nil
+}
+
+func findCommandSpec(args []string) (flagSpec, int) {
+	cmdName, start := findCommandArg(args)
+	if cmdName == "" {
+		return flagSpec{}, -1
+	}
+	spec, ok := commandFlagSpecs[cmdName]
+	if !ok {
+		return flagSpec{}, -1
+	}
+	for len(spec.subs) > 0 && start < len(args) {
+		subName := args[start]
+		if strings.HasPrefix(subName, "-") {
+			break
+		}
+		subSpec, ok := spec.subs[subName]
+		if !ok {
+			break
+		}
+		spec = subSpec
+		start++
+	}
+	return spec, start
 }
 
 func findCommandArg(args []string) (string, int) {
