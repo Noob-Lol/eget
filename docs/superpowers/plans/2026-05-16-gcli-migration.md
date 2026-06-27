@@ -65,7 +65,7 @@ service 和业务行为必须保持不变。
 
 | 命令 | 别名 | 需要保持的关键行为 |
 | --- | --- | --- |
-| `install` | `i`, `ins` | 多 target、逗号拆分、`--all`、`--batch`、拒绝 trailing flag |
+| `install` | `i`, `ins` | 多 target、逗号拆分、`--all`、`--batch`、支持 trailing flag |
 | `download` | `dl` | 单 target、`--chunk`、不支持 `--gui` |
 | `add` | 无 | install-like flags，只写配置 |
 | `uninstall` | 以当前源码为准 | 单 target |
@@ -265,7 +265,7 @@ return a.inner.RunWithArgs(args)
 func validateNoTrailingFlags(cmd *capp.Cmd) error
 ```
 
-保留通用函数：
+历史实现曾保留通用函数：
 
 ```go
 func validateNoFlagArgs(args []string) error {
@@ -278,7 +278,7 @@ func validateNoFlagArgs(args []string) error {
 }
 ```
 
-后续命令文件直接对位置参数调用 `validateNoFlagArgs`。
+现版本允许 trailing flag，`validateNoFlagArgs` 仅作为命令回调里的剩余参数兜底。
 
 - [x] **步骤 6：运行 App 壳测试**
 

@@ -4,7 +4,7 @@
 
 **Goal:** 将 `eget` 从根目录平铺的单入口 CLI 重构为基于 `gookit/cflag/capp` 的显式子命令结构，代码收敛到 `internal/`，并落地 `install`、`download`、`add`、`update`、`config` 命令。
 
-**Architecture:** 入口迁移到 `cmd/eget/main.go`，`internal/cli` 负责 `capp` 命令注册与参数绑定，`internal/app` 负责用例编排，`internal/config`/`internal/install`/`internal/source/github`/`internal/installed` 负责底层能力与数据模型。根命令不再兼容默认安装，所有命令统一采用 `eget <command> --options... arguments...`。
+**Architecture:** 入口迁移到 `cmd/eget/main.go`，`internal/cli` 负责命令注册与参数绑定，`internal/app` 负责用例编排，`internal/config`/`internal/install`/`internal/source/github`/`internal/installed` 负责底层能力与数据模型。根命令不再兼容默认安装，现版本允许命令选项写在位置参数前后。
 
 **Tech Stack:** Go 1.24, `github.com/gookit/goutil/cflag/capp`, `BurntSushi/toml`, `bubbletea`, `progressbar`
 
@@ -716,7 +716,7 @@ eget config --info
 
 确保文档明确写出：
 - 不再支持 `eget owner/repo`
-- 命令统一为 `eget <command> --options... arguments...`
+- 命令统一为显式子命令；选项可写在位置参数前后
 
 - [ ] **Step 3: 运行基础校验**
 
@@ -793,4 +793,3 @@ git commit -m "refactor: complete eget cli restructuring"
 - `update --interactive` 如果首版无法完整复用现有 bubbletea 逻辑，优先保证 `update` 和 `update --all` 稳定可用，再以清晰错误替代半成品行为
 - `config` 写回必须避免抹掉旧 repo section 和 global 配置
 - 文档更新必须与最终 CLI 语法一致，避免 README 继续展示旧 `eget owner/repo` 示例
-

@@ -424,7 +424,7 @@ Notes:
 - `download` stores the raw downloaded asset by default; extraction only happens when `--file` or `--extract-all` is provided.
 - `sdk` uses `global.sdk_target` for install directories and `{cache_dir}/sdk-downloads` for archive downloads. Resumable state is stored as `.part` plus `.meta.json`.
 - Archive extraction currently supports `zip`, `tar.*`, and `7z`. System 7z is preferred for `.7z`, `.rar`, `.msi`, `.cab`, `.iso`, and `--extract-all` `.exe` archives when `global.sys7z_path` or `PATH` provides `7z`, `7zz`, or `7za`; `tar.*` archives continue to use the built-in Go extractor.
-- Argument order follows the CLI parser constraint and must be `CMD --OPTIONS... ARGUMENTS...`.
+- Command options can appear before or after positional arguments, for example `eget install --tag nightly owner/repo` and `eget install owner/repo --tag nightly` are equivalent.
 
 ## Configuration
 

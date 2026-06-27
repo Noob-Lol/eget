@@ -23,10 +23,11 @@ Current commands:
 - `query`
 - `search`
 
-The root command does not perform a default install action. Because of the CLI parser model, flags must appear before positional arguments:
+The root command does not perform a default install action. Command flags can appear before or after positional arguments:
 
 ```text
 eget install --tag nightly inhere/markview
+eget install inhere/markview --tag nightly
 ```
 
 ## Runtime Layout

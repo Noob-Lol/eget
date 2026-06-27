@@ -158,26 +158,23 @@ Config: func(c *gcli.Command) {
 
 ## Flag 顺序和 trailing flag 校验
 
-当前项目显式禁止 trailing flags：
+现版本基于 gcli v3.8，允许 trailing flags：
 
 ```bash
 eget install owner/repo --tag v1
 ```
 
-会返回：
+它与下面写法等价：
 
-```text
-flags must appear before arguments: --tag
+```bash
+eget install --tag v1 owner/repo
 ```
-
-迁移后需要保留这个约束，避免用户因框架变化得到不一致行为。
 
 实现建议：
 
-- 保留 `validateNoFlagArgs(args []string) error`。
-- 对多值参数命令，在 handler 调用前检查 positional args 中是否出现 `-` 开头参数。
-- 如果 `gcli` 默认允许 interspersed flags，需要在命令回调里继续检查原始剩余参数或已解析 positional args。
-- 如果 `gcli` 已经拒绝 trailing flags，错误文案可能不同；建议仍通过本地检查保持现有文案。
+- 保留未知/已移除 flag 的预校验。
+- 不再因为 flag 位于 positional argument 之后报错。
+- `validateNoFlagArgs(args []string) error` 仅作为命令回调里的剩余参数兜底。
 
 ## 状态重置
 
@@ -325,7 +322,7 @@ docs/superpowers/specs/2026-05-14-sdk-download-design.md
 - 每个命令能 route 到正确 handler name。
 - 每个 options struct 字段绑定正确。
 - aliases 保持可用。
-- trailing flag 仍返回 `flags must appear before arguments: ...`。
+- trailing flag 可以正常绑定到对应 options。
 - `install`、`update` 多 target 和逗号拆分保持不变。
 - `install --name` 不能和多个 target 联用的业务校验仍由 `handle` 保持。
 - `download --gui` 仍失败，因为 download 没有该 flag。
@@ -354,10 +351,10 @@ docs/superpowers/specs/2026-05-14-sdk-download-design.md
 
 ### Trailing flag 行为差异
 
-如果 `gcli` 默认允许或拒绝 trailing flags，与旧行为不一致。处理方式：
+`gcli v3.8` 支持命令级参数重排。处理方式：
 
-- 保留本项目自己的 trailing flag 校验。
-- 以现有错误文案为准。
+- 允许 trailing flags。
+- 保留本项目自己的未知/已移除 flag 校验。
 
 ### 多次运行状态泄漏
 

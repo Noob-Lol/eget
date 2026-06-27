@@ -472,7 +472,7 @@ func validateKnownFlags(args []string) error {
 }
 ```
 
-This keeps the existing trailing-flag rule: once a non-flag positional argument appears after the command/subcommand, prevalidation stops and command-specific `validateNoFlagArgs` catches trailing flags.
+This note is outdated: current gcli v3.8 usage allows trailing flags. Prevalidation only rejects unknown/removed flags; command-specific `validateNoFlagArgs` remains a fallback for leftover args.
 
 - [x] **Step 5: Run config prevalidation tests and verify GREEN**
 

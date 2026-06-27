@@ -423,7 +423,7 @@ SourceForge 查询目标使用 `sourceforge:<project>`、`sourceforge:<project>/
 - `download` 默认保存原始下载文件；只有设置了 `--file` 或 `--extract-all` 才会自动提取归档内容。
 - `sdk` 使用 `global.sdk_target` 作为安装根目录，使用 `{cache_dir}/sdk-downloads` 保存 SDK 归档下载缓存；断点续传状态由 `.part` 和 `.meta.json` 维护。
 - 归档提取当前支持 `zip`、`tar.*` 以及 `7z`。当 `global.sys7z_path` 或 `PATH` 提供 `7z`、`7zz`、`7za` 时，`.7z`、`.rar`、`.msi`、`.cab`、`.iso` 以及 `--extract-all` 的 `.exe` 会优先使用系统 7z；`tar.*` 归档继续使用内置 Go 解压流程。
-- 参数顺序遵循 CLI 解析器约束，必须是 `CMD --OPTIONS... ARGUMENTS...`。
+- 命令选项可以写在位置参数前后，例如 `eget install --tag nightly owner/repo` 和 `eget install owner/repo --tag nightly` 等价。
 
 ## 配置
 

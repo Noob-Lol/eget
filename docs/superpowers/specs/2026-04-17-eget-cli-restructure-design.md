@@ -154,7 +154,7 @@ eget <command> --options... arguments...
 - `cflag/capp` 更适合标准子命令模型
 - 去掉兼容分支后，命令路由和帮助输出更直接
 - 避免根命令同时承担“默认安装”和“子命令分发”两套职责
-- 避免继续支持旧参数顺序带来的额外解析复杂度
+- 现版本基于 gcli v3.8，已支持命令参数后的选项重排
 
 因此首版不再支持：
 
@@ -170,10 +170,10 @@ eget install owner/repo
 eget install --tag nightly owner/repo
 ```
 
-并且继续遵循 `CMD --OPTIONS... ARGUMENTS...` 顺序：
+命令选项可以写在位置参数前后：
 
 - 支持 `eget install --tag nightly inhere/markview`
-- 不支持 `eget install inhere/markview --tag nightly`
+- 支持 `eget install inhere/markview --tag nightly`
 
 ### 子命令列表
 
@@ -183,13 +183,12 @@ eget install --tag nightly owner/repo
 
 支持 repo、GitHub URL、直链 URL、本地文件。
 
-语法约束：
+示例：
 
 ```bash
 eget install --tag nightly inhere/markview
+eget install inhere/markview --tag nightly
 ```
-
-不支持将目标参数写在前面再继续追加选项。
 
 #### `download`
 
@@ -262,7 +261,7 @@ eget update --all
 - `download` 复用查找/下载相关参数，但不做安装后动作
 - `add` 只接收声明式可复用安装参数
 - `update` 只接收更新流程需要的参数
-- 所有 `capp` 命令统一遵循 `CMD --OPTIONS... ARGUMENTS...`，不承诺兼容旧的“参数在前、选项在后”写法
+- 现版本允许命令选项写在位置参数前后，未知选项仍会被拒绝
 
 ## 配置模型设计
 
@@ -513,7 +512,7 @@ disable_ssl = false
 - 帮助输出会因 `capp` 接管而变化
 - 历史 flag 型入口如 `--list-installed`、`--upgrade-all` 可逐步迁移为命令能力，不再作为主设计中心
 - 根命令不再支持直接安装 repo
-- 旧的“目标参数在前、选项在后”命令顺序不再保证兼容
+- 现版本允许“目标参数在前、选项在后”的命令顺序
 
 ## 测试策略
 
@@ -573,7 +572,7 @@ disable_ssl = false
 
 - 在帮助信息和 README 中明确显式子命令语法
 - 为命令路由单独补测试
-- 为 `CMD --OPTIONS... ARGUMENTS...` 顺序增加显式帮助与用例测试，避免用户误用
+- 为选项前置/后置顺序增加显式用例测试，避免回归
 
 ### 风险二：配置优先级行为变化
 
