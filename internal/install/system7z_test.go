@@ -344,6 +344,55 @@ func TestSystem7zExtractorExtractAllToWithOptionsStripsComponents(t *testing.T) 
 	}
 }
 
+func TestSystem7zExtractorExtractAllToFiltersChooserMatches(t *testing.T) {
+	tmp := t.TempDir()
+	origRunner := runSystem7zCommand
+	defer func() { runSystem7zCommand = origRunner }()
+
+	runSystem7zCommand = func(exe string, args ...string) ([]byte, error) {
+		outDir := ""
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "-o") {
+				outDir = strings.TrimPrefix(arg, "-o")
+			}
+		}
+		files := map[string]string{
+			"ffmpeg/bin/ffmpeg.exe": "ffmpeg",
+			"ffmpeg/doc/readme.txt": "readme",
+		}
+		for name, content := range files {
+			extracted := filepath.Join(outDir, filepath.FromSlash(name))
+			if err := os.MkdirAll(filepath.Dir(extracted), 0o755); err != nil {
+				return nil, err
+			}
+			if err := os.WriteFile(extracted, []byte(content), 0o644); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	}
+
+	chooser, err := NewFileChooser("*.exe")
+	if err != nil {
+		t.Fatalf("new chooser: %v", err)
+	}
+	extractor := NewSystem7zExtractor("ffmpeg.7z", "ffmpeg", chooser, "7z")
+	files, err := extractor.ExtractAllToWithOptions([]byte("archive"), tmp, ArchiveExtractOptions{StripComponents: 2})
+	if err != nil {
+		t.Fatalf("extract all with chooser: %v", err)
+	}
+
+	assert.Eq(t, 1, len(files))
+	data, err := os.ReadFile(filepath.Join(tmp, "ffmpeg.exe"))
+	if err != nil {
+		t.Fatalf("read filtered exe: %v", err)
+	}
+	assert.Eq(t, "ffmpeg", string(data))
+	if _, err := os.Stat(filepath.Join(tmp, "readme.txt")); !os.IsNotExist(err) {
+		t.Fatalf("expected non-matching file to be absent, stat err=%v", err)
+	}
+}
+
 func TestCopyExtractedPathPreservesDirectoryTimestampAfterChildren(t *testing.T) {
 	root := t.TempDir()
 	src := filepath.Join(root, "src")

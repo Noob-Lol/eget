@@ -148,6 +148,54 @@ func TestRunExtractAllStripsComponentsFromZipArchive(t *testing.T) {
 	}
 }
 
+func TestRunFileGlobWithStripComponentsExtractsStrippedMatches(t *testing.T) {
+	assetURL := "https://example.com/ffmpeg.zip"
+	archive := zipBytes(t, map[string]string{
+		"ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe":  "ffmpeg",
+		"ffmpeg-master-latest-win64-gpl/bin/ffplay.exe":  "ffplay",
+		"ffmpeg-master-latest-win64-gpl/bin/ffprobe.exe": "ffprobe",
+		"ffmpeg-master-latest-win64-gpl/doc/readme.txt":  "readme",
+	})
+	outputDir := t.TempDir()
+
+	svc := NewDefaultService(nil, nil)
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(archive)),
+		}, nil
+	}
+
+	runner := NewRunner(svc)
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+	result, err := runner.Run(assetURL, Options{ExtractFile: "*.exe", All: true, Output: outputDir, StripComponents: 2})
+	if err != nil {
+		t.Fatalf("run file glob with strip-components: %v", err)
+	}
+
+	assert.Eq(t, 3, len(result.ExtractedFiles))
+	for name, want := range map[string]string{
+		"ffmpeg.exe":  "ffmpeg",
+		"ffplay.exe":  "ffplay",
+		"ffprobe.exe": "ffprobe",
+	} {
+		data, err := os.ReadFile(filepath.Join(outputDir, name))
+		if err != nil {
+			t.Fatalf("read extracted %s: %v", name, err)
+		}
+		assert.Eq(t, want, string(data))
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "ffmpeg-master-latest-win64-gpl")); !os.IsNotExist(err) {
+		t.Fatalf("expected stripped root directory to be absent, stat err=%v", err)
+	}
+}
+
 func TestRunPortableGUIArchiveExtractsAllToNamedGuiTarget(t *testing.T) {
 	assetURL := "https://example.com/v2rayN-windows-64-desktop.zip"
 	archive := zipBytes(t, map[string]string{

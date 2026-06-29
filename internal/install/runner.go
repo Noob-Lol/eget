@@ -201,7 +201,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	}
 	verbosef("extractor selected for tool=%s", tool)
 
-	if opts.All && opts.ExtractFile == "" && len(opts.RenameFiles) == 0 {
+	if opts.All && len(opts.RenameFiles) == 0 {
 		if direct, ok := extractor.(DirectAllExtractor); ok && effectiveOutput(opts) != "-" {
 			result := RunResult{
 				URL:         url,

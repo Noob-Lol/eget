@@ -215,6 +215,10 @@ func (e *System7zExtractor) ExtractAllToWithOptions(data []byte, output string, 
 		if !ok {
 			return nil
 		}
+		direct, possible := e.Chooser.Choose(filepath.ToSlash(safeRel), entry.IsDir(), 0)
+		if !direct && !possible {
+			return nil
+		}
 		target, err := safeArchiveOutputPath(output, strippedRel)
 		if err != nil {
 			return err
