@@ -1,6 +1,8 @@
 package app
 
 import (
+	"sort"
+	"sync"
 	"testing"
 
 	"github.com/gookit/goutil/x/assert"
@@ -43,6 +45,7 @@ func TestListUpdateCandidatesIgnoresConfiguredPackageNames(t *testing.T) {
 
 func TestListUpdateCandidatesForTargetsChecksOnlyRequestedPackages(t *testing.T) {
 	checkedRepos := make([]string, 0, 2)
+	var checkedMu sync.Mutex
 	svc := UpdateService{
 		LoadConfig: func() (*cfgpkg.File, error) {
 			cfg := cfgpkg.NewFile()
@@ -59,7 +62,9 @@ func TestListUpdateCandidatesForTargetsChecksOnlyRequestedPackages(t *testing.T)
 			}}, nil
 		},
 		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			checkedMu.Lock()
 			checkedRepos = append(checkedRepos, target.Repo)
+			checkedMu.Unlock()
 			switch target.Repo {
 			case "jqlang/jq":
 				return LatestInfo{Tag: "jq-1.8"}, nil
@@ -75,6 +80,7 @@ func TestListUpdateCandidatesForTargetsChecksOnlyRequestedPackages(t *testing.T)
 	items, failures, checked, err := svc.ListUpdateCandidatesForTargets([]string{"markview", "jq"})
 	assert.NoErr(t, err)
 	assert.Eq(t, 2, checked)
+	sort.Strings(checkedRepos)
 	assert.Eq(t, []string{"OXY2DEV/markview.nvim", "jqlang/jq"}, checkedRepos)
 	assert.Eq(t, 0, len(failures))
 	assert.Eq(t, 1, len(items))
