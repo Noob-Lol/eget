@@ -73,14 +73,6 @@ func shouldUseConfiguredProxyURL(parsed *url.URL, proxyURL string, exclude []str
 	return !config.ProxyExcluded(parsed.Host, exclude)
 }
 
-func shouldUseConfiguredProxy(rawURL, proxyURL string, exclude []string) bool {
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return false
-	}
-	return shouldUseConfiguredProxyURL(parsed, proxyURL, exclude)
-}
-
 func setDownloadNoticeURLForRequest(rawURL string) func() {
 	proxyNoticeMu.Lock()
 	downloadNoticeURLs[rawURL]++

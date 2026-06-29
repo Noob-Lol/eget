@@ -95,9 +95,6 @@ func newApp(handler CommandHandler, stdout, stderr io.Writer) *App {
 	if stdout == nil {
 		stdout = io.Discard
 	}
-	if stderr == nil {
-		stderr = io.Discard
-	}
 	if handler == nil {
 		handler = func(name string, options any) error {
 			_ = name

@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -182,13 +181,4 @@ func (s Service) cacheMirrorStatus() CacheMirrorStatus {
 		status.Fallback = *s.Config.CacheMirror.Fallback
 	}
 	return status
-}
-
-func validateCacheReportRoot(root string) error {
-	switch normalizeReportRoot(root) {
-	case "all", string(KindPkg), string(KindAPI), string(KindSDK), string(KindSDKIndex), string(KindPartial):
-		return nil
-	default:
-		return fmt.Errorf("invalid cache root %q: must be one of all, pkg, api, sdk, sdk-index, partial", root)
-	}
 }

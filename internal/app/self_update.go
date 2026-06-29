@@ -174,11 +174,6 @@ func normalizeSelfVersion(value string) string {
 	return value
 }
 
-func gitDescribeBaseVersion(value string) (string, bool) {
-	info, ok := parseSelfGitDescribe(value)
-	return info.semver.String(), ok
-}
-
 type selfVersion struct {
 	semver  selfSemver
 	commits int

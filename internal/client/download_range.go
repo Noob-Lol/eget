@@ -5,8 +5,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 	"sync"
 )
 
@@ -103,27 +101,6 @@ func effectiveChunkCount(requested int, size int64) int {
 		return 1
 	}
 	return limit
-}
-
-func probeRangeSupport(rawURL string, opts Options) (int64, bool) {
-	resp, err := requestWithOptions(http.MethodHead, rawURL, "", opts)
-	if err != nil {
-		verbosef("range probe failed: %v", err)
-		return 0, false
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		verbosef("range probe unsupported status: %s", resp.Status)
-		return 0, false
-	}
-	if !strings.Contains(strings.ToLower(resp.Header.Get("Accept-Ranges")), "bytes") {
-		return 0, false
-	}
-	size := resp.ContentLength
-	if size <= 0 {
-		size, _ = strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
-	}
-	return size, size > 0
 }
 
 func splitByteRanges(size int64, chunks int) []byteRange {

@@ -149,11 +149,9 @@ func platformTokens(name string) []string {
 	tokens := strings.FieldsFunc(base, func(r rune) bool {
 		return r == '-' || r == '.' || r == '/' || r == '\\'
 	})
-	for _, token := range strings.FieldsFunc(base, func(r rune) bool {
+	tokens = append(tokens, strings.FieldsFunc(base, func(r rune) bool {
 		return r == '-' || r == '_' || r == '.' || r == '/' || r == '\\'
-	}) {
-		tokens = append(tokens, token)
-	}
+	})...)
 	return tokens
 }
 
