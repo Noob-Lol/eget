@@ -92,6 +92,17 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		ccolor.Print(cliutil.FormatTable(cols, rows, cliutil.MinimalStyle))
 
 		ccolor.Magentaf("\n🪄🚀 Updating %d packages:\n", len(items))
+		if opts.BatchConcurrency < 0 {
+			installOpts.BatchConcurrency = 1
+			installOpts.BatchConcurrencySet = true
+		}
+		prevOnUpdateStart := s.updService.OnUpdateStart
+		s.updService.OnUpdateStart = func(index, total int, name string) {
+			printUpdateSeparator(index)
+		}
+		defer func() {
+			s.updService.OnUpdateStart = prevOnUpdateStart
+		}()
 		_, err = s.updService.UpdateCandidates(items, installOpts)
 		return err
 	}
@@ -102,7 +113,8 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		return fmt.Errorf("update target is required")
 	}
 	var failures []error
-	for _, target := range opts.Targets {
+	for index, target := range opts.Targets {
+		printUpdateSeparator(index)
 		result, err := s.updService.UpdatePackageStatus(target, installOpts)
 		if err != nil {
 			ccolor.Fprintf(s.stderrWriter(), "<yellow>update_failed</> %s: %v\n", target, err)
@@ -117,6 +129,12 @@ func (s *cliService) handleUpdate(opts *UpdateOptions) error {
 		return fmt.Errorf("%d update failed", len(failures))
 	}
 	return nil
+}
+
+func printUpdateSeparator(index int) {
+	if index > 0 {
+		ccolor.Grayln("---")
+	}
 }
 
 func (s *cliService) handleUpdateCheckTargets(targets []string) error {

@@ -18,6 +18,7 @@ type UpdateService struct {
 	LoadInstalled func() (*storepkg.Config, error)
 	LatestInfo    LatestInfoFunc
 	OnCheckDone   func(checked, total int)
+	OnUpdateStart func(index, total int, name string)
 }
 
 type UpdateResult struct {

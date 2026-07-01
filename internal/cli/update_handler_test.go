@@ -56,6 +56,40 @@ func TestHandleUpdateUpdatesMultipleTargets(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateSeparatesMultipleTargetOutput(t *testing.T) {
+	installer := &fakeUpdateInstallerForCLI{}
+	svc := &cliService{
+		updService: app.UpdateService{
+			Install: installer,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+				cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+				return cfg, nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.50.0"},
+					"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+				}}, nil
+			},
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				return app.LatestInfo{Tag: "v99.0.0"}, nil
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleUpdate(&UpdateOptions{Targets: []string{"fzf", "rg"}})
+
+	assert.NoErr(t, err)
+	got := ccolor.ClearCode(out.String())
+	assert.Eq(t, 1, countSeparatorLines(got))
+}
+
 func TestHandleUpdateWarnsAndContinuesAfterTargetFailure(t *testing.T) {
 	installer := &fakeUpdateInstallerForCLI{
 		errByTarget: map[string]error{
@@ -290,7 +324,7 @@ func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {
 	ccolor.SetOutput(&out)
 	defer ccolor.SetOutput(os.Stdout)
 
-	err := svc.handleUpdate(&UpdateOptions{All: true})
+	err := svc.handleUpdate(&UpdateOptions{All: true, BatchConcurrency: -1})
 	if err != nil {
 		t.Fatalf("handle update all: %v", err)
 	}
@@ -305,6 +339,51 @@ func TestHandleUpdateAllPrintsCandidatesAndUpdatesOnlyOutdated(t *testing.T) {
 	if len(installer.targets) != 1 || installer.targets[0] != "rg" {
 		t.Fatalf("expected only rg to be updated, got %#v", installer.targets)
 	}
+}
+
+func TestHandleUpdateAllSeparatesMultiplePackageOutput(t *testing.T) {
+	installer := &fakeUpdateInstallerForCLI{}
+	svc := &cliService{
+		updService: app.UpdateService{
+			Install: installer,
+			LoadConfig: func() (*cfgpkg.File, error) {
+				cfg := cfgpkg.NewFile()
+				cfg.Packages["fzf"] = cfgpkg.Section{Repo: util.StringPtr("junegunn/fzf")}
+				cfg.Packages["rg"] = cfgpkg.Section{Repo: util.StringPtr("BurntSushi/ripgrep")}
+				return cfg, nil
+			},
+			LoadInstalled: func() (*storepkg.Config, error) {
+				return &storepkg.Config{Installed: map[string]storepkg.Entry{
+					"junegunn/fzf":       {Repo: "junegunn/fzf", Tag: "v0.50.0"},
+					"BurntSushi/ripgrep": {Repo: "BurntSushi/ripgrep", Tag: "v13.0.0"},
+				}}, nil
+			},
+			LatestInfo: func(target app.LatestCheckTarget) (app.LatestInfo, error) {
+				return app.LatestInfo{Tag: "v99.0.0"}, nil
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	ccolor.SetOutput(&out)
+	defer ccolor.SetOutput(os.Stdout)
+
+	err := svc.handleUpdate(&UpdateOptions{All: true, BatchConcurrency: -1})
+
+	assert.NoErr(t, err)
+	got := ccolor.ClearCode(out.String())
+	assert.Eq(t, 1, countSeparatorLines(got))
+	assert.Eq(t, []string{"fzf", "rg"}, installer.targets)
+}
+
+func countSeparatorLines(text string) int {
+	count := 0
+	for _, line := range strings.Split(text, "\n") {
+		if strings.TrimSpace(line) == "---" {
+			count++
+		}
+	}
+	return count
 }
 
 func TestHandleUpdateCheckPrintsSameOutdatedListWithoutUpdating(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/x/assert"
+	"github.com/gookit/goutil/x/ccolor"
 )
 
 func TestRunExtractAllUsesDirectExtractorWithoutListing(t *testing.T) {
@@ -146,6 +147,43 @@ func TestRunExtractAllStripsComponentsFromZipArchive(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(outputDir, "ventoy-1.1.12")); !os.IsNotExist(err) {
 		t.Fatalf("expected stripped root directory to be absent, stat err=%v", err)
 	}
+}
+
+func TestRunExtractAllPrintsSingleHeaderForMultipleFiles(t *testing.T) {
+	assetURL := "https://example.com/ventoy.zip"
+	archive := zipBytes(t, map[string]string{
+		"Ventoy2Disk.exe": "exe",
+		"boot.img":        "boot",
+	})
+	outputDir := t.TempDir()
+
+	svc := NewDefaultService(nil, nil)
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(archive)),
+		}, nil
+	}
+
+	var stdout bytes.Buffer
+	runner := NewRunner(svc)
+	runner.Stdout = &stdout
+	runner.Stderr = io.Discard
+	_, err := runner.Run(assetURL, Options{All: true, Output: outputDir})
+	if err != nil {
+		t.Fatalf("run extract-all: %v", err)
+	}
+
+	got := ccolor.ClearCode(stdout.String())
+	assert.Contains(t, got, "✅ Extracted files:")
+	assert.Eq(t, 1, strings.Count(got, "✅ Extracted"))
+	assert.Contains(t, got, " - "+filepath.Join(outputDir, "Ventoy2Disk.exe"))
+	assert.Contains(t, got, " - "+filepath.Join(outputDir, "boot.img"))
 }
 
 func TestRunExtractAllUsesContentDispositionFilenameForArchiveType(t *testing.T) {
