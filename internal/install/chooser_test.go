@@ -47,6 +47,30 @@ func TestFileChooserSupportsExcludePatterns(t *testing.T) {
 	}
 }
 
+func TestFileChooserMatchesArchivePathsWithSlashGlobs(t *testing.T) {
+	tests := []struct {
+		expr string
+		name string
+		want bool
+	}{
+		{expr: "x64/*", name: `x64\WinDirStat.exe`, want: true},
+		{expr: "x64/*.exe", name: `x64\WinDirStat.exe`, want: true},
+		{expr: "x64/WinDirStat.exe", name: `x64\WinDirStat.exe`, want: true},
+		{expr: "x64/*", name: `x86\WinDirStat.exe`, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expr+" "+tt.name, func(t *testing.T) {
+			chooser, err := NewFileChooser(tt.expr)
+			assert.NoErr(t, err)
+
+			direct, possible := chooser.Choose(tt.name, false, 0)
+			assert.False(t, direct)
+			assert.Eq(t, tt.want, possible)
+		})
+	}
+}
+
 func TestFileChooserExcludeOnlyDefaultsToAllFiles(t *testing.T) {
 	chooser, err := NewFileChooser("^*x86*,^*.sig")
 	assert.NoErr(t, err)
