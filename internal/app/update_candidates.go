@@ -39,9 +39,14 @@ func (s UpdateService) ListUpdateCandidates() ([]OutdatedItem, []OutdatedCheckFa
 		return nil, nil, 0, err
 	}
 
-	outdated, failures, checked := checkOutdatedItems(items, s.LatestInfo, func(item ListItem) bool {
-		return managedNames[item.Name] || managedRepos[item.Repo]
-	}, batchConcurrencyFromConfig(cfg, install.Options{}), s.OnCheckDone)
+	var include func(ListItem) bool
+	if len(cfg.Packages) > 0 {
+		include = func(item ListItem) bool {
+			return managedNames[item.Name] || managedRepos[item.Repo]
+		}
+	}
+
+	outdated, failures, checked := checkOutdatedItems(items, s.LatestInfo, include, batchConcurrencyFromConfig(cfg, install.Options{}), s.OnCheckDone)
 	return outdated, failures, checked, nil
 }
 

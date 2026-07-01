@@ -83,6 +83,7 @@ func (s UpdateService) UpdatePackageStatus(nameOrRepo string, cli install.Option
 	opts.Operation = install.OperationUpdate
 	opts.CurrentVersion = item.InstalledTag
 	opts.TargetVersion = check.outdated.LatestTag
+	opts.Tag = check.outdated.LatestTag
 	result, err := s.Install.InstallTarget(target, opts)
 	if err != nil {
 		return UpdatePackageResult{}, err
