@@ -211,11 +211,11 @@ var commandAliases = map[string]string{
 
 var commandFlagSpecs = map[string]flagSpec{
 	"install": {
-		bools:  setOf("source", "extract-all", "ea", "all", "gui", "quiet", "add"),
+		bools:  setOf("source", "prerelease", "p", "extract-all", "ea", "all", "gui", "quiet", "add"),
 		values: setOf("tag", "system", "to", "file", "asset", "a", "rename", "name", "install-mode", "strip-components", "fallback-versions", "chunk", "batch"),
 	},
 	"download": {
-		bools:  setOf("source", "extract-all", "ea", "quiet", "ghproxy"),
+		bools:  setOf("source", "prerelease", "p", "extract-all", "ea", "quiet", "ghproxy"),
 		values: setOf("tag", "system", "to", "file", "asset", "a", "rename", "strip-components", "fallback-versions", "chunk"),
 	},
 	"add": {

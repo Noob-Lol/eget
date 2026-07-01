@@ -359,6 +359,8 @@ eget config set global.target ~/.local/bin
 - `--chunk N`: 控制单个下载文件的 HTTP Range 分片并发。`0` 表示自动，`1` 表示单连接下载，大于 `1` 表示最多使用该数量的分片。
 - `--quiet`: 精简常规输出，适用于脚本或批处理场景。
 
+`install` 和 `download` 还支持 GitHub 目标的 `--prerelease` / `-p`。使用默认 latest 时，会把预发布版本也纳入最新版本选择。
+
 `install` 和 `download` 还支持 SourceForge 目标的 `--fallback-versions N`。当最新版本目录没有匹配资产时，eget 会最多扫描 `N` 个更旧版本目录，并使用第一个能被当前 `--asset` / `--system` 过滤条件唯一匹配的文件。
 
 `download` 还支持对完整 GitHub release asset URL 使用 `--ghproxy`。它只会用 `[ghproxy].host_url` / `fallbacks` 重写 `github.com` 下载 URL，不会查询或重写 GitHub API 请求。

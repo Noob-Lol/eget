@@ -76,6 +76,21 @@ func TestDownloadTargetForwardsFallbackVersions(t *testing.T) {
 	}
 }
 
+func TestDownloadTargetPreservesPrereleaseOption(t *testing.T) {
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+	}
+
+	_, err := svc.DownloadTarget("DarkHobbit/doublecontact", install.Options{Prerelease: true})
+
+	assert.NoErr(t, err)
+	assert.True(t, runner.opts.Prerelease)
+}
+
 func TestDownloadTargetWithExtractFileRunsExtractionFlow(t *testing.T) {
 	runner := &fakeRunner{
 		result: RunResult{

@@ -13,6 +13,7 @@ type InstallOptions struct {
 	InstallMode      string
 	StripComponents  int
 	Source           bool
+	Prerelease       bool
 	All              bool
 	InstallAll       bool
 	GUI              bool
@@ -39,6 +40,7 @@ func newInstallCmd(handler CommandHandler) (*gcli.Command, func()) {
 		c.StrOpt(&opts.InstallMode, "install-mode", "", "", "GUI install mode: portable or installer")
 		c.IntOpt(&opts.StripComponents, "strip-components", "", 0, "Strip leading archive path components when extracting all files")
 		c.BoolOpt(&opts.Source, "source", "", false, "Download source archive")
+		c.BoolOpt(&opts.Prerelease, "prerelease", "p", false, "Select latest release including prereleases")
 		c.BoolOpt(&opts.All, "extract-all", "ea", false, "Extract all files")
 		c.BoolOpt(&opts.InstallAll, "all", "", false, "Install all managed packages from config")
 		c.BoolOpt(&opts.GUI, "gui", "", false, "Install as GUI application")

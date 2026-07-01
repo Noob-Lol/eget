@@ -359,6 +359,8 @@ The target argument accepted by `install` and `download` can be:
 - `--chunk N`: Control HTTP Range chunk concurrency for one downloaded file. `0` means auto, `1` means single-connection download, and values greater than `1` request up to that many chunks.
 - `--quiet`: Reduce normal command output for scripting or batch use.
 
+`install` and `download` also support `--prerelease` / `-p` for GitHub targets. With the default latest tag, it selects the newest release including prereleases.
+
 `install` and `download` also support `--fallback-versions N` for SourceForge targets. When the latest version folder does not contain a matching asset, eget scans up to `N` older version folders and uses the first folder where the current `--asset` / `--system` filters produce a single match.
 
 `download` also supports `--ghproxy` for full GitHub release asset URLs. It rewrites only `github.com` download URLs with the configured `[ghproxy].host_url` / `fallbacks`; it does not query or rewrite GitHub API requests.
