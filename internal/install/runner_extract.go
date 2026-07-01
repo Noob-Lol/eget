@@ -7,8 +7,9 @@ import (
 )
 
 type downloadBodyResult struct {
-	Body    []byte
-	ModTime time.Time
+	Body     []byte
+	ModTime  time.Time
+	Filename string
 }
 
 func shouldApplyDownloadedModTime(file ExtractedFile, assetURL string, opts Options, modTime time.Time) bool {

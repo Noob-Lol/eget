@@ -168,6 +168,25 @@ func TestSelectExtractorTreatsDownloadWithExtractFileAsArchiveExtraction(t *test
 	}
 }
 
+func TestSelectExtractorUsesURLPathFilenameWithoutQuery(t *testing.T) {
+	svc := NewService()
+	svc.GlobChooserFactory = func(pattern string) (any, error) {
+		return &fakeChooser{name: "glob:" + pattern}, nil
+	}
+	svc.ExtractorFactory = func(filename, tool string, chooser any) any {
+		ch := chooser.(*fakeChooser)
+		return &fakeExtractor{name: filename + "|" + tool + "|" + ch.name}
+	}
+
+	extractor, err := svc.SelectExtractor("https://example.com/artifacts/tool.zip?job=build_linux", "tool", &Options{ExtractFile: "*.zip"})
+	if err != nil {
+		t.Fatalf("SelectExtractor(query filename): %v", err)
+	}
+	if got := extractor.(*fakeExtractor).name; got != "tool.zip|tool|glob:*.zip" {
+		t.Fatalf("SelectExtractor(query filename) = %q", got)
+	}
+}
+
 func TestSelectExtractorTreatsDownloadWithAllAsArchiveExtraction(t *testing.T) {
 	svc := NewService()
 	svc.GlobChooserFactory = func(pattern string) (any, error) {

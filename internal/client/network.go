@@ -3,9 +3,11 @@ package client
 import (
 	"encoding/json"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"time"
 )
 
@@ -25,6 +27,7 @@ type Options struct {
 
 type DownloadResult struct {
 	LastModified string
+	Filename     string
 }
 
 type HTTPGetterFunc func(url string) (*http.Response, error)
@@ -159,4 +162,23 @@ func urlpkgParse(rawURL string) (*url.URL, error) {
 func isLocalFile(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
+}
+
+func responseFilename(resp *http.Response, rawURL string) string {
+	if resp != nil {
+		if _, params, err := mime.ParseMediaType(resp.Header.Get("Content-Disposition")); err == nil {
+			if name := params["filename"]; name != "" {
+				return path.Base(name)
+			}
+		}
+	}
+	return urlPathFilename(rawURL)
+}
+
+func urlPathFilename(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err == nil && u.Path != "" {
+		return path.Base(u.Path)
+	}
+	return path.Base(rawURL)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"regexp"
 	"runtime"
@@ -421,7 +422,7 @@ func (s *Service) resolveTemplateChecksum(opts *Options) (string, error) {
 }
 
 func (s *Service) SelectExtractor(url, tool string, opts *Options) (any, error) {
-	filename := path.Base(url)
+	filename := assetFilename(url)
 	if opts.DownloadOnly && opts.ExtractFile == "" && !opts.All {
 		if s.DownloadOnlyExtractorFactory == nil {
 			return nil, fmt.Errorf("download-only extractor factory is required")
@@ -455,6 +456,14 @@ func (s *Service) SelectExtractor(url, tool string, opts *Options) (any, error) 
 		return nil, fmt.Errorf("extractor factories are required")
 	}
 	return s.newExtractor(filename, tool, s.BinaryChooserFactory(tool), opts)
+}
+
+func assetFilename(raw string) string {
+	u, err := url.Parse(raw)
+	if err == nil && u.Path != "" {
+		return path.Base(u.Path)
+	}
+	return path.Base(raw)
 }
 
 func (s *Service) newExtractor(filename, tool string, chooser any, opts *Options) (any, error) {

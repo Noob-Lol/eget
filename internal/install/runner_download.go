@@ -29,7 +29,7 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 		if data, err := os.ReadFile(cachePath); err == nil {
 			if !isInvalidCachedDownload(cachePath, data) {
 				ccolor.Fprintf(output, " - Using cached file <cyan>%s</>\n", filepath.Base(cachePath))
-				return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath)}, nil
+				return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath), Filename: assetFilename(url)}, nil
 			}
 			verbosef("discard invalid cached archive: %s", cachePath)
 		}
@@ -46,7 +46,7 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 			}
 			if !isInvalidCachedDownload(cachePath, data) {
 				ccolor.Fprintf(output, " - Using cache mirror file <cyan>%s</>\n", filepath.Base(cachePath))
-				return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath)}, nil
+				return downloadBodyResult{Body: data, ModTime: fileModTime(cachePath), Filename: assetFilename(url)}, nil
 			}
 			if !opts.CacheMirror.Fallback {
 				return downloadBodyResult{}, fmt.Errorf("cache mirror returned invalid archive: %s", filepath.Base(cachePath))
@@ -69,7 +69,7 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 		if modTime.IsZero() {
 			modTime = fileModTime(cachePath)
 		}
-		return downloadBodyResult{Body: data, ModTime: modTime}, nil
+		return downloadBodyResult{Body: data, ModTime: modTime, Filename: firstNonEmpty(result.Filename, assetFilename(url))}, nil
 	}
 
 	buf := &bytes.Buffer{}
@@ -84,7 +84,7 @@ func (r *InstallRunner) downloadBody(url string, opts Options) (downloadBodyResu
 			_ = os.WriteFile(cachePath, body, 0o644)
 		}
 	}
-	return downloadBodyResult{Body: body, ModTime: parseHTTPTime(result.LastModified)}, nil
+	return downloadBodyResult{Body: body, ModTime: parseHTTPTime(result.LastModified), Filename: firstNonEmpty(result.Filename, assetFilename(url))}, nil
 }
 
 func cacheMetaFromOptions(opts Options) CacheMeta {

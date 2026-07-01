@@ -148,6 +148,43 @@ func TestRunExtractAllStripsComponentsFromZipArchive(t *testing.T) {
 	}
 }
 
+func TestRunExtractAllUsesContentDispositionFilenameForArchiveType(t *testing.T) {
+	assetURL := "https://example.com/raw/artifact?job=build_linux"
+	archive := zipBytes(t, map[string]string{
+		"the-skeleton-key/readme.txt": "readme",
+	})
+	outputDir := t.TempDir()
+
+	svc := NewDefaultService(nil, nil)
+	svc.AllDetectorFactory = func() Detector {
+		return &fakeDetector{name: assetURL}
+	}
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Disposition": []string{`attachment; filename="the-skeleton-key-linux.zip"`}},
+			Body:       io.NopCloser(bytes.NewReader(archive)),
+		}, nil
+	}
+
+	runner := NewRunner(svc)
+	runner.Stdout = io.Discard
+	runner.Stderr = io.Discard
+	result, err := runner.Run(assetURL, Options{All: true, Output: outputDir})
+	if err != nil {
+		t.Fatalf("run extract-all content-disposition archive: %v", err)
+	}
+
+	assert.Eq(t, "the-skeleton-key-linux.zip", result.Asset)
+	data, err := os.ReadFile(filepath.Join(outputDir, "the-skeleton-key", "readme.txt"))
+	if err != nil {
+		t.Fatalf("read extracted file: %v", err)
+	}
+	assert.Eq(t, "readme", string(data))
+}
+
 func TestRunFileGlobWithStripComponentsExtractsStrippedMatches(t *testing.T) {
 	assetURL := "https://example.com/ffmpeg.zip"
 	archive := zipBytes(t, map[string]string{

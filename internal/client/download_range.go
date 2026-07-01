@@ -49,7 +49,7 @@ func DownloadWithResult(rawURL string, out io.Writer, getbar func(size int64) io
 				if err := downloadRangeChunks(rawURL, out, bar, remote.Size, chunks, opts); err != nil {
 					return DownloadResult{}, err
 				}
-				return DownloadResult{LastModified: remote.LastModified}, nil
+				return DownloadResult{LastModified: remote.LastModified, Filename: remote.Filename}, nil
 			}
 		}
 	}
@@ -79,7 +79,7 @@ func DownloadWithResult(rawURL string, out io.Writer, getbar func(size int64) io
 	if err != nil {
 		return DownloadResult{}, err
 	}
-	return DownloadResult{LastModified: resp.Header.Get("Last-Modified")}, nil
+	return DownloadResult{LastModified: resp.Header.Get("Last-Modified"), Filename: responseFilename(resp, rawURL)}, nil
 }
 
 func effectiveChunkCount(requested int, size int64) int {

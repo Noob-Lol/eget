@@ -195,7 +195,8 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	if portableGUIArchiveExtractAll(url, opts) {
 		opts.All = true
 	}
-	extractor, err := SelectExtractorAs[Extractor](r.Service, url, tool, &opts)
+	assetName := firstNonEmpty(downloaded.Filename, assetFilename(url))
+	extractor, err := SelectExtractorAs[Extractor](r.Service, assetName, tool, &opts)
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -206,7 +207,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 			result := RunResult{
 				URL:         url,
 				Tool:        tool,
-				Asset:       path.Base(url),
+				Asset:       assetName,
 				IsGUI:       opts.IsGUI,
 				InstallMode: opts.InstallMode,
 			}
@@ -243,7 +244,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	if len(bins) == 0 {
 		bins = []ExtractedFile{bin}
 	}
-	selectedName := selectedFileName(url, bin)
+	selectedName := selectedFileName(assetName, bin)
 	if opts.IsGUI && opts.InstallMode == "" {
 		opts.InstallMode = DetectGUIInstallMode(true, selectedName)
 	} else if !opts.All && DetectInstallerKind(selectedName) != InstallerKindUnknown {
@@ -261,7 +262,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	result := RunResult{
 		URL:         url,
 		Tool:        tool,
-		Asset:       path.Base(url),
+		Asset:       assetName,
 		IsGUI:       opts.IsGUI,
 		InstallMode: opts.InstallMode,
 		Version:     opts.URLTemplate.ResolvedVersion,
@@ -278,7 +279,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 		result.URL = url
 		result.Tool = tool
 		if result.Asset == "" {
-			result.Asset = path.Base(url)
+			result.Asset = assetName
 		}
 		return result, nil
 	}
