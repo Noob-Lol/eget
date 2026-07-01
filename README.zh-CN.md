@@ -25,6 +25,16 @@
 
 ## 安装
 
+- 使用 release 安装脚本
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/inherelab/eget/main/.github/install.sh | sh
+```
+
+```powershell
+iwr https://raw.githubusercontent.com/inherelab/eget/main/.github/install.ps1 -UseB | iex
+```
+
 - 从 Releases 下载安装 [https://github.com/inherelab/eget/releases](https://github.com/inherelab/eget/releases)
 - 使用命令 `go install` 安装 (需要本地有 Go sdk)
 
