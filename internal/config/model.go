@@ -5,6 +5,7 @@ type Section struct {
 	AssetFilters         []string          `toml:"asset_filters" mapstructure:"asset_filters"`
 	CacheDir             *string           `toml:"cache_dir" mapstructure:"cache_dir"`
 	ProxyURL             *string           `toml:"proxy_url" mapstructure:"proxy_url"`
+	Prerelease           *bool             `toml:"prerelease" mapstructure:"prerelease"`
 	UserAgent            *string           `toml:"user_agent" mapstructure:"user_agent"`
 	DownloadOnly         *bool             `toml:"download_only" mapstructure:"download_only"`
 	Desc                 *string           `toml:"desc" mapstructure:"desc"`
@@ -108,6 +109,7 @@ type Merged struct {
 	AssetFilters        []string
 	CacheDir            string
 	ProxyURL            string
+	Prerelease          bool
 	UserAgent           string
 	DownloadOnly        bool
 	File                string
@@ -152,6 +154,7 @@ type CLIOverrides struct {
 	AssetFilters     *[]string
 	CacheDir         *string
 	ProxyURL         *string
+	Prerelease       *bool
 	DownloadOnly     *bool
 	File             *string
 	GithubToken      *string

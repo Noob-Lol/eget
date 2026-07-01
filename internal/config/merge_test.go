@@ -79,6 +79,32 @@ func TestMergeInstallOptionsUsesGUIFromCLIThenPackageThenRepo(t *testing.T) {
 	}
 }
 
+func TestMergeInstallOptionsUsesPrereleaseFromCLIThenPackageThenRepo(t *testing.T) {
+	merged := MergeInstallOptions(
+		Section{},
+		Section{Prerelease: boolPtr(true)},
+		Section{},
+		CLIOverrides{},
+	)
+	assert.True(t, merged.Prerelease)
+
+	merged = MergeInstallOptions(
+		Section{},
+		Section{Prerelease: boolPtr(false)},
+		Section{Prerelease: boolPtr(true)},
+		CLIOverrides{},
+	)
+	assert.True(t, merged.Prerelease)
+
+	merged = MergeInstallOptions(
+		Section{},
+		Section{Prerelease: boolPtr(true)},
+		Section{Prerelease: boolPtr(true)},
+		CLIOverrides{Prerelease: boolPtr(false)},
+	)
+	assert.False(t, merged.Prerelease)
+}
+
 func TestMergeInstallOptionsUsesInstallModeFromPackageThenRepo(t *testing.T) {
 	merged := MergeInstallOptions(
 		Section{},

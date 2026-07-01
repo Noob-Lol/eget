@@ -81,6 +81,26 @@ proxy_url = "http://127.0.0.1:7890"
 	assert.True(t, runner.opts.NoProxy)
 }
 
+func TestInstallTargetUsesConfiguredPrerelease(t *testing.T) {
+	cfg := cfgpkg.NewFile()
+	cfg.Packages["aeris"] = cfgpkg.Section{
+		Repo:       util.StringPtr("pkgforge/aeris"),
+		Prerelease: util.BoolPtr(true),
+	}
+	runner := &fakeRunner{}
+	svc := Service{
+		Runner: runner,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfg, nil
+		},
+	}
+
+	_, err := svc.InstallTarget("aeris", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.True(t, runner.opts.Prerelease)
+}
+
 func TestInstallTargetNoProxyEnvSkipsConfiguredProxyURL(t *testing.T) {
 	t.Setenv("NO_PROXY", "1")
 	cfg := mustLoadFromString(t, `

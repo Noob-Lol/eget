@@ -208,6 +208,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 		IsGUI:            boolOpt(cli.IsGUI),
 		InstallMode:      stringOpt(cli.InstallMode),
 		Name:             stringOpt(cli.Name),
+		Prerelease:       boolOpt(cli.Prerelease),
 		Quiet:            boolOpt(cli.Quiet),
 		RenameFiles:      mapOpt(cli.RenameFiles),
 		ShowHash:         boolOpt(cli.Hash),
@@ -276,7 +277,7 @@ func (s Service) resolveInstallOptionsWithConfig(cfg *cfgpkg.File, target string
 
 	return install.Options{
 		Tag:                 merged.Tag,
-		Prerelease:          cli.Prerelease,
+		Prerelease:          merged.Prerelease,
 		Operation:           cli.Operation,
 		CurrentVersion:      cli.CurrentVersion,
 		TargetVersion:       cli.TargetVersion,

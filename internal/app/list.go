@@ -97,6 +97,9 @@ func (s ListService) ListPackages() ([]ListItem, error) {
 			Tag:          util.DerefString(pkg.Tag),
 			IgnoreUpdate: ignoredUpdates[name],
 		}
+		if pkg.Prerelease != nil && *pkg.Prerelease {
+			item.Prerelease = true
+		}
 		if pkg.IsGUI != nil && *pkg.IsGUI {
 			item.IsGUI = true
 		}
