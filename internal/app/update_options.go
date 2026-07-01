@@ -33,6 +33,7 @@ func optionsFromInstalledEntry(entry storepkg.Entry) install.Options {
 	opts.DownloadOnly, _ = boolOption(entry.Options, "download_only")
 	opts.UpgradeOnly, _ = boolOption(entry.Options, "upgrade_only")
 	opts.Source, _ = boolOption(entry.Options, "download_source", "source")
+	opts.Prerelease, _ = boolOption(entry.Options, "prerelease")
 	opts.DisableSSL, _ = boolOption(entry.Options, "disable_ssl")
 	opts.Asset = stringSliceOption(entry.Options, "asset", "asset_filters")
 	opts.RenameFiles = stringMapOption(entry.Options, "rename_files")

@@ -239,6 +239,9 @@ func extractOptionsMap(opts install.Options, isGUI bool) map[string]interface{} 
 	if opts.Source {
 		recorded["download_source"] = true
 	}
+	if opts.Prerelease {
+		recorded["prerelease"] = true
+	}
 	if opts.DisableSSL {
 		recorded["disable_ssl"] = true
 	}

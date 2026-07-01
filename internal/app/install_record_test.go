@@ -52,6 +52,7 @@ func TestInstallTargetRunsInstallFlowAndRecordsInstalledState(t *testing.T) {
 		Source:      true,
 		DisableSSL:  true,
 		All:         true,
+		Prerelease:  true,
 	}
 
 	result, err := svc.InstallTarget("junegunn/fzf", opts)
@@ -85,6 +86,9 @@ func TestInstallTargetRunsInstallFlowAndRecordsInstalledState(t *testing.T) {
 	}
 	if got := store.entry.Options["download_source"]; got != true {
 		t.Fatalf("expected source option to be recorded, got %#v", got)
+	}
+	if got := store.entry.Options["prerelease"]; got != true {
+		t.Fatalf("expected prerelease option to be recorded, got %#v", got)
 	}
 	assert.Eq(t, "Command-line fuzzy finder", store.entry.Desc)
 	assert.Eq(t, "https://junegunn.github.io/fzf", store.entry.Homepage)

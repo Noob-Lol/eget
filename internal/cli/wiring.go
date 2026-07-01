@@ -128,7 +128,7 @@ func newCLIService(noProxyOpt ...bool) (*cliService, error) {
 			}
 			return app.LatestInfo{Tag: info.Version, PublishedAt: info.PublishedAt}, nil
 		}
-		tag, publishedAt, err := githubClient.LatestReleaseInfo(repo)
+		tag, publishedAt, err := githubClient.LatestReleaseInfo(repo, target.Prerelease)
 		return app.LatestInfo{Tag: tag, PublishedAt: publishedAt}, err
 	}
 	listService := app.ListService{

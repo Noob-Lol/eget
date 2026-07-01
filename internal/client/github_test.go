@@ -122,6 +122,27 @@ func TestGitHubClientLatestReleaseInfo(t *testing.T) {
 	}
 }
 
+func TestGitHubClientLatestReleaseInfoCanIncludePrerelease(t *testing.T) {
+	var requestedURL string
+	client := NewGitHubClientWithGetter(Options{}, func(rawURL string, opts Options) (*http.Response, error) {
+		requestedURL = rawURL
+		payload := `[{"tag_name":"v0.12.0-beta","name":"beta","prerelease":true,"published_at":"2026-04-21T14:10:17Z","assets":[]}]`
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       io.NopCloser(strings.NewReader(payload)),
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	tag, publishedAt, err := client.LatestReleaseInfo("pkgforge/aeris", true)
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "https://api.github.com/repos/pkgforge/aeris/releases?per_page=1", requestedURL)
+	assert.Eq(t, "v0.12.0-beta", tag)
+	assert.Eq(t, time.Date(2026, 4, 21, 14, 10, 17, 0, time.UTC), publishedAt)
+}
+
 func TestGitHubClientGetUsesSharedGetter(t *testing.T) {
 	var requestedURL string
 	client := NewGitHubClientWithGetter(Options{}, func(rawURL string, opts Options) (*http.Response, error) {

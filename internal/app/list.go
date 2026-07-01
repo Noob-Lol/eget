@@ -32,6 +32,7 @@ type ListItem struct {
 	URL          string
 	IsGUI        bool
 	InstallMode  string
+	Prerelease   bool
 	IgnoreUpdate bool
 }
 
@@ -61,6 +62,7 @@ type LatestCheckTarget struct {
 	Repo       string
 	SourcePath string
 	Package    cfgpkg.Section
+	Prerelease bool
 }
 
 type LatestInfoFunc func(target LatestCheckTarget) (LatestInfo, error)
@@ -145,6 +147,9 @@ func (s ListService) ListPackages() ([]ListItem, error) {
 			}
 			if entry.InstallMode != "" {
 				item.InstallMode = entry.InstallMode
+			}
+			if prerelease, ok := boolOption(entry.Options, "prerelease"); ok {
+				item.Prerelease = prerelease
 			}
 			byName[name] = item
 		}
@@ -399,6 +404,7 @@ func checkOutdatedItem(item ListItem, latestInfo LatestInfoFunc) outdatedCheckRe
 		Repo:       item.Repo,
 		SourcePath: item.SourcePath,
 		Package:    item.Package,
+		Prerelease: item.Prerelease,
 	})
 	if err != nil {
 		failure := OutdatedCheckFailure{
