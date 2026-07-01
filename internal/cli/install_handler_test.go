@@ -20,6 +20,7 @@ import (
 func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	installOpts := installOptionsFromInstall(&InstallOptions{
 		Tag:             "nightly",
+		Prerelease:      true,
 		System:          "linux/amd64",
 		To:              "~/.local/bin",
 		File:            "tool",
@@ -43,10 +44,12 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	assert.Eq(t, map[string]string{"tool-linux-amd64": "tool"}, installOpts.RenameFiles)
 	assert.Eq(t, 1, installOpts.StripComponents)
 	assert.True(t, installOpts.IsGUI)
+	assert.True(t, installOpts.Prerelease)
 	assert.Eq(t, install.InstallModeInstaller, installOpts.InstallMode)
 
 	downloadOpts := installOptionsFromDownload(&DownloadOptions{
 		Tag:             "nightly",
+		Prerelease:      true,
 		System:          "linux/amd64",
 		To:              "~/.cache/downloads",
 		Asset:           "linux",
@@ -61,6 +64,7 @@ func TestInstallOptionsFromCommandsDoNotSetCacheDir(t *testing.T) {
 	if !downloadOpts.DownloadOnly {
 		t.Fatal("expected plain download options to default to raw download mode")
 	}
+	assert.True(t, downloadOpts.Prerelease)
 	assert.Eq(t, 1, downloadOpts.StripComponents)
 
 	addOpts := installOptionsFromAdd(&AddOptions{

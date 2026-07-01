@@ -265,6 +265,23 @@ func TestDownloadBodyWritesCacheAfterDownload(t *testing.T) {
 	}
 }
 
+func TestDownloadBodyUsesContentDispositionFilename(t *testing.T) {
+	origGetWithOptions := downloadGetWithOptions
+	defer func() { downloadGetWithOptions = origGetWithOptions }()
+	downloadGetWithOptions = func(url string, opts Options) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Disposition": []string{`attachment; filename="the-skeleton-key-linux.zip"`}},
+			Body:       io.NopCloser(strings.NewReader("zip-data")),
+		}, nil
+	}
+
+	downloaded, err := (&InstallRunner{}).downloadBody("https://example.com/raw/tool?id=123", Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, "the-skeleton-key-linux.zip", downloaded.Filename)
+}
+
 func TestDownloadBodyUsesCacheMirrorBeforeOrigin(t *testing.T) {
 	cacheDir := t.TempDir()
 	var originHit bool

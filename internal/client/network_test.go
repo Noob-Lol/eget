@@ -77,3 +77,12 @@ func TestGetWithOptionsUsesConfiguredUserAgent(t *testing.T) {
 
 	assert.Eq(t, "custom-agent/1.0", gotUA)
 }
+
+func TestResponseFilename(t *testing.T) {
+	resp := &http.Response{
+		Header: http.Header{"Content-Disposition": []string{`attachment; filename*=UTF-8''tool%20linux.zip`}},
+	}
+
+	assert.Eq(t, "tool linux.zip", responseFilename(resp, "https://example.com/download?id=123"))
+	assert.Eq(t, "tool.zip", responseFilename(nil, "https://example.com/artifacts/tool.zip?job=build"))
+}

@@ -195,7 +195,8 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	if portableGUIArchiveExtractAll(url, opts) {
 		opts.All = true
 	}
-	extractor, err := SelectExtractorAs[Extractor](r.Service, url, tool, &opts)
+	assetName := firstNonEmpty(downloaded.Filename, assetFilename(url))
+	extractor, err := SelectExtractorAs[Extractor](r.Service, assetName, tool, &opts)
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -206,7 +207,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 			result := RunResult{
 				URL:         url,
 				Tool:        tool,
-				Asset:       path.Base(url),
+				Asset:       assetName,
 				IsGUI:       opts.IsGUI,
 				InstallMode: opts.InstallMode,
 			}
@@ -214,9 +215,9 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 			if err != nil {
 				return RunResult{}, err
 			}
+			printExtractedPaths(output, paths)
 			for _, out := range paths {
 				verbosef("extract output: %s", out)
-				ccolor.Fprintf(output, "✅ Extracted <cyan>%s</>\n", out)
 				if out != "-" {
 					result.ExtractedFiles = append(result.ExtractedFiles, out)
 				}
@@ -243,7 +244,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	if len(bins) == 0 {
 		bins = []ExtractedFile{bin}
 	}
-	selectedName := selectedFileName(url, bin)
+	selectedName := selectedFileName(assetName, bin)
 	if opts.IsGUI && opts.InstallMode == "" {
 		opts.InstallMode = DetectGUIInstallMode(true, selectedName)
 	} else if !opts.All && DetectInstallerKind(selectedName) != InstallerKindUnknown {
@@ -261,7 +262,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	result := RunResult{
 		URL:         url,
 		Tool:        tool,
-		Asset:       path.Base(url),
+		Asset:       assetName,
 		IsGUI:       opts.IsGUI,
 		InstallMode: opts.InstallMode,
 		Version:     opts.URLTemplate.ResolvedVersion,
@@ -278,12 +279,12 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 		result.URL = url
 		result.Tool = tool
 		if result.Asset == "" {
-			result.Asset = path.Base(url)
+			result.Asset = assetName
 		}
 		return result, nil
 	}
 
-	extract := func(file ExtractedFile) (string, error) {
+	extract := func(file ExtractedFile, multiple bool) (string, error) {
 		out, err := outputPath(file, effectiveOutput(opts), opts.All, opts.Name, opts.OutputExplicit, opts.RenameFiles)
 		if err != nil {
 			return "", err
@@ -292,7 +293,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 			return "", err
 		}
 		verbosef("extract output: %s", out)
-		ccolor.Fprintf(output, "✅ Extracted <info>%s</> to <cyan>%s</>\n", file.ArchiveName, out)
+		printExtractedFile(output, file.ArchiveName, out, multiple)
 		if out != "-" && shouldApplyDownloadedModTime(file, url, opts, downloaded.ModTime) {
 			if err := applyModTime(out, downloaded.ModTime); err != nil {
 				return "", err
@@ -302,8 +303,12 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	}
 
 	if opts.All {
+		multiple := len(bins) > 1
+		if multiple {
+			ccolor.Fprintln(output, "✅ Extracted files:")
+		}
 		for _, file := range bins {
-			out, err := extract(file)
+			out, err := extract(file, multiple)
 			if err != nil {
 				return RunResult{}, err
 			}
@@ -312,7 +317,7 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 			}
 		}
 	} else {
-		out, err := extract(bin)
+		out, err := extract(bin, false)
 		if err != nil {
 			return RunResult{}, err
 		}
@@ -322,6 +327,27 @@ func (r *InstallRunner) extractDownloadedBody(url, tool string, downloaded downl
 	}
 
 	return result, nil
+}
+
+func printExtractedPaths(output io.Writer, paths []string) {
+	if len(paths) > 1 {
+		ccolor.Fprintln(output, "✅ Extracted files:")
+		for _, out := range paths {
+			ccolor.Fprintf(output, " - <cyan>%s</>\n", out)
+		}
+		return
+	}
+	for _, out := range paths {
+		ccolor.Fprintf(output, "✅ Extracted <cyan>%s</>\n", out)
+	}
+}
+
+func printExtractedFile(output io.Writer, archiveName, out string, multiple bool) {
+	if multiple {
+		ccolor.Fprintf(output, " - <info>%s</> to <cyan>%s</>\n", archiveName, out)
+		return
+	}
+	ccolor.Fprintf(output, "✅ Extracted <info>%s</> to <cyan>%s</>\n", archiveName, out)
 }
 
 func (r *InstallRunner) loadInstalled() (map[string]string, map[string]string, error) {

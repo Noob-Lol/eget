@@ -230,6 +230,38 @@ func TestUpdatePackageRestoresTemplateOptionsFromInstalledEntry(t *testing.T) {
 	assert.Eq(t, install.InstallModeInstaller, opts.InstallMode)
 }
 
+func TestUpdatePackageRestoresPrereleaseOptionFromInstalledEntry(t *testing.T) {
+	installer := &fakeInstallService{}
+	svc := UpdateService{
+		Install: installer,
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"pkgforge/aeris": {
+					Repo: "pkgforge/aeris",
+					Tag:  "v0.11.0-beta",
+					Options: map[string]any{
+						"prerelease": true,
+					},
+				},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			assert.Eq(t, "pkgforge/aeris", target.Repo)
+			assert.True(t, target.Prerelease)
+			return LatestInfo{Tag: "v0.12.0-beta"}, nil
+		},
+	}
+
+	_, err := svc.UpdatePackage("pkgforge/aeris", install.Options{})
+
+	assert.NoErr(t, err)
+	assert.Eq(t, []string{"pkgforge/aeris"}, installer.targets)
+	assert.True(t, installer.options[0].Prerelease)
+}
+
 func TestUpdatePackageRejectsUnknownPlainWords(t *testing.T) {
 	installer := &fakeInstallService{}
 	svc := UpdateService{

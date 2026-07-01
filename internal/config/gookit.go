@@ -245,6 +245,9 @@ func sectionToMap(section Section) map[string]any {
 	if section.ProxyURL != nil {
 		data["proxy_url"] = *section.ProxyURL
 	}
+	if section.Prerelease != nil {
+		data["prerelease"] = *section.Prerelease
+	}
 	if section.UserAgent != nil {
 		data["user_agent"] = *section.UserAgent
 	}

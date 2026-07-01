@@ -191,6 +191,67 @@ func TestListOutdatedPackagesPassesSourcePathToLatestChecker(t *testing.T) {
 	}
 }
 
+func TestListOutdatedPackagesPassesInstalledPrereleaseOption(t *testing.T) {
+	svc := ListService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			return cfgpkg.NewFile(), nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"pkgforge/aeris": {
+					Repo: "pkgforge/aeris",
+					Tag:  "v0.11.0-beta",
+					Options: map[string]any{
+						"prerelease": true,
+					},
+				},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			assert.Eq(t, "pkgforge/aeris", target.Repo)
+			assert.True(t, target.Prerelease)
+			return LatestInfo{Tag: "v0.12.0-beta"}, nil
+		},
+	}
+
+	items, failures, checked, err := svc.ListOutdatedPackages()
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 0, len(failures))
+	assert.Eq(t, 1, checked)
+	assert.Eq(t, 1, len(items))
+	assert.Eq(t, "v0.12.0-beta", items[0].LatestTag)
+}
+
+func TestListOutdatedPackagesPassesConfiguredPrereleaseOption(t *testing.T) {
+	svc := ListService{
+		LoadConfig: func() (*cfgpkg.File, error) {
+			cfg := cfgpkg.NewFile()
+			cfg.Packages["aeris"] = cfgpkg.Section{
+				Repo:       util.StringPtr("pkgforge/aeris"),
+				Prerelease: util.BoolPtr(true),
+			}
+			return cfg, nil
+		},
+		LoadInstalled: func() (*storepkg.Config, error) {
+			return &storepkg.Config{Installed: map[string]storepkg.Entry{
+				"pkgforge/aeris": {Repo: "pkgforge/aeris", Tag: "v0.11.0-beta"},
+			}}, nil
+		},
+		LatestInfo: func(target LatestCheckTarget) (LatestInfo, error) {
+			assert.Eq(t, "pkgforge/aeris", target.Repo)
+			assert.True(t, target.Prerelease)
+			return LatestInfo{Tag: "v0.12.0-beta"}, nil
+		},
+	}
+
+	_, failures, checked, err := svc.ListOutdatedPackages()
+
+	assert.NoErr(t, err)
+	assert.Eq(t, 0, len(failures))
+	assert.Eq(t, 1, checked)
+}
+
 func TestListOutdatedPackagesChecksForgeRepo(t *testing.T) {
 	svc := ListService{
 		LoadConfig: func() (*cfgpkg.File, error) {

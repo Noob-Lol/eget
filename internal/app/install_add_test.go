@@ -30,6 +30,7 @@ func TestInstallTargetWithAddRecordsManagedPackage(t *testing.T) {
 		ExtractFile: "fzf",
 		Asset:       []string{"linux"},
 		Tag:         "v1.0.0",
+		Prerelease:  true,
 	}
 
 	_, err := svc.InstallTarget("junegunn/fzf", opts, InstallExtras{AddToConfig: true, PackageOpts: opts})
@@ -54,6 +55,9 @@ func TestInstallTargetWithAddRecordsManagedPackage(t *testing.T) {
 	}
 	if config.opts.Tag != "v1.0.0" {
 		t.Fatalf("expected tag to be forwarded, got %q", config.opts.Tag)
+	}
+	if !config.opts.Prerelease {
+		t.Fatalf("expected prerelease to be forwarded, got %#v", config.opts)
 	}
 	if len(config.opts.Asset) != 1 || config.opts.Asset[0] != "linux" {
 		t.Fatalf("expected asset filter to be forwarded, got %#v", config.opts.Asset)

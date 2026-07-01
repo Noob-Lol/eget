@@ -36,7 +36,10 @@ func (s UpdateService) UpdateCandidates(candidates []OutdatedItem, cli install.O
 	}
 
 	results := make([]UpdateResult, 0, len(candidates))
-	for _, item := range candidates {
+	for index, item := range candidates {
+		if s.OnUpdateStart != nil {
+			s.OnUpdateStart(index, len(candidates), item.Name)
+		}
 		result, err := s.UpdatePackage(item.Name, cli)
 		if err != nil {
 			return nil, err

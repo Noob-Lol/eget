@@ -25,6 +25,16 @@
 
 ## Install
 
+- Install with the release script
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/inherelab/eget/main/.github/install.sh | sh
+```
+
+```powershell
+iwr https://raw.githubusercontent.com/inherelab/eget/main/.github/install.ps1 -UseB | iex
+```
+
 - Download from Releases [https://github.com/inherelab/eget/releases](https://github.com/inherelab/eget/releases)
 - Install by `go install` command (requires a local Go SDK)
 
@@ -358,6 +368,8 @@ The target argument accepted by `install` and `download` can be:
 - `--strip-components N`: Remove `N` leading archive path components when extracting all files, useful for archives that wrap contents in a versioned top-level directory.
 - `--chunk N`: Control HTTP Range chunk concurrency for one downloaded file. `0` means auto, `1` means single-connection download, and values greater than `1` request up to that many chunks.
 - `--quiet`: Reduce normal command output for scripting or batch use.
+
+`install` and `download` also support `--prerelease` / `-p` for GitHub targets. With the default latest tag, it selects the newest release including prereleases.
 
 `install` and `download` also support `--fallback-versions N` for SourceForge targets. When the latest version folder does not contain a matching asset, eget scans up to `N` older version folders and uses the first folder where the current `--asset` / `--system` filters produce a single match.
 

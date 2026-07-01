@@ -348,6 +348,9 @@ func sectionFromInstallOptions(repo, name string, opts install.Options) cfgpkg.S
 	if opts.Source {
 		section.Source = util.BoolPtr(true)
 	}
+	if opts.Prerelease {
+		section.Prerelease = util.BoolPtr(true)
+	}
 	if opts.SourcePath != "" {
 		section.SourcePath = util.StringPtr(opts.SourcePath)
 	}

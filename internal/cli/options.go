@@ -15,6 +15,7 @@ import (
 func installOptionsFromInstall(opts *InstallOptions) install.Options {
 	return install.Options{
 		Tag:                 opts.Tag,
+		Prerelease:          opts.Prerelease,
 		Name:                opts.Name,
 		Source:              opts.Source,
 		Output:              opts.To,
@@ -70,15 +71,16 @@ func applyGlobalNetworkConfig(opts *install.Options, cfg *cfgpkg.File) {
 
 func installOptionsFromDownload(opts *DownloadOptions) install.Options {
 	base := installOptionsFromInstall(&InstallOptions{
-		Tag:    opts.Tag,
-		System: opts.System,
-		To:     opts.To,
-		File:   opts.File,
-		Asset:  opts.Asset,
-		Rename: opts.Rename,
-		Source: opts.Source,
-		All:    opts.All,
-		Quiet:  opts.Quiet,
+		Tag:        opts.Tag,
+		Prerelease: opts.Prerelease,
+		System:     opts.System,
+		To:         opts.To,
+		File:       opts.File,
+		Asset:      opts.Asset,
+		Rename:     opts.Rename,
+		Source:     opts.Source,
+		All:        opts.All,
+		Quiet:      opts.Quiet,
 	})
 	base.FallbackVersions = opts.FallbackVersions
 	base.ChunkConcurrency = opts.ChunkConcurrency

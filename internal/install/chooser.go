@@ -3,7 +3,7 @@ package install
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/gobwas/glob"
@@ -141,7 +141,8 @@ func (b *BinaryChooser) Choose(name string, dir bool, mode fs.FileMode) (bool, b
 	if dir {
 		return false, false
 	}
-	fmatch := filepath.Base(name) == b.Tool || filepath.Base(name) == b.Tool+".exe" || filepath.Base(name) == b.Tool+".appimage"
+	base := path.Base(archivePathForCompare(name))
+	fmatch := base == b.Tool || base == b.Tool+".exe" || base == b.Tool+".appimage"
 	possible := !mode.IsDir() && isExec(name, mode.Perm())
 	return fmatch && possible, possible
 }
@@ -151,7 +152,9 @@ func (b *BinaryChooser) String() string {
 }
 
 func (l *LiteralFileChooser) Choose(name string, dir bool, mode fs.FileMode) (bool, bool) {
-	return false, filepath.Base(name) == filepath.Base(l.File) && strings.HasSuffix(name, l.File)
+	name = archivePathForCompare(name)
+	file := archivePathForCompare(l.File)
+	return false, path.Base(name) == path.Base(file) && strings.HasSuffix(name, file)
 }
 
 func (l *LiteralFileChooser) String() string {
@@ -162,10 +165,11 @@ func (g *GlobChooser) Choose(name string, dir bool, mode fs.FileMode) (bool, boo
 	if g.all {
 		return true, true
 	}
+	name = archivePathForCompare(name)
 	if len(name) > 0 && name[len(name)-1] == '/' {
 		name = name[:len(name)-1]
 	}
-	return false, g.g.Match(filepath.Base(name)) || g.g.Match(name)
+	return false, g.g.Match(path.Base(name)) || g.g.Match(name)
 }
 
 func (g *GlobChooser) String() string {

@@ -24,6 +24,7 @@ type DownloadFileResult struct {
 	Size         int64
 	ETag         string
 	LastModified string
+	Filename     string
 }
 
 type downloadFileMeta struct {
@@ -48,6 +49,7 @@ type downloadFileRemote struct {
 	AcceptRange  bool
 	ETag         string
 	LastModified string
+	Filename     string
 }
 
 func DownloadFile(rawURL, target string, getbar func(size int64) io.Writer, opts Options) (DownloadFileResult, error) {
@@ -119,7 +121,7 @@ func downloadFileSingle(rawURL, target, partPath, metaPath string, getbar func(i
 			if err := replaceFile(partPath, target); err != nil {
 				return DownloadFileResult{}, err
 			}
-			return DownloadFileResult{Path: target, Resumed: true, Size: remote.Size, ETag: remote.ETag, LastModified: remote.LastModified}, nil
+			return DownloadFileResult{Path: target, Resumed: true, Size: remote.Size, ETag: remote.ETag, LastModified: remote.LastModified, Filename: remote.Filename}, nil
 		}
 		resp, err := requestWithOptions(http.MethodGet, rawURL, fmt.Sprintf("bytes=%d-", partSize), opts)
 		if err != nil {
@@ -141,7 +143,7 @@ func downloadFileSingle(rawURL, target, partPath, metaPath string, getbar func(i
 			if finisher, ok := bar.(progressFinisher); ok {
 				finisher.Finish()
 			}
-			return DownloadFileResult{Path: target, Resumed: true, Size: remote.Size, ETag: remote.ETag, LastModified: remote.LastModified}, nil
+			return DownloadFileResult{Path: target, Resumed: true, Size: remote.Size, ETag: remote.ETag, LastModified: remote.LastModified, Filename: remote.Filename}, nil
 		}
 		if resp.StatusCode != http.StatusOK {
 			return DownloadFileResult{}, fmt.Errorf("download error: %d", resp.StatusCode)
@@ -186,7 +188,7 @@ func downloadFileSingle(rawURL, target, partPath, metaPath string, getbar func(i
 	if finisher, ok := bar.(progressFinisher); ok {
 		finisher.Finish()
 	}
-	return DownloadFileResult{Path: target, Size: fileSize(target), ETag: resp.Header.Get("ETag"), LastModified: resp.Header.Get("Last-Modified")}, nil
+	return DownloadFileResult{Path: target, Size: fileSize(target), ETag: resp.Header.Get("ETag"), LastModified: resp.Header.Get("Last-Modified"), Filename: responseFilename(resp, rawURL)}, nil
 }
 
 func downloadFileParallel(rawURL, target, partPath, metaPath string, remote downloadFileRemote, getbar func(int64) io.Writer, opts Options, chunks int) (DownloadFileResult, error) {
@@ -267,7 +269,7 @@ func downloadFileParallel(rawURL, target, partPath, metaPath string, remote down
 	if finisher, ok := bar.(progressFinisher); ok {
 		finisher.Finish()
 	}
-	return DownloadFileResult{Path: target, Resumed: resumed, Parallel: true, Size: remote.Size, ETag: remote.ETag, LastModified: remote.LastModified}, nil
+	return DownloadFileResult{Path: target, Resumed: resumed, Parallel: true, Size: remote.Size, ETag: remote.ETag, LastModified: remote.LastModified, Filename: remote.Filename}, nil
 }
 
 func loadOrCreateDownloadFileMeta(rawURL string, remote downloadFileRemote, partPath, metaPath string, chunks int) (downloadFileMeta, bool, error) {
@@ -373,6 +375,7 @@ func probeDownloadFile(rawURL string, opts Options) (downloadFileRemote, bool) {
 		AcceptRange:  strings.Contains(strings.ToLower(resp.Header.Get("Accept-Ranges")), "bytes"),
 		ETag:         resp.Header.Get("ETag"),
 		LastModified: resp.Header.Get("Last-Modified"),
+		Filename:     responseFilename(resp, rawURL),
 	}, size > 0
 }
 

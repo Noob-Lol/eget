@@ -25,6 +25,16 @@
 
 ## 安装
 
+- 使用 release 安装脚本
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/inherelab/eget/main/.github/install.sh | sh
+```
+
+```powershell
+iwr https://raw.githubusercontent.com/inherelab/eget/main/.github/install.ps1 -UseB | iex
+```
+
 - 从 Releases 下载安装 [https://github.com/inherelab/eget/releases](https://github.com/inherelab/eget/releases)
 - 使用命令 `go install` 安装 (需要本地有 Go sdk)
 
@@ -358,6 +368,8 @@ eget config set global.target ~/.local/bin
 - `--strip-components N`: 解压全部文件时剥离归档内路径前 `N` 层，适用于归档内容被版本号顶层目录包裹的场景。
 - `--chunk N`: 控制单个下载文件的 HTTP Range 分片并发。`0` 表示自动，`1` 表示单连接下载，大于 `1` 表示最多使用该数量的分片。
 - `--quiet`: 精简常规输出，适用于脚本或批处理场景。
+
+`install` 和 `download` 还支持 GitHub 目标的 `--prerelease` / `-p`。使用默认 latest 时，会把预发布版本也纳入最新版本选择。
 
 `install` 和 `download` 还支持 SourceForge 目标的 `--fallback-versions N`。当最新版本目录没有匹配资产时，eget 会最多扫描 `N` 个更旧版本目录，并使用第一个能被当前 `--asset` / `--system` 过滤条件唯一匹配的文件。
 

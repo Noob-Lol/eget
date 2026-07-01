@@ -71,6 +71,9 @@ func enrichListItemFromInstalledEntry(item *ListItem, entry storepkg.Entry) {
 			item.SourcePath = sfTarget.Path
 		}
 	}
+	if prerelease, ok := boolOption(entry.Options, "prerelease"); ok {
+		item.Prerelease = prerelease
+	}
 }
 
 func installedUpdateTarget(item ListItem, entry storepkg.Entry) string {
